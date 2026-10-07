@@ -16,16 +16,16 @@ class Requirement extends Model
         'due_date',
         'accepted_format',
         'reviewer_id',
-        'user_id',
+        'program_id',
     ];
 
     protected $casts = [
         'due_date' => 'datetime',
     ];
 
-    public function user()
+    public function program()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Program::class);
     }
 
     public function reviewer()
@@ -36,4 +36,5 @@ class Requirement extends Model
     public function submissions()
     {
         return $this->hasMany(Submission::class);
-    }}
+    }
+}

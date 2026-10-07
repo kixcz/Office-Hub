@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Megaphone, FileCheck, CheckSquare, Trophy, Send, Calendar, Inbox, Monitor } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Megaphone, FileCheck, CheckSquare, Trophy, Send, Calendar, Inbox, Monitor, GraduationCap, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -12,6 +12,16 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         url: '/dashboard',
         icon: LayoutGrid,
+    },
+    {
+        title: 'Programs',
+        url: '/programs',
+        icon: GraduationCap,
+    },
+    {
+        title: 'Faculty Management',
+        url: '/faculties',
+        icon: Users,
     },
     {
         title: 'Announcements',
@@ -24,9 +34,28 @@ const mainNavItems: NavItem[] = [
         icon: FileCheck,
     },
     {
-        title: 'Compliance Matrix',
-        url: '/compliance-matrix',
-        icon: CheckSquare,
+        title: 'Compliance',
+        url: '#',
+        icon: FileCheck,
+        isActive: true,
+        items: [
+            {
+                title: 'Requirements',
+                url: '/compliance/requirements',
+            },
+            {
+                title: 'Submission Records',
+                url: '/compliance/submissions',
+            },
+            {
+                title: 'Pending Outputs',
+                url: '/compliance/pending-outputs',
+            },
+            {
+                title: 'Compliance Tracker',
+                url: '/compliance/tracker',
+            },
+        ],
     },
     {
         title: 'Tasks & Projects',

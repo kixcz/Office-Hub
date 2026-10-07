@@ -8,7 +8,7 @@ class Submission extends Model
 {
     protected $fillable = [
         'requirement_id',
-        'user_id',
+        'faculty_id',
         'status',
         'file_path',
         'submitted_at',
@@ -24,7 +24,16 @@ class Submission extends Model
         return $this->belongsTo(Requirement::class);
     }
 
-    public function user()
+    public function faculty()
     {
-        return $this->belongsTo(User::class);
-    }}
+        return $this->belongsTo(Faculty::class);
+    }
+
+    public function getIsLateAttribute()
+    {
+        if (!$this->submitted_at) {
+            return now()->greaterThan($this->requirement->due_date);
+        }
+        return clone $this->submitted_at->greaterThan($this->requirement->due_date);
+    }
+}

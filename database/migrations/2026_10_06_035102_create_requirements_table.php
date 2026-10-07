@@ -22,6 +22,7 @@ return new class extends Migration
             $table->timestamp('due_date');
             $table->string('accepted_format')->nullable();
             $table->foreignId('reviewer_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('program_id')->nullable()->constrained('programs')->cascadeOnDelete();
             $table->timestamps();
         });
     }

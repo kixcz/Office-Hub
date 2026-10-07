@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('requirements', function (Blueprint $table) {
-            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete(); // The faculty member assigned to
+        Schema::create('programs', function (Blueprint $table) {
+            $table->id();
+            $table->string('code')->unique();
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -21,9 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('requirements', function (Blueprint $table) {
-            $table->dropForeign(['user_id']);
-            $table->dropColumn('user_id');
-        });
+        Schema::dropIfExists('programs');
     }
 };

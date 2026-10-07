@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('submissions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('requirement_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete(); // The faculty member
+            $table->foreignId('faculty_id')->constrained('faculties')->cascadeOnDelete(); // The faculty member
             $table->string('status')->default('pending'); // pending, awaiting_review, accepted, revision_requested, exemption_approved
             $table->string('file_path')->nullable();
             $table->timestamp('submitted_at')->nullable();
