@@ -48,6 +48,20 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('rules', \App\Http\Controllers\Performance\RecognitionRuleController::class);
     });
 
+    // TV Configuration Section
+    Route::prefix('tv-config')->name('tv-config.')->group(function () {
+        Route::get('playlist', [\App\Http\Controllers\Tv\PlaylistController::class, 'index'])->name('playlist.index');
+        Route::post('playlist', [\App\Http\Controllers\Tv\PlaylistController::class, 'store'])->name('playlist.store');
+        Route::put('playlist/{playlist}', [\App\Http\Controllers\Tv\PlaylistController::class, 'update'])->name('playlist.update');
+        Route::delete('playlist/{playlist}', [\App\Http\Controllers\Tv\PlaylistController::class, 'destroy'])->name('playlist.destroy');
+        
+        Route::get('slides', [\App\Http\Controllers\Tv\SlideController::class, 'index'])->name('slides.index');
+        Route::put('slides/{slide}', [\App\Http\Controllers\Tv\SlideController::class, 'update'])->name('slides.update');
+        
+        Route::get('settings', [\App\Http\Controllers\Tv\SettingController::class, 'index'])->name('settings.index');
+        Route::post('settings', [\App\Http\Controllers\Tv\SettingController::class, 'store'])->name('settings.store');
+    });
+
     // Tasks
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
     Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');

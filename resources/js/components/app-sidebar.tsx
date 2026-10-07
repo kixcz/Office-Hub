@@ -104,6 +104,16 @@ const mainNavItems: NavItem[] = [
         url: '/performance/rules',
         icon: Trophy,
     },
+    {
+        title: 'TV Configuration',
+        url: '#',
+        icon: Monitor,
+        items: [
+            { title: 'Playlist', url: '/tv-config/playlist' },
+            { title: 'Slide Configuration', url: '/tv-config/slides' },
+            { title: 'Display Settings', url: '/tv-config/settings' },
+        ],
+    },
 ];
 
 const footerNavItems: NavItem[] = [
