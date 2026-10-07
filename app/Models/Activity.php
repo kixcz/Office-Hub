@@ -4,25 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Meeting extends Model
+class Activity extends Model
 {
     protected $fillable = [
         'title',
+        'category',
         'date',
         'start_time',
         'end_time',
         'venue',
-        'agenda',
-        'notes',
+        'description',
+        'visibility',
         'status',
         'program_id',
-        'organizer_id',
     ];
-
-    public function organizer()
-    {
-        return $this->belongsTo(User::class, 'organizer_id');
-    }
 
     public function program()
     {

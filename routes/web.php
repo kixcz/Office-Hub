@@ -5,7 +5,6 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentRouteController;
 use App\Http\Controllers\FacultyController;
-use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\OfficeRequestController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\RequirementController;
@@ -24,12 +23,7 @@ Route::get('/tv', [TvDisplayController::class, 'index'])->name('tv');
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::resource('meetings', MeetingController::class)->only(['index', 'store', 'destroy']);
-
     Route::resource('requests', OfficeRequestController::class)->only(['index', 'store', 'update']);
-
-    Route::resource('announcements', AnnouncementController::class);
-
     Route::resource('announcements', AnnouncementController::class);
 
     // Compliance Section
@@ -39,6 +33,21 @@ Route::middleware(['auth'])->group(function () {
         Route::get('pending-outputs', [\App\Http\Controllers\Compliance\PendingOutputController::class, 'index'])->name('pending-outputs.index');
         Route::get('tracker', [\App\Http\Controllers\Compliance\ComplianceTrackerController::class, 'index'])->name('tracker.index');
     });
+
+    // Schedule Section
+    Route::prefix('schedule')->name('schedule.')->group(function () {
+        Route::resource('meetings', \App\Http\Controllers\Schedule\MeetingController::class);
+        Route::resource('activities', \App\Http\Controllers\Schedule\ActivityController::class);
+        Route::get('calendar', [\App\Http\Controllers\Schedule\CalendarController::class, 'index'])->name('calendar.index');
+    });
+
+    // Performance Section
+    Route::prefix('performance')->name('performance.')->group(function () {
+        Route::get('faculty', [\App\Http\Controllers\Performance\FacultyPerformanceController::class, 'index'])->name('faculty');
+        Route::get('program', [\App\Http\Controllers\Performance\ProgramPerformanceController::class, 'index'])->name('program');
+        Route::resource('rules', \App\Http\Controllers\Performance\RecognitionRuleController::class);
+    });
+
     // Tasks
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
     Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');

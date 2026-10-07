@@ -34,28 +34,24 @@ const mainNavItems: NavItem[] = [
         icon: FileCheck,
     },
     {
-        title: 'Compliance',
-        url: '#',
+        title: 'Requirements',
+        url: '/compliance/requirements',
         icon: FileCheck,
-        isActive: true,
-        items: [
-            {
-                title: 'Requirements',
-                url: '/compliance/requirements',
-            },
-            {
-                title: 'Submission Records',
-                url: '/compliance/submissions',
-            },
-            {
-                title: 'Pending Outputs',
-                url: '/compliance/pending-outputs',
-            },
-            {
-                title: 'Compliance Tracker',
-                url: '/compliance/tracker',
-            },
-        ],
+    },
+    {
+        title: 'Submission Records',
+        url: '/compliance/submissions',
+        icon: FileCheck,
+    },
+    {
+        title: 'Pending Outputs',
+        url: '/compliance/pending-outputs',
+        icon: FileCheck,
+    },
+    {
+        title: 'Compliance Tracker',
+        url: '/compliance/tracker',
+        icon: FileCheck,
     },
     {
         title: 'Tasks & Projects',
@@ -72,15 +68,41 @@ const mainNavItems: NavItem[] = [
         url: '/documents',
         icon: Send,
     },
+
     {
-        title: 'Meetings & Activities',
-        url: '/meetings',
+        title: 'Calendar',
+        url: '/schedule/calendar',
+        icon: Calendar,
+    },
+    {
+        title: 'Meetings',
+        url: '/schedule/meetings',
+        icon: Users,
+    },
+    {
+        title: 'Activities',
+        url: '/schedule/activities',
         icon: Calendar,
     },
     {
         title: 'Requests',
         url: '/requests',
         icon: Inbox,
+    },
+    {
+        title: 'Faculty Performance',
+        url: '/performance/faculty',
+        icon: Trophy,
+    },
+    {
+        title: 'Program Performance',
+        url: '/performance/program',
+        icon: Trophy,
+    },
+    {
+        title: 'Recognition Rules',
+        url: '/performance/rules',
+        icon: Trophy,
     },
 ];
 
