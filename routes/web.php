@@ -18,7 +18,7 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-Route::get('/tv', [TvDisplayController::class, 'index'])->name('tv');
+Route::get('/tv-display', [TvDisplayController::class, 'index'])->name('tv-display');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
