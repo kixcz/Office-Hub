@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { Plus, Trash2, Edit, MoreVertical, Eye, Trash } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
@@ -162,7 +162,14 @@ export default function ProgramsIndex({ programs }: Props) {
                                                             <Edit className="h-4 w-4 mr-2" />
                                                             Edit
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                        <DropdownMenuItem 
+                                                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                                            onClick={() => {
+                                                                if (confirm('Are you sure you want to delete this program?')) {
+                                                                    router.delete(`/programs/${program.id}`);
+                                                                }
+                                                            }}
+                                                        >
                                                             <Trash className="h-4 w-4 mr-2" />
                                                             Delete
                                                         </DropdownMenuItem>

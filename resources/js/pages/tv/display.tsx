@@ -199,11 +199,13 @@ function StatCard({
 
 function Panel({
     title,
+    icon: Icon,
     aside,
     className = '',
     children,
 }: {
     title: string;
+    icon?: LucideIcon;
     aside?: ReactNode;
     className?: string;
     children: ReactNode;
@@ -211,7 +213,10 @@ function Panel({
     return (
         <section className={`flex min-h-0 flex-col ${CARD} ${className}`}>
             <div className="flex items-center justify-between border-b border-slate-100 px-7 py-5 sticky top-0 bg-white/95 backdrop-blur z-10 shrink-0">
-                <h2 className="text-2xl font-semibold text-slate-900">{title}</h2>
+                <h2 className="flex items-center gap-3 text-2xl font-semibold text-slate-900">
+                    {Icon && <Icon size={28} className="text-blue-900" />}
+                    {title}
+                </h2>
                 {aside}
             </div>
             <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-6">{children}</div>
@@ -252,7 +257,7 @@ function SlideOne({ data, slideConfig }: any) {
             </div>
 
             <div className="grid min-h-0 flex-1 grid-cols-12 gap-6">
-                <Panel title="Announcements" className="col-span-5">
+                <Panel title="Announcements" icon={Megaphone} className="col-span-5">
                     {announcements.length > 0 ? (
                         <>
                             {announcements.map((a: any) => (
@@ -270,7 +275,7 @@ function SlideOne({ data, slideConfig }: any) {
                 </Panel>
 
                 <div className="col-span-7 flex min-h-0 flex-col gap-6">
-                    <Panel title="Today's schedule" className="flex-1 min-h-0">
+                    <Panel title="Today's schedule" icon={CalendarIcon} className="flex-1 min-h-0">
                         {schedule.length > 0 ? (
                             <>
                                 {schedule.map((item: any, i: number) => (
@@ -296,7 +301,7 @@ function SlideOne({ data, slideConfig }: any) {
                         )}
                     </Panel>
 
-                    <Panel title="Next 3 meetings" className="shrink-0">
+                    <Panel title="Next 3 meetings" icon={Clock} className="shrink-0">
                         {upcoming.length > 0 ? (
                             <div className="grid grid-cols-3 gap-4">
                                 {upcoming.map((m: any) => (
@@ -335,7 +340,7 @@ function SlideTwo({ data, slideConfig }: any) {
             </div>
 
             <div className="grid min-h-0 flex-1 grid-cols-12 gap-6">
-                <Panel title="This week" className="col-span-8">
+                <Panel title="This week" icon={CalendarIcon} className="col-span-8">
                     <div className="grid min-h-0 flex-1 grid-cols-5 gap-3">
                         {data.weekly_schedule.map((day: any, i: number) => {
                             const [weekday, date] = String(day.date).split(',');
@@ -372,7 +377,7 @@ function SlideTwo({ data, slideConfig }: any) {
                 </Panel>
 
                 <div className="col-span-4 flex min-h-0 flex-col gap-6">
-                    <Panel title="Upcoming meetings" className="flex-1 min-h-0">
+                    <Panel title="Upcoming meetings" icon={Clock} className="flex-1 min-h-0">
                         {meetings.length > 0 ? (
                             meetings.map((m: any) => (
                                 <div key={m.id} className="border-l-4 border-blue-900 py-0.5 pl-4">
@@ -388,7 +393,7 @@ function SlideTwo({ data, slideConfig }: any) {
                         )}
                     </Panel>
 
-                    <Panel title="Calendar highlights" className="flex-1 min-h-0">
+                    <Panel title="Calendar highlights" icon={AlertTriangle} className="flex-1 min-h-0">
                         {deadlines.length > 0 ? (
                             deadlines.map((d: any) => (
                                 <div
@@ -435,7 +440,7 @@ function SlideThree({ data, slideConfig }: any) {
             </div>
 
             <div className="grid min-h-0 flex-1 grid-cols-12 gap-6">
-                <Panel title="Compliance summary" className="col-span-5">
+                <Panel title="Compliance summary" icon={FileText} className="col-span-5">
                     <div className="flex flex-1 flex-col justify-start gap-6">
                         {summary.map((req: any) => (
                             <div key={req.id}>
@@ -454,7 +459,7 @@ function SlideThree({ data, slideConfig }: any) {
                     </div>
                 </Panel>
 
-                <Panel title="Top 6 pending faculty outputs" className="col-span-7">
+                <Panel title="Top 6 pending faculty outputs" icon={Clock} className="col-span-7">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="border-b border-slate-200 text-lg text-slate-500">
@@ -559,7 +564,7 @@ function SlideFour({ data, slideConfig }: any) {
                     </div>
                 </section>
 
-                <Panel title="Top performing faculty" className="col-span-7">
+                <Panel title="Top performing faculty" icon={Trophy} className="col-span-7">
                     {faculty.length > 0 ? (
                         faculty.map((f: any, i: number) => (
                             <div key={i} className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">

@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import { PlusCircle, Search, Megaphone, CalendarIcon, AlertCircle, MoreVertical, Edit, Trash, Eye } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
@@ -225,7 +225,11 @@ export default function AnnouncementsIndex({ announcements }: Props) {
                                                             </Link>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => {
+                                                            if (confirm('Are you sure you want to delete this announcement?')) {
+                                                                router.delete(`/announcements/${announcement.id}`);
+                                                            }
+                                                        }}>
                                                             <Trash className="mr-2 h-4 w-4" /> Delete
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>

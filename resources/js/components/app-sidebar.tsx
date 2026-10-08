@@ -29,7 +29,7 @@ const navGroups: NavGroup[] = [
         title: 'OPERATIONS',
         items: [
             { title: 'Programs', url: '/programs', icon: GraduationCap },
-            { title: 'Faculty Management', url: '/faculties', icon: Users },
+            { title: 'Faculty', url: '/faculties', icon: Users },
             { title: 'Calendar', url: '/schedule/calendar', icon: Calendar },
             { title: 'Meetings', url: '/schedule/meetings', icon: Users },
             { title: 'Activities', url: '/schedule/activities', icon: Calendar },

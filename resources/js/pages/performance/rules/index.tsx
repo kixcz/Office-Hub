@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
+import { Plus, Trash } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -92,10 +92,26 @@ export default function RulesIndex({ rules, recognitions }: any) {
                     <div className="flex flex-col gap-6">
                         {recognitions.map((rec: any, idx: number) => (
                             <div key={idx} className="border rounded-md p-4 bg-gray-50">
-                                <h3 className="font-bold text-lg text-blue-800">{rec.rule.title} <span className="text-sm font-normal text-gray-500">({rec.rule.type.toUpperCase()})</span></h3>
-                                <p className="text-sm text-gray-600 mb-2">
-                                    Min Reqs: {rec.rule.min_requirements} | Min On-Time: {rec.rule.min_on_time_rate}% | Min Comp: {rec.rule.min_compliance_rate}% | Allow Overdue: {rec.rule.allow_overdue ? 'Yes' : 'No'}
-                                </p>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="font-bold text-lg text-blue-800">{rec.rule.title} <span className="text-sm font-normal text-gray-500">({rec.rule.type.toUpperCase()})</span></h3>
+                                        <p className="text-sm text-gray-600 mb-2">
+                                            Min Reqs: {rec.rule.min_requirements} | Min On-Time: {rec.rule.min_on_time_rate}% | Min Comp: {rec.rule.min_compliance_rate}% | Allow Overdue: {rec.rule.allow_overdue ? 'Yes' : 'No'}
+                                        </p>
+                                    </div>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        onClick={() => {
+                                            if (confirm('Are you sure you want to delete this rule?')) {
+                                                router.delete(`/performance/rules/${rec.rule.id}`);
+                                            }
+                                        }}
+                                    >
+                                        <Trash className="h-4 w-4" />
+                                    </Button>
+                                </div>
                                 
                                 {rec.winners.length > 0 ? (
                                     <ul className="list-disc ml-6 mt-2">

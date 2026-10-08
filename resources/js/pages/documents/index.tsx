@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, router } from '@inertiajs/react';
-import { Send, Plus, Search, FileSignature, CheckCircle2, Clock, MapPin, Hash, MoreVertical, Edit } from 'lucide-react';
+import { Send, Plus, Search, FileSignature, CheckCircle2, Clock, MapPin, Hash, MoreVertical, Edit, Trash } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -250,6 +250,13 @@ export default function DocumentRoutingIndex({ documents }: Props) {
                                                             <DropdownMenuContent align="end">
                                                                 <DropdownMenuItem onClick={() => startUpdate(doc)}>
                                                                     <Edit className="mr-2 h-4 w-4" /> Update Status
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => {
+                                                                    if (confirm('Are you sure you want to delete this document?')) {
+                                                                        router.delete(`/documents/${doc.id}`);
+                                                                    }
+                                                                }}>
+                                                                    <Trash className="mr-2 h-4 w-4" /> Delete
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>

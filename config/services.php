@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'room_schedule' => [
+        'spreadsheet_id' => env('ROOM_SCHEDULE_SPREADSHEET_ID', '13LtlK6wopWwYf-7Q8rgmfOwEDo6gUMMJT32-xwEeVN8'),
+        'room_tab_pattern' => env('ROOM_SCHEDULE_TAB_PATTERN', '/^(CLR|COM|CHS)\s*\d*$/i'),
+        'timezone' => env('ROOM_SCHEDULE_TIMEZONE', 'Asia/Manila'),
+    ],
+
 ];

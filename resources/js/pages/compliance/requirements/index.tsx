@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -136,7 +136,14 @@ export default function RequirementsIndex({ requirements, programs }: any) {
                                                     <Edit className="h-4 w-4 mr-2" />
                                                     Edit
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                                                <DropdownMenuItem 
+                                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                    onClick={() => {
+                                                        if (confirm('Are you sure you want to delete this requirement?')) {
+                                                            router.delete(`/compliance/requirements/${req.id}`);
+                                                        }
+                                                    }}
+                                                >
                                                     <Trash className="h-4 w-4 mr-2" />
                                                     Delete
                                                 </DropdownMenuItem>

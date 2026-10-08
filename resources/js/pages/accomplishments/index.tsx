@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { Trophy, FileText, Download, Plus, Search, MoreVertical, Edit, Trash, Eye } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
@@ -184,7 +184,11 @@ export default function AccomplishmentsIndex({ accomplishments, is_admin }: Prop
                                                             <Edit className="h-4 w-4 mr-2" />
                                                             Edit
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => {
+                                                            if (confirm('Are you sure you want to delete this accomplishment?')) {
+                                                                router.delete(`/accomplishments/${acc.id}`);
+                                                            }
+                                                        }}>
                                                             <Trash className="h-4 w-4 mr-2" />
                                                             Delete
                                                         </DropdownMenuItem>

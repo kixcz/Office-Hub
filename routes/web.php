@@ -21,6 +21,7 @@ use App\Http\Controllers\Tv\PlaylistController;
 use App\Http\Controllers\Tv\SettingController;
 use App\Http\Controllers\Tv\SlideController;
 use App\Http\Controllers\TvDisplayController;
+use App\Http\Controllers\Faculty\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -90,6 +91,9 @@ Route::middleware(['auth'])->group(function () {
     // Programs & Faculties
     Route::resource('programs', ProgramController::class);
     Route::resource('faculties', FacultyController::class);
+
+    // Faculty Workspace
+    Route::get('/faculty/workspace', [WorkspaceController::class, 'index'])->name('faculty.workspace');
 });
 
 require __DIR__.'/settings.php';

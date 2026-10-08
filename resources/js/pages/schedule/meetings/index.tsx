@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
+import { Plus, MoreVertical, Trash } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -119,6 +120,7 @@ export default function MeetingsIndex({ meetings, programs }: any) {
                                 <th className="p-2">Venue</th>
                                 <th className="p-2">Status</th>
                                 <th className="p-2">Organizer</th>
+                                <th className="p-2 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -130,6 +132,29 @@ export default function MeetingsIndex({ meetings, programs }: any) {
                                     <td className="p-2">{meeting.venue}</td>
                                     <td className="p-2">{meeting.status}</td>
                                     <td className="p-2">{meeting.organizer?.name}</td>
+                                    <td className="p-2 text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem 
+                                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                    onClick={() => {
+                                                        if (confirm('Are you sure you want to delete this meeting?')) {
+                                                            router.delete(`/schedule/meetings/${meeting.id}`);
+                                                        }
+                                                    }}
+                                                >
+                                                    <Trash className="h-4 w-4 mr-2" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

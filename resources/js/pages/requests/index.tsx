@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, router } from '@inertiajs/react';
-import { ClipboardList, Plus, Search, Hammer, Package, Monitor, FileQuestion, UserCircle, MoreVertical, Edit } from 'lucide-react';
+import { ClipboardList, Plus, Search, Hammer, Package, Monitor, FileQuestion, UserCircle, MoreVertical, Edit, Trash } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -253,6 +253,13 @@ export default function RequestsIndex({ requests }: Props) {
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuItem onClick={() => startUpdate(request)}>
                                                             <Edit className="mr-2 h-4 w-4" /> Update Status
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => {
+                                                            if (confirm('Are you sure you want to delete this request?')) {
+                                                                router.delete(`/requests/${request.id}`);
+                                                            }
+                                                        }}>
+                                                            <Trash className="mr-2 h-4 w-4" /> Delete
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
