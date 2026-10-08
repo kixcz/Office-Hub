@@ -4,24 +4,24 @@ namespace App\Http\Controllers\Performance;
 
 use App\Http\Controllers\Controller;
 use App\Models\Faculty;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class FacultyPerformanceController extends Controller
 {
     public function index(Request $request)
     {
-        $faculties = Faculty::with(['program', 'submissions.requirement'])->get()->map(function($faculty) {
+        $faculties = Faculty::with(['program', 'submissions.requirement'])->get()->map(function ($faculty) {
             $totalRequirements = $faculty->submissions->count();
             $complied = 0;
             $onTime = 0;
             $late = 0;
             $overdue = 0;
 
-            foreach($faculty->submissions as $sub) {
+            foreach ($faculty->submissions as $sub) {
                 $dueDate = Carbon::parse($sub->requirement->due_date);
-                
+
                 if ($sub->submitted_at) {
                     $complied++;
                     $submittedAt = Carbon::parse($sub->submitted_at);
@@ -42,7 +42,7 @@ class FacultyPerformanceController extends Controller
 
             return [
                 'id' => $faculty->id,
-                'name' => $faculty->first_name . ' ' . $faculty->last_name,
+                'name' => $faculty->first_name.' '.$faculty->last_name,
                 'program' => $faculty->program ? $faculty->program->code : 'N/A',
                 'total_requirements' => $totalRequirements,
                 'complied' => $complied,
@@ -58,7 +58,7 @@ class FacultyPerformanceController extends Controller
         $faculties = $faculties->sortByDesc('on_time_rate')->values();
 
         return Inertia::render('performance/faculty/index', [
-            'performances' => $faculties
+            'performances' => $faculties,
         ]);
     }
 }

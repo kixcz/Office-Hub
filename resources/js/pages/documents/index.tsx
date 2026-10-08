@@ -1,7 +1,10 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, router } from '@inertiajs/react';
-import { Send, Plus, Search, FileSignature, CheckCircle2, Clock, MapPin, Hash } from 'lucide-react';
+import { Send, Plus, Search, FileSignature, CheckCircle2, Clock, MapPin, Hash, MoreVertical, Edit } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 interface User {
@@ -98,63 +101,63 @@ export default function DocumentRoutingIndex({ documents }: Props) {
                         <p className="text-sm text-muted-foreground">Track incoming and outgoing physical or digital documents.</p>
                     </div>
                     
-                    <button 
-                        onClick={() => setIsCreating(!isCreating)}
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                    >
-                        {isCreating ? 'Cancel' : <><Plus className="mr-2 h-4 w-4" /> Log Document</>}
-                    </button>
+                    <Dialog open={isCreating} onOpenChange={setIsCreating}>
+                        <DialogTrigger asChild>
+                            <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                <Plus className="mr-2 h-4 w-4" /> Log Document
+                            </button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px]">
+                            <DialogHeader>
+                                <DialogTitle>Log New Document</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={submitCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Document Title/Subject</label>
+                                    <input type="text" value={createData.title} onChange={e => setCreateData('title', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Type</label>
+                                    <select value={createData.type} onChange={e => setCreateData('type', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                        <option value="incoming">Incoming</option>
+                                        <option value="outgoing">Outgoing</option>
+                                        <option value="internal">Internal</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Initial Status</label>
+                                    <select value={createData.status} onChange={e => setCreateData('status', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                        <option value="received">Received</option>
+                                        <option value="in_review">In Review</option>
+                                        <option value="signed">Signed</option>
+                                        <option value="released">Released</option>
+                                    </select>
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Current Location (Optional)</label>
+                                    <input type="text" placeholder="e.g. Dean's Office, HR Dept" value={createData.current_location} onChange={e => setCreateData('current_location', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Remarks (Optional)</label>
+                                    <textarea value={createData.remarks} onChange={e => setCreateData('remarks', e.target.value)} className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                </div>
+
+                                <DialogFooter className="md:col-span-2 flex justify-end gap-2 mt-2">
+                                    <button type="button" onClick={() => setIsCreating(false)} className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent h-10 px-4 py-2">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" disabled={createProcessing} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50">
+                                        {createProcessing ? 'Saving...' : 'Log Document'}
+                                    </button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </div>
-
-                {isCreating && (
-                    <div className="bg-card border rounded-xl p-6 shadow-sm mb-4">
-                        <h2 className="text-lg font-semibold mb-4">Log New Document</h2>
-                        <form onSubmit={submitCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-1">Document Title/Subject</label>
-                                <input type="text" value={createData.title} onChange={e => setCreateData('title', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Type</label>
-                                <select value={createData.type} onChange={e => setCreateData('type', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                    <option value="incoming">Incoming</option>
-                                    <option value="outgoing">Outgoing</option>
-                                    <option value="internal">Internal</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Initial Status</label>
-                                <select value={createData.status} onChange={e => setCreateData('status', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                    <option value="received">Received</option>
-                                    <option value="in_review">In Review</option>
-                                    <option value="signed">Signed</option>
-                                    <option value="released">Released</option>
-                                </select>
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-1">Current Location (Optional)</label>
-                                <input type="text" placeholder="e.g. Dean's Office, HR Dept" value={createData.current_location} onChange={e => setCreateData('current_location', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-1">Remarks (Optional)</label>
-                                <textarea value={createData.remarks} onChange={e => setCreateData('remarks', e.target.value)} className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                            </div>
-
-                            <div className="md:col-span-2 flex justify-end gap-2 mt-2">
-                                <button type="button" onClick={() => setIsCreating(false)} className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent h-10 px-4 py-2">
-                                    Cancel
-                                </button>
-                                <button type="submit" disabled={createProcessing} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50">
-                                    {createProcessing ? 'Saving...' : 'Log Document'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
 
                 <div className="rounded-xl border bg-card text-card-foreground shadow flex-1 overflow-hidden">
                     {documents?.length === 0 ? (
@@ -237,9 +240,19 @@ export default function DocumentRoutingIndex({ documents }: Props) {
                                                         {doc.logger?.name}
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        <button onClick={() => startUpdate(doc)} className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3">
-                                                            Update Status
-                                                        </button>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                                    <span className="sr-only">Open menu</span>
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem onClick={() => startUpdate(doc)}>
+                                                                    <Edit className="mr-2 h-4 w-4" /> Update Status
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
                                                     </td>
                                                 </>
                                             )}

@@ -4,8 +4,6 @@ namespace App\Http\Controllers\Compliance;
 
 use App\Http\Controllers\Controller;
 use App\Models\Submission;
-use App\Models\Requirement;
-use App\Models\Program;
 use Inertia\Inertia;
 
 class ComplianceTrackerController extends Controller
@@ -17,7 +15,7 @@ class ComplianceTrackerController extends Controller
         $pendingSubmissions = Submission::whereNull('submitted_at')->count();
 
         $overdueSubmissions = Submission::whereNull('submitted_at')
-            ->whereHas('requirement', function($q) {
+            ->whereHas('requirement', function ($q) {
                 $q->where('due_date', '<', now());
             })->count();
 
@@ -32,7 +30,7 @@ class ComplianceTrackerController extends Controller
         ];
 
         return Inertia::render('compliance/tracker/index', [
-            'stats' => $stats
+            'stats' => $stats,
         ]);
     }
 }

@@ -1,7 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { FileUp, Calendar, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { FileUp, Calendar, CheckCircle2, Clock, AlertCircle, MoreVertical } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import { useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -173,14 +175,19 @@ export default function FacultyWorkspace({ requirements }: Props) {
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button 
-                                                    onClick={() => handleUploadClick(requirement.id)}
-                                                    disabled={uploadingId === requirement.id}
-                                                    className="inline-flex items-center justify-center rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 disabled:opacity-50"
-                                                >
-                                                    <FileUp className="w-3 h-3 mr-2" />
-                                                    {uploadingId === requirement.id ? 'Uploading...' : 'Upload'}
-                                                </button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Open menu</span>
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => handleUploadClick(requirement.id)} disabled={uploadingId === requirement.id}>
+                                                            <FileUp className="mr-2 h-4 w-4" /> {uploadingId === requirement.id ? 'Uploading...' : 'Upload'}
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </td>
                                         </tr>
                                     ))}

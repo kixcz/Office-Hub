@@ -12,19 +12,20 @@ class SlideController extends Controller
     public function index()
     {
         $slides = TvSlide::orderBy('order')->get();
+
         return Inertia::render('tv/slides/index', [
-            'slides' => $slides
+            'slides' => $slides,
         ]);
     }
 
     public function update(Request $request, TvSlide $slide)
     {
         $validated = $request->validate([
-            'config' => 'required|array'
+            'config' => 'required|array',
         ]);
 
         $slide->update([
-            'config' => $validated['config']
+            'config' => $validated['config'],
         ]);
 
         return redirect()->back();

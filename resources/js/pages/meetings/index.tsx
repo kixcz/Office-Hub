@@ -1,7 +1,10 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, router } from '@inertiajs/react';
-import { Calendar, Plus, Trash2, MapPin, Users, Tv } from 'lucide-react';
+import { Calendar, Plus, Trash2, MapPin, Users, Tv, MoreVertical, Edit } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 interface User {
@@ -74,59 +77,59 @@ export default function MeetingsIndex({ meetings }: Props) {
                         <p className="text-sm text-muted-foreground">Schedule and coordinate college events and meetings.</p>
                     </div>
                     
-                    <button 
-                        onClick={() => setIsCreating(!isCreating)}
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                    >
-                        {isCreating ? 'Cancel' : <><Plus className="mr-2 h-4 w-4" /> Schedule Event</>}
-                    </button>
+                    <Dialog open={isCreating} onOpenChange={setIsCreating}>
+                        <DialogTrigger asChild>
+                            <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                <Plus className="mr-2 h-4 w-4" /> Schedule Event
+                            </button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px]">
+                            <DialogHeader>
+                                <DialogTitle>Schedule New Event</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Title / Subject</label>
+                                    <input type="text" value={data.title} onChange={e => setData('title', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Start Time</label>
+                                    <input type="datetime-local" value={data.start_time} onChange={e => setData('start_time', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">End Time</label>
+                                    <input type="datetime-local" value={data.end_time} onChange={e => setData('end_time', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Location</label>
+                                    <input type="text" placeholder="e.g. Conference Room A" value={data.location} onChange={e => setData('location', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                </div>
+                                
+                                <div className="md:col-span-2 flex items-center gap-2">
+                                    <input type="checkbox" id="is_public" checked={data.is_public} onChange={e => setData('is_public', e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                                    <label htmlFor="is_public" className="text-sm font-medium">Show on TV Display</label>
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Description (Optional)</label>
+                                    <textarea value={data.description} onChange={e => setData('description', e.target.value)} className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                </div>
+
+                                <DialogFooter className="md:col-span-2 flex justify-end gap-2 mt-2">
+                                    <button type="button" onClick={() => setIsCreating(false)} className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent h-10 px-4 py-2">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" disabled={processing} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50">
+                                        {processing ? 'Saving...' : 'Schedule Event'}
+                                    </button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </div>
-
-                {isCreating && (
-                    <div className="bg-card border rounded-xl p-6 shadow-sm mb-4">
-                        <h2 className="text-lg font-semibold mb-4">Schedule New Event</h2>
-                        <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-1">Title / Subject</label>
-                                <input type="text" value={data.title} onChange={e => setData('title', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Start Time</label>
-                                <input type="datetime-local" value={data.start_time} onChange={e => setData('start_time', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">End Time</label>
-                                <input type="datetime-local" value={data.end_time} onChange={e => setData('end_time', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-1">Location</label>
-                                <input type="text" placeholder="e.g. Conference Room A" value={data.location} onChange={e => setData('location', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                            </div>
-                            
-                            <div className="md:col-span-2 flex items-center gap-2">
-                                <input type="checkbox" id="is_public" checked={data.is_public} onChange={e => setData('is_public', e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
-                                <label htmlFor="is_public" className="text-sm font-medium">Show on TV Display</label>
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-1">Description (Optional)</label>
-                                <textarea value={data.description} onChange={e => setData('description', e.target.value)} className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                            </div>
-
-                            <div className="md:col-span-2 flex justify-end gap-2 mt-2">
-                                <button type="button" onClick={() => setIsCreating(false)} className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent h-10 px-4 py-2">
-                                    Cancel
-                                </button>
-                                <button type="submit" disabled={processing} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50">
-                                    {processing ? 'Saving...' : 'Schedule Event'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 flex-1 auto-rows-max">
                     {meetings.length === 0 ? (

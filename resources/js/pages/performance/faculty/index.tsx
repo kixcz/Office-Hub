@@ -2,6 +2,8 @@ import React from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
+import { MoreVertical, Edit, Trash, Eye } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -27,6 +29,7 @@ export default function FacultyPerformanceIndex({ performances }: any) {
                                 <th className="p-2">Overdue</th>
                                 <th className="p-2">Comp. Rate</th>
                                 <th className="p-2">On-Time Rate</th>
+                                <th className="p-2 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -41,6 +44,29 @@ export default function FacultyPerformanceIndex({ performances }: any) {
                                     <td className="p-2 text-red-600">{perf.overdue}</td>
                                     <td className="p-2 font-bold">{perf.compliance_rate}%</td>
                                     <td className="p-2 font-bold">{perf.on_time_rate}%</td>
+                                    <td className="p-2 text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button className="p-2 hover:bg-gray-100 rounded-md">
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem>
+                                                    <Eye className="h-4 w-4 mr-2" />
+                                                    View
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem>
+                                                    <Edit className="h-4 w-4 mr-2" />
+                                                    Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                                                    <Trash className="h-4 w-4 mr-2" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

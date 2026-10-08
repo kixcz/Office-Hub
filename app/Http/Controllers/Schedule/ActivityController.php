@@ -16,12 +16,12 @@ class ActivityController extends Controller
             ->orderBy('date', 'desc')
             ->orderBy('start_time', 'desc')
             ->get();
-            
+
         $programs = Program::all();
-            
+
         return Inertia::render('schedule/activities/index', [
             'activities' => $activities,
-            'programs' => $programs
+            'programs' => $programs,
         ]);
     }
 
@@ -48,6 +48,7 @@ class ActivityController extends Controller
     public function destroy(Activity $activity)
     {
         $activity->delete();
+
         return redirect()->back();
     }
 }

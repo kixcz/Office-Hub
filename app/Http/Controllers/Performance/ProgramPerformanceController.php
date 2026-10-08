@@ -4,16 +4,15 @@ namespace App\Http\Controllers\Performance;
 
 use App\Http\Controllers\Controller;
 use App\Models\Program;
-use App\Models\Submission;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class ProgramPerformanceController extends Controller
 {
     public function index(Request $request)
     {
-        $programs = Program::with(['faculties.submissions.requirement'])->get()->map(function($program) {
+        $programs = Program::with(['faculties.submissions.requirement'])->get()->map(function ($program) {
             $totalRequirements = 0;
             $complied = 0;
             $onTime = 0;
@@ -21,14 +20,14 @@ class ProgramPerformanceController extends Controller
             $overdue = 0;
             $perfectComplianceCount = 0;
 
-            foreach($program->faculties as $faculty) {
+            foreach ($program->faculties as $faculty) {
                 $facultyTotal = $faculty->submissions->count();
                 $facultyComplied = 0;
 
-                foreach($faculty->submissions as $sub) {
+                foreach ($faculty->submissions as $sub) {
                     $totalRequirements++;
                     $dueDate = Carbon::parse($sub->requirement->due_date);
-                    
+
                     if ($sub->submitted_at) {
                         $complied++;
                         $facultyComplied++;
@@ -70,12 +69,12 @@ class ProgramPerformanceController extends Controller
         });
 
         // Rank primarily by on_time_rate, then compliance_rate, then least overdue
-        $programs = $programs->sortByDesc(function($p) {
+        $programs = $programs->sortByDesc(function ($p) {
             return $p['on_time_rate'] * 10000 + $p['compliance_rate'] * 100 - $p['overdue'];
         })->values();
 
         return Inertia::render('performance/program/index', [
-            'performances' => $programs
+            'performances' => $programs,
         ]);
     }
 }

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Meeting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class MeetingController extends Controller
 {
@@ -14,9 +13,9 @@ class MeetingController extends Controller
         $meetings = Meeting::with('organizer')
             ->orderBy('start_time', 'asc')
             ->get();
-            
+
         return Inertia::render('meetings/index', [
-            'meetings' => $meetings
+            'meetings' => $meetings,
         ]);
     }
 
@@ -41,6 +40,7 @@ class MeetingController extends Controller
     public function destroy(Meeting $meeting)
     {
         $meeting->delete();
+
         return redirect()->back();
     }
 }

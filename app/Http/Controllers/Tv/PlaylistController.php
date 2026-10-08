@@ -12,8 +12,9 @@ class PlaylistController extends Controller
     public function index()
     {
         $slides = TvSlide::orderBy('order')->get();
+
         return Inertia::render('tv/playlist/index', [
-            'slides' => $slides
+            'slides' => $slides,
         ]);
     }
 
@@ -22,17 +23,17 @@ class PlaylistController extends Controller
         $validated = $request->validate([
             'title' => 'required|string',
             'type' => 'required|string',
-            'duration_seconds' => 'required|integer|min:5'
+            'duration_seconds' => 'required|integer|min:5',
         ]);
 
         $maxOrder = TvSlide::max('order') ?? 0;
-        
+
         TvSlide::create([
             'title' => $validated['title'],
             'type' => $validated['type'],
             'duration_seconds' => $validated['duration_seconds'],
             'order' => $maxOrder + 1,
-            'config' => [] // default empty config
+            'config' => [], // default empty config
         ]);
 
         return redirect()->back();
@@ -41,18 +42,22 @@ class PlaylistController extends Controller
     public function update(Request $request, TvSlide $playlist)
     {
         $validated = $request->validate([
+            'title' => 'sometimes|string',
+            'type' => 'sometimes|string',
             'order' => 'sometimes|integer',
             'is_active' => 'sometimes|boolean',
-            'duration_seconds' => 'sometimes|integer|min:5'
+            'duration_seconds' => 'sometimes|integer|min:5',
         ]);
 
         $playlist->update($validated);
+
         return redirect()->back();
     }
 
     public function destroy(TvSlide $playlist)
     {
         $playlist->delete();
+
         return redirect()->back();
     }
 }

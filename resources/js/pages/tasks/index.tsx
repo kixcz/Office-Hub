@@ -3,6 +3,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { Plus, Clock, CheckCircle2, CircleDashed, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 
 interface User {
     id: number;
@@ -112,64 +113,64 @@ export default function TasksIndex({ tasks, users }: Props) {
                         <h1 className="text-2xl font-bold tracking-tight">Tasks & Projects</h1>
                         <p className="text-sm text-muted-foreground">Manage ongoing tasks, assign responsibilities, and track progress.</p>
                     </div>
-                    <button 
-                        onClick={() => setIsCreating(!isCreating)}
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                    >
-                        {isCreating ? 'Cancel' : <><Plus className="w-4 h-4 mr-2" /> New Task</>}
-                    </button>
+                    <Dialog open={isCreating} onOpenChange={setIsCreating}>
+                        <DialogTrigger asChild>
+                            <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                <Plus className="w-4 h-4 mr-2" /> New Task
+                            </button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px]">
+                            <DialogHeader>
+                                <DialogTitle>Create New Task</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={submitTask} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Title</label>
+                                    <input type="text" value={data.title} onChange={e => setData('title', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" required />
+                                    {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+                                </div>
+                                
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Description (Optional)</label>
+                                    <textarea value={data.description} onChange={e => setData('description', e.target.value)} className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Priority</label>
+                                    <select value={data.priority} onChange={e => setData('priority', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Due Date (Optional)</label>
+                                    <input type="date" value={data.due_date} onChange={e => setData('due_date', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Assign To (Optional)</label>
+                                    <select value={data.assigned_to} onChange={e => setData('assigned_to', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                        <option value="">Unassigned</option>
+                                        {users.map(u => (
+                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <DialogFooter className="md:col-span-2 flex justify-end gap-2 mt-2">
+                                    <button type="button" onClick={() => setIsCreating(false)} className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" disabled={processing} className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50">
+                                        {processing ? 'Saving...' : 'Create Task'}
+                                    </button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </div>
-
-                {isCreating && (
-                    <div className="bg-card border rounded-xl p-6 shadow-sm mb-4">
-                        <h2 className="text-lg font-semibold mb-4">Create New Task</h2>
-                        <form onSubmit={submitTask} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-1">Title</label>
-                                <input type="text" value={data.title} onChange={e => setData('title', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" required />
-                                {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
-                            </div>
-                            
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-1">Description (Optional)</label>
-                                <textarea value={data.description} onChange={e => setData('description', e.target.value)} className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Priority</label>
-                                <select value={data.priority} onChange={e => setData('priority', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Due Date (Optional)</label>
-                                <input type="date" value={data.due_date} onChange={e => setData('due_date', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Assign To (Optional)</label>
-                                <select value={data.assigned_to} onChange={e => setData('assigned_to', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                                    <option value="">Unassigned</option>
-                                    {users.map(u => (
-                                        <option key={u.id} value={u.id}>{u.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="md:col-span-2 flex justify-end gap-2 mt-2">
-                                <button type="button" onClick={() => setIsCreating(false)} className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                                    Cancel
-                                </button>
-                                <button type="submit" disabled={processing} className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50">
-                                    {processing ? 'Saving...' : 'Create Task'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 min-h-[500px]">
                     {/* To Do Column */}

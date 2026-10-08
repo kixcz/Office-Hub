@@ -25,4 +25,9 @@ class Faculty extends Model
     {
         return $this->belongsTo(Program::class);
     }
+
+    public function submissions()
+    {
+        return $this->hasMany(Submission::class);
+    }
 }

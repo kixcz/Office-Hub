@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Announcement extends Model
 {
     protected $fillable = [
-        'title', 'message', 'category', 'priority', 'destination', 
-        'status', 'author_id', 'publish_at', 'expire_at', 'requirement_id'
+        'title', 'message', 'category', 'priority', 'destination',
+        'status', 'author_id', 'publish_at', 'expire_at', 'requirement_id',
     ];
 
     public function requirement()

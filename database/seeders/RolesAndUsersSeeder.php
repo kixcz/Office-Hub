@@ -21,7 +21,7 @@ class RolesAndUsersSeeder extends Seeder
             'Office Secretary',
             'Coordinator',
             'Faculty Member',
-            'Display Screen'
+            'Display Screen',
         ];
 
         foreach ($roles as $roleName) {
@@ -30,7 +30,7 @@ class RolesAndUsersSeeder extends Seeder
 
         // Create Default Admin User
         $adminRole = Role::where('name', 'System Administrator')->first();
-        
+
         if ($adminRole) {
             $admin = User::firstOrCreate(
                 ['email' => 'admin@cids.edu'],
@@ -39,8 +39,8 @@ class RolesAndUsersSeeder extends Seeder
                     'password' => Hash::make('password'),
                 ]
             );
-            
-            if (!$admin->roles()->where('role_id', $adminRole->id)->exists()) {
+
+            if (! $admin->roles()->where('role_id', $adminRole->id)->exists()) {
                 $admin->roles()->attach($adminRole->id);
             }
         }

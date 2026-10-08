@@ -3,75 +3,80 @@
 namespace App\Http\Controllers\Performance;
 
 use App\Http\Controllers\Controller;
-use App\Models\RecognitionRule;
 use App\Models\Faculty;
 use App\Models\Program;
+use App\Models\RecognitionRule;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class RecognitionRuleController extends Controller
 {
     public function index()
     {
         $rules = RecognitionRule::all();
-        
+
         // Let's also evaluate the rules dynamically to show winners
-        $faculties = Faculty::with(['program', 'submissions.requirement'])->get()->map(function($f) {
+        $faculties = Faculty::with(['program', 'submissions.requirement'])->get()->map(function ($f) {
             $total = $f->submissions->count();
             $onTime = 0;
             $complied = 0;
             $overdue = 0;
-            foreach($f->submissions as $s) {
+            foreach ($f->submissions as $s) {
                 if ($s->submitted_at) {
                     $complied++;
-                    if (!Carbon::parse($s->submitted_at)->greaterThan(Carbon::parse($s->requirement->due_date))) {
+                    if (! Carbon::parse($s->submitted_at)->greaterThan(Carbon::parse($s->requirement->due_date))) {
                         $onTime++;
                     }
-                } else if (now()->greaterThan(Carbon::parse($s->requirement->due_date))) {
+                } elseif (now()->greaterThan(Carbon::parse($s->requirement->due_date))) {
                     $overdue++;
                 }
             }
+
             return [
                 'id' => $f->id,
-                'name' => $f->first_name . ' ' . $f->last_name,
+                'name' => $f->first_name.' '.$f->last_name,
                 'program' => $f->program ? $f->program->code : '',
                 'total' => $total,
-                'on_time_rate' => $total > 0 ? round(($onTime/$total)*100, 2) : 0,
-                'compliance_rate' => $total > 0 ? round(($complied/$total)*100, 2) : 0,
-                'overdue' => $overdue
+                'on_time_rate' => $total > 0 ? round(($onTime / $total) * 100, 2) : 0,
+                'compliance_rate' => $total > 0 ? round(($complied / $total) * 100, 2) : 0,
+                'overdue' => $overdue,
             ];
         });
 
-        $programs = Program::with(['faculties.submissions.requirement'])->get()->map(function($p) {
-            $total = 0; $onTime = 0; $complied = 0; $overdue = 0;
-            foreach($p->faculties as $f) {
-                foreach($f->submissions as $s) {
+        $programs = Program::with(['faculties.submissions.requirement'])->get()->map(function ($p) {
+            $total = 0;
+            $onTime = 0;
+            $complied = 0;
+            $overdue = 0;
+            foreach ($p->faculties as $f) {
+                foreach ($f->submissions as $s) {
                     $total++;
                     if ($s->submitted_at) {
                         $complied++;
-                        if (!Carbon::parse($s->submitted_at)->greaterThan(Carbon::parse($s->requirement->due_date))) {
+                        if (! Carbon::parse($s->submitted_at)->greaterThan(Carbon::parse($s->requirement->due_date))) {
                             $onTime++;
                         }
-                    } else if (now()->greaterThan(Carbon::parse($s->requirement->due_date))) {
+                    } elseif (now()->greaterThan(Carbon::parse($s->requirement->due_date))) {
                         $overdue++;
                     }
                 }
             }
+
             return [
                 'id' => $p->id,
                 'name' => $p->code,
                 'total' => $total,
-                'on_time_rate' => $total > 0 ? round(($onTime/$total)*100, 2) : 0,
-                'compliance_rate' => $total > 0 ? round(($complied/$total)*100, 2) : 0,
-                'overdue' => $overdue
+                'on_time_rate' => $total > 0 ? round(($onTime / $total) * 100, 2) : 0,
+                'compliance_rate' => $total > 0 ? round(($complied / $total) * 100, 2) : 0,
+                'overdue' => $overdue,
             ];
         });
 
         $recognitions = [];
-        foreach($rules as $rule) {
+        foreach ($rules as $rule) {
             if ($rule->type === 'faculty') {
-                $candidates = $faculties->filter(function($c) use ($rule) {
+                $candidates = $faculties->filter(function ($c) use ($rule) {
                     return $c['total'] >= $rule->min_requirements &&
                            $c['on_time_rate'] >= $rule->min_on_time_rate &&
                            $c['compliance_rate'] >= $rule->min_compliance_rate &&
@@ -79,7 +84,7 @@ class RecognitionRuleController extends Controller
                 })->sortByDesc('on_time_rate')->values();
                 $recognitions[] = ['rule' => $rule, 'winners' => $candidates];
             } else {
-                $candidates = $programs->filter(function($c) use ($rule) {
+                $candidates = $programs->filter(function ($c) use ($rule) {
                     return $c['total'] >= $rule->min_requirements &&
                            $c['on_time_rate'] >= $rule->min_on_time_rate &&
                            $c['compliance_rate'] >= $rule->min_compliance_rate &&
@@ -91,7 +96,7 @@ class RecognitionRuleController extends Controller
 
         return Inertia::render('performance/rules/index', [
             'rules' => $rules,
-            'recognitions' => $recognitions
+            'recognitions' => $recognitions,
         ]);
     }
 
@@ -103,16 +108,18 @@ class RecognitionRuleController extends Controller
             'min_requirements' => 'required|integer|min:0',
             'min_on_time_rate' => 'required|numeric|min:0|max:100',
             'min_compliance_rate' => 'required|numeric|min:0|max:100',
-            'allow_overdue' => 'boolean'
+            'allow_overdue' => 'boolean',
         ]);
 
         RecognitionRule::create($validated);
+
         return redirect()->back();
     }
 
-    public function destroy(RecognitionRule $recognition_rule) // binding is singular for routes usually, lets make sure parameter name matches route
+    public function destroy(RecognitionRule $rule)
     {
-        $recognition_rule->delete();
+        $rule->delete();
+
         return redirect()->back();
     }
 }

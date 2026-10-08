@@ -1,8 +1,11 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
-import { PlusCircle, Search, Megaphone, CalendarIcon, AlertCircle } from 'lucide-react';
-
+import { Head, Link, useForm } from '@inertiajs/react';
+import { PlusCircle, Search, Megaphone, CalendarIcon, AlertCircle, MoreVertical, Edit, Trash, Eye } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { useState, FormEventHandler } from 'react';
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Announcements',
@@ -36,6 +39,29 @@ interface Props {
 }
 
 export default function AnnouncementsIndex({ announcements }: Props) {
+    const [isCreating, setIsCreating] = useState(false);
+    
+    const { data, setData, post, processing, errors, reset } = useForm({
+        title: '',
+        message: '',
+        category: '',
+        priority: 'normal',
+        destination: 'public',
+        status: 'draft',
+        publish_at: '',
+        expire_at: '',
+    });
+
+    const submitCreate: FormEventHandler = (e) => {
+        e.preventDefault();
+        post('/announcements', {
+            onSuccess: () => {
+                setIsCreating(false);
+                reset();
+            }
+        });
+    };
+
     const getPriorityBadge = (priority: string) => {
         switch (priority) {
             case 'urgent':
@@ -70,13 +96,53 @@ export default function AnnouncementsIndex({ announcements }: Props) {
                         <p className="text-sm text-muted-foreground">Manage official communications for the college and public displays.</p>
                     </div>
                     
-                    <Link
-                        href="/announcements/create"
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                    >
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        New Announcement
-                    </Link>
+                    <Dialog open={isCreating} onOpenChange={setIsCreating}>
+                        <DialogTrigger asChild>
+                            <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                New Announcement
+                            </button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[700px]">
+                            <DialogHeader>
+                                <DialogTitle>Create Announcement</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={submitCreate} className="space-y-4 mt-4">
+                                <div className="grid gap-2">
+                                    <label htmlFor="title" className="text-sm font-medium">Title *</label>
+                                    <input id="title" type="text" value={data.title} onChange={e => setData('title', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
+                                    {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
+                                </div>
+                                <div className="grid gap-2">
+                                    <label htmlFor="message" className="text-sm font-medium">Message *</label>
+                                    <textarea id="message" value={data.message} onChange={e => setData('message', e.target.value)} rows={4} className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
+                                    {errors.message && <p className="text-sm text-destructive">{errors.message}</p>}
+                                </div>
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <label htmlFor="category" className="text-sm font-medium">Category</label>
+                                        <input id="category" type="text" value={data.category} onChange={e => setData('category', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="e.g. Academic, Event" />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <label htmlFor="priority" className="text-sm font-medium">Priority</label>
+                                        <select id="priority" value={data.priority} onChange={e => setData('priority', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                            <option value="normal">Normal</option>
+                                            <option value="high">High</option>
+                                            <option value="urgent">Urgent</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <button type="button" onClick={() => setIsCreating(false)} className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent h-10 px-4 py-2">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" disabled={processing} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50">
+                                        {processing ? 'Saving...' : 'Save Announcement'}
+                                    </button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </div>
 
                 {/* Filters and Search - Placeholder */}
@@ -100,13 +166,13 @@ export default function AnnouncementsIndex({ announcements }: Props) {
                             <p className="text-sm text-muted-foreground mt-2 max-w-sm">
                                 Get started by creating a new announcement for the faculty or public screens.
                             </p>
-                            <Link
-                                href="/announcements/create"
+                            <button
+                                onClick={() => setIsCreating(true)}
                                 className="mt-4 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
                             >
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Create Announcement
-                            </Link>
+                            </button>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
@@ -140,12 +206,30 @@ export default function AnnouncementsIndex({ announcements }: Props) {
                                                 {announcement.author?.name || 'System'}
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <Link 
-                                                    href={`/announcements/${announcement.id}/edit`}
-                                                    className="text-primary hover:underline font-medium"
-                                                >
-                                                    Edit
-                                                </Link>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Open menu</span>
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/announcements/${announcement.id}`}>
+                                                                <Eye className="mr-2 h-4 w-4" /> View
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/announcements/${announcement.id}/edit`}>
+                                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                                                            <Trash className="mr-2 h-4 w-4" /> Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </td>
                                         </tr>
                                     ))}

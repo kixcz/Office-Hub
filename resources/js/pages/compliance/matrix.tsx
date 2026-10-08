@@ -1,7 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { ClipboardList, Filter, Search, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { ClipboardList, Filter, Search, CheckCircle2, Clock, AlertCircle, MoreVertical, Eye } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -135,12 +137,21 @@ export default function ComplianceMatrix({ requirements }: Props) {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <Link 
-                                                    href={`/requirements/${requirement.id}`}
-                                                    className="inline-flex items-center justify-center rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3"
-                                                >
-                                                    View Details
-                                                </Link>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Open menu</span>
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/requirements/${requirement.id}`}>
+                                                                <Eye className="mr-2 h-4 w-4" /> View Details
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </td>
                                         </tr>
                                     ))}

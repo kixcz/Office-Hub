@@ -1,7 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { FileText, Download, Check, X, AlertCircle } from 'lucide-react';
+import { FileText, Download, Check, X, AlertCircle, MoreVertical, Edit } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 export default function RequirementShow({ requirement }: { requirement: any }) {
@@ -100,12 +102,19 @@ export default function RequirementShow({ requirement }: { requirement: any }) {
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <button 
-                                                        onClick={() => setReviewingId(submission.id)}
-                                                        className="inline-flex items-center justify-center rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3"
-                                                    >
-                                                        Review
-                                                    </button>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                                                <span className="sr-only">Open menu</span>
+                                                                <MoreVertical className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={() => setReviewingId(submission.id)}>
+                                                                <Edit className="mr-2 h-4 w-4" /> Review
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                 )}
                                             </td>
                                         </tr>

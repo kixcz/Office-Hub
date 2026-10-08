@@ -19,12 +19,12 @@ return new class extends Migration
             $table->string('priority')->default('normal'); // normal, high, urgent
             $table->string('destination')->default('public'); // public, office
             $table->string('status')->default('draft'); // draft, approval, scheduled, active, archived
-            
+
             $table->foreignId('author_id')->constrained('users')->cascadeOnDelete();
-            
+
             $table->timestamp('publish_at')->nullable();
             $table->timestamp('expire_at')->nullable();
-            
+
             $table->timestamps();
         });
     }

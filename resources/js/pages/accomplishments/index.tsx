@@ -1,8 +1,10 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Trophy, FileText, Download, Plus, Search } from 'lucide-react';
+import { Trophy, FileText, Download, Plus, Search, MoreVertical, Edit, Trash, Eye } from 'lucide-react';
 import { useState, useRef } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface User {
     id: number;
@@ -63,63 +65,63 @@ export default function AccomplishmentsIndex({ accomplishments, is_admin }: Prop
                         <p className="text-sm text-muted-foreground">Track certifications, research, seminars, and awards.</p>
                     </div>
                     
-                    <button 
-                        onClick={() => setIsCreating(!isCreating)}
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                    >
-                        {isCreating ? 'Cancel' : <><Plus className="mr-2 h-4 w-4" /> Add Accomplishment</>}
-                    </button>
+                    <Dialog open={isCreating} onOpenChange={setIsCreating}>
+                        <DialogTrigger asChild>
+                            <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                <Plus className="mr-2 h-4 w-4" /> Add Accomplishment
+                            </button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px]">
+                            <DialogHeader>
+                                <DialogTitle>Log New Accomplishment</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Title</label>
+                                    <input type="text" value={data.title} onChange={e => setData('title', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" required />
+                                    {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Category</label>
+                                    <select value={data.category} onChange={e => setData('category', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                        <option value="certification">Certification</option>
+                                        <option value="research">Research/Publication</option>
+                                        <option value="seminar">Seminar/Training</option>
+                                        <option value="award">Award</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                    {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Date Achieved</label>
+                                    <input type="date" value={data.date_achieved} onChange={e => setData('date_achieved', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" required />
+                                    {errors.date_achieved && <p className="text-red-500 text-xs mt-1">{errors.date_achieved}</p>}
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Description (Optional)</label>
+                                    <textarea value={data.description} onChange={e => setData('description', e.target.value)} className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Proof Document (Optional)</label>
+                                    <input type="file" ref={fileInputRef} onChange={e => setData('proof_file', e.target.files?.[0] || null)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
+                                </div>
+
+                                <DialogFooter className="md:col-span-2 flex justify-end gap-2 mt-2">
+                                    <button type="button" onClick={() => setIsCreating(false)} className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" disabled={processing} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50">
+                                        {processing ? 'Saving...' : 'Save Accomplishment'}
+                                    </button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </div>
-
-                {isCreating && (
-                    <div className="bg-card border rounded-xl p-6 shadow-sm mb-4">
-                        <h2 className="text-lg font-semibold mb-4">Log New Accomplishment</h2>
-                        <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-1">Title</label>
-                                <input type="text" value={data.title} onChange={e => setData('title', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" required />
-                                {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Category</label>
-                                <select value={data.category} onChange={e => setData('category', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                                    <option value="certification">Certification</option>
-                                    <option value="research">Research/Publication</option>
-                                    <option value="seminar">Seminar/Training</option>
-                                    <option value="award">Award</option>
-                                    <option value="other">Other</option>
-                                </select>
-                                {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Date Achieved</label>
-                                <input type="date" value={data.date_achieved} onChange={e => setData('date_achieved', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" required />
-                                {errors.date_achieved && <p className="text-red-500 text-xs mt-1">{errors.date_achieved}</p>}
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-1">Description (Optional)</label>
-                                <textarea value={data.description} onChange={e => setData('description', e.target.value)} className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-1">Proof Document (Optional)</label>
-                                <input type="file" ref={fileInputRef} onChange={e => setData('proof_file', e.target.files?.[0] || null)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
-                            </div>
-
-                            <div className="md:col-span-2 flex justify-end gap-2 mt-2">
-                                <button type="button" onClick={() => setIsCreating(false)} className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                                    Cancel
-                                </button>
-                                <button type="submit" disabled={processing} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50">
-                                    {processing ? 'Saving...' : 'Save Accomplishment'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
 
                 <div className="rounded-xl border bg-card text-card-foreground shadow flex-1 overflow-hidden">
                     {accomplishments?.length === 0 ? (
@@ -165,6 +167,29 @@ export default function AccomplishmentsIndex({ accomplishments, is_admin }: Prop
                                                 ) : (
                                                     <span className="text-muted-foreground text-xs italic">No file</span>
                                                 )}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <button className="p-2 hover:bg-gray-100 rounded-md">
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem>
+                                                            <Eye className="h-4 w-4 mr-2" />
+                                                            View
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem>
+                                                            <Edit className="h-4 w-4 mr-2" />
+                                                            Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                                                            <Trash className="h-4 w-4 mr-2" />
+                                                            Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </td>
                                         </tr>
                                     ))}

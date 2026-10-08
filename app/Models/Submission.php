@@ -31,9 +31,10 @@ class Submission extends Model
 
     public function getIsLateAttribute()
     {
-        if (!$this->submitted_at) {
+        if (! $this->submitted_at) {
             return now()->greaterThan($this->requirement->due_date);
         }
+
         return clone $this->submitted_at->greaterThan($this->requirement->due_date);
     }
 }

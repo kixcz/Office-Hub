@@ -7,7 +7,6 @@ use App\Models\Meeting;
 use App\Models\Program;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class MeetingController extends Controller
 {
@@ -17,12 +16,12 @@ class MeetingController extends Controller
             ->orderBy('date', 'desc')
             ->orderBy('start_time', 'desc')
             ->get();
-            
+
         $programs = Program::all();
-            
+
         return Inertia::render('schedule/meetings/index', [
             'meetings' => $meetings,
-            'programs' => $programs
+            'programs' => $programs,
         ]);
     }
 
@@ -50,6 +49,7 @@ class MeetingController extends Controller
     public function destroy(Meeting $meeting)
     {
         $meeting->delete();
+
         return redirect()->back();
     }
 }

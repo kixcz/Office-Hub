@@ -21,13 +21,11 @@ export default function TvLayout({ children, currentTerm }: { children: React.Re
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white flex flex-col font-sans overflow-hidden">
+        <div className="h-screen bg-gray-900 text-white flex flex-col font-sans overflow-hidden">
             {/* Header */}
-            <header className="bg-gray-800 text-white px-8 py-4 flex justify-between items-center border-b border-gray-700 shadow-sm z-10 shrink-0">
+            <header className="bg-gray-800 text-white px-8 py-4 flex justify-between items-center border-b border-gray-700 shadow-sm z-50 shrink-0 sticky top-0">
                 <div className="flex items-center gap-3">
-                    <div className="bg-blue-600 text-white p-2 rounded-lg font-bold text-xl leading-none">
-                        CIDS
-                    </div>
+                    <img src="/CIDS_Logo.jpg" alt="CIDS Logo" className="h-10 w-auto rounded-md bg-white object-contain" />
                     <span className="text-xl font-semibold tracking-tight">OfficeHub TV</span>
                 </div>
                 
@@ -48,7 +46,7 @@ export default function TvLayout({ children, currentTerm }: { children: React.Re
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 relative overflow-hidden bg-gray-100 text-gray-900 p-6 flex flex-col">
+            <main className="flex-1 relative overflow-hidden bg-gray-100 text-gray-900 flex flex-col">
                 {children}
             </main>
 

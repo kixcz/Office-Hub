@@ -1,7 +1,10 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, router } from '@inertiajs/react';
-import { ClipboardList, Plus, Search, Hammer, Package, Monitor, FileQuestion, UserCircle } from 'lucide-react';
+import { ClipboardList, Plus, Search, Hammer, Package, Monitor, FileQuestion, UserCircle, MoreVertical, Edit } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 interface User {
@@ -103,60 +106,60 @@ export default function RequestsIndex({ requests }: Props) {
                         <p className="text-sm text-muted-foreground">Submit and track administrative, technical, and supply requests.</p>
                     </div>
                     
-                    <button 
-                        onClick={() => setIsCreating(!isCreating)}
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                    >
-                        {isCreating ? 'Cancel' : <><Plus className="mr-2 h-4 w-4" /> New Request</>}
-                    </button>
-                </div>
-
-                {isCreating && (
-                    <div className="bg-card border rounded-xl p-6 shadow-sm mb-4">
-                        <h2 className="text-lg font-semibold mb-4">Submit Office Request</h2>
-                        <form onSubmit={submitCreate} className="grid grid-cols-1 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Title / Subject</label>
-                                <input type="text" value={createData.title} onChange={e => setCreateData('title', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Request Type</label>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
-                                    {[
-                                        { id: 'supplies', icon: Package, label: 'Supplies' },
-                                        { id: 'maintenance', icon: Hammer, label: 'Maintenance' },
-                                        { id: 'technical', icon: Monitor, label: 'Technical Support' },
-                                        { id: 'other', icon: FileQuestion, label: 'Other' },
-                                    ].map((type) => (
-                                        <div 
-                                            key={type.id}
-                                            onClick={() => setCreateData('type', type.id as any)}
-                                            className={`cursor-pointer rounded-md border p-3 flex flex-col items-center justify-center text-center gap-2 transition-colors ${createData.type === type.id ? 'bg-primary/10 border-primary' : 'hover:bg-muted'}`}
-                                        >
-                                            <type.icon className={`h-6 w-6 ${createData.type === type.id ? 'text-primary' : 'text-muted-foreground'}`} />
-                                            <span className="text-xs font-medium">{type.label}</span>
-                                        </div>
-                                    ))}
+                    <Dialog open={isCreating} onOpenChange={setIsCreating}>
+                        <DialogTrigger asChild>
+                            <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                                <Plus className="mr-2 h-4 w-4" /> New Request
+                            </button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px]">
+                            <DialogHeader>
+                                <DialogTitle>Submit Office Request</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={submitCreate} className="grid grid-cols-1 gap-4 mt-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Title / Subject</label>
+                                    <input type="text" value={createData.title} onChange={e => setCreateData('title', e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
                                 </div>
-                            </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Request Type</label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                                        {[
+                                            { id: 'supplies', icon: Package, label: 'Supplies' },
+                                            { id: 'maintenance', icon: Hammer, label: 'Maintenance' },
+                                            { id: 'technical', icon: Monitor, label: 'Technical Support' },
+                                            { id: 'other', icon: FileQuestion, label: 'Other' },
+                                        ].map((type) => (
+                                            <div 
+                                                key={type.id}
+                                                onClick={() => setCreateData('type', type.id as any)}
+                                                className={`cursor-pointer rounded-md border p-3 flex flex-col items-center justify-center text-center gap-2 transition-colors ${createData.type === type.id ? 'bg-primary/10 border-primary' : 'hover:bg-muted'}`}
+                                            >
+                                                <type.icon className={`h-6 w-6 ${createData.type === type.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                                                <span className="text-xs font-medium">{type.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
 
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Detailed Description</label>
-                                <textarea value={createData.description} onChange={e => setCreateData('description', e.target.value)} className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required placeholder="Provide details about what you need..." />
-                            </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Detailed Description</label>
+                                    <textarea value={createData.description} onChange={e => setCreateData('description', e.target.value)} className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required placeholder="Provide details about what you need..." />
+                                </div>
 
-                            <div className="flex justify-end gap-2 mt-2">
-                                <button type="button" onClick={() => setIsCreating(false)} className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent h-10 px-4 py-2">
-                                    Cancel
-                                </button>
-                                <button type="submit" disabled={createProcessing} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50">
-                                    {createProcessing ? 'Submitting...' : 'Submit Request'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
+                                <DialogFooter className="flex justify-end gap-2 mt-2">
+                                    <button type="button" onClick={() => setIsCreating(false)} className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent h-10 px-4 py-2">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" disabled={createProcessing} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:opacity-50">
+                                        {createProcessing ? 'Submitting...' : 'Submit Request'}
+                                    </button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
 
                 <div className="grid gap-4 flex-1 auto-rows-max">
                     {requests.length === 0 ? (
@@ -239,12 +242,21 @@ export default function RequestsIndex({ requests }: Props) {
                                     ) : (
                                         <div className="flex flex-col gap-2">
                                             <p className="text-xs text-center text-muted-foreground mb-2">Admin Actions</p>
-                                            <button 
-                                                onClick={() => startUpdate(request)} 
-                                                className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4"
-                                            >
-                                                Update Status
-                                            </button>
+                                            <div className="flex justify-center">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Open menu</span>
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => startUpdate(request)}>
+                                                            <Edit className="mr-2 h-4 w-4" /> Update Status
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

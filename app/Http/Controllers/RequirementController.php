@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Requirement;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class RequirementController extends Controller
 {
@@ -15,16 +16,16 @@ class RequirementController extends Controller
     public function facultyWorkspace()
     {
         $user = Auth::user();
-        $requirements = Requirement::with(['submissions' => function($query) use ($user) {
+        $requirements = Requirement::with(['submissions' => function ($query) use ($user) {
             $query->where('user_id', $user->id)->latest();
         }])
-        ->where('user_id', $user->id)
-        ->orWhereNull('user_id') // Global requirements assigned to all
-        ->orderBy('due_date', 'asc')
-        ->paginate(10);
+            ->where('user_id', $user->id)
+            ->orWhereNull('user_id') // Global requirements assigned to all
+            ->orderBy('due_date', 'asc')
+            ->paginate(10);
 
         return Inertia::render('faculty/workspace', [
-            'requirements' => $requirements
+            'requirements' => $requirements,
         ]);
     }
 
@@ -39,24 +40,25 @@ class RequirementController extends Controller
             ->paginate(15);
 
         return Inertia::render('compliance/matrix', [
-            'requirements' => $requirements
+            'requirements' => $requirements,
         ]);
     }
 
     public function show(Requirement $requirement)
     {
         $requirement->load(['user', 'submissions.user']);
-        
+
         return Inertia::render('compliance/show', [
-            'requirement' => $requirement
+            'requirement' => $requirement,
         ]);
     }
 
     public function create()
     {
-        $users = \App\Models\User::all(['id', 'name']); // To select who to assign to
+        $users = User::all(['id', 'name']); // To select who to assign to
+
         return Inertia::render('compliance/create', [
-            'users' => $users
+            'users' => $users,
         ]);
     }
 

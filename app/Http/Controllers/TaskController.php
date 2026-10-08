@@ -14,12 +14,12 @@ class TaskController extends Controller
         $tasks = Task::with(['creator', 'assignee'])
             ->orderBy('due_date', 'asc')
             ->get();
-            
+
         $users = User::all(['id', 'name']);
 
         return Inertia::render('tasks/index', [
             'tasks' => $tasks,
-            'users' => $users
+            'users' => $users,
         ]);
     }
 

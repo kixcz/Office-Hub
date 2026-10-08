@@ -15,15 +15,15 @@ class SubmissionController extends Controller
             ->whereNotNull('submitted_at')
             ->latest('submitted_at')
             ->get();
-            
+
         // For the manual entry form, we might need all pending submissions
         $pendingSubmissions = Submission::with(['faculty', 'requirement.program'])
             ->whereNull('submitted_at')
             ->get();
-            
+
         return Inertia::render('compliance/submissions/index', [
             'submissions' => $submissions,
-            'pendingSubmissions' => $pendingSubmissions
+            'pendingSubmissions' => $pendingSubmissions,
         ]);
     }
 
@@ -32,7 +32,7 @@ class SubmissionController extends Controller
         $validated = $request->validate([
             'submitted_at' => 'required|date',
             'reviewer_comments' => 'nullable|string',
-            'status' => 'required|string'
+            'status' => 'required|string',
         ]);
 
         $submission->update($validated);

@@ -2,6 +2,8 @@ import React from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
+import { MoreVertical, Eye, Edit, Trash } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -23,6 +25,7 @@ export default function PendingOutputsIndex({ pendingSubmissions }: any) {
                                 <th className="p-2">Program</th>
                                 <th className="p-2">Deadline</th>
                                 <th className="p-2">Urgency</th>
+                                <th className="p-2 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -41,11 +44,34 @@ export default function PendingOutputsIndex({ pendingSubmissions }: any) {
                                             {sub.urgency}
                                         </span>
                                     </td>
+                                    <td className="p-2 text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button className="p-2 hover:bg-muted rounded-md">
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem>
+                                                    <Eye className="h-4 w-4 mr-2" />
+                                                    View
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem>
+                                                    <Edit className="h-4 w-4 mr-2" />
+                                                    Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                    <Trash className="h-4 w-4 mr-2" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </td>
                                 </tr>
                             ))}
                             {pendingSubmissions.length === 0 && (
                                 <tr>
-                                    <td colSpan={5} className="p-4 text-center text-gray-500">No pending outputs!</td>
+                                    <td colSpan={6} className="p-4 text-center text-gray-500">No pending outputs!</td>
                                 </tr>
                             )}
                         </tbody>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Compliance;
 
 use App\Http\Controllers\Controller;
 use App\Models\Submission;
+use Carbon\Carbon;
 use Inertia\Inertia;
 
 class PendingOutputController extends Controller
@@ -14,9 +15,9 @@ class PendingOutputController extends Controller
             ->whereNull('submitted_at')
             ->get()
             ->map(function ($submission) {
-                $dueDate = \Carbon\Carbon::parse($submission->requirement->due_date);
+                $dueDate = Carbon::parse($submission->requirement->due_date);
                 $now = now();
-                
+
                 if ($now->greaterThan($dueDate)) {
                     $urgency = 'Overdue';
                 } elseif ($now->diffInDays($dueDate, false) === 0) {
@@ -26,13 +27,14 @@ class PendingOutputController extends Controller
                 } else {
                     $urgency = 'Pending';
                 }
-                
+
                 $submission->urgency = $urgency;
+
                 return $submission;
             });
 
         return Inertia::render('compliance/pending-outputs/index', [
-            'pendingSubmissions' => $pendingSubmissions
+            'pendingSubmissions' => $pendingSubmissions,
         ]);
     }
 }

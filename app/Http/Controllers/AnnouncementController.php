@@ -14,7 +14,7 @@ class AnnouncementController extends Controller
     public function index()
     {
         $announcements = Announcement::with('author')->latest()->paginate(10);
-        
+
         return Inertia::render('announcements/index', [
             'announcements' => $announcements,
         ]);
@@ -65,7 +65,7 @@ class AnnouncementController extends Controller
     public function edit(Announcement $announcement)
     {
         return Inertia::render('announcements/edit', [
-            'announcement' => $announcement
+            'announcement' => $announcement,
         ]);
     }
 

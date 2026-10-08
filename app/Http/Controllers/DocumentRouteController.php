@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\DocumentRoute;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class DocumentRouteController extends Controller
 {
@@ -16,7 +16,7 @@ class DocumentRouteController extends Controller
             ->get();
 
         return Inertia::render('documents/index', [
-            'documents' => $documents
+            'documents' => $documents,
         ]);
     }
 

@@ -8,6 +8,6 @@ class TvSetting extends Model
 {
     protected $fillable = [
         'key',
-        'value'
+        'value',
     ];
 }

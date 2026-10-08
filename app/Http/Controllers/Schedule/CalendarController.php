@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Schedule;
 
 use App\Http\Controllers\Controller;
-use App\Models\Meeting;
 use App\Models\Activity;
+use App\Models\Meeting;
 use App\Models\Requirement;
 use Inertia\Inertia;
 
@@ -12,7 +12,7 @@ class CalendarController extends Controller
 {
     public function index()
     {
-        $meetings = Meeting::with('program')->get()->map(function($m) {
+        $meetings = Meeting::with('program')->get()->map(function ($m) {
             return [
                 'id' => 'm_'.$m->id,
                 'type' => 'meeting',
@@ -26,7 +26,7 @@ class CalendarController extends Controller
             ];
         });
 
-        $activities = Activity::with('program')->get()->map(function($a) {
+        $activities = Activity::with('program')->get()->map(function ($a) {
             return [
                 'id' => 'a_'.$a->id,
                 'type' => 'activity',
@@ -39,12 +39,12 @@ class CalendarController extends Controller
                 'program' => $a->program ? $a->program->code : 'All',
             ];
         });
-        
-        $requirements = Requirement::with('program')->get()->map(function($r) {
+
+        $requirements = Requirement::with('program')->get()->map(function ($r) {
             return [
                 'id' => 'r_'.$r->id,
                 'type' => 'deadline',
-                'title' => 'Deadline: ' . $r->title,
+                'title' => 'Deadline: '.$r->title,
                 'date' => $r->due_date->format('Y-m-d'),
                 'start_time' => $r->due_date->format('H:i'),
                 'end_time' => $r->due_date->copy()->addHour()->format('H:i'),
@@ -57,7 +57,7 @@ class CalendarController extends Controller
         $events = collect()->merge($meetings)->merge($activities)->merge($requirements)->sortBy('date')->values();
 
         return Inertia::render('schedule/calendar/index', [
-            'events' => $events
+            'events' => $events,
         ]);
     }
 }

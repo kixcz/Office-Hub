@@ -12,11 +12,11 @@ class TvSlide extends Model
         'order',
         'is_active',
         'duration_seconds',
-        'config'
+        'config',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'config' => 'array'
+        'config' => 'array',
     ];
 }

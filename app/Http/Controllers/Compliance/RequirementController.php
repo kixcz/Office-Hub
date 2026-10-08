@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Compliance;
 
 use App\Http\Controllers\Controller;
-use App\Models\Requirement;
-use App\Models\Program;
 use App\Models\Faculty;
+use App\Models\Program;
+use App\Models\Requirement;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class RequirementController extends Controller
 {
@@ -16,10 +16,10 @@ class RequirementController extends Controller
     {
         $requirements = Requirement::with('program')->latest()->get();
         $programs = Program::all();
-        
+
         return Inertia::render('compliance/requirements/index', [
             'requirements' => $requirements,
-            'programs' => $programs
+            'programs' => $programs,
         ]);
     }
 
@@ -38,11 +38,11 @@ class RequirementController extends Controller
         $requirement = Requirement::create($validated);
 
         $faculties = Faculty::where('program_id', $validated['program_id'])->get();
-        
-        foreach($faculties as $faculty) {
+
+        foreach ($faculties as $faculty) {
             $requirement->submissions()->create([
                 'faculty_id' => $faculty->id,
-                'status' => 'pending'
+                'status' => 'pending',
             ]);
         }
 

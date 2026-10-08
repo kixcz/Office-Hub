@@ -13,9 +13,9 @@ class OfficeRequestController extends Controller
         $requests = OfficeRequest::with(['requester', 'resolver'])
             ->latest()
             ->get();
-            
+
         return Inertia::render('requests/index', [
-            'requests' => $requests
+            'requests' => $requests,
         ]);
     }
 
