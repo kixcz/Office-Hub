@@ -748,211 +748,275 @@ function SlideThree({ data, isDark = false }: any) {
 /* -------------------------------------------------------------------------- */
 
 function SlideFour({ data, isDark = false }: any) {
-    const programs = data.top_programs || [];
-    const faculty = data.top_faculty || [];
-    const topProgram = programs[0] || { name: 'BSIS', on_time_rate: 96 };
+    const programs = data?.top_programs || [];
+    const faculty = data?.top_faculty || [];
+    const topProgram = programs[0] || { name: 'BSIT', on_time_rate: 77.8 };
+
+    const fallbackFaculty = [
+        { name: 'Domingo Origines', program: 'BSIT', on_time_rate: 100 },
+        { name: 'Jean Nikolai Roxas', program: 'BSIT', on_time_rate: 66.7 },
+        { name: 'Jerry Oriente', program: 'BSIT', on_time_rate: 66.7 },
+        { name: 'Rhea Mae Perito', program: 'BSIS', on_time_rate: 66.7 },
+        { name: 'Ivan Millan', program: 'BSIS', on_time_rate: 66.7 },
+    ];
+    const displayFaculty = faculty.length > 0 ? faculty.slice(0, 5) : fallbackFaculty;
 
     return (
-        <div className="grid h-full min-h-0 flex-1 grid-cols-12 gap-4">
-            {/* Left Column: Top Program Hero Card */}
-            <div className="col-span-4 h-full min-h-0 flex flex-col justify-between rounded-2xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#1E3A8A] text-white p-7 relative overflow-hidden shadow-md">
-                <div className="relative z-10">
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
+            {/* Top Row: Top Program Hero + 2 KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+                {/* 1. Top Program Hero Card */}
+                <div className="rounded-2xl bg-[#0F172A] border border-slate-800 text-white p-5 flex flex-col justify-between shadow-xs">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-lg bg-amber-400/20 text-amber-300 flex items-center justify-center">
+                            <div className="h-8 w-8 rounded-lg bg-amber-400/20 text-amber-300 flex items-center justify-center shrink-0">
                                 <Trophy size={18} />
                             </div>
                             <span className="text-xs font-bold uppercase tracking-wider text-amber-300">Top Program</span>
                         </div>
-                        <span className="text-xs font-bold bg-white/10 px-3 py-1 rounded-full text-slate-200">
-                            This Semester
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold bg-white/10 px-3 py-1 rounded-full text-slate-200">
+                                This Semester
+                            </span>
+                            <ChevronRight size={18} className="text-slate-400" />
+                        </div>
                     </div>
 
-                    <div className="mt-8">
-                        <h2 className="text-6xl font-black tracking-tight">{topProgram.name}</h2>
-                        <p className="mt-2 text-5xl font-black text-amber-300 tabular-nums">{topProgram.on_time_rate}%</p>
-                        <p className="mt-2 text-sm font-medium text-slate-300">On-time submission rate</p>
+                    <div className="flex items-center justify-between mt-3 pt-1">
+                        <div className="min-w-0 pr-4">
+                            <h2 className="text-4xl lg:text-5xl font-black tracking-tight text-white truncate">
+                                {topProgram.name}
+                            </h2>
+                        </div>
+                        <div className="h-10 w-px bg-white/15 shrink-0" />
+                        <div className="pl-4 shrink-0 text-left">
+                            <p className="text-3xl font-extrabold text-amber-400 tabular-nums leading-none">
+                                {topProgram.on_time_rate}%
+                            </p>
+                            <p className="text-xs font-medium text-slate-300 mt-1">On-time rate</p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Building graphic / overlay */}
-                <div className="relative z-10 mt-auto pt-6 border-t border-white/10">
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                        <span>Ranked #1 in on-time compliance</span>
-                        <div className="flex gap-1.5">
-                            <span className="h-1.5 w-6 rounded-full bg-blue-500" />
-                            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
-                            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+                {/* 2. College On-Time Rate KPI */}
+                <div
+                    className={`rounded-2xl p-5 flex items-center justify-between gap-3 border ${
+                        isDark
+                            ? 'bg-[#131b2e] border-white/10 text-white'
+                            : 'bg-emerald-50/60 border-emerald-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                    }`}
+                >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="h-12 w-12 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <Clock size={22} />
                         </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">College on-time rate</p>
+                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">
+                                {data?.kpis?.college_on_time_rate ?? 63.9}%
+                            </p>
+                            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                                <ArrowUpRight size={13} /> 12% vs. last semester
+                            </p>
+                        </div>
+                    </div>
+                    <div className="shrink-0">
+                        <MiniWave positive />
+                    </div>
+                </div>
+
+                {/* 3. Zero Overdue Faculty KPI */}
+                <div
+                    className={`rounded-2xl p-5 flex items-center justify-between gap-3 border ${
+                        isDark
+                            ? 'bg-[#131b2e] border-white/10 text-white'
+                            : 'bg-amber-50/60 border-amber-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                    }`}
+                >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="h-12 w-12 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                            <FileText size={22} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Zero overdue faculty</p>
+                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">
+                                {data?.kpis?.zero_overdue_faculty ?? 1}
+                            </p>
+                            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                                <ArrowUpRight size={13} /> 2 vs. last semester
+                            </p>
+                        </div>
+                    </div>
+                    <div className="shrink-0 opacity-80">
+                        <MiniBars tone="amber" />
                     </div>
                 </div>
             </div>
 
-            {/* Right Side: KPIs + Faculty Ranking + Outputs Status */}
-            <div className="col-span-8 flex h-full min-h-0 flex-col gap-4">
-                {/* Top 2 KPIs */}
-                <div className="grid grid-cols-2 gap-4 shrink-0">
-                    <div className={`rounded-2xl p-4 flex items-center justify-between gap-3 border ${
-                        isDark ? 'bg-[#131b2e] border-white/10' : 'bg-emerald-50/60 border-emerald-200/80'
-                    }`}>
-                        <div className="flex items-center gap-3.5">
-                            <div className="h-12 w-12 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                <Clock size={22} />
-                            </div>
-                            <div>
-                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">College on-time rate</p>
-                                <p className="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">{data.kpis.college_on_time_rate}%</p>
-                                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
-                                    <ArrowUpRight size={13} /> 12% vs. last semester
-                                </p>
-                            </div>
+            {/* Bottom Row: Top Faculty (Left) & Recent Outputs / Highlights (Right) */}
+            <div className="grid h-full min-h-0 flex-1 grid-cols-12 gap-4">
+                {/* Left Column: Top Performing Faculty */}
+                <div
+                    className={`col-span-7 h-full min-h-0 flex flex-col rounded-2xl p-5 border overflow-hidden ${
+                        isDark
+                            ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
+                            : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                    }`}
+                >
+                    <div className="flex shrink-0 items-center justify-between pb-3">
+                        <div className="flex items-center gap-2">
+                            <Trophy size={20} className="text-amber-500 shrink-0" />
+                            <h2 className="text-base md:text-lg font-bold text-slate-900 dark:text-white">Top Performing Faculty</h2>
                         </div>
-                        <MiniWave positive />
+                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-3 py-1 rounded-full">
+                            This Semester
+                        </span>
                     </div>
 
-                    <div className={`rounded-2xl p-4 flex items-center justify-between gap-3 border ${
-                        isDark ? 'bg-[#131b2e] border-white/10' : 'bg-amber-50/60 border-amber-200/80'
-                    }`}>
-                        <div className="flex items-center gap-3.5">
-                            <div className="h-12 w-12 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                                <FileText size={22} />
-                            </div>
-                            <div>
-                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Zero overdue faculty</p>
-                                <p className="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">{data.kpis.zero_overdue_faculty}</p>
-                                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
-                                    <ArrowUpRight size={13} /> 2 vs. last semester
-                                </p>
-                            </div>
-                        </div>
-                        <MiniBars tone="amber" />
+                    <div className="mt-2 flex flex-col gap-2.5">
+                        {displayFaculty.map((f: any, i: number) => {
+                            const rankColors = [
+                                'bg-amber-400 text-slate-950 font-black',
+                                'bg-slate-300 text-slate-800 font-bold',
+                                'bg-[#c2652b] text-white font-bold',
+                                'bg-slate-200 text-slate-700 font-bold',
+                                'bg-slate-200 text-slate-700 font-bold',
+                            ];
+                            return (
+                                <div
+                                    key={i}
+                                    className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <span className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs shrink-0 ${rankColors[i] || 'bg-slate-100 text-slate-600'}`}>
+                                            {i + 1}
+                                        </span>
+                                        <div className="h-8 w-8 rounded-full bg-slate-200/70 dark:bg-white/10 flex items-center justify-center text-slate-400 dark:text-slate-300 shrink-0">
+                                            <User size={16} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-slate-900 dark:text-white leading-tight">{f.name}</p>
+                                            <p className="truncate text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{f.program}</p>
+                                            <div className="w-28 sm:w-32 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 mt-1.5 overflow-hidden">
+                                                <div className="h-full rounded-full bg-emerald-500" style={{ width: `${f.on_time_rate}%` }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className="text-base font-extrabold text-slate-900 dark:text-white tabular-nums">{f.on_time_rate}%</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">on time</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
-                {/* Bottom Row: Top Faculty (Left) & Highlights (Right) */}
-                <div className="grid h-full min-h-0 grid-cols-12 gap-4">
-                    {/* Top Performing Faculty */}
-                    <BentoTile
-                        title="Top Performing Faculty"
-                        icon={Trophy}
-                        iconTone="amber"
-                        className="col-span-7 h-full min-h-0"
-                        isDark={isDark}
-                        aside={
-                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-2.5 py-0.5 rounded-full">
-                                This Semester
-                            </span>
-                        }
+                {/* Right Column: Recent Outputs & Highlights */}
+                <div className="col-span-5 flex h-full min-h-0 flex-col gap-4">
+                    {/* Recent Outputs Status */}
+                    <div
+                        className={`flex-1 min-h-0 flex flex-col rounded-2xl p-5 border overflow-hidden ${
+                            isDark
+                                ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
+                                : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                        }`}
                     >
-                        <div className="space-y-3">
-                            {faculty.map((f: any, i: number) => {
-                                const rankColors = [
-                                    'bg-amber-400 text-slate-950 font-black',
-                                    'bg-slate-300 text-slate-800 font-bold',
-                                    'bg-amber-700/80 text-white font-bold',
-                                    'bg-slate-200 text-slate-700 font-bold',
-                                    'bg-slate-200 text-slate-700 font-bold',
-                                ];
-                                return (
-                                    <div key={i} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <span className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs shrink-0 ${rankColors[i] || 'bg-slate-100 text-slate-600'}`}>
-                                                {i + 1}
-                                            </span>
-                                            <div className="h-7 w-7 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center text-slate-500 shrink-0">
-                                                <User size={15} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{f.name}</p>
-                                                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{f.program}</p>
-                                                {/* Green progress bar */}
-                                                <div className="w-32 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 mt-1">
-                                                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${f.on_time_rate}%` }} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right shrink-0">
-                                            <p className="text-base font-extrabold text-slate-900 dark:text-white tabular-nums">{f.on_time_rate}%</p>
-                                            <p className="text-[10px] text-slate-400">on time</p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                        <div className="flex shrink-0 items-center gap-2 pb-3">
+                            <FileText size={20} className="text-amber-500 shrink-0" />
+                            <h2 className="text-base font-bold text-slate-900 dark:text-white">Recent Outputs Status</h2>
                         </div>
-                    </BentoTile>
-
-                    {/* Right Column: Recent Outputs & Highlights */}
-                    <div className="col-span-5 flex h-full min-h-0 flex-col gap-4">
-                        <BentoTile title="Recent Outputs Status" icon={FileText} iconTone="amber" className="flex-1 min-h-0" isDark={isDark}>
-                            <div className="space-y-2.5">
-                                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/[0.02]">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <div className="h-7 w-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-                                            <FileText size={14} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="truncate text-xs font-bold">TOS/TQ Submission</p>
-                                            <p className="text-[10px] text-slate-400">Deadline: Oct 10, 2026</p>
-                                        </div>
+                        <div className="mt-1 flex flex-col gap-2.5">
+                            <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="h-8 w-8 rounded-lg bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                                        <FileText size={16} />
                                     </div>
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 shrink-0">3 pending</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/[0.02]">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <div className="h-7 w-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-                                            <Users size={14} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="truncate text-xs font-bold">Faculty Workload</p>
-                                            <p className="text-[10px] text-slate-400">Deadline: Oct 12, 2026</p>
-                                        </div>
+                                    <div className="min-w-0">
+                                        <p className="truncate text-xs font-bold text-slate-900 dark:text-white">TOS/TQ Submission</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Deadline: Oct 10, 2026</p>
                                     </div>
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">2 pending</span>
                                 </div>
-                                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/[0.02]">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <div className="h-7 w-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                                            <ShieldCheck size={14} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="truncate text-xs font-bold">Compliance Review</p>
-                                            <p className="text-[10px] text-slate-400">Deadline: Oct 15, 2026</p>
-                                        </div>
-                                    </div>
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 shrink-0">In progress</span>
-                                </div>
+                                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 shrink-0">
+                                    3 pending
+                                </span>
                             </div>
-                        </BentoTile>
 
-                        <BentoTile title="This Week's Highlights" icon={Star} iconTone="amber" className="flex-1 min-h-0" isDark={isDark}>
-                            <div className="space-y-2.5">
-                                <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
-                                    <div className="flex items-center gap-2.5 min-w-0">
-                                        <div className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                                            <TrendingUp size={16} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-bold text-slate-900 dark:text-white">BSIT</p>
-                                            <p className="text-[10px] text-slate-400">Highest improvement rate</p>
-                                        </div>
+                            <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="h-8 w-8 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                        <Users size={16} />
                                     </div>
-                                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">↑ 12%</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
-                                    <div className="flex items-center gap-2.5 min-w-0">
-                                        <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                                            <Users size={16} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-bold text-slate-900 dark:text-white">4 faculty members</p>
-                                            <p className="text-[10px] text-slate-400">with zero overdue items</p>
-                                        </div>
+                                    <div className="min-w-0">
+                                        <p className="truncate text-xs font-bold text-slate-900 dark:text-white">Faculty Workload</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Deadline: Oct 12, 2026</p>
                                     </div>
-                                    <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md">100%</span>
                                 </div>
+                                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 shrink-0">
+                                    2 pending
+                                </span>
                             </div>
-                        </BentoTile>
+
+                            <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                        <ShieldCheck size={16} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="truncate text-xs font-bold text-slate-900 dark:text-white">Compliance Review</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Deadline: Oct 15, 2026</p>
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 shrink-0">
+                                    In progress
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* This Week's Highlights */}
+                    <div
+                        className={`flex-1 min-h-0 flex flex-col rounded-2xl p-5 border overflow-hidden ${
+                            isDark
+                                ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
+                                : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                        }`}
+                    >
+                        <div className="flex shrink-0 items-center gap-2 pb-3">
+                            <Star size={20} className="text-amber-500 shrink-0" />
+                            <h2 className="text-base font-bold text-slate-900 dark:text-white">This Week's Highlights</h2>
+                        </div>
+                        <div className="mt-1 flex flex-col gap-2.5">
+                            <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="h-8 w-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                        <TrendingUp size={16} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">BSIT</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Highest improvement rate</p>
+                                    </div>
+                                </div>
+                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                                    ↑ 12%
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                                        <Users size={16} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">4 faculty members</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">with zero overdue items</p>
+                                    </div>
+                                </div>
+                                <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-2 py-0.5 rounded-md">
+                                    100%
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
