@@ -45,10 +45,30 @@ class ActivityController extends Controller
         return redirect()->back()->with('success', 'Activity created successfully.');
     }
 
+    public function update(Request $request, Activity $activity)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'nullable|string|max:255',
+            'date' => 'required|date',
+            'start_time' => 'required',
+            'end_time' => 'required',
+            'venue' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'visibility' => 'required|string',
+            'status' => 'required|string',
+            'program_id' => 'nullable|exists:programs,id',
+        ]);
+
+        $activity->update($validated);
+
+        return redirect()->back()->with('success', 'Activity updated successfully.');
+    }
+
     public function destroy(Activity $activity)
     {
         $activity->delete();
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Activity deleted successfully.');
     }
 }
