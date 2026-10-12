@@ -5,8 +5,11 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\ClassroomMonitoringController;
 use App\Http\Controllers\Compliance\ComplianceTrackerController;
 use App\Http\Controllers\Compliance\PendingOutputController;
+use App\Http\Controllers\Compliance\RequirementController;
+use App\Http\Controllers\Compliance\SubmissionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentRouteController;
+use App\Http\Controllers\Faculty\WorkspaceController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\OfficeRequestController;
 use App\Http\Controllers\Performance\FacultyPerformanceController;
@@ -21,7 +24,6 @@ use App\Http\Controllers\Tv\PlaylistController;
 use App\Http\Controllers\Tv\SettingController;
 use App\Http\Controllers\Tv\SlideController;
 use App\Http\Controllers\TvDisplayController;
-use App\Http\Controllers\Faculty\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -38,8 +40,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Compliance Section
     Route::prefix('compliance')->name('compliance.')->group(function () {
-        Route::resource('requirements', App\Http\Controllers\Compliance\RequirementController::class);
-        Route::resource('submissions', App\Http\Controllers\Compliance\SubmissionController::class);
+        Route::resource('requirements', RequirementController::class);
+        Route::resource('submissions', SubmissionController::class);
         Route::get('pending-outputs', [PendingOutputController::class, 'index'])->name('pending-outputs.index');
         Route::get('tracker', [ComplianceTrackerController::class, 'index'])->name('tracker.index');
     });

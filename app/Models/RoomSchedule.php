@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Database\Factories\RoomScheduleFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class RoomSchedule extends Model
 {
-    /** @use HasFactory<\Database\Factories\RoomScheduleFactory> */
+    /** @use HasFactory<RoomScheduleFactory> */
     use HasFactory;
 
     protected $fillable = [

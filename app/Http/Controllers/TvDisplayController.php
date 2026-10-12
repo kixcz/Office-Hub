@@ -40,10 +40,10 @@ class TvDisplayController extends Controller
             'type' => 'Meeting',
         ]);
 
-        $activitiesToday = Activity::where('start_date', '<=', $today)->where('end_date', '>=', $today)->get()->map(fn ($a) => [
+        $activitiesToday = Activity::where('date', $today)->get()->map(fn ($a) => [
             'id' => $a->id,
             'title' => $a->title,
-            'time' => 'All Day',
+            'time' => $a->start_time && $a->end_time ? $a->start_time.' - '.$a->end_time : 'All Day',
             'venue' => $a->venue,
             'type' => 'Activity',
         ]);
@@ -65,8 +65,7 @@ class TvDisplayController extends Controller
         $weekEnd = $now->copy()->endOfWeek();
 
         $weeklyMeetings = Meeting::whereBetween('date', [$weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')])->get();
-        $weeklyActivities = Activity::whereBetween('start_date', [$weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')])
-            ->orWhereBetween('end_date', [$weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')])->get();
+        $weeklyActivities = Activity::whereBetween('date', [$weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')])->get();
 
         $weeklySchedule = [];
         for ($i = 0; $i < 5; $i++) {
@@ -77,10 +76,13 @@ class TvDisplayController extends Controller
             foreach ($weeklyMeetings->where('date', $dayStr) as $m) {
                 $dayItems[] = ['title' => $m->title, 'time' => $m->start_time, 'venue' => $m->venue, 'type' => 'Meeting'];
             }
-            foreach ($weeklyActivities as $a) {
-                if ($dayStr >= $a->start_date && $dayStr <= $a->end_date) {
-                    $dayItems[] = ['title' => $a->title, 'time' => 'All Day', 'venue' => $a->venue, 'type' => 'Activity'];
-                }
+            foreach ($weeklyActivities->where('date', $dayStr) as $a) {
+                $dayItems[] = [
+                    'title' => $a->title,
+                    'time' => $a->start_time && $a->end_time ? $a->start_time.' - '.$a->end_time : 'All Day',
+                    'venue' => $a->venue,
+                    'type' => 'Activity',
+                ];
             }
 
             $weeklySchedule[] = [

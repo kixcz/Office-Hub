@@ -4,6 +4,7 @@ use App\Jobs\SyncFacilityMonitoring;
 use App\Models\FacilityMonitoring;
 use App\Models\RoomSchedule;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -80,7 +81,7 @@ test('it parses a room sheet honouring merged cells', function () {
 });
 
 test('the sync job imports room schedules from the spreadsheet', function () {
-    $this->travelTo(\Carbon\Carbon::parse('2026-10-05 08:00:00', 'Asia/Manila')); // Monday
+    $this->travelTo(Carbon::parse('2026-10-05 08:00:00', 'Asia/Manila')); // Monday
 
     Http::fake([
         '*/htmlview/sheet*' => Http::response(sampleRoomSheetHtml()),

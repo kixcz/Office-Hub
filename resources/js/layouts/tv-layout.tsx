@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, Moon, RefreshCw, Sun } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Clock, Maximize2, Minimize2, Moon, RefreshCw, Sun } from 'lucide-react';
 
 interface TvLayoutProps {
     children: React.ReactNode;
@@ -19,6 +19,7 @@ export default function TvLayout({
     onToggleDark,
 }: TvLayoutProps) {
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -26,6 +27,41 @@ export default function TvLayout({
         }, 1000);
         return () => clearInterval(timer);
     }, []);
+
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
+
+    const toggleFullscreen = useCallback(() => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch((err) => {
+                console.error(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch((err) => {
+                    console.error(`Error attempting to exit fullscreen: ${err.message}`);
+                });
+            }
+        }
+    }, []);
+
+    // Global keyboard shortcut 'F' for Fullscreen
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            if (e.key === 'f' || e.key === 'F') {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [toggleFullscreen]);
 
     const formatDate = (date: Date) => {
         return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -37,48 +73,56 @@ export default function TvLayout({
 
     return (
         <div className={`h-screen flex flex-col font-sans overflow-hidden transition-colors duration-300 ${
-            isDark ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'
+            isDark ? 'dark bg-[#0b0f19] text-slate-100' : 'bg-[#f4f7fb] text-slate-900'
         }`}>
-            {/* Header */}
-            <header className="bg-transparent px-8 py-5 flex justify-between items-center z-50 shrink-0 sticky top-0">
-                <div className="flex items-center gap-4">
-                    <div className="relative group">
+            {/* Header - Styled precisely after reference images */}
+            <header className="px-8 py-3.5 flex justify-between items-center z-40 shrink-0 sticky top-0 transition-colors border-b border-black/[0.04] dark:border-white/[0.05]">
+                {/* Brand & Subtitle */}
+                <div className="flex items-center gap-3.5">
+                    <div className="relative">
                         <img
                             src="/CIDS_Logo.jpg"
                             alt="CIDS Logo"
-                            className="h-12 w-auto rounded-lg object-contain shadow-sm ring-2 ring-amber-400/50"
+                            className="h-10 w-auto rounded-lg object-contain shadow-xs"
                         />
                     </div>
                     <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                            <span className="text-2xl font-black tracking-tight text-amber-500">
-                                OfficeHub <span className={isDark ? 'text-white' : 'text-slate-900'}>TV</span>
-                            </span>
-                            <span className="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-xs font-bold text-amber-500 ring-1 ring-amber-400/40 uppercase tracking-wider">
-                                Live
+                        <div className="flex items-center gap-2.5">
+                            <h1 className="text-2xl font-extrabold tracking-tight">
+                                <span className="text-[#1d4ed8] dark:text-[#3b82f6]">CIDS</span>{' '}
+                                <span className={isDark ? 'text-white' : 'text-slate-900'}>OfficeHub</span>{' '}
+                                <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>TV</span>
+                            </h1>
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/40 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+                                <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                                LIVE
                             </span>
                         </div>
-                        {title && (
-                            <span className={`text-base font-semibold ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>
-                                {title}
+                        <div className="flex items-center gap-2">
+                            <span className={`text-[11px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                COLLEGE OF INFORMATION AND DIGITAL SCIENCES
                             </span>
-                        )}
+                            {title && (
+                                <>
+                                    <span className="text-slate-300 dark:text-slate-600">·</span>
+                                    <span className={`text-xs font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                                        {title}
+                                    </span>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="text-right hidden sm:block">
-                        <div className={`text-lg font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                {/* Date & Time Center/Right */}
+                <div className="flex items-center gap-5">
+                    <div className="text-right hidden md:block">
+                        <div className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                             {formatDate(currentTime)}
                         </div>
-                    </div>
-                    <div className={`px-4 py-2 rounded-xl flex items-center gap-3 shadow-sm ring-1 ${
-                        isDark ? 'bg-slate-900/90 ring-slate-800' : 'bg-white ring-slate-200/80'
-                    }`}>
-                        <Clock size={22} className="text-amber-500" />
-                        <span className={`text-3xl font-bold font-mono tracking-tight tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        <div className={`text-2xl font-extrabold font-mono tracking-tight tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
                             {formatTime(currentTime)}
-                        </span>
+                        </div>
                     </div>
 
                     {/* Dark / Light Mode Toggle */}
@@ -86,32 +130,52 @@ export default function TvLayout({
                         <button
                             type="button"
                             onClick={onToggleDark}
-                            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                            className={`p-2.5 rounded-xl ring-1 transition-all flex items-center justify-center cursor-pointer shadow-sm hover:scale-105 active:scale-95 ${
+                            title={isDark ? 'Switch to Light Mode (Key: T)' : 'Switch to Dark Mode (Key: T)'}
+                            className={`h-10 w-10 rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95 border ${
                                 isDark
-                                    ? 'bg-slate-900 text-amber-400 ring-slate-800 hover:bg-slate-800 hover:ring-amber-400/50'
-                                    : 'bg-white text-slate-700 ring-slate-200/80 hover:bg-amber-50 hover:text-amber-600 hover:ring-amber-300'
+                                    ? 'bg-[#131b2e] text-amber-400 border-white/10 hover:bg-slate-800'
+                                    : 'bg-white text-slate-700 border-slate-200/80 hover:bg-slate-50 hover:text-amber-600'
                             }`}
                         >
-                            {isDark ? <Sun size={22} className="animate-pulse" /> : <Moon size={22} />}
+                            {isDark ? <Sun size={18} /> : <Moon size={18} />}
                         </button>
                     )}
-                </div>
 
-                <div className={`text-right flex flex-col justify-center px-4 py-2 rounded-xl shadow-sm ring-1 ${
-                    isDark ? 'bg-slate-900/90 ring-slate-800' : 'bg-white ring-slate-200/80'
-                }`}>
-                    <div className="text-xs font-bold text-amber-500 uppercase tracking-wider">Internal Staff View</div>
-                    <div className={`text-base font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                        {currentTerm}
-                    </div>
-                    {lastUpdated && (
-                        <div className={`text-xs font-medium mt-0.5 flex items-center justify-end gap-1 ${
-                            isDark ? 'text-slate-400' : 'text-slate-400'
-                        }`}>
-                            <RefreshCw size={11} className="text-amber-500" /> Updated {lastUpdated}
+                    {/* Fullscreen Mode Toggle */}
+                    <button
+                        type="button"
+                        onClick={toggleFullscreen}
+                        title={isFullscreen ? 'Exit Fullscreen (Key: F)' : 'Enter Fullscreen (Key: F)'}
+                        className={`h-10 w-10 rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95 border ${
+                            isDark
+                                ? 'bg-[#131b2e] text-slate-300 border-white/10 hover:bg-slate-800 hover:text-white'
+                                : 'bg-white text-slate-700 border-slate-200/80 hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                    >
+                        {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                    </button>
+
+                    {/* Internal View Badge */}
+                    <div className={`px-3.5 py-1.5 rounded-xl shadow-xs border flex items-center gap-2.5 ${
+                        isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80'
+                    }`}>
+                        <div className="h-8 w-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                            <Clock size={16} />
                         </div>
-                    )}
+                        <div className="text-left flex flex-col justify-center">
+                            <div className="text-[10px] font-bold text-amber-500 uppercase tracking-wider leading-none">Internal View</div>
+                            <div className={`text-xs font-semibold mt-0.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                                {currentTerm}
+                            </div>
+                            {lastUpdated && (
+                                <div className={`text-[10px] font-medium flex items-center gap-1 ${
+                                    isDark ? 'text-slate-400' : 'text-slate-400'
+                                }`}>
+                                    <RefreshCw size={9} className="text-amber-500" /> {lastUpdated}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -122,3 +186,4 @@ export default function TvLayout({
         </div>
     );
 }
+

@@ -156,3 +156,26 @@
         @apply bg-background text-foreground text-[14px];
     }
 }
+
+/* TV & Bento scrollbar styling */
+.tv-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.tv-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.tv-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 9999px;
+}
+.tv-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(245, 158, 11, 0.6);
+}
+.dark .tv-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+}
+.dark .tv-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(245, 158, 11, 0.7);
+}
+

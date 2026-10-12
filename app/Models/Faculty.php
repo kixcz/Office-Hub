@@ -12,12 +12,8 @@ class Faculty extends Model
     use HasFactory;
 
     protected $fillable = [
-        'employee_id',
         'first_name',
         'last_name',
-        'email',
-        'department',
-        'position',
         'program_id',
     ];
 

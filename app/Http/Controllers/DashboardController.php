@@ -100,11 +100,10 @@ class DashboardController extends Controller
             'venue' => $m->venue,
         ]);
 
-        $activities = Activity::where('start_date', '<=', $today)
-            ->where('end_date', '>=', $today)
+        $activities = Activity::where('date', $today)
             ->get()->map(fn ($a) => [
                 'title' => $a->title,
-                'time' => 'All Day', // simplifying for dash
+                'time' => $a->start_time && $a->end_time ? $a->start_time.' - '.$a->end_time : 'All Day',
                 'type' => 'Activity',
                 'venue' => $a->venue,
             ]);

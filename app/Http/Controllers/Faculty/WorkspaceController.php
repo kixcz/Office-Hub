@@ -15,8 +15,8 @@ class WorkspaceController extends Controller
         // For now we'll just get all requirements and their submissions for the current user.
         // Assuming user() has an employee_id or faculty relationship, but since auth is generic
         // we'll filter submissions by the logged-in user.
-        
-        $requirements = Requirement::with(['submissions' => function($query) use ($request) {
+
+        $requirements = Requirement::with(['submissions' => function ($query) use ($request) {
             $query->where('user_id', $request->user()->id)->latest();
         }])->latest()->paginate(10);
 

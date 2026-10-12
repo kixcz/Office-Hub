@@ -23,13 +23,9 @@ class FacultyController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'employee_id' => 'required|string|unique:faculties,employee_id',
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:faculties,email',
-            'department' => 'nullable|string|max:255',
-            'position' => 'nullable|string|max:255',
-            'program_id' => 'nullable|exists:programs,id',
+            'program_id' => 'required|exists:programs,id',
         ]);
 
         Faculty::create($validated);
@@ -40,13 +36,9 @@ class FacultyController extends Controller
     public function update(Request $request, Faculty $faculty)
     {
         $validated = $request->validate([
-            'employee_id' => 'required|string|unique:faculties,employee_id,'.$faculty->id,
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:faculties,email,'.$faculty->id,
-            'department' => 'nullable|string|max:255',
-            'position' => 'nullable|string|max:255',
-            'program_id' => 'nullable|exists:programs,id',
+            'program_id' => 'required|exists:programs,id',
         ]);
 
         $faculty->update($validated);

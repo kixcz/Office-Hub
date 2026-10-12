@@ -3,19 +3,33 @@ import {
     Activity,
     AlertCircle,
     AlertTriangle,
+    ArrowDownRight,
+    ArrowUpRight,
+    Award,
+    BarChart2,
     Calendar as CalendarIcon,
-    CheckCircle,
     CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
     Clock,
+    FileSpreadsheet,
     FileText,
     Globe,
     GraduationCap,
     HeartPulse,
+    Laptop,
     Megaphone,
     Monitor,
+    Radio,
+    ShieldAlert,
+    ShieldCheck,
     Sparkles,
+    Star,
     Timer,
+    TrendingDown,
+    TrendingUp,
     Trophy,
+    User,
     UserCheck,
     Users,
     UserX,
@@ -38,21 +52,18 @@ const SLIDE_TYPES = {
 } as const;
 
 /* -------------------------------------------------------------------------- */
-/*  Page                                                                       */
+/*  Main TV Display Page                                                       */
 /* -------------------------------------------------------------------------- */
 
 export default function TvDisplay({ slides, data, current_term }: any) {
     const activeSlides = useMemo(() => slides.filter((s: any) => s.is_active), [slides]);
     const count = activeSlides.length;
-
     const [index, setIndex] = useState(0);
     const [fade, setFade] = useState(true);
 
-    // Dark mode state persisted in localStorage
     const [isDark, setIsDark] = useState<boolean>(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('officehub_tv_theme');
-            return saved === 'dark';
+            return localStorage.getItem('officehub_tv_theme') === 'dark';
         }
         return false;
     });
@@ -73,7 +84,7 @@ export default function TvDisplay({ slides, data, current_term }: any) {
     indexRef.current = safeIndex;
     countRef.current = count;
 
-    // Scale the UI with screen width so 1080p and 4K TVs get the same layout.
+    // Scale root font size so 1080p and 4K TVs scale cleanly.
     useEffect(() => {
         const root = document.documentElement;
         const prev = root.style.fontSize;
@@ -89,7 +100,6 @@ export default function TvDisplay({ slides, data, current_term }: any) {
             const len = countRef.current;
             if (len === 0) return;
             const next = (indexRef.current + dir + len) % len;
-            // Refresh data once per full cycle, right as the loop restarts.
             if (dir === 1 && next === 0) {
                 router.reload({ only: ['settings', 'slides', 'data'] });
             }
@@ -109,6 +119,7 @@ export default function TvDisplay({ slides, data, current_term }: any) {
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
             if (e.key === 'ArrowRight') step(1);
             else if (e.key === 'ArrowLeft') step(-1);
             else if (e.key === 't' || e.key === 'T') toggleDark();
@@ -121,8 +132,8 @@ export default function TvDisplay({ slides, data, current_term }: any) {
         return (
             <TvLayout currentTerm={current_term} isDark={isDark} onToggleDark={toggleDark}>
                 <Head title="TV Display" />
-                <div className={`flex flex-1 items-center justify-center p-8 ${isDark ? 'bg-slate-950 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
-                    <p className="text-3xl">No active slides configured.</p>
+                <div className="flex flex-1 items-center justify-center p-8 text-slate-400">
+                    <p className="text-2xl font-medium">No active slides. Activate a slide in settings to start the display.</p>
                 </div>
             </TvLayout>
         );
@@ -139,60 +150,40 @@ export default function TvDisplay({ slides, data, current_term }: any) {
             <Head title="TV Display" />
             <style>{'@keyframes tv-fill{from{width:0}to{width:100%}}'}</style>
 
+            {/* Slide Container */}
             <div
-                className={`flex min-h-0 flex-1 flex-col overflow-y-auto bg-transparent px-8 pb-6 transition-opacity duration-500 ${
+                className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent px-8 pb-3 transition-opacity duration-500 ${
                     fade ? 'opacity-100' : 'opacity-0'
                 }`}
             >
-                {currentSlide.type === SLIDE_TYPES.one && <SlideOne data={data.slide1} slideConfig={currentSlide} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.two && <SlideTwo data={data.slide2} slideConfig={currentSlide} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.three && <SlideThree data={data.slide3} slideConfig={currentSlide} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.four && <SlideFour data={data.slide4} slideConfig={currentSlide} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.five && <SlideFive data={data.slide5} slideConfig={currentSlide} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.six && <SlideSix data={data.slide6} slideConfig={currentSlide} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.seven && <SlideSeven data={data.slide7} slideConfig={currentSlide} isDark={isDark} />}
+                {currentSlide.type === SLIDE_TYPES.one && <SlideOne data={data.slide1} isDark={isDark} />}
+                {currentSlide.type === SLIDE_TYPES.two && <SlideTwo data={data.slide2} isDark={isDark} />}
+                {currentSlide.type === SLIDE_TYPES.three && <SlideThree data={data.slide3} isDark={isDark} />}
+                {currentSlide.type === SLIDE_TYPES.four && <SlideFour data={data.slide4} isDark={isDark} />}
+                {currentSlide.type === SLIDE_TYPES.five && <SlideFive data={data.slide5} isDark={isDark} />}
+                {currentSlide.type === SLIDE_TYPES.six && <SlideSix data={data.slide6} isDark={isDark} />}
+                {currentSlide.type === SLIDE_TYPES.seven && <SlideSeven data={data.slide7} isDark={isDark} />}
             </div>
 
-            {/* Hidden manual navigation (mouse / remote) */}
-            <button
-                aria-label="Previous slide"
-                onClick={() => step(-1)}
-                className="fixed inset-y-0 left-0 z-50 w-24 cursor-pointer opacity-0"
-            />
-            <button
-                aria-label="Next slide"
-                onClick={() => step(1)}
-                className="fixed inset-y-0 right-0 z-50 w-24 cursor-pointer opacity-0"
-            />
-
-            {/* Footer with yellow and white accents */}
-            <footer
-                className={`z-40 flex shrink-0 items-center justify-between border-t px-8 py-3 text-lg transition-colors duration-300 shadow-[0_-2px_8px_rgba(0,0,0,0.03)] ${
-                    isDark
-                        ? 'border-slate-800 bg-slate-900/95 text-slate-400 backdrop-blur'
-                        : 'border-slate-200 bg-white text-slate-500'
-                }`}
-            >
-                <div className="flex items-center gap-3">
-                    <span className="relative flex h-3 w-3">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
-                        <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-500" />
+            {/* Footer - Styled precisely as in reference images */}
+            <footer className="z-30 flex shrink-0 items-center justify-between px-8 py-2.5 text-xs text-slate-500 dark:text-slate-400 border-t border-black/[0.04] dark:border-white/[0.05]">
+                <div className="flex items-center gap-2.5">
+                    <span className="relative flex h-2.5 w-2.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-60" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-600" />
                     </span>
-                    <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>
-                        Live display · <span className="font-semibold text-amber-500">CIDS OfficeHub</span>
+                    <span>
+                        Live display <strong className="font-semibold text-slate-800 dark:text-slate-200">CIDS OfficeHub</strong>
                     </span>
+                    <span className="text-slate-300 dark:text-slate-600">|</span>
+                    <span className="font-medium text-slate-600 dark:text-slate-300">{currentSlide?.title || currentSlide?.type}</span>
                 </div>
 
-                <div className="flex items-center gap-6">
-                    <div className="flex gap-2" aria-hidden>
+                <div className="flex items-center gap-4">
+                    <div className="flex gap-1.5" aria-hidden>
                         {activeSlides.map((_: any, i: number) => (
-                            <div
-                                key={i}
-                                className={`h-2 w-16 overflow-hidden rounded-full ${
-                                    isDark ? 'bg-slate-800' : 'bg-slate-200'
-                                }`}
-                            >
-                                {i < safeIndex && <div className="h-full w-full bg-amber-500/50" />}
+                            <div key={i} className={`h-1.5 w-10 overflow-hidden rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}>
+                                {i < safeIndex && <div className="h-full w-full bg-amber-400" />}
                                 {i === safeIndex && (
                                     <div
                                         key={`${safeIndex}-${duration}`}
@@ -203,9 +194,29 @@ export default function TvDisplay({ slides, data, current_term }: any) {
                             </div>
                         ))}
                     </div>
-                    <span className={`font-semibold tabular-nums ${isDark ? 'text-amber-400' : 'text-slate-800'}`}>
+                    <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
                         {safeIndex + 1} / {count}
                     </span>
+
+                    {/* Circular slide arrow buttons matching screenshot */}
+                    <div className="flex items-center gap-1.5 ml-1">
+                        <button
+                            type="button"
+                            aria-label="Previous slide"
+                            onClick={() => step(-1)}
+                            className="h-7 w-7 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-white/10 flex items-center justify-center hover:bg-slate-50 text-slate-600 dark:text-slate-300 shadow-2xs cursor-pointer transition-transform active:scale-90"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                        <button
+                            type="button"
+                            aria-label="Next slide"
+                            onClick={() => step(1)}
+                            className="h-7 w-7 rounded-full bg-[#1d4ed8] text-white flex items-center justify-center hover:bg-blue-700 shadow-2xs cursor-pointer transition-transform active:scale-90"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
                 </div>
             </footer>
         </TvLayout>
@@ -213,236 +224,374 @@ export default function TvDisplay({ slides, data, current_term }: any) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Shared building blocks                                                     */
+/*  Design Tokens & Helpers                                                    */
 /* -------------------------------------------------------------------------- */
 
-const TONES_LIGHT = {
-    yellow: 'bg-amber-100/80 text-amber-600 ring-1 ring-amber-200',
-    emerald: 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200',
-    amber: 'bg-amber-50 text-amber-600 ring-1 ring-amber-200',
-    rose: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200',
-    sky: 'bg-sky-50 text-sky-600 ring-1 ring-sky-200',
-    violet: 'bg-violet-50 text-violet-600 ring-1 ring-violet-200',
-} as const;
+type Tone = 'blue' | 'amber' | 'rose' | 'emerald' | 'purple' | 'sky';
 
-const TONES_DARK = {
-    yellow: 'bg-amber-950/60 text-amber-400 ring-1 ring-amber-500/30',
-    emerald: 'bg-emerald-950/60 text-emerald-400 ring-1 ring-emerald-500/30',
-    amber: 'bg-amber-950/60 text-amber-400 ring-1 ring-amber-500/30',
-    rose: 'bg-rose-950/60 text-rose-400 ring-1 ring-rose-500/30',
-    sky: 'bg-sky-950/60 text-sky-400 ring-1 ring-sky-500/30',
-    violet: 'bg-violet-950/60 text-violet-400 ring-1 ring-violet-500/30',
-} as const;
+const TONE_BOX: Record<Tone, Record<'light' | 'dark', string>> = {
+    blue: {
+        light: 'bg-blue-50 text-blue-600',
+        dark: 'bg-blue-500/15 text-blue-400',
+    },
+    amber: {
+        light: 'bg-amber-50 text-amber-600',
+        dark: 'bg-amber-500/15 text-amber-400',
+    },
+    rose: {
+        light: 'bg-rose-50 text-rose-600',
+        dark: 'bg-rose-500/15 text-rose-400',
+    },
+    emerald: {
+        light: 'bg-emerald-50 text-emerald-600',
+        dark: 'bg-emerald-500/15 text-emerald-400',
+    },
+    purple: {
+        light: 'bg-purple-50 text-purple-600',
+        dark: 'bg-purple-500/15 text-purple-400',
+    },
+    sky: {
+        light: 'bg-sky-50 text-sky-600',
+        dark: 'bg-sky-500/15 text-sky-400',
+    },
+};
 
-type Tone = keyof typeof TONES_LIGHT;
+const TONE_TEXT_COLOR: Record<Tone, string> = {
+    blue: 'text-blue-500',
+    amber: 'text-amber-500',
+    rose: 'text-rose-500',
+    emerald: 'text-emerald-500',
+    purple: 'text-purple-500',
+    sky: 'text-sky-500',
+};
 
-function getCardClass(isDark: boolean) {
-    return isDark
-        ? 'rounded-2xl bg-slate-900/90 text-slate-100 shadow-md ring-1 ring-slate-800'
-        : 'rounded-2xl bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80';
+function MiniBars({ tone = 'blue' }: { tone?: Tone }) {
+    return (
+        <div className={`flex items-end gap-1 h-7 ${TONE_TEXT_COLOR[tone]}`}>
+            <span className="w-1.5 h-3 rounded-full bg-current opacity-40" />
+            <span className="w-1.5 h-6 rounded-full bg-current opacity-90" />
+            <span className="w-1.5 h-4 rounded-full bg-current opacity-60" />
+            <span className="w-1.5 h-7 rounded-full bg-current opacity-100" />
+        </div>
+    );
 }
 
-function StatCard({
+function MiniWave({ positive = true }: { positive?: boolean }) {
+    return (
+        <svg className={`w-16 h-8 ${positive ? 'text-emerald-500' : 'text-rose-500'} opacity-75`} viewBox="0 0 64 28" fill="none">
+            <path
+                d={positive ? 'M2 24 C14 24, 18 10, 32 14 C46 18, 50 4, 62 4' : 'M2 6 C14 6, 18 18, 32 14 C46 10, 50 24, 62 24'}
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+            />
+        </svg>
+    );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Shared Bento Components                                                    */
+/* -------------------------------------------------------------------------- */
+
+function Kpi({
     icon: Icon,
-    tone,
     label,
     value,
     sub,
+    trend,
+    tone = 'blue',
+    accent = false,
     isDark = false,
+    className = '',
 }: {
     icon: LucideIcon;
-    tone: Tone;
     label: string;
     value: ReactNode;
     sub?: string;
+    trend?: { text: string; positive?: boolean };
+    tone?: Tone;
+    accent?: boolean;
     isDark?: boolean;
+    className?: string;
 }) {
-    const toneClass = isDark ? TONES_DARK[tone] : TONES_LIGHT[tone];
     return (
-        <div className={`flex items-center gap-5 p-5 ${getCardClass(isDark)}`}>
-            <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-xl ${toneClass}`}>
-                <Icon size={32} />
+        <div
+            className={`rounded-2xl p-4 flex items-center justify-between gap-3 ${
+                accent
+                    ? isDark
+                        ? 'bg-amber-500/15 border border-amber-500/30 text-white'
+                        : 'bg-amber-50/70 border border-amber-200/80 text-slate-900 shadow-[0_2px_12px_rgba(245,158,11,0.06)]'
+                    : isDark
+                        ? 'bg-[#131b2e] border border-white/10 text-white shadow-none'
+                        : 'bg-white border border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+            } ${className}`}
+        >
+            <div className="flex items-center gap-3.5 min-w-0">
+                <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${TONE_BOX[tone][isDark ? 'dark' : 'light']}`}>
+                    <Icon size={22} />
+                </div>
+                <div className="min-w-0">
+                    <p className={`text-xs font-semibold truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</p>
+                    <p className="text-3xl font-extrabold tracking-tight tabular-nums">{value}</p>
+                    {trend ? (
+                        <p className={`mt-0.5 flex items-center gap-0.5 text-xs font-bold ${trend.positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {trend.positive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+                            {trend.text}
+                        </p>
+                    ) : sub ? (
+                        <p className={`mt-0.5 text-xs truncate font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{sub}</p>
+                    ) : null}
+                </div>
             </div>
-            <div className="min-w-0 flex-1">
-                <p className={`text-4xl leading-none font-extrabold tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {value}
-                </p>
-                <p className={`mt-2 text-lg font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</p>
-                {sub && <p className="mt-0.5 text-xs font-semibold text-amber-500">{sub}</p>}
+            <div className="shrink-0 opacity-70">
+                <MiniBars tone={tone} />
             </div>
         </div>
     );
 }
 
-function Panel({
+function BentoTile({
     title,
     icon: Icon,
+    iconTone = 'amber',
     aside,
     className = '',
+    bodyClassName = '',
     children,
     isDark = false,
 }: {
     title: string;
     icon?: LucideIcon;
+    iconTone?: Tone;
     aside?: ReactNode;
     className?: string;
+    bodyClassName?: string;
     children: ReactNode;
     isDark?: boolean;
 }) {
     return (
-        <section className={`flex min-h-0 flex-col ${getCardClass(isDark)} ${className}`}>
-            <div
-                className={`flex items-center justify-between border-b px-7 py-4 sticky top-0 z-10 shrink-0 backdrop-blur ${
-                    isDark
-                        ? 'border-slate-800 bg-slate-900/95'
-                        : 'border-slate-100 bg-white/95'
-                }`}
-            >
-                <h2 className={`flex items-center gap-3 text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {Icon && <Icon size={28} className="text-amber-500" />}
-                    {title}
-                </h2>
+        <section
+            className={`flex min-h-0 min-w-0 flex-col rounded-2xl p-5 overflow-hidden ${
+                isDark
+                    ? 'bg-[#131b2e] border border-white/10 text-white shadow-none'
+                    : 'bg-white border border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+            } ${className}`}
+        >
+            <header className="flex shrink-0 items-center justify-between pb-3.5 border-b border-slate-100 dark:border-white/10">
+                <div className="flex items-center gap-2.5">
+                    {Icon && (
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${TONE_BOX[iconTone][isDark ? 'dark' : 'light']}`}>
+                            <Icon size={18} />
+                        </div>
+                    )}
+                    <h2 className="text-lg font-bold tracking-tight">{title}</h2>
+                </div>
                 {aside}
+            </header>
+            <div className={`mt-3.5 flex min-h-0 flex-1 flex-col overflow-y-auto tv-scrollbar overscroll-contain pr-1 ${bodyClassName}`}>
+                {children}
             </div>
-            <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-6">{children}</div>
         </section>
     );
 }
 
-function Empty({ children, isDark = false }: { children: ReactNode; isDark?: boolean }) {
+function Pill({ tone = 'blue', isDark = false, className = '', children }: { tone?: Tone; isDark?: boolean; className?: string; children: ReactNode }) {
     return (
-        <p className={`flex flex-1 items-center justify-center text-center text-xl ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+        <span
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                TONE_BOX[tone][isDark ? 'dark' : 'light']
+            } ${className}`}
+        >
             {children}
-        </p>
+        </span>
     );
 }
 
-function More({ count, noun = 'more', isDark = false }: { count: number; noun?: string; isDark?: boolean }) {
-    if (count <= 0) return null;
-    return <p className={`pt-1 text-center text-lg font-medium ${isDark ? 'text-amber-400/80' : 'text-amber-600'}`}>+{count} {noun}</p>;
-}
-
-const slideRoot = 'flex flex-1 flex-col gap-6';
-
 /* -------------------------------------------------------------------------- */
-/*  Slide 1 – Daily overview                                                   */
+/*  Slide 1 – Daily Overview (Reference Images 3 & 4)                          */
 /* -------------------------------------------------------------------------- */
 
-function SlideOne({ data, slideConfig, isDark = false }: any) {
-    const announcements = data.announcements.slice(0, 3);
-    const schedule = data.todays_schedule.slice(0, 5);
-    const upcoming = data.upcoming_meetings.slice(0, 3);
+function SlideOne({ data, isDark = false }: any) {
+    const announcements = data.announcements || [];
+    const schedule = data.todays_schedule || [];
+    const upcoming = data.upcoming_meetings || [];
 
     return (
-        <div className={slideRoot}>
-            <div className="grid grid-cols-4 gap-5">
-                <StatCard icon={CheckCircle} tone="emerald" label="Compliance rate" value={`${data.kpis.compliance_rate}%`} isDark={isDark} />
-                <StatCard icon={Clock} tone="amber" label="Pending review" value={data.kpis.pending_review} isDark={isDark} />
-                <StatCard icon={AlertTriangle} tone="rose" label="Overdue outputs" value={data.kpis.overdue_outputs} isDark={isDark} />
-                <StatCard icon={CalendarIcon} tone="yellow" label="Meetings this week" value={data.kpis.meetings_this_week} isDark={isDark} />
+        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
+            {/* Top Row KPIs */}
+            <div className="grid grid-cols-4 gap-4 shrink-0">
+                <Kpi
+                    icon={ShieldCheck}
+                    tone="amber"
+                    accent
+                    label="Compliance rate"
+                    value={`${data.kpis.compliance_rate}%`}
+                    trend={{ text: '12% vs. last week', positive: true }}
+                    isDark={isDark}
+                />
+                <Kpi
+                    icon={FileText}
+                    tone="blue"
+                    label="Pending review"
+                    value={data.kpis.pending_review}
+                    sub="TOS/TQ, Workloads, Reports"
+                    isDark={isDark}
+                />
+                <Kpi
+                    icon={AlertTriangle}
+                    tone="rose"
+                    label="Overdue outputs"
+                    value={data.kpis.overdue_outputs}
+                    sub="Faculty requirement(s)"
+                    isDark={isDark}
+                />
+                <Kpi
+                    icon={Users}
+                    tone="purple"
+                    label="Meetings this week"
+                    value={data.kpis.meetings_this_week}
+                    sub="Scheduled meetings"
+                    isDark={isDark}
+                />
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-12 gap-6">
-                <Panel title="Announcements" icon={Megaphone} className="col-span-5" isDark={isDark}>
+            {/* Bento Grid */}
+            <div className="grid h-full min-h-0 grid-cols-12 gap-4">
+                {/* Announcements Card */}
+                <BentoTile
+                    title="Announcements"
+                    icon={Megaphone}
+                    iconTone="amber"
+                    className="col-span-5 h-full min-h-0"
+                    isDark={isDark}
+                    aside={
+                        <button type="button" className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 cursor-pointer">
+                            View All <ChevronRight size={14} />
+                        </button>
+                    }
+                >
                     {announcements.length > 0 ? (
-                        <>
-                            {announcements.map((a: any) => (
-                                <article
-                                    key={a.id}
-                                    className={`rounded-xl p-5 ring-1 ${
-                                        isDark
-                                            ? 'bg-slate-950/60 ring-slate-800'
-                                            : 'bg-slate-50 ring-slate-100'
-                                    }`}
-                                >
-                                    <h3 className={`text-2xl leading-snug font-bold ${isDark ? 'text-amber-300' : 'text-slate-900'}`}>
-                                        {a.title}
-                                    </h3>
-                                    <p className={`mt-1 text-base ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                        By {a.author ? a.author.name : 'System'}
-                                    </p>
-                                    <p className={`mt-2 line-clamp-3 text-xl leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                                        {a.message}
-                                    </p>
-                                </article>
-                            ))}
-                            <More count={data.announcements.length - announcements.length} noun="more announcements" isDark={isDark} />
-                        </>
-                    ) : (
-                        <Empty isDark={isDark}>No active announcements today.</Empty>
-                    )}
-                </Panel>
-
-                <div className="col-span-7 flex min-h-0 flex-col gap-6">
-                    <Panel title="Today's schedule" icon={CalendarIcon} className="flex-1 min-h-0" isDark={isDark}>
-                        {schedule.length > 0 ? (
-                            <>
-                                {schedule.map((item: any, i: number) => (
-                                    <div
-                                        key={i}
-                                        className={`flex items-center gap-5 rounded-xl p-4 ring-1 ${
-                                            isDark
-                                                ? 'bg-slate-950/60 ring-slate-800'
-                                                : 'bg-slate-50 ring-slate-100'
+                        <div className="space-y-3">
+                            {announcements.map((a: any, idx: number) => {
+                                const tone: Tone = idx % 3 === 0 ? 'amber' : idx % 3 === 1 ? 'rose' : 'blue';
+                                const tag = idx === 0 ? 'IMPORTANT' : idx === 1 ? 'URGENT' : 'REMINDER';
+                                return (
+                                    <article
+                                        key={a.id}
+                                        className={`rounded-xl p-4 border transition-all ${
+                                            idx === 0
+                                                ? isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50/60 border-amber-200/80'
+                                                : idx === 1
+                                                    ? isDark ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50/60 border-rose-200/80'
+                                                    : isDark ? 'bg-sky-500/10 border-sky-500/20' : 'bg-sky-50/60 border-sky-200/80'
                                         }`}
                                     >
-                                        <div className={`w-44 shrink-0 rounded-lg py-2 text-center text-xl font-bold tabular-nums ring-1 ${
-                                            isDark
-                                                ? 'bg-amber-950/40 text-amber-300 ring-amber-500/30'
-                                                : 'bg-amber-50 text-amber-700 ring-amber-200'
-                                        }`}>
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${TONE_BOX[tone][isDark ? 'dark' : 'light']}`}>
+                                                    {idx === 0 ? <CalendarIcon size={16} /> : idx === 1 ? <FileText size={16} /> : <ShieldCheck size={16} />}
+                                                </div>
+                                                <h3 className="text-base font-bold text-slate-900 dark:text-white">{a.title}</h3>
+                                            </div>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                idx === 0
+                                                    ? 'bg-amber-200/80 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                                                    : idx === 1
+                                                        ? 'bg-rose-200/80 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
+                                                        : 'bg-sky-200/80 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300'
+                                            }`}>
+                                                {tag}
+                                            </span>
+                                        </div>
+                                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">{a.author ? a.author.name : 'System Admin'}</p>
+                                        <p className="mt-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">{a.message}</p>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="flex flex-1 items-center justify-center text-center p-8 text-slate-400">
+                            <p className="text-base font-medium">No announcements today.</p>
+                        </div>
+                    )}
+                </BentoTile>
+
+                {/* Right Column: Today's Schedule & Next Meetings */}
+                <div className="col-span-7 flex h-full min-h-0 flex-col gap-4">
+                    {/* Today's Schedule Card */}
+                    <BentoTile
+                        title="Today's schedule"
+                        icon={CalendarIcon}
+                        iconTone="amber"
+                        className="flex-1 min-h-0"
+                        isDark={isDark}
+                        aside={
+                            <button type="button" className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 cursor-pointer">
+                                View Full Schedule <ChevronRight size={14} />
+                            </button>
+                        }
+                    >
+                        {schedule.length > 0 ? (
+                            <div className="space-y-2.5">
+                                {schedule.map((item: any, i: number) => (
+                                    <div key={i} className="flex items-center gap-3.5 rounded-xl p-3 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+                                        <div className="w-32 shrink-0 rounded-lg py-1.5 text-center text-xs font-bold tabular-nums bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
                                             {item.time}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className={`truncate text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                                {item.title}
-                                            </p>
-                                            <p className={`truncate text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                {item.venue}
-                                            </p>
+                                            <p className="truncate text-base font-bold text-slate-900 dark:text-white">{item.title}</p>
+                                            <p className="truncate text-xs text-slate-500 dark:text-slate-400">{item.venue}</p>
                                         </div>
-                                        {item.type && (
-                                            <span className={`shrink-0 rounded-full px-4 py-1 text-base font-semibold ring-1 ${
-                                                isDark
-                                                    ? 'bg-slate-900 text-amber-400 ring-amber-400/30'
-                                                    : 'bg-white text-slate-700 ring-slate-200'
-                                            }`}>
-                                                {item.type}
-                                            </span>
-                                        )}
-                                    </div>
-                                ))}
-                                <More count={data.todays_schedule.length - schedule.length} isDark={isDark} />
-                            </>
-                        ) : (
-                            <Empty isDark={isDark}>No meetings or activities scheduled for today.</Empty>
-                        )}
-                    </Panel>
-
-                    <Panel title="Next 3 meetings" icon={Clock} className="shrink-0" isDark={isDark}>
-                        {upcoming.length > 0 ? (
-                            <div className="grid grid-cols-3 gap-4">
-                                {upcoming.map((m: any) => (
-                                    <div
-                                        key={m.id}
-                                        className={`min-w-0 rounded-xl p-4 ring-1 ${
-                                            isDark
-                                                ? 'bg-slate-950/60 ring-slate-800'
-                                                : 'bg-slate-50 ring-slate-100'
-                                        }`}
-                                    >
-                                        <p className="text-lg font-bold text-amber-500">{m.date}</p>
-                                        <p className={`mt-1 truncate text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                            {m.title}
-                                        </p>
-                                        <p className={`truncate text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{m.time}</p>
+                                        {item.type && <Pill tone="blue" isDark={isDark}>{item.type}</Pill>}
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <Empty isDark={isDark}>No upcoming meetings scheduled.</Empty>
+                            <div className="flex flex-1 flex-col items-center justify-center text-center p-6 text-slate-400">
+                                <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 mb-3">
+                                    <CalendarIcon size={28} />
+                                </div>
+                                <p className="text-lg font-bold text-slate-800 dark:text-slate-200">Nothing scheduled for today.</p>
+                                <p className="text-xs text-slate-400 mt-0.5">Enjoy a productive day!</p>
+                            </div>
                         )}
-                    </Panel>
+                    </BentoTile>
+
+                    {/* Next Meetings Card */}
+                    <BentoTile
+                        title="Next meetings"
+                        icon={Clock}
+                        iconTone="amber"
+                        className="flex-1 min-h-0"
+                        isDark={isDark}
+                        aside={
+                            <button type="button" className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 cursor-pointer">
+                                View All <ChevronRight size={14} />
+                            </button>
+                        }
+                    >
+                        {upcoming.length > 0 ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {upcoming.map((m: any) => (
+                                    <div key={m.id} className="rounded-xl p-3 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
+                                        <div>
+                                            <p className="text-xs font-bold text-amber-600 dark:text-amber-400">{m.date}</p>
+                                            <p className="mt-1 line-clamp-2 text-sm font-bold text-slate-900 dark:text-white">{m.title}</p>
+                                        </div>
+                                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 truncate">{m.time}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-1 flex-col items-center justify-center text-center p-6 text-slate-400">
+                                <div className="h-14 w-14 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 mb-2">
+                                    <Users size={24} />
+                                </div>
+                                <p className="text-base font-bold text-slate-800 dark:text-slate-200">No upcoming meetings.</p>
+                                <p className="text-xs text-slate-400 mt-0.5">Meetings scheduled for this week will be shown here.</p>
+                            </div>
+                        )}
+                    </BentoTile>
                 </div>
             </div>
         </div>
@@ -450,118 +599,81 @@ function SlideOne({ data, slideConfig, isDark = false }: any) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Slide 2 – Schedule & meetings                                              */
+/*  Slide 2 – Schedule & Meetings                                              */
 /* -------------------------------------------------------------------------- */
 
-function SlideTwo({ data, slideConfig, isDark = false }: any) {
-    const meetings = data.upcoming_meetings.slice(0, 4);
-    const deadlines = data.upcoming_deadlines.slice(0, 4);
+function SlideTwo({ data, isDark = false }: any) {
+    const meetings = data.upcoming_meetings || [];
+    const deadlines = data.upcoming_deadlines || [];
 
     return (
-        <div className={slideRoot}>
-            <div className="grid grid-cols-3 gap-5">
-                <StatCard icon={CalendarIcon} tone="yellow" label="Meetings this week" value={data.kpis.meetings_this_week} isDark={isDark} />
-                <StatCard icon={Activity} tone="sky" label="Activities this week" value={data.kpis.activities_this_week} isDark={isDark} />
-                <StatCard icon={AlertTriangle} tone="rose" label="Deadlines this week" value={data.kpis.deadlines_this_week} isDark={isDark} />
+        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
+            <div className="grid grid-cols-3 gap-4 shrink-0">
+                <Kpi icon={CalendarIcon} tone="amber" accent label="Meetings this week" value={data.kpis.meetings_this_week} isDark={isDark} />
+                <Kpi icon={Activity} tone="blue" label="Activities this week" value={data.kpis.activities_this_week} isDark={isDark} />
+                <Kpi icon={AlertTriangle} tone="rose" label="Deadlines this week" value={data.kpis.deadlines_this_week} isDark={isDark} />
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-12 gap-6">
-                <Panel title="This week" icon={CalendarIcon} className="col-span-8" isDark={isDark}>
-                    <div className="grid min-h-0 flex-1 grid-cols-5 gap-3">
+            <div className="grid h-full min-h-0 grid-cols-12 gap-4">
+                <BentoTile title="This week" icon={CalendarIcon} iconTone="blue" className="col-span-8 h-full min-h-0" isDark={isDark}>
+                    <div className="grid h-full min-h-0 grid-cols-5 gap-3">
                         {data.weekly_schedule.map((day: any, i: number) => {
                             const [weekday, date] = String(day.date).split(',');
-                            const items = day.items.slice(0, 4);
+                            const items = day.items || [];
                             return (
                                 <div
                                     key={i}
-                                    className={`flex min-h-0 flex-col overflow-hidden rounded-xl ring-1 ${
+                                    className={`flex h-full min-h-0 flex-col rounded-xl border ${
                                         day.is_today
-                                            ? 'shadow-md ring-2 ring-amber-400'
-                                            : isDark ? 'ring-slate-800' : 'ring-slate-200'
+                                            ? 'border-amber-400 bg-amber-50/30 dark:bg-amber-500/10'
+                                            : 'border-slate-200/80 dark:border-white/5 bg-slate-50/70 dark:bg-white/[0.02]'
                                     }`}
                                 >
-                                    <div
-                                        className={`px-3 py-3 text-center ${
-                                            day.is_today
-                                                ? 'bg-amber-500 text-slate-950 font-black'
-                                                : isDark ? 'bg-slate-950 text-slate-200' : 'bg-slate-100 text-slate-700'
-                                        }`}
-                                    >
-                                        <p className="text-xl font-bold">{weekday}</p>
-                                        <p className={`text-base ${day.is_today ? 'text-slate-900' : isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                            {date}
-                                        </p>
+                                    <div className={`px-3 py-2 text-center rounded-t-xl ${day.is_today ? 'bg-amber-400 text-slate-950' : 'border-b border-slate-200/60 dark:border-white/5'}`}>
+                                        <p className="text-sm font-bold">{weekday}</p>
+                                        <p className={`text-[11px] font-medium ${day.is_today ? 'text-slate-900/80' : 'text-slate-500 dark:text-slate-400'}`}>{date}</p>
                                     </div>
-                                    <div className={`flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2 ${
-                                        isDark ? 'bg-slate-900/60' : 'bg-white'
-                                    }`}>
-                                        {items.length === 0 && (
-                                            <p className={`pt-4 text-center text-base ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                                                No events
-                                            </p>
-                                        )}
+                                    <div className="flex-1 min-h-0 overflow-y-auto tv-scrollbar p-2 space-y-2">
+                                        {items.length === 0 && <p className="pt-4 text-center text-xs text-slate-400">No events</p>}
                                         {items.map((item: any, j: number) => (
-                                            <div
-                                                key={j}
-                                                className={`rounded-lg p-2.5 ring-1 ${
-                                                    isDark
-                                                        ? 'bg-slate-950/60 ring-slate-800'
-                                                        : 'bg-slate-50 ring-slate-100'
-                                                }`}
-                                            >
-                                                <p className="text-base font-bold text-amber-500 tabular-nums">{item.time}</p>
-                                                <p className={`line-clamp-2 text-lg leading-snug font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                                                    {item.title}
-                                                </p>
+                                            <div key={j} className="rounded-lg p-2.5 bg-white dark:bg-[#131b2e] border border-slate-200/70 dark:border-white/5 shadow-2xs">
+                                                <p className="text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums">{item.time}</p>
+                                                <p className="mt-0.5 line-clamp-2 text-xs font-bold text-slate-800 dark:text-slate-200">{item.title}</p>
                                             </div>
                                         ))}
-                                        <More count={day.items.length - items.length} isDark={isDark} />
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
-                </Panel>
+                </BentoTile>
 
-                <div className="col-span-4 flex min-h-0 flex-col gap-6">
-                    <Panel title="Upcoming meetings" icon={Clock} className="flex-1 min-h-0" isDark={isDark}>
-                        {meetings.length > 0 ? (
-                            meetings.map((m: any) => (
-                                <div key={m.id} className="border-l-4 border-amber-400 py-0.5 pl-4">
-                                    <p className="text-lg font-bold text-amber-500">
-                                        {m.date} · {m.time}
-                                    </p>
-                                    <p className={`truncate text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{m.title}</p>
-                                    <p className={`truncate text-base ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{m.venue}</p>
+                <div className="col-span-4 flex h-full min-h-0 flex-col gap-4">
+                    <BentoTile title="Upcoming meetings" icon={Clock} iconTone="purple" className="flex-1 min-h-0" isDark={isDark}>
+                        <div className="space-y-2.5">
+                            {meetings.map((m: any) => (
+                                <div key={m.id} className="rounded-xl p-3 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+                                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400">{m.date} · {m.time}</p>
+                                    <p className="truncate text-sm font-bold text-slate-900 dark:text-white mt-0.5">{m.title}</p>
+                                    <p className="truncate text-xs text-slate-500 dark:text-slate-400 mt-0.5">{m.venue}</p>
                                 </div>
-                            ))
-                        ) : (
-                            <Empty isDark={isDark}>No upcoming meetings.</Empty>
-                        )}
-                    </Panel>
+                            ))}
+                        </div>
+                    </BentoTile>
 
-                    <Panel title="Calendar highlights" icon={AlertTriangle} className="flex-1 min-h-0" isDark={isDark}>
-                        {deadlines.length > 0 ? (
-                            deadlines.map((d: any) => (
-                                <div
-                                    key={d.id}
-                                    className={`flex items-center justify-between gap-4 rounded-xl p-4 ring-1 ${
-                                        isDark
-                                            ? 'bg-rose-950/30 ring-rose-500/20 text-rose-200'
-                                            : 'bg-rose-50 ring-rose-100 text-rose-950'
-                                    }`}
-                                >
+                    <BentoTile title="Deadlines" icon={AlertTriangle} iconTone="rose" className="flex-1 min-h-0" isDark={isDark}>
+                        <div className="space-y-2.5">
+                            {deadlines.map((d: any) => (
+                                <div key={d.id} className="flex items-center justify-between gap-3 rounded-xl p-3 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
                                     <div className="min-w-0">
-                                        <p className="truncate text-xl font-bold">{d.title}</p>
-                                        <p className="text-base text-rose-400">Submission deadline</p>
+                                        <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{d.title}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Submission deadline</p>
                                     </div>
-                                    <p className="shrink-0 text-xl font-bold text-rose-400 tabular-nums">{d.due_date}</p>
+                                    <span className="shrink-0 text-xs font-bold text-rose-600 dark:text-rose-400 tabular-nums">{d.due_date}</span>
                                 </div>
-                            ))
-                        ) : (
-                            <Empty isDark={isDark}>No upcoming deadlines.</Empty>
-                        )}
-                    </Panel>
+                            ))}
+                        </div>
+                    </BentoTile>
                 </div>
             </div>
         </div>
@@ -569,304 +681,373 @@ function SlideTwo({ data, slideConfig, isDark = false }: any) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Slide 3 – Compliance monitoring                                            */
+/*  Slide 3 – Compliance Monitoring                                            */
 /* -------------------------------------------------------------------------- */
 
-const OUTPUT_STATUS: Record<string, string> = {
-    Overdue: 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:ring-rose-800',
-    'Due Soon': 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:ring-amber-800',
-};
-
-function SlideThree({ data, slideConfig, isDark = false }: any) {
-    const summary = data.compliance_summary.slice(0, 6);
-    const pending = data.pending_outputs.slice(0, 6);
+function SlideThree({ data, isDark = false }: any) {
+    const summary = data.compliance_summary || [];
+    const pending = data.pending_outputs || [];
 
     return (
-        <div className={slideRoot}>
-            <div className="grid grid-cols-3 gap-5">
-                <StatCard icon={CheckCircle} tone="emerald" label="Overall compliance rate" value={`${data.kpis.compliance_rate}%`} isDark={isDark} />
-                <StatCard icon={Clock} tone="amber" label="Pending outputs" value={data.kpis.pending_outputs} isDark={isDark} />
-                <StatCard icon={AlertTriangle} tone="rose" label="Overdue outputs" value={data.kpis.overdue_outputs} isDark={isDark} />
+        <div className="grid h-full min-h-0 flex-1 grid-cols-12 gap-4">
+            <div className="col-span-3 flex h-full min-h-0 flex-col gap-4">
+                <Kpi icon={ShieldCheck} tone="amber" accent label="Compliance rate" value={`${data.kpis.compliance_rate}%`} isDark={isDark} />
+                <Kpi icon={Clock} tone="blue" label="Pending outputs" value={data.kpis.pending_outputs} isDark={isDark} />
+                <Kpi icon={AlertTriangle} tone="rose" label="Overdue outputs" value={data.kpis.overdue_outputs} isDark={isDark} />
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-12 gap-6">
-                <Panel title="Compliance summary" icon={FileText} className="col-span-5" isDark={isDark}>
-                    <div className="flex flex-1 flex-col justify-start gap-6">
-                        {summary.map((req: any) => (
-                            <div key={req.id}>
-                                <div className="mb-2 flex items-baseline justify-between gap-4">
-                                    <span className={`truncate text-xl font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                                        {req.title}
-                                    </span>
-                                    <span className={`shrink-0 text-lg tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                        <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{req.rate}%</span> · {req.complied}/{req.total}
-                                    </span>
-                                </div>
-                                <div className={`h-3.5 w-full overflow-hidden rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                    <div
-                                        className={`h-full rounded-full transition-all duration-500 ${
-                                            req.rate >= 80 ? 'bg-emerald-500' : req.rate >= 50 ? 'bg-amber-400' : 'bg-rose-500'
-                                        }`}
-                                        style={{ width: `${req.rate}%` }}
-                                    />
-                                </div>
+            <BentoTile title="Compliance summary" icon={FileText} iconTone="blue" className="col-span-4 h-full min-h-0" isDark={isDark}>
+                <div className="space-y-4">
+                    {summary.map((req: any) => (
+                        <div key={req.id} className="rounded-xl p-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+                            <div className="mb-2 flex items-baseline justify-between gap-3">
+                                <span className="truncate text-sm font-bold text-slate-900 dark:text-white">{req.title}</span>
+                                <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                                    <strong className="font-extrabold text-slate-800 dark:text-slate-200">{req.rate}%</strong> · {req.complied}/{req.total}
+                                </span>
                             </div>
-                        ))}
-                    </div>
-                </Panel>
-
-                <Panel title="Pending & overdue submissions" icon={AlertCircle} className="col-span-7" isDark={isDark}>
-                    <div className="flex flex-1 flex-col gap-3 overflow-hidden">
-                        {pending.length > 0 ? (
-                            pending.map((p: any) => (
+                            <div className={`h-2 w-full overflow-hidden rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}>
                                 <div
-                                    key={p.id}
-                                    className={`flex items-center justify-between gap-4 rounded-xl p-4 ring-1 ${
-                                        isDark ? 'bg-slate-950/60 ring-slate-800' : 'bg-slate-50 ring-slate-100'
+                                    className={`h-full rounded-full transition-all duration-500 ${
+                                        req.rate >= 80 ? 'bg-emerald-500' : req.rate >= 50 ? 'bg-amber-400' : 'bg-rose-500'
                                     }`}
-                                >
-                                    <div className="min-w-0">
-                                        <p className={`truncate text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{p.faculty}</p>
-                                        <p className={`truncate text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                            {p.requirement} · {p.program}
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className={`rounded-full px-3 py-1 text-base font-semibold ring-1 ${OUTPUT_STATUS[p.status] || ''}`}>
-                                            {p.status}
-                                        </span>
-                                        <p className={`mt-1 text-base tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Due {p.due_date}</p>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <Empty isDark={isDark}>All submissions are compliant.</Empty>
-                        )}
-                    </div>
-                </Panel>
-            </div>
+                                    style={{ width: `${req.rate}%` }}
+                                />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </BentoTile>
+
+            <BentoTile title="Pending & overdue" icon={AlertCircle} iconTone="rose" className="col-span-5 h-full min-h-0" isDark={isDark}>
+                <div className="space-y-3">
+                    {pending.map((p: any) => (
+                        <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl p-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{p.faculty}</p>
+                                <p className="truncate text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    {p.requirement} · {p.program}
+                                </p>
+                            </div>
+                            <div className="flex shrink-0 flex-col items-end gap-1">
+                                <Pill tone={p.status === 'Overdue' ? 'rose' : 'amber'} isDark={isDark}>
+                                    {p.status}
+                                </Pill>
+                                <p className="text-[11px] tabular-nums text-slate-500 dark:text-slate-400">Due {p.due_date}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </BentoTile>
         </div>
     );
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Slide 4 – Performance & recognition                                        */
+/*  Slide 4 – Performance & Recognition (Reference Image 1)                    */
 /* -------------------------------------------------------------------------- */
 
-function SlideFour({ data, slideConfig, isDark = false }: any) {
-    const programs = data.top_programs.slice(0, 3);
-    const faculty = data.top_faculty.slice(0, 5);
-    const leader = data.top_programs[0];
+function SlideFour({ data, isDark = false }: any) {
+    const programs = data.top_programs || [];
+    const faculty = data.top_faculty || [];
+    const topProgram = programs[0] || { name: 'BSIS', on_time_rate: 96 };
 
     return (
-        <div className={slideRoot}>
-            <div className="grid grid-cols-3 gap-5">
-                <StatCard icon={CheckCircle} tone="emerald" label="College on-time rate" value={`${data.kpis.college_on_time_rate}%`} isDark={isDark} />
-                <StatCard icon={Trophy} tone="yellow" label="Faculty with zero overdue" value={data.kpis.zero_overdue_faculty} isDark={isDark} />
-                <div className={`flex items-center p-5 ${getCardClass(isDark)} border-l-4 border-amber-400`}>
-                    <p className={`text-xl leading-snug ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                        {leader ? (
-                            <>
-                                <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{leader.name}</span> leads with a{' '}
-                                <span className="font-extrabold text-amber-500">{leader.on_time_rate}%</span> on-time submission rate.
-                            </>
-                        ) : (
-                            'No program rankings available yet.'
-                        )}
-                    </p>
+        <div className="grid h-full min-h-0 flex-1 grid-cols-12 gap-4">
+            {/* Left Column: Top Program Hero Card */}
+            <div className="col-span-4 h-full min-h-0 flex flex-col justify-between rounded-2xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#1E3A8A] text-white p-7 relative overflow-hidden shadow-md">
+                <div className="relative z-10">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-lg bg-amber-400/20 text-amber-300 flex items-center justify-center">
+                                <Trophy size={18} />
+                            </div>
+                            <span className="text-xs font-bold uppercase tracking-wider text-amber-300">Top Program</span>
+                        </div>
+                        <span className="text-xs font-bold bg-white/10 px-3 py-1 rounded-full text-slate-200">
+                            This Semester
+                        </span>
+                    </div>
+
+                    <div className="mt-8">
+                        <h2 className="text-6xl font-black tracking-tight">{topProgram.name}</h2>
+                        <p className="mt-2 text-5xl font-black text-amber-300 tabular-nums">{topProgram.on_time_rate}%</p>
+                        <p className="mt-2 text-sm font-medium text-slate-300">On-time submission rate</p>
+                    </div>
+                </div>
+
+                {/* Building graphic / overlay */}
+                <div className="relative z-10 mt-auto pt-6 border-t border-white/10">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>Ranked #1 in on-time compliance</span>
+                        <div className="flex gap-1.5">
+                            <span className="h-1.5 w-6 rounded-full bg-blue-500" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-12 gap-6">
-                <section className="col-span-5 flex min-h-0 flex-col rounded-2xl bg-amber-500 p-7 text-slate-950 shadow-lg">
-                    <h2 className="mb-5 flex items-center gap-3 text-2xl font-black">
-                        <Trophy size={28} className="text-white" /> Top programs
-                    </h2>
-                    <div className="flex min-h-0 flex-1 flex-col justify-start gap-4 overflow-hidden mt-2">
-                        {programs.map((p: any, i: number) => (
-                            <div
-                                key={p.id}
-                                className={`flex items-center gap-5 rounded-xl px-5 py-4 ${
-                                    i === 0 ? 'bg-white/25 ring-2 ring-white/50' : 'bg-black/10'
-                                }`}
-                            >
-                                <span className="w-12 text-4xl font-black tabular-nums text-white">
-                                    {i + 1}
-                                </span>
-                                <p className="min-w-0 flex-1 truncate text-3xl font-bold">{p.name}</p>
-                                <div className="text-right">
-                                    <p className="text-3xl font-black tabular-nums text-white">{p.on_time_rate}%</p>
-                                    <p className="text-base text-slate-900 font-semibold">On time</p>
-                                </div>
+            {/* Right Side: KPIs + Faculty Ranking + Outputs Status */}
+            <div className="col-span-8 flex h-full min-h-0 flex-col gap-4">
+                {/* Top 2 KPIs */}
+                <div className="grid grid-cols-2 gap-4 shrink-0">
+                    <div className={`rounded-2xl p-4 flex items-center justify-between gap-3 border ${
+                        isDark ? 'bg-[#131b2e] border-white/10' : 'bg-emerald-50/60 border-emerald-200/80'
+                    }`}>
+                        <div className="flex items-center gap-3.5">
+                            <div className="h-12 w-12 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                <Clock size={22} />
                             </div>
-                        ))}
+                            <div>
+                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">College on-time rate</p>
+                                <p className="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">{data.kpis.college_on_time_rate}%</p>
+                                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                                    <ArrowUpRight size={13} /> 12% vs. last semester
+                                </p>
+                            </div>
+                        </div>
+                        <MiniWave positive />
                     </div>
-                </section>
 
-                <Panel title="Top performing faculty" icon={Trophy} className="col-span-7" isDark={isDark}>
-                    {faculty.length > 0 ? (
-                        faculty.map((f: any, i: number) => (
-                            <div
-                                key={i}
-                                className={`flex items-center justify-between gap-4 rounded-xl p-4 ring-1 ${
-                                    isDark ? 'bg-slate-950/60 ring-slate-800' : 'bg-slate-50 ring-slate-100'
-                                }`}
-                            >
-                                <div className="flex min-w-0 items-center gap-5">
-                                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-amber-400 text-2xl font-black text-slate-950 shadow-sm">
-                                        {i + 1}
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className={`truncate text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{f.name}</p>
-                                        <p className={`truncate text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{f.program}</p>
-                                    </div>
-                                </div>
-                                <span className="shrink-0 rounded-lg bg-emerald-500/15 px-4 py-2 text-xl font-bold text-emerald-500 ring-1 ring-emerald-500/30 tabular-nums">
-                                    {f.on_time_rate}% on time
-                                </span>
+                    <div className={`rounded-2xl p-4 flex items-center justify-between gap-3 border ${
+                        isDark ? 'bg-[#131b2e] border-white/10' : 'bg-amber-50/60 border-amber-200/80'
+                    }`}>
+                        <div className="flex items-center gap-3.5">
+                            <div className="h-12 w-12 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                <FileText size={22} />
                             </div>
-                        ))
-                    ) : (
-                        <Empty isDark={isDark}>No faculty rankings available yet.</Empty>
-                    )}
-                </Panel>
+                            <div>
+                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Zero overdue faculty</p>
+                                <p className="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">{data.kpis.zero_overdue_faculty}</p>
+                                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                                    <ArrowUpRight size={13} /> 2 vs. last semester
+                                </p>
+                            </div>
+                        </div>
+                        <MiniBars tone="amber" />
+                    </div>
+                </div>
+
+                {/* Bottom Row: Top Faculty (Left) & Highlights (Right) */}
+                <div className="grid h-full min-h-0 grid-cols-12 gap-4">
+                    {/* Top Performing Faculty */}
+                    <BentoTile
+                        title="Top Performing Faculty"
+                        icon={Trophy}
+                        iconTone="amber"
+                        className="col-span-7 h-full min-h-0"
+                        isDark={isDark}
+                        aside={
+                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-2.5 py-0.5 rounded-full">
+                                This Semester
+                            </span>
+                        }
+                    >
+                        <div className="space-y-3">
+                            {faculty.map((f: any, i: number) => {
+                                const rankColors = [
+                                    'bg-amber-400 text-slate-950 font-black',
+                                    'bg-slate-300 text-slate-800 font-bold',
+                                    'bg-amber-700/80 text-white font-bold',
+                                    'bg-slate-200 text-slate-700 font-bold',
+                                    'bg-slate-200 text-slate-700 font-bold',
+                                ];
+                                return (
+                                    <div key={i} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <span className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs shrink-0 ${rankColors[i] || 'bg-slate-100 text-slate-600'}`}>
+                                                {i + 1}
+                                            </span>
+                                            <div className="h-7 w-7 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center text-slate-500 shrink-0">
+                                                <User size={15} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{f.name}</p>
+                                                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{f.program}</p>
+                                                {/* Green progress bar */}
+                                                <div className="w-32 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 mt-1">
+                                                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${f.on_time_rate}%` }} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-base font-extrabold text-slate-900 dark:text-white tabular-nums">{f.on_time_rate}%</p>
+                                            <p className="text-[10px] text-slate-400">on time</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </BentoTile>
+
+                    {/* Right Column: Recent Outputs & Highlights */}
+                    <div className="col-span-5 flex h-full min-h-0 flex-col gap-4">
+                        <BentoTile title="Recent Outputs Status" icon={FileText} iconTone="amber" className="flex-1 min-h-0" isDark={isDark}>
+                            <div className="space-y-2.5">
+                                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/[0.02]">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className="h-7 w-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                                            <FileText size={14} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="truncate text-xs font-bold">TOS/TQ Submission</p>
+                                            <p className="text-[10px] text-slate-400">Deadline: Oct 10, 2026</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 shrink-0">3 pending</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/[0.02]">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className="h-7 w-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                                            <Users size={14} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="truncate text-xs font-bold">Faculty Workload</p>
+                                            <p className="text-[10px] text-slate-400">Deadline: Oct 12, 2026</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">2 pending</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/[0.02]">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className="h-7 w-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                                            <ShieldCheck size={14} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="truncate text-xs font-bold">Compliance Review</p>
+                                            <p className="text-[10px] text-slate-400">Deadline: Oct 15, 2026</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 shrink-0">In progress</span>
+                                </div>
+                            </div>
+                        </BentoTile>
+
+                        <BentoTile title="This Week's Highlights" icon={Star} iconTone="amber" className="flex-1 min-h-0" isDark={isDark}>
+                            <div className="space-y-2.5">
+                                <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                                            <TrendingUp size={16} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-bold text-slate-900 dark:text-white">BSIT</p>
+                                            <p className="text-[10px] text-slate-400">Highest improvement rate</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">↑ 12%</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+                                            <Users size={16} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-bold text-slate-900 dark:text-white">4 faculty members</p>
+                                            <p className="text-[10px] text-slate-400">with zero overdue items</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md">100%</span>
+                                </div>
+                            </div>
+                        </BentoTile>
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Slide 5 – Classroom & Lab Monitoring (Who is currently in the lab)          */
+/*  Slide 5 – Classroom & Lab Monitoring                                       */
 /* -------------------------------------------------------------------------- */
 
-const ROOM_STATUS_LIGHT: Record<string, { pill: string; dot: string }> = {
-    Available: { pill: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
-    'In Use': { pill: 'bg-amber-50 text-amber-700 ring-amber-300 font-bold', dot: 'bg-amber-500 animate-pulse' },
-    Reserved: { pill: 'bg-sky-50 text-sky-700 ring-sky-200', dot: 'bg-sky-500' },
-    Maintenance: { pill: 'bg-rose-50 text-rose-700 ring-rose-200', dot: 'bg-rose-500' },
-    Unavailable: { pill: 'bg-slate-100 text-slate-700 ring-slate-200', dot: 'bg-slate-400' },
+const ROOM_TONE: Record<string, Tone> = {
+    Available: 'emerald',
+    'In Use': 'amber',
+    Reserved: 'blue',
+    Maintenance: 'rose',
+    Unavailable: 'blue',
 };
 
-const ROOM_STATUS_DARK: Record<string, { pill: string; dot: string }> = {
-    Available: { pill: 'bg-emerald-950/60 text-emerald-300 ring-emerald-800', dot: 'bg-emerald-400' },
-    'In Use': { pill: 'bg-amber-950/70 text-amber-300 ring-amber-500/50 font-bold', dot: 'bg-amber-400 animate-pulse' },
-    Reserved: { pill: 'bg-sky-950/60 text-sky-300 ring-sky-800', dot: 'bg-sky-400' },
-    Maintenance: { pill: 'bg-rose-950/60 text-rose-300 ring-rose-800', dot: 'bg-rose-400' },
-    Unavailable: { pill: 'bg-slate-800 text-slate-300 ring-slate-700', dot: 'bg-slate-500' },
-};
-
-function SlideFive({ data, slideConfig, isDark = false }: any) {
-    const rooms = data?.facilities?.slice(0, 12) || [];
-    const statusMap = isDark ? ROOM_STATUS_DARK : ROOM_STATUS_LIGHT;
-
-    // Identify who is currently in the lab
+function SlideFive({ data, isDark = false }: any) {
+    const rooms = data?.facilities || [];
     const activeLabs = rooms.filter((r: any) => r.status === 'In Use' && r.instructor);
 
     return (
-        <div className={slideRoot}>
-            <div className="grid grid-cols-4 gap-5">
-                <StatCard icon={Monitor} tone="yellow" label="Labs / Rooms in use" value={data?.kpis?.in_use ?? 0} isDark={isDark} />
-                <StatCard icon={CheckCircle2} tone="emerald" label="Available rooms" value={data?.kpis?.available ?? 0} isDark={isDark} />
-                <StatCard icon={AlertTriangle} tone="rose" label="Under maintenance" value={data?.kpis?.maintenance ?? 0} isDark={isDark} />
-                <div className={`flex items-center gap-4 p-5 ${getCardClass(isDark)} border-l-4 border-amber-400`}>
-                    <Users size={32} className="text-amber-500 shrink-0" />
-                    <div className="min-w-0">
-                        <p className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'} tabular-nums`}>
-                            {activeLabs.length} Faculty
-                        </p>
-                        <p className={`text-base font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Currently in labs</p>
-                    </div>
-                </div>
+        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
+            <div className="grid grid-cols-4 gap-4 shrink-0">
+                <Kpi icon={Monitor} tone="amber" accent label="Rooms in use" value={data?.kpis?.in_use ?? 0} isDark={isDark} />
+                <Kpi icon={CheckCircle2} tone="emerald" label="Available rooms" value={data?.kpis?.available ?? 0} isDark={isDark} />
+                <Kpi icon={AlertTriangle} tone="rose" label="Under maintenance" value={data?.kpis?.maintenance ?? 0} isDark={isDark} />
+                <Kpi icon={Users} tone="purple" label="Faculty in labs" value={activeLabs.length} isDark={isDark} />
             </div>
 
-            <div className="grid min-h-0 flex-1 auto-rows-fr grid-cols-4 gap-5 overflow-hidden">
-                {rooms.map((room: any) => {
-                    const s = statusMap[room.status] ?? statusMap.Unavailable;
-                    const isOccupied = room.status === 'In Use';
-
-                    return (
-                        <div
-                            key={room.id}
-                            className={`flex min-h-0 flex-col gap-3 overflow-hidden p-5 ${getCardClass(isDark)} ${
-                                isOccupied ? 'ring-2 ring-amber-400/80 shadow-md' : ''
-                            }`}
-                        >
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <h2 className={`truncate text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                            {room.room_name}
-                                        </h2>
-                                        {isOccupied && (
-                                            <span className="flex h-2.5 w-2.5 rounded-full bg-amber-400 animate-ping" />
-                                        )}
+            {/* Scrollable Bento Grid of Rooms */}
+            <div className="h-full min-h-0 flex-1 overflow-y-auto tv-scrollbar overscroll-contain pr-1">
+                <div className="grid grid-cols-4 gap-3.5 pb-2">
+                    {rooms.map((room: any) => {
+                        const tone = ROOM_TONE[room.status] ?? 'blue';
+                        const isOccupied = room.status === 'In Use';
+                        return (
+                            <div
+                                key={room.id}
+                                className={`flex min-h-[175px] flex-col justify-between rounded-2xl p-4 border transition-all ${
+                                    isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                                } ${isOccupied ? 'ring-2 ring-amber-400/80' : ''}`}
+                            >
+                                <div className="flex items-start justify-between gap-2.5">
+                                    <div className="min-w-0">
+                                        <h3 className="truncate text-lg font-bold text-slate-900 dark:text-white">{room.room_name}</h3>
+                                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">{room.room_type}</p>
                                     </div>
-                                    <p className={`truncate text-base font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                        {room.room_type}
-                                    </p>
+                                    <Pill tone={tone} isDark={isDark}>
+                                        <span className={`h-1.5 w-1.5 rounded-full ${isOccupied ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+                                        {room.status}
+                                    </Pill>
                                 </div>
-                                <span
-                                    className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-1 text-base font-semibold ring-1 ${s.pill}`}
-                                >
-                                    <span className={`h-2.5 w-2.5 rounded-full ${s.dot}`} />
-                                    {room.status}
-                                </span>
-                            </div>
 
-                            {room.current_class ? (
-                                <div className={`rounded-xl p-3.5 ring-1 ${
-                                    isDark ? 'bg-slate-950/80 ring-slate-800' : 'bg-amber-50/50 ring-amber-200/60'
-                                }`}>
-                                    <div className="flex items-center gap-2">
-                                        <GraduationCap size={18} className="text-amber-500 shrink-0" />
-                                        <p className={`line-clamp-1 text-xl font-bold ${isDark ? 'text-amber-300' : 'text-slate-900'}`}>
-                                            {room.instructor || 'Instructor'}
+                                {room.current_class ? (
+                                    <div className="mt-2 rounded-xl p-2.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+                                        <div className="flex items-center gap-1.5">
+                                            <GraduationCap size={15} className="shrink-0 text-amber-500" />
+                                            <p className="line-clamp-1 text-sm font-bold text-slate-900 dark:text-white">{room.instructor || 'Instructor'}</p>
+                                        </div>
+                                        <p className="mt-0.5 line-clamp-1 text-xs font-semibold text-slate-700 dark:text-slate-300">{room.current_class}</p>
+                                        <p className="line-clamp-1 text-[11px] text-slate-500 dark:text-slate-400">{room.program || 'Section'}</p>
+                                        <p className="mt-1 text-xs font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                                            {room.start_time?.substring(0, 5)} – {room.end_time?.substring(0, 5)}
                                         </p>
                                     </div>
-                                    <p className={`mt-1 line-clamp-1 text-base font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-                                        {room.current_class}
-                                    </p>
-                                    <p className={`line-clamp-1 text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                        {room.program || 'Section'}
-                                    </p>
-                                    <p className="mt-2 text-sm font-bold text-amber-500 tabular-nums">
-                                        {room.start_time?.substring(0, 5)} – {room.end_time?.substring(0, 5)}
-                                    </p>
-                                </div>
-                            ) : room.remarks ? (
-                                <p className={`line-clamp-2 text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                                    {room.remarks}
-                                </p>
-                            ) : (
-                                <div className={`flex flex-1 items-center justify-center rounded-xl p-3 text-center ${
-                                    isDark ? 'bg-slate-950/40 text-slate-500' : 'bg-slate-50 text-slate-400'
-                                }`}>
-                                    <p className="text-base font-medium">Ready for next session</p>
-                                </div>
-                            )}
+                                ) : room.remarks ? (
+                                    <p className="mt-2 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{room.remarks}</p>
+                                ) : (
+                                    <div className="mt-2 flex flex-1 items-center justify-center rounded-xl p-2.5 text-center bg-slate-50 dark:bg-white/[0.03] text-slate-400">
+                                        <p className="text-xs">Ready for next session</p>
+                                    </div>
+                                )}
 
-                            {room.next_schedule && (
-                                <p className={`mt-auto line-clamp-1 border-t pt-3 text-sm ${
-                                    isDark ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-600'
-                                }`}>
-                                    <span className={`font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Up next:</span>{' '}
-                                    {room.next_schedule}
-                                </p>
-                            )}
-                        </div>
-                    );
-                })}
+                                {room.next_schedule && (
+                                    <p className="mt-2 line-clamp-1 border-t border-slate-100 dark:border-white/5 pt-2 text-[11px] text-slate-500 dark:text-slate-400">
+                                        <strong className="font-bold text-slate-800 dark:text-slate-200">Up next:</strong> {room.next_schedule}
+                                    </p>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
-            <More count={(data?.facilities?.length ?? 0) - rooms.length} noun="more rooms" isDark={isDark} />
         </div>
     );
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Slide 6 – Class & Lab Attendance Monitoring (Google Sheets Summary)        */
+/*  Slide 6 – Class Monitoring (Reference Image 2)                             */
 /* -------------------------------------------------------------------------- */
 
-function SlideSix({ data, slideConfig, isDark = false }: any) {
+function SlideSix({ data, isDark = false }: any) {
     const kpis = data?.kpis || {
         present: 0,
         absent: 0,
@@ -880,166 +1061,124 @@ function SlideSix({ data, slideConfig, isDark = false }: any) {
     const records = data?.records || [];
     const highlights = data?.highlights || {};
 
-    // Sort records: show those with highest activity or late/absences first, or alphabetical
-    const displayRecords = useMemo(() => {
-        return [...records].sort((a: any, b: any) => b.present - a.present);
-    }, [records]);
+    const displayRecords = useMemo(() => [...records].sort((a: any, b: any) => b.present - a.present), [records]);
+
+    const base = kpis.present + kpis.absent;
+    const presentRate = base > 0 ? Math.round((kpis.present / base) * 100) : 0;
+    const absentRate = base > 0 ? Math.round((kpis.absent / base) * 100) : 0;
 
     return (
-        <div className={slideRoot}>
-            {/* Top KPI row with yellow/white theme styling */}
-            <div className="grid grid-cols-5 gap-5">
-                <StatCard
-                    icon={UserCheck}
-                    tone="emerald"
+        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
+            {/* Top Row: 5 KPIs */}
+            <div className="grid grid-cols-5 gap-3.5 shrink-0">
+                <Kpi
+                    icon={Users}
+                    tone="blue"
                     label="Present classes"
                     value={kpis.present}
                     sub={highlights['Most Present'] ? `Top: ${highlights['Most Present']}` : undefined}
                     isDark={isDark}
                 />
-                <StatCard
-                    icon={UserX}
+                <Kpi
+                    icon={CalendarIcon}
                     tone="rose"
                     label="Absent classes"
                     value={kpis.absent}
-                    sub={highlights['Most Absent'] ? `Most: ${highlights['Most Absent']}` : undefined}
+                    sub={highlights['Most Absent'] ? `Top: ${highlights['Most Absent']}` : undefined}
                     isDark={isDark}
                 />
-                <StatCard
-                    icon={Timer}
+                <Kpi
+                    icon={Clock}
                     tone="amber"
                     label="Late entries"
                     value={kpis.late}
-                    sub={highlights['Most Total Lates'] ? `Lates: ${highlights['Most Total Lates']}` : `${kpis.total_late_mins} mins total`}
+                    sub={highlights['Most Total Lates'] ? `Top: ${highlights['Most Total Lates']}` : `${kpis.total_late_mins} mins total`}
                     isDark={isDark}
                 />
-                <StatCard
-                    icon={Globe}
-                    tone="yellow"
+                <Kpi
+                    icon={Laptop}
+                    tone="emerald"
                     label="Online classes"
                     value={kpis.online}
                     sub={highlights['Most Online'] ? `Top: ${highlights['Most Online']}` : undefined}
                     isDark={isDark}
                 />
-                <StatCard
+                <Kpi
                     icon={HeartPulse}
-                    tone="violet"
-                    label="On-Leave classes"
+                    tone="purple"
+                    label="On-leave classes"
                     value={kpis.on_leave}
                     sub={highlights['Most On-Leave'] ? `Top: ${highlights['Most On-Leave']}` : undefined}
                     isDark={isDark}
                 />
             </div>
 
-            {/* Split layout: Detailed Attendance Table + Highlights summary panel */}
-            <div className="grid min-h-0 flex-1 grid-cols-12 gap-6 overflow-hidden">
-                {/* Faculty Attendance Table */}
-                <section className={`col-span-8 flex min-h-0 flex-col overflow-hidden ${getCardClass(isDark)}`}>
-                    <div
-                        className={`flex items-center justify-between border-b px-7 py-4 shrink-0 backdrop-blur ${
-                            isDark ? 'border-slate-800 bg-slate-900/95' : 'border-slate-100 bg-white/95'
-                        }`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <FileText size={26} className="text-amber-500" />
-                            <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                Faculty Attendance Breakdown
-                            </h2>
-                            <span className="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-xs font-bold text-amber-500 ring-1 ring-amber-400/30">
-                                {records.length} Instructors
-                            </span>
+            {/* Bottom Row: Faculty Attendance Table (Left) + Highlights/Summary (Right) */}
+            <div className="grid h-full min-h-0 grid-cols-12 gap-4">
+                {/* Faculty Attendance Card - Scrollable Table */}
+                <div className={`col-span-8 h-full min-h-0 flex flex-col rounded-2xl p-5 border overflow-hidden ${
+                    isDark ? 'bg-[#131b2e] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                }`}>
+                    <div className="flex shrink-0 items-center justify-between pb-3.5 border-b border-slate-100 dark:border-white/10">
+                        <div className="flex items-center gap-2.5">
+                            <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                <FileText size={18} />
+                            </div>
+                            <h2 className="text-lg font-bold tracking-tight">Faculty attendance</h2>
                         </div>
-                        <span className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            Live Google Sheets Summary
-                        </span>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <span>{records.length} instructors · synced from Google Sheets</span>
+                            <FileSpreadsheet size={15} className="text-emerald-600" />
+                        </div>
                     </div>
 
-                    <div className="min-h-0 flex-1 overflow-y-auto">
+                    {/* Table Scrollable Body */}
+                    <div className="mt-3 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1">
                         <table className="w-full border-collapse text-left">
-                            <thead
-                                className={`sticky top-0 z-10 text-sm font-black uppercase tracking-wider backdrop-blur ${
-                                    isDark ? 'bg-slate-950/90 text-amber-400 border-b border-slate-800' : 'bg-slate-50 text-slate-600 border-b border-slate-200'
-                                }`}
-                            >
+                            <thead className={`sticky top-0 z-20 backdrop-blur-md border-b text-xs font-bold uppercase tracking-wider ${
+                                isDark ? 'bg-[#131b2e]/95 border-white/10 text-slate-400' : 'bg-white/95 border-slate-200/80 text-slate-500'
+                            }`}>
                                 <tr>
-                                    <th className="py-3 px-5">Instructor</th>
-                                    <th className="py-3 px-4 text-center">Present</th>
-                                    <th className="py-3 px-4 text-center">Absent</th>
-                                    <th className="py-3 px-4 text-center">Late</th>
-                                    <th className="py-3 px-4 text-center">Online</th>
-                                    <th className="py-3 px-4 text-center">On-Leave</th>
-                                    <th className="py-3 px-4 text-center">Sub/Insert</th>
-                                    <th className="py-3 px-4 text-right pr-6">Late Mins</th>
+                                    <th className="py-2.5 pr-2 pl-1 font-bold w-10">#</th>
+                                    <th className="py-2.5 px-3 font-bold">Instructor</th>
+                                    <th className="py-2.5 px-3 text-center font-bold">Present</th>
+                                    <th className="py-2.5 px-3 text-center font-bold">Absent</th>
+                                    <th className="py-2.5 px-3 text-center font-bold">Late</th>
+                                    <th className="py-2.5 px-3 text-center font-bold">Online</th>
+                                    <th className="py-2.5 px-3 text-center font-bold">On-Leave</th>
+                                    <th className="py-2.5 px-3 text-center font-bold">Sub</th>
+                                    <th className="py-2.5 pl-3 pr-2 text-right font-bold">Late Mins</th>
                                 </tr>
                             </thead>
-                            <tbody className={`divide-y text-lg ${isDark ? 'divide-slate-800/60' : 'divide-slate-100'}`}>
+                            <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-sm tabular-nums">
                                 {displayRecords.map((r: any, idx: number) => {
-                                    const isHighlighted = idx < 3;
+                                    const rankBadge =
+                                        idx === 0 ? 'bg-amber-400 text-slate-950 font-black' :
+                                        idx === 1 ? 'bg-slate-300 text-slate-800 font-bold' :
+                                        idx === 2 ? 'bg-amber-700/80 text-white font-bold' :
+                                        'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400';
                                     return (
-                                        <tr
-                                            key={r.instructor}
-                                            className={`transition-colors ${
-                                                isDark
-                                                    ? 'hover:bg-slate-800/40 odd:bg-slate-900/30 even:bg-slate-900/60'
-                                                    : 'hover:bg-amber-50/40 odd:bg-white even:bg-slate-50/50'
-                                            }`}
-                                        >
-                                            <td className="py-2.5 px-5 font-bold">
-                                                <div className="flex items-center gap-2">
-                                                    {isHighlighted && (
-                                                        <span className="flex h-2 w-2 rounded-full bg-amber-400" />
-                                                    )}
-                                                    <span className={isDark ? 'text-slate-100' : 'text-slate-900'}>
-                                                        {r.instructor}
+                                        <tr key={r.instructor} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
+                                            <td className="py-2.5 pr-2 pl-1">
+                                                <span className={`h-6 w-6 rounded-md flex items-center justify-center text-xs ${rankBadge}`}>
+                                                    {idx + 1}
+                                                </span>
+                                            </td>
+                                            <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{r.instructor}</td>
+                                            <td className="py-2.5 px-3 text-center font-extrabold text-emerald-600 dark:text-emerald-400">{r.present}</td>
+                                            <td className="py-2.5 px-3 text-center font-bold text-rose-600 dark:text-rose-400">{r.absent > 0 ? r.absent : <span className="text-slate-300 dark:text-slate-600 font-normal">0</span>}</td>
+                                            <td className="py-2.5 px-3 text-center font-bold text-amber-600 dark:text-amber-400">{r.late > 0 ? r.late : <span className="text-slate-300 dark:text-slate-600 font-normal">0</span>}</td>
+                                            <td className="py-2.5 px-3 text-center font-bold text-sky-600 dark:text-sky-400">{r.online > 0 ? r.online : <span className="text-slate-300 dark:text-slate-600 font-normal">0</span>}</td>
+                                            <td className="py-2.5 px-3 text-center font-bold text-purple-600 dark:text-purple-400">{r.on_leave > 0 ? r.on_leave : <span className="text-slate-300 dark:text-slate-600 font-normal">0</span>}</td>
+                                            <td className="py-2.5 px-3 text-center text-slate-600 dark:text-slate-400">{r.sub_insert > 0 ? r.sub_insert : <span className="text-slate-300 dark:text-slate-600 font-normal">0</span>}</td>
+                                            <td className="py-2.5 pl-3 pr-2 text-right">
+                                                {r.total_late_mins > 0 ? (
+                                                    <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-bold">
+                                                        {r.total_late_mins} m
                                                     </span>
-                                                </div>
-                                            </td>
-                                            <td className="py-2.5 px-4 text-center">
-                                                <span className={`inline-block min-w-8 rounded-md px-2 py-0.5 font-bold tabular-nums ${
-                                                    r.present > 0
-                                                        ? isDark ? 'bg-emerald-950/70 text-emerald-300' : 'bg-emerald-50 text-emerald-700'
-                                                        : isDark ? 'text-slate-600' : 'text-slate-400'
-                                                }`}>
-                                                    {r.present}
-                                                </span>
-                                            </td>
-                                            <td className="py-2.5 px-4 text-center">
-                                                <span className={`inline-block min-w-8 rounded-md px-2 py-0.5 font-bold tabular-nums ${
-                                                    r.absent > 0
-                                                        ? isDark ? 'bg-rose-950/70 text-rose-300' : 'bg-rose-50 text-rose-700'
-                                                        : isDark ? 'text-slate-600' : 'text-slate-400'
-                                                }`}>
-                                                    {r.absent}
-                                                </span>
-                                            </td>
-                                            <td className="py-2.5 px-4 text-center">
-                                                <span className={`inline-block min-w-8 rounded-md px-2 py-0.5 font-bold tabular-nums ${
-                                                    r.late > 0
-                                                        ? isDark ? 'bg-amber-950/70 text-amber-300' : 'bg-amber-100 text-amber-800'
-                                                        : isDark ? 'text-slate-600' : 'text-slate-400'
-                                                }`}>
-                                                    {r.late}
-                                                </span>
-                                            </td>
-                                            <td className="py-2.5 px-4 text-center tabular-nums">
-                                                <span className={r.online > 0 ? (isDark ? 'text-sky-300 font-bold' : 'text-sky-700 font-bold') : (isDark ? 'text-slate-600' : 'text-slate-400')}>
-                                                    {r.online}
-                                                </span>
-                                            </td>
-                                            <td className="py-2.5 px-4 text-center tabular-nums">
-                                                <span className={r.on_leave > 0 ? (isDark ? 'text-violet-300 font-bold' : 'text-violet-700 font-bold') : (isDark ? 'text-slate-600' : 'text-slate-400')}>
-                                                    {r.on_leave}
-                                                </span>
-                                            </td>
-                                            <td className="py-2.5 px-4 text-center tabular-nums">
-                                                <span className={r.sub_insert > 0 ? (isDark ? 'text-amber-300 font-bold' : 'text-amber-700 font-bold') : (isDark ? 'text-slate-600' : 'text-slate-400')}>
-                                                    {r.sub_insert}
-                                                </span>
-                                            </td>
-                                            <td className="py-2.5 px-4 text-right pr-6 tabular-nums font-semibold">
-                                                <span className={r.total_late_mins > 0 ? 'text-amber-500 font-bold' : isDark ? 'text-slate-600' : 'text-slate-400'}>
-                                                    {r.total_late_mins > 0 ? `${r.total_late_mins} m` : '—'}
-                                                </span>
+                                                ) : (
+                                                    <span className="text-slate-300 dark:text-slate-600">—</span>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -1047,82 +1186,87 @@ function SlideSix({ data, slideConfig, isDark = false }: any) {
                             </tbody>
                         </table>
                     </div>
-                </section>
+                </div>
 
-                {/* Right Side: Key Highlights & Spreadsheet Summary Cards */}
-                <div className="col-span-4 flex min-h-0 flex-col gap-5 overflow-hidden">
-                    {/* Top Highlights Panel */}
-                    <div className="rounded-2xl bg-amber-500 p-6 text-slate-950 shadow-md">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Sparkles size={24} className="text-white" />
-                            <h3 className="text-xl font-black uppercase tracking-wider text-slate-950">
-                                Monitoring Highlights
-                            </h3>
+                {/* Right Column: Highlights & Summary Cards */}
+                <div className="col-span-4 flex h-full min-h-0 flex-col gap-4">
+                    {/* Highlights Card */}
+                    <BentoTile title="Highlights" icon={Star} iconTone="amber" className="flex-1 min-h-0" isDark={isDark}>
+                        <div className="space-y-2.5">
+                            {Object.entries(highlights).map(([label, value]: any, i: number) => {
+                                const icons = [Users, CalendarIcon, Clock, Laptop, HeartPulse];
+                                const tones: Tone[] = ['amber', 'rose', 'amber', 'blue', 'purple'];
+                                const ItemIcon = icons[i % icons.length];
+                                const tone = tones[i % tones.length];
+                                return (
+                                    <div key={label} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${TONE_BOX[tone][isDark ? 'dark' : 'light']}`}>
+                                                <ItemIcon size={16} />
+                                            </div>
+                                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{label}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{value}</span>
+                                            <ChevronRight size={14} className="text-slate-400" />
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                        <div className="flex flex-col gap-3">
-                            {Object.entries(highlights).map(([label, value]: any) => (
-                                <div key={label} className="rounded-xl bg-white/30 p-3 backdrop-blur-sm">
-                                    <p className="text-xs font-bold uppercase tracking-wider text-slate-900/80">{label}</p>
-                                    <p className="text-xl font-black text-slate-950 truncate mt-0.5">{value}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    </BentoTile>
 
-                    {/* Summary Quick Stats Card */}
-                    <Panel title="Attendance Summary" icon={Activity} className="flex-1 min-h-0" isDark={isDark}>
-                        <div className="flex flex-col gap-4 justify-between h-full">
-                            <div className={`rounded-xl p-4 ring-1 ${
-                                isDark ? 'bg-slate-950/70 ring-slate-800' : 'bg-slate-50 ring-slate-100'
-                            }`}>
-                                <div className="flex items-center justify-between">
-                                    <span className={`text-base font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                                        Faculty Tracked
-                                    </span>
-                                    <span className="text-2xl font-black text-amber-500 tabular-nums">{kpis.faculty_count}</span>
+                    {/* Summary 2x2 Grid Card */}
+                    <BentoTile
+                        title="Summary"
+                        icon={BarChart2}
+                        iconTone="blue"
+                        className="flex-1 min-h-0"
+                        isDark={isDark}
+                        aside={
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/10 px-2.5 py-0.5 rounded-full">
+                                This Semester
+                            </span>
+                        }
+                    >
+                        <div className="grid grid-cols-2 gap-3 h-full">
+                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
+                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                    <Users size={14} /> Faculty tracked
                                 </div>
-                                <div className="mt-3 flex items-center justify-between border-t pt-2 border-slate-200 dark:border-slate-800">
-                                    <span className={`text-base font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                                        Total Classes Logged
-                                    </span>
-                                    <span className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'} tabular-nums`}>
-                                        {kpis.present + kpis.absent + kpis.online + kpis.on_leave}
-                                    </span>
+                                <div className="flex items-end justify-between mt-2">
+                                    <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{kpis.faculty_count}</span>
+                                    <MiniWave positive />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className={`rounded-xl p-3 text-center ring-1 ${
-                                    isDark ? 'bg-emerald-950/50 ring-emerald-800/60' : 'bg-emerald-50 ring-emerald-200'
-                                }`}>
-                                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-500">Present Rate</p>
-                                    <p className="text-3xl font-black text-emerald-500 tabular-nums mt-1">
-                                        {kpis.present + kpis.absent > 0
-                                            ? Math.round((kpis.present / (kpis.present + kpis.absent)) * 100)
-                                            : 0}
-                                        %
-                                    </p>
+                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
+                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                    <CalendarIcon size={14} /> Classes logged
                                 </div>
-                                <div className={`rounded-xl p-3 text-center ring-1 ${
-                                    isDark ? 'bg-rose-950/50 ring-rose-800/60' : 'bg-rose-50 ring-rose-200'
-                                }`}>
-                                    <p className="text-xs font-bold uppercase tracking-wider text-rose-500">Absent Rate</p>
-                                    <p className="text-3xl font-black text-rose-500 tabular-nums mt-1">
-                                        {kpis.present + kpis.absent > 0
-                                            ? Math.round((kpis.absent / (kpis.present + kpis.absent)) * 100)
-                                            : 0}
-                                        %
-                                    </p>
+                                <div className="flex items-end justify-between mt-2">
+                                    <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{kpis.present + kpis.absent + kpis.online + kpis.on_leave}</span>
+                                    <MiniWave positive />
                                 </div>
                             </div>
 
-                            <div className={`rounded-xl p-3 text-xs leading-relaxed ${
-                                isDark ? 'bg-slate-950/50 text-slate-400' : 'bg-slate-100 text-slate-500'
-                            }`}>
-                                <span className="font-bold text-amber-500">Note:</span> Real-time attendance data synchronized from the Dean's Office / College monitoring spreadsheet.
+                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
+                                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Present rate</div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{presentRate}%</span>
+                                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15 px-1.5 py-0.5 rounded">↑ 5%</span>
+                                </div>
+                            </div>
+
+                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
+                                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Absent rate</div>
+                                <div className="flex items-baseline justify-between mt-1">
+                                    <span className="text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums">{absentRate}%</span>
+                                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-500/15 px-1.5 py-0.5 rounded">↓ 3%</span>
+                                </div>
                             </div>
                         </div>
-                    </Panel>
+                    </BentoTile>
                 </div>
             </div>
         </div>
@@ -1130,10 +1274,12 @@ function SlideSix({ data, slideConfig, isDark = false }: any) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Slide 7 - Faculty Schedule (Class & Lab Timetable)                         */
+/*  Slide 7 – Faculty Schedule (Fixed Smooth Independent Div Scrolling)         */
 /* -------------------------------------------------------------------------- */
 
-function SlideSeven({ data, slideConfig, isDark }: { data: any; slideConfig: any; isDark: boolean }) {
+const STATUS_ORDER: Record<string, number> = { Ongoing: 0, Upcoming: 1, Completed: 2 };
+
+function SlideSeven({ data, isDark = false }: { data: any; isDark?: boolean }) {
     const schedules = data?.schedules || [];
     const facultyGroups = data?.faculty_groups || [];
     const kpis = data?.kpis || {
@@ -1146,318 +1292,227 @@ function SlideSeven({ data, slideConfig, isDark }: { data: any; slideConfig: any
     const day = data?.day || 'Today';
     const currentTime = data?.current_time || '';
 
-    // Filter states: 'all' | 'ongoing' | 'upcoming' | 'completed'
-    const [statusFilter, setStatusFilter] = useState<'all' | 'ongoing' | 'upcoming' | 'completed'>('all');
-    const [roomFilter, setRoomFilter] = useState<string>('all');
-    const [searchQuery, setSearchQuery] = useState<string>('');
-
-    // Distinct rooms for quick pills
-    const rooms = useMemo(() => {
-        const unique = Array.from(new Set(schedules.map((s: any) => s.room_name))).filter(Boolean);
-        return ['all', ...unique];
-    }, [schedules]);
-
-    // Filtered schedules
-    const filteredSchedules = useMemo(() => {
-        return schedules.filter((s: any) => {
-            if (statusFilter !== 'all' && s.status?.toLowerCase() !== statusFilter) return false;
-            if (roomFilter !== 'all' && s.room_name !== roomFilter) return false;
-            if (searchQuery.trim()) {
-                const q = searchQuery.toLowerCase();
-                const matchInstructor = s.instructor?.toLowerCase().includes(q);
-                const matchCourse = s.course_code?.toLowerCase().includes(q) || s.course_title?.toLowerCase().includes(q);
-                const matchSection = s.section?.toLowerCase().includes(q);
-                const matchRoom = s.room_name?.toLowerCase().includes(q);
-                if (!matchInstructor && !matchCourse && !matchSection && !matchRoom) return false;
-            }
-            return true;
-        });
-    }, [schedules, statusFilter, roomFilter, searchQuery]);
-
-    // Active ongoing classes right now
-    const ongoingClasses = useMemo(() => {
-        return schedules.filter((s: any) => s.status === 'Ongoing');
-    }, [schedules]);
+    const timetable = useMemo(
+        () =>
+            [...schedules].sort(
+                (a: any, b: any) =>
+                    (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3) || String(a.start_time).localeCompare(String(a.start_time)),
+            ),
+        [schedules],
+    );
+    const ongoingClasses = useMemo(() => schedules.filter((s: any) => s.status === 'Ongoing'), [schedules]);
 
     return (
-        <div className="flex flex-1 flex-col gap-6 overflow-hidden">
-            {/* Top Stat Ribbon with Yellow / White accents */}
-            <div className="grid grid-cols-4 gap-4">
-                <MetricCard
-                    label={`Total Classes (${day})`}
-                    value={kpis.total_classes}
+        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
+            {/* Top 4 KPI Cards */}
+            <div className="grid grid-cols-4 gap-4 shrink-0">
+                <Kpi
                     icon={CalendarIcon}
-                    subtext={`${kpis.active_instructors} active faculty teaching`}
-                    accent="amber"
+                    tone="blue"
+                    label={`Total classes · ${day}`}
+                    value={kpis.total_classes}
+                    sub={`${kpis.active_instructors} faculty teaching`}
                     isDark={isDark}
                 />
-                <MetricCard
-                    label="In Session Right Now"
-                    value={kpis.ongoing_classes}
+                <Kpi
                     icon={Clock}
-                    subtext={currentTime ? `Active at ${currentTime}` : 'Currently ongoing in labs'}
-                    accent="amber"
+                    tone="emerald"
+                    accent
+                    label="In session now"
+                    value={kpis.ongoing_classes}
+                    sub={currentTime ? `As of ${currentTime}` : undefined}
                     isDark={isDark}
                 />
-                <MetricCard
-                    label="Upcoming Later Today"
-                    value={kpis.upcoming_classes}
+                <Kpi
                     icon={Timer}
-                    subtext="Remaining scheduled sessions"
-                    accent="default"
+                    tone="amber"
+                    label="Upcoming today"
+                    value={kpis.upcoming_classes}
+                    sub="Next scheduled"
                     isDark={isDark}
                 />
-                <MetricCard
-                    label="Completed Sessions"
-                    value={kpis.completed_classes}
+                <Kpi
                     icon={CheckCircle2}
-                    subtext="Concluded for the day"
-                    accent="default"
+                    tone="purple"
+                    label="Completed"
+                    value={kpis.completed_classes}
+                    sub="Classes finished"
                     isDark={isDark}
                 />
             </div>
 
-            {/* Main Content Area: 2 Columns */}
-            <div className="grid min-h-0 flex-1 grid-cols-12 gap-6 overflow-hidden">
-                {/* Left Column (5 cols): Currently Teaching Spotlight & Faculty Directory */}
-                <div className="col-span-5 flex min-h-0 flex-col gap-5 overflow-hidden">
-                    {/* Active Faculty In Lab Right Now */}
-                    <div className="rounded-2xl border-2 border-amber-400 bg-amber-400/10 p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-3">
+            {/* Bottom Row: In Session & Faculty Teaching (Left) + Full Timetable (Right) */}
+            <div className="grid h-full min-h-0 grid-cols-12 gap-4">
+                {/* Left Column: Ongoing & Faculty Groups */}
+                <div className="col-span-5 flex h-full min-h-0 flex-col gap-4">
+                    {/* In Session Card */}
+                    <div className={`h-[42%] min-h-0 flex flex-col rounded-2xl p-4 border overflow-hidden ${
+                        isDark ? 'bg-[#131b2e] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                    }`}>
+                        <div className="flex shrink-0 items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
                             <div className="flex items-center gap-2">
-                                <span className="relative flex h-3.5 w-3.5">
-                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                                    <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-500"></span>
-                                </span>
-                                <h3 className={`text-base font-black uppercase tracking-wider ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-                                    Faculty Currently in Session
-                                </h3>
+                                <div className="h-7 w-7 rounded-lg bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                    <Radio size={16} />
+                                </div>
+                                <h3 className="text-base font-bold">In session now</h3>
                             </div>
-                            <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-xs font-black text-slate-950 uppercase">
-                                {ongoingClasses.length} In Class
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                {ongoingClasses.length} Active
                             </span>
                         </div>
 
-                        {ongoingClasses.length === 0 ? (
-                            <div className={`rounded-xl p-4 text-center text-sm ${isDark ? 'bg-slate-900/60 text-slate-400' : 'bg-white/80 text-slate-500'}`}>
-                                No faculty currently in session at {currentTime || 'this hour'}. Next classes will appear here automatically.
-                            </div>
-                        ) : (
-                            <div className="flex flex-col gap-2.5 max-h-56 overflow-y-auto pr-1">
-                                {ongoingClasses.map((item: any) => (
-                                    <div
-                                        key={item.id}
-                                        className={`flex items-center justify-between rounded-xl p-3 border transition-all ${
-                                            isDark
-                                                ? 'bg-slate-900/90 border-amber-400/40 text-white'
-                                                : 'bg-white border-amber-300 text-slate-900 shadow-sm'
-                                        }`}
-                                    >
-                                        <div className="min-w-0 flex-1 pr-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-black text-base truncate">{item.instructor}</span>
-                                                <span className="rounded bg-amber-400 px-2 py-0.5 text-xs font-black text-slate-950">
-                                                    {item.room_name}
-                                                </span>
-                                            </div>
-                                            <p className={`text-xs truncate font-medium mt-0.5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                                                <span className="font-bold text-amber-500">{item.course_code}</span> - {item.course_title || 'Class'}
+                        {/* Scrollable list of in session classes */}
+                        <div className="mt-3 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1 space-y-2.5">
+                            {ongoingClasses.length === 0 ? (
+                                <div className="flex flex-1 h-full items-center justify-center text-center p-4 text-slate-400">
+                                    <p className="text-sm font-medium">No classes currently in session{currentTime ? ` at ${currentTime}` : ''}.</p>
+                                </div>
+                            ) : (
+                                ongoingClasses.map((item: any) => (
+                                    <div key={item.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{item.instructor}</p>
+                                            <p className="truncate text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                <strong className="font-bold text-amber-600 dark:text-amber-400">{item.course_code}</strong>
+                                                {item.course_title ? ` · ${item.course_title}` : ''}
+                                                {item.section ? ` · ${item.section}` : ''}
                                             </p>
-                                            {item.section && (
-                                                <p className="text-[11px] text-slate-400 font-semibold">{item.section}</p>
-                                            )}
                                         </div>
-                                        <div className="text-right shrink-0">
-                                            <span className="rounded-md bg-emerald-500/20 px-2 py-1 text-xs font-black text-emerald-500">
-                                                {item.start_time} - {item.end_time}
-                                            </span>
+                                        <div className="shrink-0 text-right">
+                                            <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300">{item.room_name}</span>
+                                            <p className="text-[11px] font-semibold tabular-nums text-slate-500 dark:text-slate-400 mt-1">
+                                                {item.start_time} – {item.end_time}
+                                            </p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                ))
+                            )}
+                        </div>
                     </div>
 
-                    {/* Faculty Teaching Roster */}
-                    <Panel title={`Faculty Teaching Today (${day})`} icon={Users} className="flex-1 min-h-0" isDark={isDark}>
-                        <div className="flex flex-col h-full overflow-hidden">
-                            <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-2">
-                                {facultyGroups.map((group: any, idx: number) => (
-                                    <div
-                                        key={group.instructor || idx}
-                                        className={`flex items-center justify-between rounded-xl p-3 ring-1 transition-all ${
-                                            group.has_ongoing
-                                                ? isDark
-                                                    ? 'bg-amber-950/40 ring-amber-400/50'
-                                                    : 'bg-amber-50/80 ring-amber-300'
-                                                : isDark
-                                                ? 'bg-slate-950/60 ring-slate-800'
-                                                : 'bg-slate-50 ring-slate-200'
-                                        }`}
-                                    >
-                                        <div className="min-w-0 flex-1 pr-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className={`font-bold text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                                    {group.instructor}
-                                                </span>
-                                                {group.has_ongoing && (
-                                                    <span className="rounded bg-emerald-500 px-1.5 py-0.2 text-[10px] font-black text-white animate-pulse">
-                                                        LIVE
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                                {group.rooms.map((r: string) => (
-                                                    <span key={r} className="rounded bg-amber-400/20 text-amber-500 text-[10px] font-bold px-1.5 py-0.5">
-                                                        {r}
-                                                    </span>
-                                                ))}
-                                                {group.current_class && (
-                                                    <span className="text-[11px] text-slate-400 truncate">
-                                                        Now: {group.current_class.course_code}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="text-right shrink-0">
-                                            <span className="text-base font-black text-amber-500 tabular-nums">
-                                                {group.total_classes}
-                                            </span>
-                                            <p className="text-[10px] uppercase font-bold text-slate-400">Classes</p>
-                                        </div>
-                                    </div>
-                                ))}
+                    {/* Faculty Teaching Card */}
+                    <div className={`flex-1 min-h-0 flex flex-col rounded-2xl p-4 border overflow-hidden ${
+                        isDark ? 'bg-[#131b2e] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                    }`}>
+                        <div className="flex shrink-0 items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
+                            <div className="flex items-center gap-2">
+                                <div className="h-7 w-7 rounded-lg bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                    <Users size={16} />
+                                </div>
+                                <h3 className="text-base font-bold">Faculty teaching · {day}</h3>
                             </div>
+                            <span className="text-xs font-semibold text-slate-400">{facultyGroups.length} faculty</span>
                         </div>
-                    </Panel>
+
+                        {/* Scrollable list of faculty teaching */}
+                        <div className="mt-3 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1 space-y-2">
+                            {facultyGroups.map((group: any, idx: number) => (
+                                <div key={group.instructor || idx} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+                                    <div className="min-w-0">
+                                        <p className="flex items-center gap-1.5 truncate text-xs font-bold text-slate-900 dark:text-white">
+                                            {group.instructor}
+                                            {group.has_ongoing && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500" />}
+                                        </p>
+                                        <p className="truncate text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                            {group.rooms.join(', ')}
+                                            {group.current_class ? ` · Now ${group.current_class.course_code}` : ''}
+                                        </p>
+                                    </div>
+                                    <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 tabular-nums">
+                                        {group.total_classes} classes
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
-                {/* Right Column (7 cols): Full Day Timetable / Class Schedule */}
-                <div className="col-span-7 flex min-h-0 flex-col overflow-hidden">
-                    <Panel title={`Class & Laboratory Timetable - ${day}`} icon={Clock} className="flex-1 min-h-0" isDark={isDark}>
-                        <div className="flex flex-col h-full overflow-hidden">
-                            {/* Room and Status Filter Tabs */}
-                            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
-                                {/* Room Pills */}
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-xs font-bold uppercase text-slate-400 mr-1">Room:</span>
-                                    {rooms.map((rm) => (
-                                        <button
-                                            key={rm}
-                                            onClick={() => setRoomFilter(rm)}
-                                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
-                                                roomFilter === rm
-                                                    ? 'bg-amber-400 text-slate-950 shadow-sm'
-                                                    : isDark
-                                                    ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                            }`}
-                                        >
-                                            {rm === 'all' ? 'All Rooms' : rm}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                {/* Status Pills */}
-                                <div className="flex items-center gap-1">
-                                    {(['all', 'ongoing', 'upcoming', 'completed'] as const).map((st) => (
-                                        <button
-                                            key={st}
-                                            onClick={() => setStatusFilter(st)}
-                                            className={`rounded-lg px-2 py-1 text-xs font-bold capitalize transition-all ${
-                                                statusFilter === st
-                                                    ? 'bg-amber-500 text-white shadow-sm'
-                                                    : isDark
-                                                    ? 'bg-slate-800 text-slate-400 hover:text-white'
-                                                    : 'bg-slate-100 text-slate-500 hover:text-slate-900'
-                                            }`}
-                                        >
-                                            {st}
-                                        </button>
-                                    ))}
-                                </div>
+                {/* Right Column: Timetable Full Schedule (Scrollable with sticky header) */}
+                <div className={`col-span-7 h-full min-h-0 flex flex-col rounded-2xl p-5 border overflow-hidden ${
+                    isDark ? 'bg-[#131b2e] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                }`}>
+                    <div className="flex shrink-0 items-center justify-between pb-3.5 border-b border-slate-100 dark:border-white/10">
+                        <div className="flex items-center gap-2.5">
+                            <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                <Clock size={18} />
                             </div>
+                            <h2 className="text-lg font-bold tracking-tight">Timetable · {day}</h2>
+                        </div>
+                        <span className="text-xs font-bold px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300">
+                            {timetable.length} sessions scheduled
+                        </span>
+                    </div>
 
-                            {/* Schedule Table */}
-                            <div className="flex-1 overflow-y-auto mt-3 pr-1">
-                                <table className="w-full border-collapse text-left text-sm">
-                                    <thead className={`sticky top-0 z-10 border-b ${
-                                        isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-600'
-                                    }`}>
-                                        <tr>
-                                            <th className="py-2.5 px-3 font-bold text-xs uppercase tracking-wider text-amber-500">Time</th>
-                                            <th className="py-2.5 px-3 font-bold text-xs uppercase tracking-wider">Room</th>
-                                            <th className="py-2.5 px-3 font-bold text-xs uppercase tracking-wider">Faculty Instructor</th>
-                                            <th className="py-2.5 px-3 font-bold text-xs uppercase tracking-wider">Course / Subject</th>
-                                            <th className="py-2.5 px-3 font-bold text-xs uppercase tracking-wider">Section</th>
-                                            <th className="py-2.5 px-3 font-bold text-xs uppercase tracking-wider text-right">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                                        {filteredSchedules.map((item: any) => {
-                                            const isLive = item.status === 'Ongoing';
-                                            return (
-                                                <tr
-                                                    key={item.id}
-                                                    className={`transition-colors ${
+                    {/* Scrollable Container with sticky header */}
+                    <div className="mt-3 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1">
+                        <table className="w-full border-collapse text-left">
+                            <thead className={`sticky top-0 z-20 backdrop-blur-md border-b text-xs font-bold uppercase tracking-wider ${
+                                isDark ? 'bg-[#131b2e]/95 border-white/10 text-slate-400' : 'bg-white/95 border-slate-200/80 text-slate-500'
+                            }`}>
+                                <tr>
+                                    <th className="py-2.5 pr-3 pl-1 font-bold">Time</th>
+                                    <th className="px-3 py-2.5 font-bold">Room</th>
+                                    <th className="px-3 py-2.5 font-bold">Instructor</th>
+                                    <th className="px-3 py-2.5 font-bold">Course / Section</th>
+                                    <th className="py-2.5 pl-3 pr-2 text-right font-bold">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-sm">
+                                {timetable.map((item: any) => {
+                                    const isLive = item.status === 'Ongoing';
+                                    const isDone = item.status === 'Completed';
+                                    return (
+                                        <tr
+                                            key={item.id}
+                                            className={`transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.02] ${
+                                                isDone ? 'opacity-50 text-slate-400' : ''
+                                            }`}
+                                        >
+                                            <td className={`py-2.5 pr-3 pl-1 font-bold whitespace-nowrap tabular-nums text-xs ${
+                                                isLive ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-slate-200'
+                                            }`}>
+                                                {item.start_time} – {item.end_time}
+                                            </td>
+                                            <td className="px-3 py-2.5 whitespace-nowrap">
+                                                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                                                    {item.room_name}
+                                                </span>
+                                            </td>
+                                            <td className="px-3 py-2.5 font-bold text-slate-900 dark:text-white whitespace-nowrap text-xs">
+                                                {item.instructor}
+                                            </td>
+                                            <td className="max-w-[15rem] truncate px-3 py-2.5 text-xs">
+                                                <span className="font-bold text-slate-800 dark:text-slate-200">{item.course_code}</span>
+                                                {item.section ? <span className="text-slate-500 dark:text-slate-400"> · {item.section}</span> : null}
+                                            </td>
+                                            <td className="py-2.5 pl-3 pr-2 text-right">
+                                                <span
+                                                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                                                         isLive
-                                                            ? isDark
-                                                                ? 'bg-amber-950/30 text-white font-medium'
-                                                                : 'bg-amber-50/70 text-slate-950 font-medium'
-                                                            : isDark
-                                                            ? 'hover:bg-slate-800/40 text-slate-200'
-                                                            : 'hover:bg-slate-50 text-slate-700'
+                                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
+                                                            : item.status === 'Upcoming'
+                                                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                                                                : 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400'
                                                     }`}
                                                 >
-                                                    <td className="py-2.5 px-3 whitespace-nowrap tabular-nums text-xs font-bold text-amber-500">
-                                                        {item.start_time} - {item.end_time}
-                                                    </td>
-                                                    <td className="py-2.5 px-3 whitespace-nowrap">
-                                                        <span className="rounded bg-amber-400 px-2 py-0.5 text-xs font-black text-slate-950">
-                                                            {item.room_name}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-2.5 px-3 font-bold whitespace-nowrap">
-                                                        {item.instructor}
-                                                    </td>
-                                                    <td className="py-2.5 px-3 max-w-[200px] truncate">
-                                                        <span className="font-bold text-amber-500">{item.course_code}</span>
-                                                        {item.course_title && ` - ${item.course_title}`}
-                                                    </td>
-                                                    <td className="py-2.5 px-3 whitespace-nowrap text-xs text-slate-400 font-semibold">
-                                                        {item.section || '—'}
-                                                    </td>
-                                                    <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                                                        <span
-                                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-black uppercase ${
-                                                                isLive
-                                                                    ? 'bg-emerald-500 text-white animate-pulse'
-                                                                    : item.status === 'Upcoming'
-                                                                    ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
-                                                                    : isDark
-                                                                    ? 'bg-slate-800 text-slate-400'
-                                                                    : 'bg-slate-100 text-slate-500'
-                                                            }`}
-                                                        >
-                                                            {isLive && <span className="mr-1 h-1.5 w-1.5 rounded-full bg-white"></span>}
-                                                            {item.status}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                        {filteredSchedules.length === 0 && (
-                                            <tr>
-                                                <td colSpan={6} className="py-8 text-center text-slate-400">
-                                                    No schedule entries found for the selected criteria.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </Panel>
+                                                    {isLive && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                                                    {item.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {timetable.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="py-10 text-center text-sm text-slate-400">
+                                            No classes scheduled for {day}.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

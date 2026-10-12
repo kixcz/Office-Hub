@@ -13,12 +13,8 @@ return new class extends Migration
     {
         Schema::create('faculties', function (Blueprint $table) {
             $table->id();
-            $table->string('employee_id')->unique();
             $table->string('first_name');
             $table->string('last_name');
-            $table->string('email')->unique();
-            $table->string('department')->nullable();
-            $table->string('position')->nullable();
             $table->foreignId('program_id')->nullable()->constrained('programs')->nullOnDelete();
             $table->timestamps();
         });

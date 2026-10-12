@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\RoomSchedule;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RoomSchedule>
+ * @extends Factory<RoomSchedule>
  */
 class RoomScheduleFactory extends Factory
 {

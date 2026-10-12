@@ -30,7 +30,6 @@ class RolesAndUsersSeeder extends Seeder
 
         // Create Default Admin User
         $adminRole = Role::where('name', 'System Administrator')->first();
-
         if ($adminRole) {
             $admin = User::firstOrCreate(
                 ['email' => 'admin@cids.edu'],
@@ -42,6 +41,38 @@ class RolesAndUsersSeeder extends Seeder
 
             if (! $admin->roles()->where('role_id', $adminRole->id)->exists()) {
                 $admin->roles()->attach($adminRole->id);
+            }
+        }
+
+        // Create Default TV Display User
+        $tvRole = Role::where('name', 'Display Screen')->first();
+        if ($tvRole) {
+            $tvUser = User::firstOrCreate(
+                ['email' => 'tv@cids.edu'],
+                [
+                    'name' => 'TV Display Screen',
+                    'password' => Hash::make('password'),
+                ]
+            );
+
+            if (! $tvUser->roles()->where('role_id', $tvRole->id)->exists()) {
+                $tvUser->roles()->attach($tvRole->id);
+            }
+        }
+
+        // Create Dean User
+        $deanRole = Role::where('name', 'Dean')->first();
+        if ($deanRole) {
+            $dean = User::firstOrCreate(
+                ['email' => 'dean@cids.edu'],
+                [
+                    'name' => 'Dr. Dean Office',
+                    'password' => Hash::make('password'),
+                ]
+            );
+
+            if (! $dean->roles()->where('role_id', $deanRole->id)->exists()) {
+                $dean->roles()->attach($deanRole->id);
             }
         }
     }
