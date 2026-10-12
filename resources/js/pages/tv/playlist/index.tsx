@@ -56,7 +56,9 @@ function SlideRow({ slide }: { slide: any }) {
                         <option value="Slide 2 - Schedule & Meetings">Schedule & Meetings</option>
                         <option value="Slide 3 - Compliance Monitoring">Compliance Monitoring</option>
                         <option value="Slide 4 - Performance & Recognition">Performance & Recognition</option>
-                        <option value="Slide 5 - Classroom Monitoring">Classroom Monitoring</option>
+                        <option value="Slide 5 - Classroom Monitoring">Classroom & Lab Monitoring (Rooms)</option>
+                        <option value="Slide 6 - Class Monitoring">Class & Lab Attendance Summary (Spreadsheet)</option>
+                        <option value="Slide 7 - Faculty Schedule">Faculty Schedule (Class & Lab Timetable)</option>
                     </select>
                 </td>
                 <td className="p-2">
@@ -151,7 +153,9 @@ export default function PlaylistIndex({ slides }: any) {
                                         <option value="Slide 2 - Schedule & Meetings">Schedule & Meetings</option>
                                         <option value="Slide 3 - Compliance Monitoring">Compliance Monitoring</option>
                                         <option value="Slide 4 - Performance & Recognition">Performance & Recognition</option>
-                                        <option value="Slide 5 - Classroom Monitoring">Classroom Monitoring</option>
+                                        <option value="Slide 5 - Classroom Monitoring">Classroom & Lab Monitoring (Rooms)</option>
+                                        <option value="Slide 6 - Class Monitoring">Class & Lab Attendance Summary (Spreadsheet)</option>
+                                        <option value="Slide 7 - Faculty Schedule">Faculty Schedule (Class & Lab Timetable)</option>
                                     </select>
                                 </div>
                                 <div>

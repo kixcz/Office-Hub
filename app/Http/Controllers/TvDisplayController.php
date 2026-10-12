@@ -8,11 +8,14 @@ use App\Models\FacilityMonitoring;
 use App\Models\Meeting;
 use App\Models\Program;
 use App\Models\Requirement;
+use App\Models\RoomSchedule;
 use App\Models\Submission;
 use App\Models\TvSetting;
 use App\Models\TvSlide;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class TvDisplayController extends Controller
@@ -175,9 +178,86 @@ class TvDisplayController extends Controller
         $topFaculty = collect($facultyData)->sortByDesc('on_time_rate')->take(5)->values();
         $zeroOverdueFaculty = collect($facultyData)->filter(fn ($f) => $f['on_time_rate'] == 100)->count(); // Simplified
 
-        // Data for Slide 5 (Classroom Monitoring)
+        // Data for Slide 5 (Classroom Monitoring - Facilities & Labs)
         $facilityData = FacilityMonitoring::orderBy('room_name')->get();
         $facilityLastSync = Cache::get('facility_monitoring_last_sync', clone $now);
+
+        // Data for Slide 6 (Class & Lab Monitoring Summary from Google Sheets)
+        $monitoringSummary = $this->fetchClassroomMonitoringSummary();
+
+        // Data for Slide 7 (Faculty Schedule)
+        $tz = config('services.room_schedule.timezone', 'Asia/Manila');
+        $scheduleNow = Carbon::now($tz);
+        $currentDay = $scheduleNow->format('l');
+        $currentTime = $scheduleNow->format('H:i:s');
+
+        // If today is a weekend without schedules, default to Monday
+        $activeDay = in_array($currentDay, ['Saturday', 'Sunday']) ? 'Monday' : $currentDay;
+
+        $todayRoomSchedules = RoomSchedule::query()
+            ->where('day_of_week', $activeDay)
+            ->orderBy('start_time')
+            ->orderBy('room_name')
+            ->get();
+
+        $formattedSchedules = $todayRoomSchedules->map(function ($s) use ($currentTime, $currentDay, $activeDay) {
+            $isToday = ($currentDay === $activeDay);
+            $status = 'Upcoming';
+            if ($isToday) {
+                if ($s->start_time <= $currentTime && $s->end_time > $currentTime) {
+                    $status = 'Ongoing';
+                } elseif ($s->end_time <= $currentTime) {
+                    $status = 'Completed';
+                }
+            }
+
+            return [
+                'id' => $s->id,
+                'room_name' => $s->room_name,
+                'day_of_week' => $s->day_of_week,
+                'start_time' => Carbon::parse($s->start_time)->format('g:i A'),
+                'end_time' => Carbon::parse($s->end_time)->format('g:i A'),
+                'raw_start' => $s->start_time,
+                'raw_end' => $s->end_time,
+                'course_code' => $s->course_code,
+                'course_title' => $s->course_title,
+                'instructor' => $s->instructor ?: 'Unassigned',
+                'section' => $s->section,
+                'status' => $status,
+            ];
+        });
+
+        // Group by faculty member
+        $facultyGroups = $formattedSchedules->groupBy('instructor')->map(function ($items, $instructor) {
+            $ongoing = $items->firstWhere('status', 'Ongoing');
+            $upcoming = $items->firstWhere('status', 'Upcoming');
+
+            return [
+                'instructor' => $instructor,
+                'total_classes' => $items->count(),
+                'has_ongoing' => ! is_null($ongoing),
+                'current_class' => $ongoing,
+                'next_class' => $upcoming,
+                'rooms' => $items->pluck('room_name')->unique()->values()->all(),
+                'classes' => $items->values()->all(),
+            ];
+        })->values()->sortByDesc('has_ongoing')->values();
+
+        $facultyScheduleData = [
+            'day' => $activeDay,
+            'is_today' => ($currentDay === $activeDay),
+            'current_time' => $scheduleNow->format('g:i A'),
+            'schedules' => $formattedSchedules->values()->all(),
+            'faculty_groups' => $facultyGroups->all(),
+            'kpis' => [
+                'total_classes' => $formattedSchedules->count(),
+                'ongoing_classes' => $formattedSchedules->where('status', 'Ongoing')->count(),
+                'upcoming_classes' => $formattedSchedules->where('status', 'Upcoming')->count(),
+                'completed_classes' => $formattedSchedules->where('status', 'Completed')->count(),
+                'active_instructors' => $formattedSchedules->pluck('instructor')->unique()->count(),
+            ],
+            'last_updated' => $scheduleNow->format('M d, Y g:i A'),
+        ];
 
         return Inertia::render('tv/display', [
             'settings' => $settings,
@@ -231,8 +311,118 @@ class TvDisplayController extends Controller
                         'maintenance' => $facilityData->where('status', 'Maintenance')->count(),
                     ],
                 ],
+                'slide6' => $monitoringSummary,
+                'slide7' => $facultyScheduleData,
             ],
-            'current_term' => 'AY 2026-2027, 1st Semester',
+            'current_term' => $settings['academic_term'] ?? 'AY 2026-2027, 1st Semester',
         ]);
+    }
+
+    /**
+     * Fetch and parse the Class & Lab Monitoring Summary from Google Sheets.
+     */
+    private function fetchClassroomMonitoringSummary(): array
+    {
+        return Cache::remember('tv_classroom_monitoring_summary', 120, function () {
+            try {
+                $url = 'https://docs.google.com/spreadsheets/d/15m7NI4joQRBi9X7gdpqkF7SRZFFn61wXMhv5EkfyBY0/export?format=csv&gid=2115846189';
+                $response = Http::withoutVerifying()->timeout(8)->get($url);
+
+                if (! $response->successful()) {
+                    return $this->fallbackMonitoringSummary();
+                }
+
+                $lines = explode("\n", $response->body());
+                $header = null;
+                $records = [];
+                $highlights = [];
+
+                foreach ($lines as $line) {
+                    $row = str_getcsv($line);
+                    if (empty($row) || ! isset($row[0])) {
+                        continue;
+                    }
+
+                    $firstCell = trim($row[0]);
+                    if ($firstCell === 'List of Instructor:') {
+                        $header = array_slice($row, 0, 9);
+
+                        continue;
+                    }
+
+                    if ($header && $firstCell !== '' && ! str_starts_with($firstCell, 'Most ')) {
+                        $records[] = [
+                            'instructor' => $firstCell,
+                            'present' => (int) ($row[1] ?? 0),
+                            'absent' => (int) ($row[2] ?? 0),
+                            'late' => (int) ($row[3] ?? 0),
+                            'online' => (int) ($row[4] ?? 0),
+                            'others' => (int) ($row[5] ?? 0),
+                            'on_leave' => (int) ($row[6] ?? 0),
+                            'sub_insert' => (int) ($row[7] ?? 0),
+                            'total_late_mins' => (int) ($row[8] ?? 0),
+                        ];
+                    }
+
+                    for ($i = 0; $i < count($row); $i++) {
+                        $cellText = trim($row[$i] ?? '');
+                        if (str_starts_with($cellText, 'Most ')) {
+                            $key = rtrim($cellText, ':');
+                            $val = trim($row[$i + 1] ?? '');
+                            if ($val) {
+                                $highlights[$key] = $val;
+                            }
+                        }
+                    }
+                }
+
+                $totalPresent = array_sum(array_column($records, 'present'));
+                $totalAbsent = array_sum(array_column($records, 'absent'));
+                $totalLate = array_sum(array_column($records, 'late'));
+                $totalOnline = array_sum(array_column($records, 'online'));
+                $totalOnLeave = array_sum(array_column($records, 'on_leave'));
+                $totalSubInsert = array_sum(array_column($records, 'sub_insert'));
+                $totalLateMins = array_sum(array_column($records, 'total_late_mins'));
+
+                return [
+                    'records' => $records,
+                    'highlights' => $highlights,
+                    'kpis' => [
+                        'present' => $totalPresent,
+                        'absent' => $totalAbsent,
+                        'late' => $totalLate,
+                        'online' => $totalOnline,
+                        'on_leave' => $totalOnLeave,
+                        'sub_insert' => $totalSubInsert,
+                        'total_late_mins' => $totalLateMins,
+                        'faculty_count' => count($records),
+                    ],
+                    'last_updated' => now()->format('M d, Y h:i A'),
+                ];
+            } catch (\Throwable $e) {
+                Log::warning('Error fetching monitoring summary sheet: '.$e->getMessage());
+
+                return $this->fallbackMonitoringSummary();
+            }
+        });
+    }
+
+    private function fallbackMonitoringSummary(): array
+    {
+        return [
+            'records' => [],
+            'highlights' => [],
+            'kpis' => [
+                'present' => 0,
+                'absent' => 0,
+                'late' => 0,
+                'online' => 0,
+                'on_leave' => 0,
+                'sub_insert' => 0,
+                'total_late_mins' => 0,
+                'faculty_count' => 0,
+            ],
+            'last_updated' => now()->format('M d, Y h:i A'),
+        ];
     }
 }
