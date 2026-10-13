@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, Maximize2, Minimize2, Moon, RefreshCw, Sun } from 'lucide-react';
+import { Clock, Maximize2, Minimize2, Moon, Pause, Play, RefreshCw, Sun } from 'lucide-react';
 
 interface TvLayoutProps {
     children: React.ReactNode;
@@ -8,6 +8,8 @@ interface TvLayoutProps {
     lastUpdated?: string;
     isDark?: boolean;
     onToggleDark?: () => void;
+    isPaused?: boolean;
+    onTogglePause?: () => void;
 }
 
 export default function TvLayout({
@@ -17,6 +19,8 @@ export default function TvLayout({
     lastUpdated,
     isDark = false,
     onToggleDark,
+    isPaused = false,
+    onTogglePause,
 }: TvLayoutProps) {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -89,14 +93,20 @@ export default function TvLayout({
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2.5">
                             <h1 className="text-2xl font-extrabold tracking-tight">
-                                <span className="text-[#1d4ed8] dark:text-[#3b82f6]">CIDS</span>{' '}
-                                <span className={isDark ? 'text-white' : 'text-slate-900'}>OfficeHub</span>{' '}
-                                <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>TV</span>
+                                <span className={isDark ? 'text-white' : 'text-slate-900'}>CIDS</span>{' '}
+                                <span className="text-amber-500 dark:text-amber-400">OfficeHub</span>{' '}
+                                <span className={isDark ? 'text-white' : 'text-slate-900'}>TV</span>
                             </h1>
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/40 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
                                 <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
                                 LIVE
                             </span>
+                            {isPaused && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider animate-pulse shadow-xs">
+                                    <Pause size={11} className="fill-current" />
+                                    PAUSED
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-2">
                             <span className={`text-[11px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -104,8 +114,8 @@ export default function TvLayout({
                             </span>
                             {title && (
                                 <>
-                                    <span className="text-slate-300 dark:text-slate-600">·</span>
-                                    <span className={`text-xs font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                                    <span className="text-slate-300 dark:text-slate-600">|</span>
+                                    <span className={`text-xs font-semibold ${isDark ? 'text-amber-400' : 'text-amber-500'}`}>
                                         {title}
                                     </span>
                                 </>
@@ -124,6 +134,34 @@ export default function TvLayout({
                             {formatTime(currentTime)}
                         </div>
                     </div>
+
+                    {/* Pause / Resume Auto-Advance Button */}
+                    {onTogglePause && (
+                        <button
+                            type="button"
+                            onClick={onTogglePause}
+                            title={isPaused ? 'Resume auto-advance (Key: Space or P)' : 'Pause auto-advance (Key: Space or P)'}
+                            className={`h-10 px-3.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 border text-xs font-extrabold ${
+                                isPaused
+                                    ? 'bg-amber-500 text-slate-950 border-amber-400 ring-2 ring-amber-400/40 shadow-[0_0_14px_rgba(245,158,11,0.35)] animate-pulse'
+                                    : isDark
+                                    ? 'bg-[#131b2e] text-slate-300 border-white/10 hover:bg-slate-800 hover:text-white'
+                                    : 'bg-white text-slate-700 border-slate-200/80 hover:bg-slate-50 hover:text-slate-900'
+                            }`}
+                        >
+                            {isPaused ? (
+                                <>
+                                    <Play size={16} className="fill-current text-slate-950" />
+                                    <span className="hidden sm:inline">RESUME</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Pause size={16} className="fill-current" />
+                                    <span className="hidden sm:inline">PAUSE</span>
+                                </>
+                            )}
+                        </button>
+                    )}
 
                     {/* Dark / Light Mode Toggle */}
                     {onToggleDark && (

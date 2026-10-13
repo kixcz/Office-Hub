@@ -20,6 +20,8 @@ import {
     Laptop,
     Megaphone,
     Monitor,
+    Pause,
+    Play,
     Radio,
     ShieldAlert,
     ShieldCheck,
@@ -60,6 +62,11 @@ export default function TvDisplay({ slides, data, current_term }: any) {
     const count = activeSlides.length;
     const [index, setIndex] = useState(0);
     const [fade, setFade] = useState(true);
+    const [isPaused, setIsPaused] = useState(false);
+
+    const togglePause = useCallback(() => {
+        setIsPaused((prev) => !prev);
+    }, []);
 
     const [isDark, setIsDark] = useState<boolean>(() => {
         if (typeof window !== 'undefined') {
@@ -112,25 +119,32 @@ export default function TvDisplay({ slides, data, current_term }: any) {
     const duration = (currentSlide?.duration_seconds || 15) * 1000;
 
     useEffect(() => {
-        if (count === 0) return;
+        if (count === 0 || isPaused) return;
         const timer = window.setTimeout(() => step(1), duration);
         return () => window.clearTimeout(timer);
-    }, [safeIndex, count, duration, step]);
+    }, [safeIndex, count, duration, step, isPaused]);
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-            if (e.key === 'ArrowRight') step(1);
-            else if (e.key === 'ArrowLeft') step(-1);
-            else if (e.key === 't' || e.key === 'T') toggleDark();
+            if (e.key === 'ArrowRight') {
+                step(1);
+            } else if (e.key === 'ArrowLeft') {
+                step(-1);
+            } else if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'p' || e.key === 'P' || e.key === 'k' || e.key === 'K') {
+                e.preventDefault();
+                togglePause();
+            } else if (e.key === 't' || e.key === 'T') {
+                toggleDark();
+            }
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [step]);
+    }, [step, togglePause]);
 
     if (count === 0) {
         return (
-            <TvLayout currentTerm={current_term} isDark={isDark} onToggleDark={toggleDark}>
+            <TvLayout currentTerm={current_term} isDark={isDark} onToggleDark={toggleDark} isPaused={isPaused} onTogglePause={togglePause}>
                 <Head title="TV Display" />
                 <div className="flex flex-1 items-center justify-center p-8 text-slate-400">
                     <p className="text-2xl font-medium">No active slides. Activate a slide in settings to start the display.</p>
@@ -146,9 +160,21 @@ export default function TvDisplay({ slides, data, current_term }: any) {
             lastUpdated={data?.slide6?.last_updated || data?.slide5?.last_updated || data?.last_updated}
             isDark={isDark}
             onToggleDark={toggleDark}
+            isPaused={isPaused}
+            onTogglePause={togglePause}
         >
             <Head title="TV Display" />
             <style>{'@keyframes tv-fill{from{width:0}to{width:100%}}'}</style>
+
+            {/* Paused Floating Toast Notice */}
+            {isPaused && (
+                <div className="pointer-events-none fixed top-16 left-1/2 z-50 -translate-x-1/2 transition-all">
+                    <div className="flex items-center gap-2 rounded-full bg-amber-500 text-slate-950 px-4 py-1.5 font-extrabold text-xs tracking-wider shadow-lg backdrop-blur-md border border-amber-400 animate-pulse">
+                        <Pause size={12} className="fill-current" />
+                        <span>AUTO-ADVANCE PAUSED · PRESS SPACE TO RESUME</span>
+                    </div>
+                </div>
+            )}
 
             {/* Slide Container */}
             <div
@@ -169,12 +195,18 @@ export default function TvDisplay({ slides, data, current_term }: any) {
             <footer className="z-30 flex shrink-0 items-center justify-between px-8 py-2.5 text-xs text-slate-500 dark:text-slate-400 border-t border-black/[0.04] dark:border-white/[0.05]">
                 <div className="flex items-center gap-2.5">
                     <span className="relative flex h-2.5 w-2.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-60" />
-                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-600" />
+                        <span className={`absolute inline-flex h-full w-full rounded-full ${isPaused ? 'bg-amber-400 opacity-60' : 'animate-ping bg-amber-400 opacity-60'}`} />
+                        <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-amber-500'}`} />
                     </span>
                     <span>
                         Live display <strong className="font-semibold text-slate-800 dark:text-slate-200">CIDS OfficeHub</strong>
                     </span>
+                    {isPaused && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                            <Pause size={9} className="fill-current" />
+                            Paused
+                        </span>
+                    )}
                     <span className="text-slate-300 dark:text-slate-600">|</span>
                     <span className="font-medium text-slate-600 dark:text-slate-300">{currentSlide?.title || currentSlide?.type}</span>
                 </div>
@@ -188,7 +220,10 @@ export default function TvDisplay({ slides, data, current_term }: any) {
                                     <div
                                         key={`${safeIndex}-${duration}`}
                                         className="h-full bg-amber-400"
-                                        style={{ animation: `tv-fill ${duration}ms linear forwards` }}
+                                        style={{
+                                            animation: `tv-fill ${duration}ms linear forwards`,
+                                            animationPlayState: isPaused ? 'paused' : 'running',
+                                        }}
                                     />
                                 )}
                             </div>
@@ -198,7 +233,7 @@ export default function TvDisplay({ slides, data, current_term }: any) {
                         {safeIndex + 1} / {count}
                     </span>
 
-                    {/* Circular slide arrow buttons matching screenshot */}
+                    {/* Circular slide arrow buttons & Pause/Resume button matching design */}
                     <div className="flex items-center gap-1.5 ml-1">
                         <button
                             type="button"
@@ -207,6 +242,29 @@ export default function TvDisplay({ slides, data, current_term }: any) {
                             className="h-7 w-7 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-white/10 flex items-center justify-center hover:bg-slate-50 text-slate-600 dark:text-slate-300 shadow-2xs cursor-pointer transition-transform active:scale-90"
                         >
                             <ChevronLeft size={16} />
+                        </button>
+                        <button
+                            type="button"
+                            aria-label={isPaused ? 'Resume auto-advance (Space or P)' : 'Pause auto-advance (Space or P)'}
+                            title={isPaused ? 'Resume auto-advance (Space or P)' : 'Pause auto-advance (Space or P)'}
+                            onClick={togglePause}
+                            className={`h-7 px-2.5 rounded-full flex items-center gap-1 text-[11px] font-bold cursor-pointer shadow-2xs transition-all active:scale-90 border ${
+                                isPaused
+                                    ? 'bg-amber-400 text-slate-950 border-amber-300 ring-2 ring-amber-400/40 animate-pulse'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                            }`}
+                        >
+                            {isPaused ? (
+                                <>
+                                    <Play size={11} className="fill-current text-slate-950" />
+                                    <span>RESUME</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Pause size={11} className="fill-current" />
+                                    <span>PAUSE</span>
+                                </>
+                            )}
                         </button>
                         <button
                             type="button"
@@ -722,12 +780,25 @@ function SlideThree({ data, isDark = false }: any) {
             <BentoTile title="Pending & overdue" icon={AlertCircle} iconTone="rose" className="col-span-5 h-full min-h-0" isDark={isDark}>
                 <div className="space-y-3">
                     {pending.map((p: any) => (
-                        <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl p-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
-                            <div className="min-w-0">
-                                <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{p.faculty}</p>
-                                <p className="truncate text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                    {p.requirement} · {p.program}
-                                </p>
+                        <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl p-3 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+                            <div className="flex items-center gap-3 min-w-0">
+                                {p.photo_url ? (
+                                    <img
+                                        src={p.photo_url}
+                                        alt={p.faculty}
+                                        className="h-8 w-8 rounded-full object-cover border border-slate-200 dark:border-white/10 shrink-0"
+                                    />
+                                ) : (
+                                    <div className="h-8 w-8 rounded-full bg-slate-200/80 dark:bg-white/10 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">
+                                        {p.faculty ? p.faculty.split(' ').map((n: string) => n[0]).slice(0, 2).join('') : '?'}
+                                    </div>
+                                )}
+                                <div className="min-w-0">
+                                    <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{p.faculty}</p>
+                                    <p className="truncate text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                        {p.requirement} · {p.program}
+                                    </p>
+                                </div>
                             </div>
                             <div className="flex shrink-0 flex-col items-end gap-1">
                                 <Pill tone={p.status === 'Overdue' ? 'rose' : 'amber'} isDark={isDark}>
@@ -811,7 +882,7 @@ function SlideFour({ data, isDark = false }: any) {
                             <Clock size={22} />
                         </div>
                         <div className="min-w-0">
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">College on-time rate</p>
+                            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">College on-time rate</p>
                             <p className="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">
                                 {data?.kpis?.college_on_time_rate ?? 63.9}%
                             </p>
@@ -838,7 +909,7 @@ function SlideFour({ data, isDark = false }: any) {
                             <FileText size={22} />
                         </div>
                         <div className="min-w-0">
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Zero overdue faculty</p>
+                            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Zero overdue faculty</p>
                             <p className="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">
                                 {data?.kpis?.zero_overdue_faculty ?? 1}
                             </p>
@@ -891,12 +962,20 @@ function SlideFour({ data, isDark = false }: any) {
                                         <span className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs shrink-0 ${rankColors[i] || 'bg-slate-100 text-slate-600'}`}>
                                             {i + 1}
                                         </span>
-                                        <div className="h-8 w-8 rounded-full bg-slate-200/70 dark:bg-white/10 flex items-center justify-center text-slate-400 dark:text-slate-300 shrink-0">
-                                            <User size={16} />
-                                        </div>
+                                        {f.photo_url ? (
+                                            <img
+                                                src={f.photo_url}
+                                                alt={f.name}
+                                                className="h-10 w-10 rounded-full object-cover border-2 border-amber-400/60 shadow-xs shrink-0"
+                                            />
+                                        ) : (
+                                            <div className="h-10 w-10 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-500/20">
+                                                {f.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                                            </div>
+                                        )}
                                         <div className="min-w-0">
                                             <p className="truncate text-sm font-bold text-slate-900 dark:text-white leading-tight">{f.name}</p>
-                                            <p className="truncate text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{f.program}</p>
+                                            <p className="truncate text-xs font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{f.program}</p>
                                             <div className="w-28 sm:w-32 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 mt-1.5 overflow-hidden">
                                                 <div className="h-full rounded-full bg-emerald-500" style={{ width: `${f.on_time_rate}%` }} />
                                             </div>
@@ -904,7 +983,7 @@ function SlideFour({ data, isDark = false }: any) {
                                     </div>
                                     <div className="text-right shrink-0">
                                         <p className="text-base font-extrabold text-slate-900 dark:text-white tabular-nums">{f.on_time_rate}%</p>
-                                        <p className="text-[10px] text-slate-400 font-medium">on time</p>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">on time</p>
                                     </div>
                                 </div>
                             );
@@ -934,7 +1013,7 @@ function SlideFour({ data, isDark = false }: any) {
                                     </div>
                                     <div className="min-w-0">
                                         <p className="truncate text-xs font-bold text-slate-900 dark:text-white">TOS/TQ Submission</p>
-                                        <p className="text-[10px] text-slate-400 mt-0.5">Deadline: Oct 10, 2026</p>
+                                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Deadline: Oct 10, 2026</p>
                                     </div>
                                 </div>
                                 <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 shrink-0">
@@ -949,7 +1028,7 @@ function SlideFour({ data, isDark = false }: any) {
                                     </div>
                                     <div className="min-w-0">
                                         <p className="truncate text-xs font-bold text-slate-900 dark:text-white">Faculty Workload</p>
-                                        <p className="text-[10px] text-slate-400 mt-0.5">Deadline: Oct 12, 2026</p>
+                                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Deadline: Oct 12, 2026</p>
                                     </div>
                                 </div>
                                 <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 shrink-0">
@@ -964,7 +1043,7 @@ function SlideFour({ data, isDark = false }: any) {
                                     </div>
                                     <div className="min-w-0">
                                         <p className="truncate text-xs font-bold text-slate-900 dark:text-white">Compliance Review</p>
-                                        <p className="text-[10px] text-slate-400 mt-0.5">Deadline: Oct 15, 2026</p>
+                                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Deadline: Oct 15, 2026</p>
                                     </div>
                                 </div>
                                 <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 shrink-0">
@@ -994,10 +1073,10 @@ function SlideFour({ data, isDark = false }: any) {
                                     </div>
                                     <div className="min-w-0">
                                         <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">BSIT</p>
-                                        <p className="text-[10px] text-slate-400 mt-0.5">Highest improvement rate</p>
+                                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Highest improvement rate</p>
                                     </div>
                                 </div>
-                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 px-2 py-0.5 rounded-md">
                                     ↑ 12%
                                 </span>
                             </div>
@@ -1009,10 +1088,10 @@ function SlideFour({ data, isDark = false }: any) {
                                     </div>
                                     <div className="min-w-0">
                                         <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">4 faculty members</p>
-                                        <p className="text-[10px] text-slate-400 mt-0.5">with zero overdue items</p>
+                                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">with zero overdue items</p>
                                     </div>
                                 </div>
-                                <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-2 py-0.5 rounded-md">
+                                <span className="text-xs font-bold text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/15 px-2 py-0.5 rounded-md">
                                     100%
                                 </span>
                             </div>
@@ -1435,13 +1514,26 @@ function SlideSeven({ data, isDark = false }: { data: any; isDark?: boolean }) {
                             ) : (
                                 ongoingClasses.map((item: any) => (
                                     <div key={item.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
-                                        <div className="min-w-0">
-                                            <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{item.instructor}</p>
-                                            <p className="truncate text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                <strong className="font-bold text-amber-600 dark:text-amber-400">{item.course_code}</strong>
-                                                {item.course_title ? ` · ${item.course_title}` : ''}
-                                                {item.section ? ` · ${item.section}` : ''}
-                                            </p>
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            {item.instructor_photo ? (
+                                                <img
+                                                    src={item.instructor_photo}
+                                                    alt={item.instructor}
+                                                    className="h-8 w-8 rounded-full object-cover border border-emerald-500/40 shrink-0"
+                                                />
+                                            ) : (
+                                                <div className="h-8 w-8 rounded-full bg-slate-200/80 dark:bg-white/10 flex items-center justify-center text-[11px] font-bold text-slate-600 dark:text-slate-300 shrink-0">
+                                                    {item.instructor ? item.instructor.split(' ').map((n: string) => n[0]).slice(0, 2).join('') : '?'}
+                                                </div>
+                                            )}
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{item.instructor}</p>
+                                                <p className="truncate text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                    <strong className="font-bold text-amber-600 dark:text-amber-400">{item.course_code}</strong>
+                                                    {item.course_title ? ` · ${item.course_title}` : ''}
+                                                    {item.section ? ` · ${item.section}` : ''}
+                                                </p>
+                                            </div>
                                         </div>
                                         <div className="shrink-0 text-right">
                                             <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300">{item.room_name}</span>
@@ -1473,15 +1565,28 @@ function SlideSeven({ data, isDark = false }: { data: any; isDark?: boolean }) {
                         <div className="mt-3 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1 space-y-2">
                             {facultyGroups.map((group: any, idx: number) => (
                                 <div key={group.instructor || idx} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
-                                    <div className="min-w-0">
-                                        <p className="flex items-center gap-1.5 truncate text-xs font-bold text-slate-900 dark:text-white">
-                                            {group.instructor}
-                                            {group.has_ongoing && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500" />}
-                                        </p>
-                                        <p className="truncate text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                            {group.rooms.join(', ')}
-                                            {group.current_class ? ` · Now ${group.current_class.course_code}` : ''}
-                                        </p>
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        {group.instructor_photo ? (
+                                            <img
+                                                src={group.instructor_photo}
+                                                alt={group.instructor}
+                                                className="h-8 w-8 rounded-full object-cover border border-amber-400/40 shrink-0"
+                                            />
+                                        ) : (
+                                            <div className="h-8 w-8 rounded-full bg-slate-200/80 dark:bg-white/10 flex items-center justify-center text-[11px] font-bold text-slate-600 dark:text-slate-300 shrink-0">
+                                                {group.instructor ? group.instructor.split(' ').map((n: string) => n[0]).slice(0, 2).join('') : '?'}
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="flex items-center gap-1.5 truncate text-xs font-bold text-slate-900 dark:text-white">
+                                                {group.instructor}
+                                                {group.has_ongoing && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500" />}
+                                            </p>
+                                            <p className="truncate text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                {group.rooms.join(', ')}
+                                                {group.current_class ? ` · Now ${group.current_class.course_code}` : ''}
+                                            </p>
+                                        </div>
                                     </div>
                                     <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 tabular-nums">
                                         {group.total_classes} classes

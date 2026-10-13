@@ -12,16 +12,17 @@ export function NavFooter({
     return (
         <SidebarGroup {...props} className={`group-data-[collapsible=icon]:p-0 ${className || ''}`}>
             <SidebarGroupContent>
-                <SidebarMenu>
+                <SidebarMenu className="group-data-[collapsible=icon]:items-center">
                     {items.map((item) => (
-                        <SidebarMenuItem key={item.title}>
+                        <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                             <SidebarMenuButton
                                 asChild
+                                tooltip={item.title}
                                 className="text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-neutral-100"
                             >
                                 <a href={item.url} target="_blank" rel="noopener noreferrer">
-                                    {item.icon && <Icon iconNode={item.icon} className="h-5 w-5" />}
-                                    <span>{item.title}</span>
+                                    {item.icon && <Icon iconNode={item.icon} className="size-4 shrink-0" />}
+                                    <span className="truncate group-data-[collapsible=icon]:hidden">{item.title}</span>
                                 </a>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

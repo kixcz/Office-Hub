@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('welcome');
+    return Inertia::render('auth/login');
 })->name('home');
 
 Route::middleware(['auth'])->group(function () {
@@ -41,6 +41,7 @@ Route::middleware(['auth'])->group(function () {
     // Compliance Section
     Route::prefix('compliance')->name('compliance.')->group(function () {
         Route::resource('requirements', RequirementController::class);
+        Route::post('submissions/bulk-record', [SubmissionController::class, 'bulkRecord'])->name('submissions.bulk-record');
         Route::resource('submissions', SubmissionController::class);
         Route::get('pending-outputs', [PendingOutputController::class, 'index'])->name('pending-outputs.index');
         Route::get('tracker', [ComplianceTrackerController::class, 'index'])->name('tracker.index');

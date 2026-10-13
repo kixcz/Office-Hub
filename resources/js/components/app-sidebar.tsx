@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavGroup, type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Megaphone, FileCheck, CheckSquare, Trophy, Send, Calendar, Inbox, Monitor, GraduationCap, Users } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Megaphone, FileCheck, CheckSquare, Trophy, Send, Calendar, Inbox, Monitor, GraduationCap, Users, ListVideo, Sliders, Settings } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const navGroups: NavGroup[] = [
@@ -56,16 +56,9 @@ const navGroups: NavGroup[] = [
     {
         title: 'TV CONFIGURATION',
         items: [
-            {
-                title: 'TV Configuration',
-                url: '/tv-config/playlist',
-                icon: Monitor,
-                items: [
-                    { title: 'Playlist', url: '/tv-config/playlist' },
-                    { title: 'Slide Configuration', url: '/tv-config/slides' },
-                    { title: 'Display Settings', url: '/tv-config/settings' },
-                ],
-            }
+            { title: 'Playlist', url: '/tv-config/playlist', icon: ListVideo },
+            { title: 'Slide Configuration', url: '/tv-config/slides', icon: Sliders },
+            { title: 'Display Settings', url: '/tv-config/settings', icon: Settings },
         ],
     }
 ];
@@ -81,10 +74,10 @@ const footerNavItems: NavItem[] = [
 export function AppSidebar() {
     return (
         <Sidebar collapsible="icon" variant="inset" className="bg-[#fcfcfc]">
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+            <SidebarHeader className="group-data-[collapsible=icon]:p-0">
+                <SidebarMenu className="group-data-[collapsible=icon]:items-center">
+                    <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                        <SidebarMenuButton size="lg" asChild tooltip="CIDS Office Hub">
                             <Link href="/dashboard" prefetch>
                                 <AppLogo />
                             </Link>

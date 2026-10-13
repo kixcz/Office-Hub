@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\Announcement;
 use App\Models\FacilityMonitoring;
+use App\Models\Faculty;
 use App\Models\Meeting;
 use App\Models\Program;
 use App\Models\Requirement;
@@ -119,6 +120,7 @@ class TvDisplayController extends Controller
             return [
                 'id' => $s->id,
                 'faculty' => $s->faculty ? $s->faculty->first_name.' '.$s->faculty->last_name : 'Unknown',
+                'photo_url' => $s->faculty?->photo_url,
                 'program' => $s->faculty && $s->faculty->program ? $s->faculty->program->code : 'N/A',
                 'requirement' => $s->requirement->title,
                 'due_date' => $s->requirement->due_date,
@@ -159,6 +161,7 @@ class TvDisplayController extends Controller
                 if ($fTotal > 0) {
                     $facultyData[] = [
                         'name' => $f->first_name.' '.$f->last_name,
+                        'photo_url' => $f->photo_url,
                         'program' => $p->code,
                         'on_time_rate' => round(($fOnTime / $fTotal) * 100, 1),
                         'compliance_rate' => round(($fComplied / $fTotal) * 100, 1),
@@ -173,6 +176,26 @@ class TvDisplayController extends Controller
                     'on_time_rate' => round(($pOnTime / $pTotal) * 100, 1),
                     'compliance_rate' => round(($pComplied / $pTotal) * 100, 1),
                 ];
+            }
+        }
+
+        if (count($facultyData) < 5) {
+            $existingNames = collect($facultyData)->pluck('name')->all();
+            $remainingFaculties = Faculty::with('program')->get()
+                ->reject(fn ($fac) => in_array($fac->first_name.' '.$fac->last_name, $existingNames));
+
+            foreach ($remainingFaculties as $rf) {
+                $facultyData[] = [
+                    'name' => $rf->first_name.' '.$rf->last_name,
+                    'photo_url' => $rf->photo_url,
+                    'program' => $rf->program?->code ?? 'N/A',
+                    'on_time_rate' => 0,
+                    'compliance_rate' => 0,
+                    'overdue_count' => 0,
+                ];
+                if (count($facultyData) >= 5) {
+                    break;
+                }
             }
         }
 
@@ -202,7 +225,14 @@ class TvDisplayController extends Controller
             ->orderBy('room_name')
             ->get();
 
-        $formattedSchedules = $todayRoomSchedules->map(function ($s) use ($currentTime, $currentDay, $activeDay) {
+        $facultyPhotos = Faculty::all()->mapWithKeys(function ($fac) {
+            return [
+                strtolower($fac->first_name.' '.$fac->last_name) => $fac->photo_url,
+                strtolower($fac->last_name) => $fac->photo_url,
+            ];
+        });
+
+        $formattedSchedules = $todayRoomSchedules->map(function ($s) use ($currentTime, $currentDay, $activeDay, $facultyPhotos) {
             $isToday = ($currentDay === $activeDay);
             $status = 'Upcoming';
             if ($isToday) {
@@ -210,6 +240,17 @@ class TvDisplayController extends Controller
                     $status = 'Ongoing';
                 } elseif ($s->end_time <= $currentTime) {
                     $status = 'Completed';
+                }
+            }
+
+            $instructorKey = strtolower(trim($s->instructor ?? ''));
+            $instructorPhoto = $facultyPhotos->get($instructorKey);
+            if (! $instructorPhoto && $instructorKey !== '') {
+                foreach ($facultyPhotos as $name => $url) {
+                    if ($url && ($name !== '') && (str_contains($instructorKey, $name) || str_contains($name, $instructorKey))) {
+                        $instructorPhoto = $url;
+                        break;
+                    }
                 }
             }
 
@@ -224,6 +265,7 @@ class TvDisplayController extends Controller
                 'course_code' => $s->course_code,
                 'course_title' => $s->course_title,
                 'instructor' => $s->instructor ?: 'Unassigned',
+                'instructor_photo' => $instructorPhoto,
                 'section' => $s->section,
                 'status' => $status,
             ];
@@ -233,9 +275,11 @@ class TvDisplayController extends Controller
         $facultyGroups = $formattedSchedules->groupBy('instructor')->map(function ($items, $instructor) {
             $ongoing = $items->firstWhere('status', 'Ongoing');
             $upcoming = $items->firstWhere('status', 'Upcoming');
+            $firstWithPhoto = $items->firstWhere('instructor_photo');
 
             return [
                 'instructor' => $instructor,
+                'instructor_photo' => $firstWithPhoto ? $firstWithPhoto['instructor_photo'] : null,
                 'total_classes' => $items->count(),
                 'has_ongoing' => ! is_null($ongoing),
                 'current_class' => $ongoing,

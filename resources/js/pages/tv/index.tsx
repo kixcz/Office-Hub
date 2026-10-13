@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Calendar, Clock as ClockIcon, MapPin, Megaphone, WifiOff, Sparkles } from 'lucide-react';
+import { Calendar, Clock as ClockIcon, MapPin, Megaphone, WifiOff, Sparkles, Pause, Play } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface Announcement {
@@ -86,15 +86,27 @@ function Announcements({ items }: { items: Announcement[] }) {
 
     const pages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
     const [page, setPage] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
 
     useEffect(() => {
-        if (pages < 2) {
-            setPage(0);
+        if (pages < 2 || isPaused) {
             return;
         }
         const t = setInterval(() => setPage((p) => (p + 1) % pages), ROTATE_MS);
         return () => clearInterval(t);
-    }, [pages]);
+    }, [pages, isPaused]);
+
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'p' || e.key === 'P') {
+                e.preventDefault();
+                setIsPaused((prev) => !prev);
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, []);
 
     const current = Math.min(page, pages - 1);
     const visible = sorted.slice(current * PER_PAGE, current * PER_PAGE + PER_PAGE);
@@ -109,20 +121,45 @@ function Announcements({ items }: { items: Announcement[] }) {
                         <Megaphone className="h-8 w-8" />
                     </div>
                     <h2 className="text-4xl font-bold tracking-tight text-white drop-shadow-md">Notice Board</h2>
+                    {isPaused && (
+                        <span className="flex items-center gap-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 text-xs font-bold uppercase tracking-wider animate-pulse">
+                            <Pause size={12} className="fill-current" />
+                            Paused
+                        </span>
+                    )}
                 </div>
                 {pages > 1 && (
-                    <div className="flex gap-3" aria-hidden>
-                        {Array.from({ length: pages }).map((_, i) => (
-                            <div key={i} className="h-2 w-16 overflow-hidden rounded-full bg-slate-800 border border-slate-700/50 shadow-inner">
-                                {i === current && (
-                                    <div
-                                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]"
-                                        style={{ animation: `tv-fill ${ROTATE_MS}ms linear forwards` }}
-                                    />
-                                )}
-                                {i < current && <div className="h-full w-full bg-indigo-500/40" />}
-                            </div>
-                        ))}
+                    <div className="flex items-center gap-4">
+                        <button
+                            type="button"
+                            onClick={() => setIsPaused((prev) => !prev)}
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer ${
+                                isPaused
+                                    ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.35)] animate-pulse'
+                                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                            }`}
+                            title={isPaused ? 'Resume auto-scroll (Space)' : 'Pause auto-scroll (Space)'}
+                        >
+                            {isPaused ? <Play size={12} className="fill-current" /> : <Pause size={12} className="fill-current" />}
+                            <span>{isPaused ? 'RESUME' : 'PAUSE'}</span>
+                        </button>
+
+                        <div className="flex gap-3" aria-hidden>
+                            {Array.from({ length: pages }).map((_, i) => (
+                                <div key={i} className="h-2 w-16 overflow-hidden rounded-full bg-slate-800 border border-slate-700/50 shadow-inner">
+                                    {i === current && (
+                                        <div
+                                            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]"
+                                            style={{
+                                                animation: `tv-fill ${ROTATE_MS}ms linear forwards`,
+                                                animationPlayState: isPaused ? 'paused' : 'running',
+                                            }}
+                                        />
+                                    )}
+                                    {i < current && <div className="h-full w-full bg-indigo-500/40" />}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
