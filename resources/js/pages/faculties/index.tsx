@@ -28,6 +28,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -81,6 +82,8 @@ interface Props {
 export default function FacultiesIndex({ faculties = [], programs = [] }: Props) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingFaculty, setEditingFaculty] = useState<Faculty | null>(null);
+    const [deletingFaculty, setDeletingFaculty] = useState<Faculty | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Search and filter state
     const [searchQuery, setSearchQuery] = useState('');
@@ -741,11 +744,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem
                                                                 className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                                                                onClick={() => {
-                                                                    if (confirm(`Are you sure you want to delete ${faculty.first_name} ${faculty.last_name}?`)) {
-                                                                        router.delete(`/faculties/${faculty.id}`);
-                                                                    }
-                                                                }}
+                                                                onClick={() => setDeletingFaculty(faculty)}
                                                             >
                                                                 <Trash className="h-4 w-4 mr-2" />
                                                                 Delete
@@ -761,6 +760,27 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                         </div>
                     )}
                 </div>
+
+                <DeleteConfirmDialog
+                    open={!!deletingFaculty}
+                    onOpenChange={(open) => !open && setDeletingFaculty(null)}
+                    title="Delete Faculty Member"
+                    description="Are you sure you want to delete this faculty member? This will remove their record from all department listings."
+                    itemName={deletingFaculty ? `${deletingFaculty.first_name} ${deletingFaculty.last_name}` : undefined}
+                    confirmLabel="Delete Faculty"
+                    isDeleting={isDeleting}
+                    onConfirm={() => {
+                        if (!deletingFaculty) return;
+                        setIsDeleting(true);
+                        router.delete(`/faculties/${deletingFaculty.id}`, {
+                            preserveScroll: true,
+                            onFinish: () => {
+                                setIsDeleting(false);
+                                setDeletingFaculty(null);
+                            },
+                        });
+                    }}
+                />
             </div>
         </AppLayout>
     );

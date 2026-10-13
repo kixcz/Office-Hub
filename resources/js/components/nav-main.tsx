@@ -28,8 +28,9 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                             const hasItems = item.items && item.items.length > 0;
                             
                             if (hasItems) {
+                                const isChildActive = item.items?.some((subItem) => subItem.url === page.url || page.url.startsWith(subItem.url));
                                 return (
-                                    <Collapsible key={item.title} asChild defaultOpen={false} className="group/collapsible">
+                                    <Collapsible key={item.title} asChild defaultOpen={isChildActive || page.url.startsWith('/schedule/')} className="group/collapsible">
                                         <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                                             <CollapsibleTrigger asChild>
                                                 <SidebarMenuButton tooltip={item.title} className="text-[14px]">
@@ -39,21 +40,25 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                                 </SidebarMenuButton>
                                             </CollapsibleTrigger>
                                             <CollapsibleContent>
-                                                <SidebarMenuSub>
-                                                    {item.items?.map((subItem) => (
-                                                        <SidebarMenuSubItem key={subItem.title}>
-                                                            <SidebarMenuSubButton asChild isActive={subItem.url === page.url} className="text-[14px]">
-                                                                <Link href={subItem.url} prefetch className="flex items-center justify-between w-full">
-                                                                    <span className="truncate">{subItem.title}</span>
-                                                                    {subItem.badge !== undefined && (
-                                                                        <span className="ml-auto inline-flex items-center justify-center bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                                                            {subItem.badge}
-                                                                        </span>
-                                                                    )}
-                                                                </Link>
-                                                            </SidebarMenuSubButton>
-                                                        </SidebarMenuSubItem>
-                                                    ))}
+                                                <SidebarMenuSub className="pl-6 border-l border-border/60 ml-3.5 my-1 gap-1">
+                                                    {item.items?.map((subItem) => {
+                                                        const isSubActive = subItem.url === page.url;
+                                                        return (
+                                                            <SidebarMenuSubItem key={subItem.title}>
+                                                                <SidebarMenuSubButton asChild isActive={isSubActive} className={`text-[13px] py-1.5 px-2 rounded-lg transition-colors ${isSubActive ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}>
+                                                                    <Link href={subItem.url} prefetch className="flex items-center gap-2.5 w-full">
+                                                                        <span className={`size-1.5 rounded-full shrink-0 ${isSubActive ? 'bg-blue-600' : 'bg-gray-300'}`} />
+                                                                        <span className="truncate">{subItem.title}</span>
+                                                                        {subItem.badge !== undefined && (
+                                                                            <span className="ml-auto inline-flex items-center justify-center bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                                                {subItem.badge}
+                                                                            </span>
+                                                                        )}
+                                                                    </Link>
+                                                                </SidebarMenuSubButton>
+                                                            </SidebarMenuSubItem>
+                                                        );
+                                                    })}
                                                 </SidebarMenuSub>
                                             </CollapsibleContent>
                                         </SidebarMenuItem>

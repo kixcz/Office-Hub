@@ -12,10 +12,33 @@ class Task extends Model
         'description',
         'priority',
         'status',
+        'progress',
+        'comments_count',
+        'subtasks_completed',
+        'subtasks_total',
+        'attachments_count',
         'due_date',
         'creator_id',
         'assigned_to',
+        'assignee_initials',
+        'extra_assignees_count',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'due_date' => 'date',
+            'progress' => 'integer',
+            'comments_count' => 'integer',
+            'subtasks_completed' => 'integer',
+            'subtasks_total' => 'integer',
+            'attachments_count' => 'integer',
+            'extra_assignees_count' => 'integer',
+        ];
+    }
 
     public function creator()
     {

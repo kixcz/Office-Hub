@@ -1,0 +1,198 @@
+<?php
+
+use App\Models\Task;
+use App\Models\User;
+
+$user = User::first() ?? User::factory()->create([
+    'name' => 'System Admin',
+    'email' => 'admin@cids.edu.ph',
+]);
+
+$tasks = [
+    // 1. To Do (4)
+    [
+        'title' => 'ISO Audit Preparation',
+        'description' => 'Prepare required documents and evidence for the upcoming ISO audit.',
+        'priority' => 'high',
+        'status' => 'to_do',
+        'due_date' => '2026-10-20',
+        'assignee_initials' => 'JD',
+        'extra_assignees_count' => 2,
+        'comments_count' => 3,
+        'subtasks_completed' => 5,
+        'subtasks_total' => 12,
+        'attachments_count' => 2,
+        'progress' => 0,
+    ],
+    [
+        'title' => 'Faculty Workload Confirmation',
+        'description' => 'Confirm and consolidate faculty workloads for 2nd semester.',
+        'priority' => 'medium',
+        'status' => 'to_do',
+        'due_date' => '2026-10-18',
+        'assignee_initials' => 'MT',
+        'extra_assignees_count' => 0,
+        'comments_count' => 1,
+        'subtasks_completed' => 0,
+        'subtasks_total' => 6,
+        'attachments_count' => 0,
+        'progress' => 0,
+    ],
+    [
+        'title' => 'Calendar Finalization',
+        'description' => 'Finalize academic calendar for AY 2026–2027.',
+        'priority' => 'low',
+        'status' => 'to_do',
+        'due_date' => '2026-10-22',
+        'assignee_initials' => 'RP',
+        'extra_assignees_count' => 1,
+        'comments_count' => 2,
+        'subtasks_completed' => 0,
+        'subtasks_total' => 4,
+        'attachments_count' => 1,
+        'progress' => 0,
+    ],
+    [
+        'title' => 'Procurement Request for Equipment',
+        'description' => 'Prepare procurement request for laboratory equipment.',
+        'priority' => 'medium',
+        'status' => 'to_do',
+        'due_date' => '2026-10-25',
+        'assignee_initials' => 'SA',
+        'extra_assignees_count' => 0,
+        'comments_count' => 0,
+        'subtasks_completed' => 0,
+        'subtasks_total' => 3,
+        'attachments_count' => 0,
+        'progress' => 0,
+    ],
+
+    // 2. In Progress (4)
+    [
+        'title' => 'Midterm TOS and TQ Review',
+        'description' => 'Review and consolidate midterm TOS and TQ results from all programs.',
+        'priority' => 'high',
+        'status' => 'in_progress',
+        'due_date' => '2026-10-15',
+        'assignee_initials' => 'CD',
+        'extra_assignees_count' => 0,
+        'comments_count' => 4,
+        'subtasks_completed' => 7,
+        'subtasks_total' => 10,
+        'attachments_count' => 0,
+        'progress' => 70,
+    ],
+    [
+        'title' => 'TV Slide Updates',
+        'description' => 'Update information drive slides for TV display (announcements, events).',
+        'priority' => 'low',
+        'status' => 'in_progress',
+        'due_date' => '2026-10-16',
+        'assignee_initials' => 'EM',
+        'extra_assignees_count' => 0,
+        'comments_count' => 1,
+        'subtasks_completed' => 3,
+        'subtasks_total' => 6,
+        'attachments_count' => 1,
+        'progress' => 50,
+    ],
+    [
+        'title' => 'Compliance Follow-up',
+        'description' => 'Follow up on pending compliance documents from departments.',
+        'priority' => 'medium',
+        'status' => 'in_progress',
+        'due_date' => '2026-10-17',
+        'assignee_initials' => 'JL',
+        'extra_assignees_count' => 0,
+        'comments_count' => 2,
+        'subtasks_completed' => 2,
+        'subtasks_total' => 5,
+        'attachments_count' => 0,
+        'progress' => 40,
+    ],
+    [
+        'title' => 'Student Internship Monitoring',
+        'description' => 'Monitor and consolidate student internship reports.',
+        'priority' => 'low',
+        'status' => 'in_progress',
+        'due_date' => '2026-10-21',
+        'assignee_initials' => 'AC',
+        'extra_assignees_count' => 0,
+        'comments_count' => 1,
+        'subtasks_completed' => 1,
+        'subtasks_total' => 4,
+        'attachments_count' => 0,
+        'progress' => 25,
+    ],
+
+    // 3. Review (2)
+    [
+        'title' => 'Research Ethics Compliance',
+        'description' => 'Review submitted research proposals for ethics compliance.',
+        'priority' => 'medium',
+        'status' => 'review',
+        'due_date' => '2026-10-14',
+        'assignee_initials' => 'RG',
+        'extra_assignees_count' => 0,
+        'comments_count' => 3,
+        'subtasks_completed' => 9,
+        'subtasks_total' => 10,
+        'attachments_count' => 1,
+        'progress' => 90,
+    ],
+    [
+        'title' => 'Program Accreditation Documents',
+        'description' => 'Review and validate documents for program accreditation.',
+        'priority' => 'medium',
+        'status' => 'review',
+        'due_date' => '2026-10-19',
+        'assignee_initials' => 'LT',
+        'extra_assignees_count' => 0,
+        'comments_count' => 2,
+        'subtasks_completed' => 6,
+        'subtasks_total' => 8,
+        'attachments_count' => 0,
+        'progress' => 75,
+    ],
+
+    // 4. Completed (2)
+    [
+        'title' => 'Q1 Accomplishment Report',
+        'description' => "Prepare and submit Q1 accomplishment report to the dean's office.",
+        'priority' => 'low',
+        'status' => 'completed',
+        'due_date' => '2026-10-10',
+        'assignee_initials' => 'KG',
+        'extra_assignees_count' => 0,
+        'comments_count' => 2,
+        'subtasks_completed' => 4,
+        'subtasks_total' => 4,
+        'attachments_count' => 0,
+        'progress' => 100,
+    ],
+    [
+        'title' => 'Department Meeting Minutes',
+        'description' => 'Compile and finalize the minutes from the department meeting.',
+        'priority' => 'low',
+        'status' => 'completed',
+        'due_date' => '2026-10-11',
+        'assignee_initials' => 'NP',
+        'extra_assignees_count' => 0,
+        'comments_count' => 1,
+        'subtasks_completed' => 3,
+        'subtasks_total' => 3,
+        'attachments_count' => 1,
+        'progress' => 100,
+    ],
+];
+
+Task::truncate();
+
+foreach ($tasks as $t) {
+    Task::create(array_merge($t, [
+        'creator_id' => $user->id,
+        'assigned_to' => $user->id,
+    ]));
+}
+
+echo 'Tasks seeded successfully: '.count($tasks)."\n";

@@ -10,8 +10,6 @@ class ProgramController extends Controller
 {
     public function index(Request $request)
     {
-        self::ensureBaselinePrograms();
-
         $query = Program::query();
 
         if ($request->filled('search')) {

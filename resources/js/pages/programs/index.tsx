@@ -86,6 +86,8 @@ export default function ProgramsIndex({
     const [isAdding, setIsAdding] = useState(false);
     const [editingProgram, setEditingProgram] = useState<Program | null>(null);
     const [viewingProgram, setViewingProgram] = useState<Program | null>(null);
+    const [deletingProgram, setDeletingProgram] = useState<Program | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Form for Add Program
     const addForm = useForm({
@@ -131,8 +133,35 @@ export default function ProgramsIndex({
     };
 
     const handleDelete = (program: Program) => {
-        if (confirm(`Are you sure you want to delete ${program.code} - ${program.name}?`)) {
-            router.delete(`/programs/${program.id}`);
+        setDeletingProgram(program);
+    };
+
+    const confirmDelete = () => {
+        if (!deletingProgram) return;
+        setIsDeleting(true);
+        router.delete(`/programs/${deletingProgram.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeletingProgram(null);
+                setIsDeleting(false);
+                setSelectedIds((prev) => prev.filter((id) => id !== deletingProgram.id));
+            },
+            onError: () => {
+                setIsDeleting(false);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    };
+
+    const handleBulkDelete = () => {
+        if (selectedIds.length === 0) return;
+        if (confirm(`Are you sure you want to delete ${selectedIds.length} selected program(s)?`)) {
+            selectedIds.forEach((id) => {
+                router.delete(`/programs/${id}`, { preserveScroll: true });
+            });
+            setSelectedIds([]);
         }
     };
 
@@ -397,10 +426,21 @@ export default function ProgramsIndex({
                             </DropdownMenu>
                         </div>
 
+                        {/* Bulk Delete Button when items selected */}
+                        {selectedIds.length > 0 && (
+                            <button
+                                onClick={handleBulkDelete}
+                                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 rounded-xl border border-red-200 dark:border-red-800 shadow-2xs transition-all cursor-pointer"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete ({selectedIds.length})</span>
+                            </button>
+                        )}
+
                         {/* Add Program Button */}
                         <button
                             onClick={() => setIsAdding(true)}
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 rounded-xl shadow-xs transition-all"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 rounded-xl shadow-xs transition-all cursor-pointer"
                         >
                             <Plus className="w-4 h-4 stroke-[2.5]" />
                             <span>Add Program</span>
@@ -773,6 +813,52 @@ export default function ProgramsIndex({
                                     className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 transition-colors w-full"
                                 >
                                     Close
+                                </button>
+                            </DialogFooter>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal: Delete Program Confirmation */}
+            <Dialog open={!!deletingProgram} onOpenChange={(open) => !open && setDeletingProgram(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-red-600 flex items-center gap-2">
+                            <Trash2 className="w-5 h-5 text-red-600" />
+                            Delete Academic Program
+                        </DialogTitle>
+                    </DialogHeader>
+                    {deletingProgram && (
+                        <div className="flex flex-col gap-4 mt-2">
+                            <p className="text-sm text-slate-600 dark:text-slate-300">
+                                Are you sure you want to permanently delete{' '}
+                                <span className="font-bold text-slate-900 dark:text-slate-100">
+                                    {deletingProgram.code} ({deletingProgram.name})
+                                </span>
+                                ? This action will remove the program from the system.
+                            </p>
+
+                            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl p-3 text-xs text-red-700 dark:text-red-300">
+                                Note: Any faculty members or schedules associated with this program will be unlinked.
+                            </div>
+
+                            <DialogFooter className="mt-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setDeletingProgram(null)}
+                                    className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isDeleting}
+                                    onClick={confirmDelete}
+                                    className="px-4 py-2 text-xs font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>{isDeleting ? 'Deleting...' : 'Confirm Delete'}</span>
                                 </button>
                             </DialogFooter>
                         </div>

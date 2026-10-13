@@ -1281,8 +1281,8 @@ export default function GenerateReportPage({
                                 style={{ transform: `scale(${zoomLevel / 100})` }}
                             >
                                 <div className="space-y-4">
-                                    {/* 1. OFFICIAL DSSC LETTERHEAD (Centered layout with CIDS_Logo.jpg) */}
-                                    <div className="flex flex-col items-center justify-center text-center border-b border-slate-300 pb-3.5 space-y-2">
+                                    {/* 1. OFFICIAL DSSC LETTERHEAD (Centered layout with CIDS_Logo.jpg, no bottom border line) */}
+                                    <div className="flex flex-col items-center justify-center text-center pb-2 space-y-2">
                                         <img
                                             src="/CIDS_Logo.jpg"
                                             alt="CIDS Logo"
@@ -1431,8 +1431,8 @@ export default function GenerateReportPage({
                                     </div>
                                 </div>
 
-                                {/* 5. SIGNATORIES SECTION (Horizontal arrangement, max 3 per line) */}
-                                <div className="mt-8 pt-4 border-t border-slate-200">
+                                {/* 5. SIGNATORIES SECTION (Horizontal arrangement, max 3 per line, no top border line) */}
+                                <div className="mt-8 pt-4">
                                     {/* Signatories: maximum of 3 per horizontal row */}
                                     <div className="grid grid-cols-3 gap-x-8 gap-y-8 text-center">
                                         {signatoriesList.map((sig) => (
@@ -1440,19 +1440,18 @@ export default function GenerateReportPage({
                                                 <p className="text-left font-bold text-[10px] text-slate-900">
                                                     {sig.label}:
                                                 </p>
-                                                <div className="h-7" />
-                                                <div className={cn("pt-1", sig.showSignatureLine && "border-t border-slate-900")}>
-                                                    <p className="font-black text-[10px] text-slate-900 uppercase tracking-wider truncate">
+                                                <div className="pt-1">
+                                                    <p className={cn(
+                                                        "font-black text-[10px] text-slate-900 uppercase tracking-wider truncate pb-1",
+                                                        sig.showSignatureLine && "border-b border-slate-900"
+                                                    )}>
                                                         {sig.name}
                                                     </p>
-                                                    <p className="text-[9px] text-slate-600 truncate">
+                                                    <p className="text-[9px] text-slate-600 truncate mt-1">
                                                         {sig.designation}
                                                     </p>
                                                     <p className="text-[8px] text-slate-500 truncate">
                                                         {sig.department}
-                                                    </p>
-                                                    <p className="text-[8px] text-slate-400 mt-2 text-left">
-                                                        Date: ____________________
                                                     </p>
                                                 </div>
                                             </div>

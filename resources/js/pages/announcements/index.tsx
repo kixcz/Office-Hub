@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -86,6 +87,8 @@ export default function AnnouncementsIndex({
 }: Props) {
     const [isCreating, setIsCreating] = useState(false);
     const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+    const [deletingAnnouncement, setDeletingAnnouncement] = useState<Announcement | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [isViewOpen, setIsViewOpen] = useState(false);
 
     // Client-side search & filter state

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccomplishmentController;
+use App\Http\Controllers\Administration\AcademicPeriodController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\ClassroomMonitoringController;
 use App\Http\Controllers\Compliance\ComplianceTrackerController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\Schedule\ActivityController;
 use App\Http\Controllers\Schedule\CalendarController;
 use App\Http\Controllers\Schedule\MeetingController;
+use App\Http\Controllers\Schedule\SemesterScheduleController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\Tv\PlaylistController;
 use App\Http\Controllers\Tv\SettingController;
@@ -56,6 +58,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('calendar/events-json', [CalendarController::class, 'eventsJson'])->name('calendar.events-json');
         Route::post('calendar', [CalendarController::class, 'store'])->name('calendar.store');
         Route::delete('calendar/{id}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
+
+        // Semester Schedule Generator System
+        Route::get('generator', [SemesterScheduleController::class, 'generator'])->name('generator');
+        Route::post('generator/import', [SemesterScheduleController::class, 'importAcademicData'])->name('generator.import');
+        Route::post('generator/assign-faculty', [SemesterScheduleController::class, 'assignFaculty'])->name('generator.assign-faculty');
+        Route::get('sections', [SemesterScheduleController::class, 'sectionsOfferings'])->name('sections');
+        Route::get('loading', [SemesterScheduleController::class, 'facultyLoading'])->name('loading');
+        Route::get('timetable', [SemesterScheduleController::class, 'timetable'])->name('timetable');
+        Route::get('conflicts', [SemesterScheduleController::class, 'conflictCenter'])->name('conflicts');
+        Route::get('reviews', [SemesterScheduleController::class, 'reviews'])->name('reviews');
+        Route::get('master-timetable', [SemesterScheduleController::class, 'masterTimetable'])->name('master-timetable');
+        Route::get('gemini', [SemesterScheduleController::class, 'geminiAssistant'])->name('gemini');
+        Route::post('gemini/ask', [SemesterScheduleController::class, 'askGeminiAssistant'])->name('gemini.ask');
     });
 
     // Performance Section
@@ -115,6 +130,18 @@ Route::middleware(['auth'])->group(function () {
 
     // Faculty Workspace
     Route::get('/faculty/workspace', [WorkspaceController::class, 'index'])->name('faculty.workspace');
+
+    // Administration -> Academic Periods
+    Route::prefix('administration/academic-periods')->name('administration.academic-periods.')->group(function () {
+        Route::get('/', [AcademicPeriodController::class, 'index'])->name('index');
+        Route::post('/', [AcademicPeriodController::class, 'store'])->name('store');
+        Route::put('/{academicPeriod}', [AcademicPeriodController::class, 'update'])->name('update');
+        Route::post('/{academicPeriod}/activate', [AcademicPeriodController::class, 'activate'])->name('activate');
+        Route::post('/{academicPeriod}/close', [AcademicPeriodController::class, 'close'])->name('close');
+        Route::post('/{academicPeriod}/archive', [AcademicPeriodController::class, 'archive'])->name('archive');
+        Route::post('/{academicPeriod}/duplicate', [AcademicPeriodController::class, 'duplicateSetup'])->name('duplicate');
+        Route::delete('/{academicPeriod}', [AcademicPeriodController::class, 'destroy'])->name('destroy');
+    });
 });
 
 require __DIR__.'/settings.php';
