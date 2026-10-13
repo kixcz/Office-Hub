@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\FacilityMonitoring;
 use App\Models\Faculty;
+use App\Models\FacultyAttendance;
+use App\Models\FacultyAttendanceSummary;
 use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\RoomSchedule;
@@ -217,6 +219,23 @@ class FacultyController extends Controller
             'status' => 'Verified',
         ];
 
+        // 5. Attendance Records
+        $attendanceRecords = FacultyAttendance::where(function ($q) use ($faculty) {
+            $q->where('faculty_id', $faculty->id)
+                ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
+            if ($faculty->spreadsheet_name) {
+                $q->orWhere('instructor_name', 'like', "%{$faculty->spreadsheet_name}%");
+            }
+        })->orderByDesc('session_date')->get();
+
+        $attendanceSummary = FacultyAttendanceSummary::where(function ($q) use ($faculty) {
+            $q->where('faculty_id', $faculty->id)
+                ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
+            if ($faculty->spreadsheet_name) {
+                $q->orWhere('instructor_name', 'like', "%{$faculty->spreadsheet_name}%");
+            }
+        })->first();
+
         return Inertia::render('faculties/show', [
             'faculty' => $faculty,
             'current_period' => [
@@ -248,6 +267,10 @@ class FacultyController extends Controller
             'requirements' => $requirementRecords,
             'monitoring' => $monitoringRecords,
             'activity_log' => $activityLog,
+            'attendance' => [
+                'records' => $attendanceRecords,
+                'summary' => $attendanceSummary,
+            ],
             'user_permissions' => [
                 'is_super_admin' => $isSuperAdmin,
                 'is_dean' => $isDean,

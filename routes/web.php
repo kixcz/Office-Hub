@@ -10,6 +10,7 @@ use App\Http\Controllers\Compliance\SubmissionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentRouteController;
 use App\Http\Controllers\Faculty\WorkspaceController;
+use App\Http\Controllers\FacultyAttendanceController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\OfficeRequestController;
 use App\Http\Controllers\Performance\FacultyPerformanceController;
@@ -86,6 +87,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/classroom-monitoring', [ClassroomMonitoringController::class, 'index'])->name('classroom-monitoring.index');
     Route::post('/classroom-monitoring/sync', [ClassroomMonitoringController::class, 'sync'])->name('classroom-monitoring.sync');
     Route::post('/classroom-monitoring/schedules/{schedule}/link-faculty', [ClassroomMonitoringController::class, 'linkFaculty'])->name('classroom-monitoring.link-faculty');
+
+    // Faculty Attendance & Monitoring
+    Route::prefix('faculty-attendance')->name('faculty-attendance.')->group(function () {
+        Route::get('/', [FacultyAttendanceController::class, 'index'])->name('index');
+        Route::post('/sync', [FacultyAttendanceController::class, 'sync'])->name('sync');
+        Route::post('/link-faculty', [FacultyAttendanceController::class, 'linkFaculty'])->name('link-faculty');
+    });
 
     // Tasks
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');

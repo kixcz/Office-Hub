@@ -104,22 +104,54 @@ class RecognitionRuleController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string',
+            'description' => 'nullable|string',
             'type' => 'required|string|in:faculty,program',
+            'metric' => 'nullable|string',
+            'criteria_detail' => 'nullable|string',
+            'target' => 'nullable|string',
+            'display_format' => 'nullable|string',
             'min_requirements' => 'required|integer|min:0',
             'min_on_time_rate' => 'required|numeric|min:0|max:100',
             'min_compliance_rate' => 'required|numeric|min:0|max:100',
             'allow_overdue' => 'boolean',
+            'is_active' => 'boolean',
         ]);
+
+        $validated['updated_by'] = auth()->user()?->name ?? 'System Admin';
 
         RecognitionRule::create($validated);
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Recognition rule created successfully.');
+    }
+
+    public function update(Request $request, RecognitionRule $rule)
+    {
+        $validated = $request->validate([
+            'title' => 'sometimes|required|string',
+            'description' => 'nullable|string',
+            'type' => 'sometimes|required|string|in:faculty,program',
+            'metric' => 'nullable|string',
+            'criteria_detail' => 'nullable|string',
+            'target' => 'nullable|string',
+            'display_format' => 'nullable|string',
+            'min_requirements' => 'sometimes|required|integer|min:0',
+            'min_on_time_rate' => 'sometimes|required|numeric|min:0|max:100',
+            'min_compliance_rate' => 'sometimes|required|numeric|min:0|max:100',
+            'allow_overdue' => 'boolean',
+            'is_active' => 'boolean',
+        ]);
+
+        $validated['updated_by'] = auth()->user()?->name ?? 'System Admin';
+
+        $rule->update($validated);
+
+        return redirect()->back()->with('success', 'Recognition rule updated successfully.');
     }
 
     public function destroy(RecognitionRule $rule)
     {
         $rule->delete();
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Recognition rule deleted successfully.');
     }
 }

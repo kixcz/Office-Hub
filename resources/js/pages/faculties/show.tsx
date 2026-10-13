@@ -177,10 +177,34 @@ interface Props {
     requirements: RequirementRecord[];
     monitoring: MonitoringRecord[];
     activity_log: ActivityItem[];
+    attendance?: {
+        records: Array<{
+            id: number;
+            session_date: string;
+            day_of_week: string;
+            time_slot: string;
+            week_label: string;
+            status: string;
+            late_minutes: number;
+            remarks?: string | null;
+        }>;
+        summary?: {
+            present_count: number;
+            absent_count: number;
+            late_count: number;
+            online_count: number;
+            others_count: number;
+            on_leave_count: number;
+            total_late_minutes: number;
+            scheduled_sessions: number;
+            attendance_rate: number;
+            period_label: string;
+        } | null;
+    };
     user_permissions: UserPermissions;
 }
 
-type TabType = 'overview' | 'workload' | 'requirements' | 'monitoring' | 'performance' | 'activity';
+type TabType = 'overview' | 'workload' | 'requirements' | 'monitoring' | 'attendance' | 'performance' | 'activity';
 
 export default function FacultyProfileShow({
     faculty,
@@ -191,6 +215,7 @@ export default function FacultyProfileShow({
     requirements = [],
     monitoring = [],
     activity_log = [],
+    attendance,
     user_permissions,
 }: Props) {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -553,6 +578,7 @@ export default function FacultyProfileShow({
                         { id: 'workload', label: 'Workload & Schedule', icon: BookOpen },
                         { id: 'requirements', label: 'Requirements', icon: FileCheck },
                         { id: 'monitoring', label: 'Monitoring', icon: Building2 },
+                        { id: 'attendance', label: 'Attendance History', icon: Clock },
                         { id: 'performance', label: 'Performance', icon: TrendingUp },
                         { id: 'activity', label: 'Activity Log', icon: History },
                     ].map((tab) => {
@@ -1069,6 +1095,116 @@ export default function FacultyProfileShow({
                                                 <tr>
                                                     <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
                                                         No active exceptions or attendance flags found for this faculty member.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: ATTENDANCE HISTORY */}
+                    {activeTab === 'attendance' && (
+                        <div className="space-y-6">
+                            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-primary" />
+                                        <h2 className="text-sm font-bold text-foreground">Teaching Attendance & Session Verification</h2>
+                                    </div>
+                                    <Link
+                                        href="/faculty-attendance"
+                                        className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
+                                    >
+                                        <span>Open Faculty Attendance Module</span>
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                    </Link>
+                                </div>
+
+                                {/* KPI Metrics */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Attendance Rate</p>
+                                        <p className="text-2xl font-black text-foreground mt-1 tabular-nums">
+                                            {attendance?.summary?.attendance_rate ?? 100}%
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">Conducted vs Scheduled</p>
+                                    </div>
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Sessions Conducted</p>
+                                        <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
+                                            {attendance?.summary?.present_count ?? (attendance?.records?.length || 0)}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">Marked Present / Online</p>
+                                    </div>
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Late Sessions</p>
+                                        <p className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1 tabular-nums">
+                                            {attendance?.summary?.late_count ?? 0}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">
+                                            {attendance?.summary?.total_late_minutes ? `${attendance.summary.total_late_minutes} mins total` : 'Zero late minutes'}
+                                        </p>
+                                    </div>
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Absences</p>
+                                        <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1 tabular-nums">
+                                            {attendance?.summary?.absent_count ?? 0}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">Unexcused / Missed</p>
+                                    </div>
+                                </div>
+
+                                {/* Sessions List */}
+                                <div className="mt-6 border border-border rounded-xl overflow-hidden">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-muted-foreground uppercase bg-muted/40 border-b border-border">
+                                            <tr>
+                                                <th className="px-6 py-3 font-semibold">Date & Day</th>
+                                                <th className="px-6 py-3 font-semibold">Time Slot</th>
+                                                <th className="px-6 py-3 font-semibold">Room / Subject</th>
+                                                <th className="px-6 py-3 font-semibold text-center">Status</th>
+                                                <th className="px-6 py-3 font-semibold text-right">Remarks</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {attendance?.records && attendance.records.length > 0 ? (
+                                                attendance.records.map((rec) => (
+                                                    <tr key={rec.id} className="hover:bg-muted/40 transition-colors">
+                                                        <td className="px-6 py-3.5 font-bold text-foreground">
+                                                            <div>{rec.session_date}</div>
+                                                            <div className="text-[11px] text-muted-foreground font-normal">{rec.day_of_week || rec.week_label}</div>
+                                                        </td>
+                                                        <td className="px-6 py-3.5 font-mono text-xs text-foreground font-semibold">
+                                                            {rec.time_slot}
+                                                        </td>
+                                                        <td className="px-6 py-3.5 text-xs text-foreground">
+                                                            <div className="font-semibold">{rec.course_code || 'Lecture Session'}</div>
+                                                            <div className="text-muted-foreground font-mono">{rec.room_number || 'Main Building'}</div>
+                                                        </td>
+                                                        <td className="px-6 py-3.5 text-center">
+                                                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                                                rec.status === 'present'
+                                                                    ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                                                    : rec.status === 'late'
+                                                                    ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                                                                    : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                                                            }`}>
+                                                                {rec.status}
+                                                                {rec.late_minutes > 0 && ` (${rec.late_minutes}m)`}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-3.5 text-right text-xs text-muted-foreground">
+                                                            {rec.remarks || '—'}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
+                                                        No teaching attendance records synced yet for this faculty member. Link the faculty name under Faculty Attendance to synchronize session history.
                                                     </td>
                                                 </tr>
                                             )}

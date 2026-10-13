@@ -89,4 +89,14 @@ class Faculty extends Model
     {
         return $this->hasMany(FacilityMonitoring::class);
     }
+
+    public function attendances()
+    {
+        return $this->hasMany(FacultyAttendance::class);
+    }
+
+    public function attendanceSummaries()
+    {
+        return $this->hasMany(FacultyAttendanceSummary::class);
+    }
 }

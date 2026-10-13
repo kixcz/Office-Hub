@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavGroup, type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Megaphone, FileCheck, CheckSquare, Trophy, Send, Calendar, Inbox, Monitor, GraduationCap, Users, ListVideo, Sliders, Settings } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Megaphone, FileCheck, CheckSquare, Trophy, Send, Calendar, Inbox, Monitor, GraduationCap, Users, ListVideo, Sliders, Settings, ClipboardCheck } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const navGroups: NavGroup[] = [
@@ -34,6 +34,7 @@ const navGroups: NavGroup[] = [
             { title: 'Meetings', url: '/schedule/meetings', icon: Users },
             { title: 'Activities', url: '/schedule/activities', icon: Calendar },
             { title: 'Classroom Monitoring', url: '/classroom-monitoring', icon: Monitor },
+            { title: 'Faculty Attendance', url: '/faculty-attendance', icon: ClipboardCheck },
         ],
     },
     {
