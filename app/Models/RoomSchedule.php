@@ -19,7 +19,26 @@ class RoomSchedule extends Model
         'course_code',
         'course_title',
         'instructor',
+        'faculty_id',
         'section',
         'raw_text',
     ];
+
+    protected $appends = [
+        'display_instructor',
+    ];
+
+    public function faculty()
+    {
+        return $this->belongsTo(Faculty::class);
+    }
+
+    public function getDisplayInstructorAttribute(): string
+    {
+        if ($this->faculty) {
+            return $this->faculty->title_name ?? $this->faculty->full_name;
+        }
+
+        return $this->instructor ?: 'TBA';
+    }
 }

@@ -52,6 +52,9 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('meetings', MeetingController::class);
         Route::resource('activities', ActivityController::class);
         Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
+        Route::get('calendar/events-json', [CalendarController::class, 'eventsJson'])->name('calendar.events-json');
+        Route::post('calendar', [CalendarController::class, 'store'])->name('calendar.store');
+        Route::delete('calendar/{id}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
     });
 
     // Performance Section
@@ -65,19 +68,24 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('tv-config')->name('tv-config.')->group(function () {
         Route::get('playlist', [PlaylistController::class, 'index'])->name('playlist.index');
         Route::post('playlist', [PlaylistController::class, 'store'])->name('playlist.store');
+        Route::post('playlist/reorder', [PlaylistController::class, 'reorder'])->name('playlist.reorder');
         Route::put('playlist/{playlist}', [PlaylistController::class, 'update'])->name('playlist.update');
         Route::delete('playlist/{playlist}', [PlaylistController::class, 'destroy'])->name('playlist.destroy');
 
         Route::get('slides', [SlideController::class, 'index'])->name('slides.index');
+        Route::get('slides/builder', [SlideController::class, 'builder'])->name('slides.builder');
+        Route::get('slides/{slide}/edit', [SlideController::class, 'edit'])->name('slides.edit');
         Route::put('slides/{slide}', [SlideController::class, 'update'])->name('slides.update');
 
         Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
         Route::post('settings', [SettingController::class, 'store'])->name('settings.store');
+        Route::post('settings/reset', [SettingController::class, 'reset'])->name('settings.reset');
     });
 
     // Classroom Monitoring
     Route::get('/classroom-monitoring', [ClassroomMonitoringController::class, 'index'])->name('classroom-monitoring.index');
     Route::post('/classroom-monitoring/sync', [ClassroomMonitoringController::class, 'sync'])->name('classroom-monitoring.sync');
+    Route::post('/classroom-monitoring/schedules/{schedule}/link-faculty', [ClassroomMonitoringController::class, 'linkFaculty'])->name('classroom-monitoring.link-faculty');
 
     // Tasks
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');

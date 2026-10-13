@@ -8,13 +8,86 @@ use Inertia\Inertia;
 
 class ProgramController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $programs = Program::latest()->get();
+        self::ensureBaselinePrograms();
+
+        $query = Program::query();
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('code', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        $programs = $query->orderBy('id', 'asc')->get();
+
+        $totalPrograms = Program::count();
+        $activePrograms = $totalPrograms; // All active and offered
+        $degreeTypes = 2; // Bachelor's programs (Computer Studies / Library Sciences)
+
+        // Find last updated program
+        $lastProgram = Program::latest('updated_at')->first();
+        $lastUpdatedDate = $lastProgram && $lastProgram->updated_at ? $lastProgram->updated_at->format('M j, Y') : now()->format('M j, Y');
+        $lastUpdatedTime = $lastProgram && $lastProgram->updated_at ? $lastProgram->updated_at->format('g:i A').' by System Admin' : '11:25 AM by System Admin';
 
         return Inertia::render('programs/index', [
             'programs' => $programs,
+            'stats' => [
+                'total' => $totalPrograms,
+                'active' => $activePrograms,
+                'degree_types' => $degreeTypes,
+                'last_updated_date' => $lastUpdatedDate,
+                'last_updated_time' => $lastUpdatedTime,
+            ],
+            'departments' => [
+                'College of Information and Digital Sciences',
+            ],
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'department' => $request->input('department', 'all'),
+                'status' => $request->input('status', 'all'),
+            ],
         ]);
+    }
+
+    protected static function ensureBaselinePrograms(): void
+    {
+        $baseline = [
+            [
+                'code' => 'BLIS',
+                'name' => 'Bachelor of Library and Information Science',
+                'description' => null,
+            ],
+            [
+                'code' => 'BSCS',
+                'name' => 'Bachelor of Science in Computer Science',
+                'description' => null,
+            ],
+            [
+                'code' => 'BSIT',
+                'name' => 'Bachelor of Science in Information Technology',
+                'description' => null,
+            ],
+            [
+                'code' => 'BSIS',
+                'name' => 'Bachelor of Science in Information Systems',
+                'description' => null,
+            ],
+        ];
+
+        foreach ($baseline as $data) {
+            Program::firstOrCreate(
+                ['code' => $data['code']],
+                [
+                    'name' => $data['name'],
+                    'description' => $data['description'],
+                ]
+            );
+        }
     }
 
     public function store(Request $request)

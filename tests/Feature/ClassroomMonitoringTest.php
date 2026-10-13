@@ -2,6 +2,8 @@
 
 use App\Jobs\SyncFacilityMonitoring;
 use App\Models\FacilityMonitoring;
+use App\Models\Faculty;
+use App\Models\Program;
 use App\Models\RoomSchedule;
 use App\Models\User;
 use Carbon\Carbon;
@@ -118,4 +120,75 @@ test('authenticated users can see room schedules on the monitoring page', functi
             ->has('today')
             ->has('current_time')
         );
+});
+
+test('authenticated user can manually link and unlink a room schedule to a faculty member', function () {
+    $user = User::factory()->create();
+    $program = Program::first() ?? Program::create(['code' => 'BSIT', 'name' => 'Information Technology']);
+
+    $faculty = Faculty::create([
+        'first_name' => 'Maria',
+        'last_name' => 'Santos',
+        'program_id' => $program->id,
+        'academic_rank' => 'Assistant Professor I',
+    ]);
+
+    $schedule = RoomSchedule::factory()->create([
+        'room_name' => 'CLR 1',
+        'day_of_week' => 'Monday',
+        'start_time' => '07:30:00',
+        'end_time' => '09:00:00',
+        'instructor' => 'ROXAS',
+        'faculty_id' => null,
+    ]);
+
+    // Link schedule to faculty
+    $response = $this->actingAs($user)
+        ->post("/classroom-monitoring/schedules/{$schedule->id}/link-faculty", [
+            'faculty_id' => $faculty->id,
+        ]);
+
+    $response->assertRedirect();
+    $schedule->refresh();
+
+    expect($schedule->faculty_id)->toBe($faculty->id)
+        ->and($schedule->instructor)->toBe('ROXAS') // Raw spreadsheet name remains unchanged
+        ->and($schedule->display_instructor)->toBe('Prof. Maria Santos');
+
+    // Unlink schedule
+    $response = $this->actingAs($user)
+        ->post("/classroom-monitoring/schedules/{$schedule->id}/link-faculty", [
+            'faculty_id' => null,
+        ]);
+
+    $response->assertRedirect();
+    $schedule->refresh();
+
+    expect($schedule->faculty_id)->toBeNull()
+        ->and($schedule->display_instructor)->toBe('ROXAS');
+});
+
+test('sync job automatically resolves faculty_id from spreadsheet_name alias without changing sheet string', function () {
+    $this->travelTo(Carbon::parse('2026-10-05 08:00:00', 'Asia/Manila')); // Monday
+
+    $program = Program::first() ?? Program::create(['code' => 'BSIT', 'name' => 'Information Technology']);
+    $faculty = Faculty::create([
+        'first_name' => 'John',
+        'last_name' => 'Villegas',
+        'spreadsheet_name' => 'VILLEGAS',
+        'program_id' => $program->id,
+    ]);
+
+    Http::fake([
+        '*/htmlview/sheet*' => Http::response(sampleRoomSheetHtml()),
+        '*/htmlview' => Http::response('items.push({name: "Faculty", pageUrl: "x", gid: "0",initialSheet: false});items.push({name: "CLR 1", pageUrl: "x", gid: "1235317711",initialSheet: false});'),
+    ]);
+
+    (new SyncFacilityMonitoring)->handle();
+
+    $schedule = RoomSchedule::where('instructor', 'VILLEGAS')->first();
+    expect($schedule)->not->toBeNull()
+        ->and($schedule->faculty_id)->toBe($faculty->id)
+        ->and($schedule->instructor)->toBe('VILLEGAS')
+        ->and($schedule->display_instructor)->toBe('Prof. John Villegas');
 });

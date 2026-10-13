@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Schedule\CalendarController;
 use App\Models\Activity;
 use App\Models\Meeting;
 use App\Models\Program;
@@ -138,7 +139,30 @@ class DashboardController extends Controller
         // Top Performing Programs
         $topPrograms = collect($programsData)->sortByDesc(function ($p) {
             return $p['on_time_rate'] * 100 + $p['compliance_rate'];
-        })->take(3)->values();
+        })->take(4)->values();
+
+        CalendarController::ensureBaselineEvents();
+        $calendarData = CalendarController::getCalendarData();
+
+        // If today has no schedule in DB, fallback to 2026-10-13 baseline schedule for demo fidelity
+        if ($todaysSchedule->isEmpty()) {
+            $baselineDate = '2026-10-13';
+            $meetings = Meeting::where('date', $baselineDate)->get()->map(fn ($m) => [
+                'title' => $m->title,
+                'time' => Carbon::parse($m->start_time)->format('h:i A').' - '.Carbon::parse($m->end_time)->format('h:i A'),
+                'type' => 'Meeting',
+                'venue' => $m->venue,
+            ]);
+
+            $activities = Activity::where('date', $baselineDate)->get()->map(fn ($a) => [
+                'title' => $a->title,
+                'time' => Carbon::parse($a->start_time)->format('h:i A').' - '.Carbon::parse($a->end_time)->format('h:i A'),
+                'type' => 'Activity',
+                'venue' => $a->venue,
+            ]);
+
+            $todaysSchedule = $meetings->concat($activities);
+        }
 
         return Inertia::render('dashboard', [
             'stats' => $stats,
@@ -149,6 +173,7 @@ class DashboardController extends Controller
             'urgent_pending' => $urgentPending,
             'top_programs' => $topPrograms,
             'current_term' => 'AY 2026-2027, 1st Semester',
+            'calendar_data' => $calendarData,
         ]);
     }
 }

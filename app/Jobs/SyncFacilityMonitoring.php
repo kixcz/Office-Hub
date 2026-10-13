@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\FacilityMonitoring;
+use App\Models\Faculty;
 use App\Models\RoomSchedule;
 use Carbon\Carbon;
 use DOMDocument;
@@ -77,13 +78,23 @@ class SyncFacilityMonitoring implements ShouldQueue
             }
 
             $timestamp = now();
+            $faculties = Faculty::all();
 
-            DB::transaction(function () use ($schedules, $timestamp): void {
+            DB::transaction(function () use ($schedules, $timestamp, $faculties): void {
                 RoomSchedule::query()->delete();
 
                 foreach (array_chunk($schedules, 200) as $chunk) {
                     RoomSchedule::insert(array_map(
-                        fn (array $row): array => [...$row, 'created_at' => $timestamp, 'updated_at' => $timestamp],
+                        function (array $row) use ($timestamp, $faculties): array {
+                            $faculty = self::resolveFaculty($row['instructor'] ?? null, $faculties);
+
+                            return [
+                                ...$row,
+                                'faculty_id' => $faculty?->id,
+                                'created_at' => $timestamp,
+                                'updated_at' => $timestamp,
+                            ];
+                        },
                         $chunk
                     ));
                 }
@@ -211,25 +222,29 @@ class SyncFacilityMonitoring implements ShouldQueue
         $time = $now->format('H:i:s');
 
         $rooms = RoomSchedule::query()->distinct()->orderBy('room_name')->pluck('room_name');
-        $todaySchedules = RoomSchedule::query()->where('day_of_week', $day)->orderBy('start_time')->get()->groupBy('room_name');
+        $todaySchedules = RoomSchedule::with('faculty')->where('day_of_week', $day)->orderBy('start_time')->get()->groupBy('room_name');
 
         $snapshot = $rooms->map(function (string $room) use ($todaySchedules, $time): array {
             $blocks = $todaySchedules->get($room, collect());
             $current = $blocks->first(fn (RoomSchedule $block): bool => $block->start_time <= $time && $block->end_time > $time);
             $next = $blocks->first(fn (RoomSchedule $block): bool => $block->start_time > $time);
 
+            $currentInstructor = $current?->faculty?->title_name ?? $current?->faculty?->full_name ?? $current?->instructor;
+            $nextInstructor = $next?->faculty?->title_name ?? $next?->faculty?->full_name ?? $next?->instructor ?? $next?->course_code ?? 'Class';
+
             return [
                 'room_name' => $room,
                 'room_type' => 'Laboratory',
                 'current_class' => $current ? trim(($current->course_code ?? '').' '.($current->course_title ?? '')) : null,
                 'program' => $current?->section,
-                'instructor' => $current?->instructor,
+                'instructor' => $currentInstructor,
+                'faculty_id' => $current?->faculty_id,
                 'start_time' => $current?->start_time,
                 'end_time' => $current?->end_time,
                 'status' => $current ? 'In Use' : 'Available',
                 'remarks' => null,
                 'next_schedule' => $next
-                    ? trim(($next->instructor ?? $next->course_code ?? 'Class').' at '.Carbon::parse($next->start_time)->format('g:i A'))
+                    ? trim($nextInstructor.' at '.Carbon::parse($next->start_time)->format('g:i A'))
                     : null,
             ];
         });
@@ -316,6 +331,95 @@ class SyncFacilityMonitoring implements ShouldQueue
             'instructor' => $lines !== [] ? implode(' / ', $lines) : null,
             'section' => $section,
         ];
+    }
+
+    /**
+     * Resolve a raw spreadsheet instructor string to an existing Faculty model.
+     */
+    public static function resolveFaculty(?string $instructor, $faculties = null): ?Faculty
+    {
+        if (! $instructor || trim($instructor) === '') {
+            return null;
+        }
+
+        $faculties = $faculties ?? Faculty::all();
+
+        // Strip room/lab noise like " / Lab CLR 2", "Lab CLR 3 / ", " / COM 1"
+        $clean = preg_replace('/(\/\s*(lab|clr|com|chs)\s*[a-z0-9]*|\b(lab|clr|com|chs)\s*[a-z0-9]*\s*\/)/i', '', $instructor);
+        $clean = trim(preg_replace('/\s+/', ' ', $clean));
+
+        $candidates = array_filter(
+            array_map('trim', explode('/', $clean)),
+            fn (string $p): bool => $p !== '' && ! preg_match('/^(lab|clr|com|chs|new plantilla|plantilla)/i', $p)
+        );
+
+        if ($candidates === []) {
+            $candidates = [$clean];
+        }
+
+        foreach ($candidates as $target) {
+            $t = strtolower($target);
+
+            // 1. Check exact spreadsheet_name match
+            $matched = $faculties->first(fn (Faculty $f): bool => (bool) ($f->spreadsheet_name && strtolower($f->spreadsheet_name) === $t));
+            if ($matched) {
+                return $matched;
+            }
+
+            // 2. Check full name exact match (First Last, Last First, Last, First)
+            $matched = $faculties->first(fn (Faculty $f): bool => strtolower($f->first_name.' '.$f->last_name) === $t
+                || strtolower($f->last_name.' '.$f->first_name) === $t
+                || strtolower($f->last_name.', '.$f->first_name) === $t
+            );
+            if ($matched) {
+                return $matched;
+            }
+
+            // 3. Match format like "PERITO, R" or "BALAGA, K." (Lastname, Initial)
+            if (preg_match('/^([a-z\s]+),\s*([a-z])\.?$/i', $target, $m)) {
+                $lastNamePart = strtolower(trim($m[1]));
+                $initial = strtolower($m[2]);
+                $matched = $faculties->first(fn (Faculty $f): bool => strtolower($f->last_name) === $lastNamePart && str_starts_with(strtolower($f->first_name), $initial));
+                if ($matched) {
+                    return $matched;
+                }
+            }
+
+            // 4. Match format like "Panaligan H", "H.Panaligan", "Panaligan H.", "K.Panaligan"
+            if (preg_match('/^([a-z])\.?\s*([a-z]+)$/i', $target, $m)) {
+                $initial = strtolower($m[1]);
+                $lastNamePart = strtolower(trim($m[2]));
+                $matched = $faculties->first(fn (Faculty $f): bool => strtolower($f->last_name) === $lastNamePart && str_starts_with(strtolower($f->first_name), $initial));
+                if ($matched) {
+                    return $matched;
+                }
+            }
+
+            if (preg_match('/^([a-z]+)\s+([a-z])\.?$/i', $target, $m)) {
+                $lastNamePart = strtolower(trim($m[1]));
+                $initial = strtolower($m[2]);
+                $matched = $faculties->first(fn (Faculty $f): bool => strtolower($f->last_name) === $lastNamePart && str_starts_with(strtolower($f->first_name), $initial));
+                if ($matched) {
+                    return $matched;
+                }
+            }
+
+            // 5. Exact match on last name (e.g. "ROXAS", "ALBA", "ESTREBELLO", "MENOZA", "Montoya")
+            $matched = $faculties->first(fn (Faculty $f): bool => strtolower($f->last_name) === $t);
+            if ($matched) {
+                return $matched;
+            }
+
+            // 6. Substring / nickname match
+            $matched = $faculties->first(fn (Faculty $f): bool => (strlen($t) >= 4 && (str_starts_with(strtolower($f->first_name), $t) || str_starts_with(strtolower($f->last_name), $t)))
+                || (strlen($t) >= 5 && (str_contains(strtolower($f->first_name), $t) || str_contains(strtolower($f->last_name), $t)))
+            );
+            if ($matched) {
+                return $matched;
+            }
+        }
+
+        return null;
     }
 
     /**

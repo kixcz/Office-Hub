@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Schedule\CalendarController;
 use App\Models\Activity;
 use App\Models\Announcement;
 use App\Models\FacilityMonitoring;
@@ -172,7 +173,8 @@ class TvDisplayController extends Controller
             if ($pTotal > 0) {
                 $programsData[] = [
                     'id' => $p->id,
-                    'name' => $p->code,
+                    'code' => $p->code,
+                    'name' => $p->name,
                     'on_time_rate' => round(($pOnTime / $pTotal) * 100, 1),
                     'compliance_rate' => round(($pComplied / $pTotal) * 100, 1),
                 ];
@@ -204,7 +206,23 @@ class TvDisplayController extends Controller
         $zeroOverdueFaculty = collect($facultyData)->filter(fn ($f) => $f['on_time_rate'] == 100)->count(); // Simplified
 
         // Data for Slide 5 (Classroom Monitoring - Facilities & Labs)
-        $facilityData = FacilityMonitoring::orderBy('room_name')->get();
+        $facilityData = FacilityMonitoring::with('faculty')->orderBy('room_name')->get()->map(function ($fac) {
+            return [
+                'id' => $fac->id,
+                'room_name' => $fac->room_name,
+                'room_type' => $fac->room_type,
+                'current_class' => $fac->current_class,
+                'program' => $fac->program,
+                'instructor' => $fac->faculty ? ($fac->faculty->title_name ?? $fac->faculty->full_name) : $fac->instructor,
+                'instructor_photo' => $fac->faculty?->photo_url,
+                'faculty_id' => $fac->faculty_id,
+                'start_time' => $fac->start_time,
+                'end_time' => $fac->end_time,
+                'status' => $fac->status,
+                'remarks' => $fac->remarks,
+                'next_schedule' => $fac->next_schedule,
+            ];
+        });
         $facilityLastSync = Cache::get('facility_monitoring_last_sync', clone $now);
 
         // Data for Slide 6 (Class & Lab Monitoring Summary from Google Sheets)
@@ -219,7 +237,7 @@ class TvDisplayController extends Controller
         // If today is a weekend without schedules, default to Monday
         $activeDay = in_array($currentDay, ['Saturday', 'Sunday']) ? 'Monday' : $currentDay;
 
-        $todayRoomSchedules = RoomSchedule::query()
+        $todayRoomSchedules = RoomSchedule::with('faculty')
             ->where('day_of_week', $activeDay)
             ->orderBy('start_time')
             ->orderBy('room_name')
@@ -243,13 +261,19 @@ class TvDisplayController extends Controller
                 }
             }
 
-            $instructorKey = strtolower(trim($s->instructor ?? ''));
-            $instructorPhoto = $facultyPhotos->get($instructorKey);
-            if (! $instructorPhoto && $instructorKey !== '') {
-                foreach ($facultyPhotos as $name => $url) {
-                    if ($url && ($name !== '') && (str_contains($instructorKey, $name) || str_contains($name, $instructorKey))) {
-                        $instructorPhoto = $url;
-                        break;
+            // Prefer connected Faculty model from faculty list
+            $displayName = $s->faculty ? ($s->faculty->title_name ?? $s->faculty->full_name) : ($s->instructor ?: 'Unassigned');
+            $instructorPhoto = $s->faculty?->photo_url;
+
+            if (! $instructorPhoto) {
+                $instructorKey = strtolower(trim($s->instructor ?? ''));
+                $instructorPhoto = $facultyPhotos->get($instructorKey);
+                if (! $instructorPhoto && $instructorKey !== '') {
+                    foreach ($facultyPhotos as $name => $url) {
+                        if ($url && ($name !== '') && (str_contains($instructorKey, $name) || str_contains($name, $instructorKey))) {
+                            $instructorPhoto = $url;
+                            break;
+                        }
                     }
                 }
             }
@@ -264,7 +288,9 @@ class TvDisplayController extends Controller
                 'raw_end' => $s->end_time,
                 'course_code' => $s->course_code,
                 'course_title' => $s->course_title,
-                'instructor' => $s->instructor ?: 'Unassigned',
+                'instructor' => $displayName,
+                'raw_instructor' => $s->instructor,
+                'faculty_id' => $s->faculty_id,
                 'instructor_photo' => $instructorPhoto,
                 'section' => $s->section,
                 'status' => $status,
@@ -359,6 +385,9 @@ class TvDisplayController extends Controller
                 ],
                 'slide6' => $monitoringSummary,
                 'slide7' => $facultyScheduleData,
+                'slide8' => [
+                    'calendar' => CalendarController::getCalendarData(),
+                ],
             ],
             'current_term' => $settings['academic_term'] ?? 'AY 2026-2027, 1st Semester',
         ]);

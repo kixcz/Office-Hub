@@ -13,9 +13,55 @@ class PlaylistController extends Controller
     {
         $slides = TvSlide::orderBy('order')->get();
 
+        $totalSlides = $slides->count();
+        $activeSlides = $slides->where('is_active', true)->count();
+        $activePercentage = $totalSlides > 0 ? round(($activeSlides / $totalSlides) * 100) : 100;
+
+        $totalSeconds = $slides->where('is_active', true)->sum('duration_seconds');
+        $minutes = floor($totalSeconds / 60);
+        $seconds = $totalSeconds % 60;
+        $rotationTime = "{$minutes}m {$seconds}s";
+
+        $lastSlide = TvSlide::latest('updated_at')->first();
+        $lastUpdatedFormatted = $lastSlide && $lastSlide->updated_at
+            ? $lastSlide->updated_at->format('M j, Y')
+            : 'Oct 13, 2026';
+        $lastUpdatedTimeFormatted = $lastSlide && $lastSlide->updated_at
+            ? $lastSlide->updated_at->format('g:i A').' by System Admin'
+            : '11:35 AM by System Admin';
+
         return Inertia::render('tv/playlist/index', [
             'slides' => $slides,
+            'stats' => [
+                'total_slides' => $totalSlides,
+                'active_slides' => $activeSlides,
+                'active_percentage' => $activePercentage,
+                'total_rotation_time' => $rotationTime,
+                'last_updated' => $lastUpdatedFormatted,
+                'last_updated_time' => $lastUpdatedTimeFormatted,
+            ],
+            'playlist_settings' => [
+                'autoplay' => true,
+                'transition_speed' => 'Fade (1s)',
+                'default_slide_duration' => '15 seconds',
+                'display_mode' => 'Full Screen',
+                'repeat_playlist' => true,
+            ],
         ]);
+    }
+
+    public function reorder(Request $request)
+    {
+        $validated = $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'integer|exists:tv_slides,id',
+        ]);
+
+        foreach ($validated['order'] as $index => $id) {
+            TvSlide::where('id', $id)->update(['order' => $index + 1]);
+        }
+
+        return redirect()->back()->with('success', 'Slide order updated successfully.');
     }
 
     public function store(Request $request)
@@ -33,10 +79,11 @@ class PlaylistController extends Controller
             'type' => $validated['type'],
             'duration_seconds' => $validated['duration_seconds'],
             'order' => $maxOrder + 1,
+            'is_active' => true,
             'config' => [], // default empty config
         ]);
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Slide added to playlist.');
     }
 
     public function update(Request $request, TvSlide $playlist)
@@ -51,13 +98,13 @@ class PlaylistController extends Controller
 
         $playlist->update($validated);
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Slide updated successfully.');
     }
 
     public function destroy(TvSlide $playlist)
     {
         $playlist->delete();
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Slide removed from playlist.');
     }
 }

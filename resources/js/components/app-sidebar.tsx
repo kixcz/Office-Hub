@@ -73,20 +73,8 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     return (
-        <Sidebar collapsible="icon" variant="inset" className="bg-[#fcfcfc]">
-            <SidebarHeader className="group-data-[collapsible=icon]:p-0">
-                <SidebarMenu className="group-data-[collapsible=icon]:items-center">
-                    <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                        <SidebarMenuButton size="lg" asChild tooltip="CIDS Office Hub">
-                            <Link href="/dashboard" prefetch>
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
-
-            <SidebarContent>
+        <Sidebar collapsible="icon" variant="sidebar" className="top-16 h-[calc(100svh-4rem)] border-r border-border/80 bg-sidebar">
+            <SidebarContent className="pt-2">
                 <NavMain groups={navGroups} />
             </SidebarContent>
 

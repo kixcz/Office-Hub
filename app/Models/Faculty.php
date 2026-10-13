@@ -14,13 +14,45 @@ class Faculty extends Model
     protected $fillable = [
         'first_name',
         'last_name',
+        'spreadsheet_name',
+        'faculty_id',
+        'academic_rank',
+        'employment_type',
+        'status',
+        'highest_qualification',
+        'specialization',
+        'email',
+        'phone',
+        'office_room',
+        'employment_date',
         'profile_picture',
         'program_id',
     ];
 
     protected $appends = [
         'photo_url',
+        'full_name',
+        'title_name',
+        'employee_id',
     ];
+
+    public function getFullNameAttribute(): string
+    {
+        return trim("{$this->first_name} {$this->last_name}");
+    }
+
+    public function getTitleNameAttribute(): string
+    {
+        $rank = $this->academic_rank ?? 'Assistant Professor';
+        $prefix = str_contains($rank, 'Professor') ? 'Prof.' : 'Instr.';
+
+        return "{$prefix} {$this->first_name} {$this->last_name}";
+    }
+
+    public function getEmployeeIdAttribute(): string
+    {
+        return $this->faculty_id ?: 'CIDS-2026-'.str_pad((string) $this->id, 3, '0', STR_PAD_LEFT);
+    }
 
     /**
      * Get the accessible public URL of the faculty profile picture.
@@ -46,5 +78,15 @@ class Faculty extends Model
     public function submissions()
     {
         return $this->hasMany(Submission::class);
+    }
+
+    public function roomSchedules()
+    {
+        return $this->hasMany(RoomSchedule::class);
+    }
+
+    public function facilityMonitorings()
+    {
+        return $this->hasMany(FacilityMonitoring::class);
     }
 }

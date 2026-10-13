@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\FacilityMonitoring;
 use App\Models\Faculty;
 use App\Models\Program;
+use App\Models\RoomSchedule;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -169,4 +171,132 @@ test('tv display endpoint passes faculty photos for display slides', function ()
     $linus = collect($data['slide4']['top_faculty'])->firstWhere('name', 'Linus Torvalds');
     expect($linus)->not->toBeNull()
         ->and($linus['photo_url'])->toContain('/storage/faculty-photos/linus.jpg');
+});
+
+test('authenticated user can view faculty profile page with compliance metrics and workload', function () {
+    $user = User::factory()->create();
+    $program = Program::first() ?? Program::create(['code' => 'BSIT', 'name' => 'Information Technology']);
+
+    $faculty = Faculty::create([
+        'first_name' => 'Maria',
+        'last_name' => 'Santos',
+        'faculty_id' => 'CIDS-2026-001',
+        'academic_rank' => 'Assistant Professor I',
+        'employment_type' => 'Full-time',
+        'status' => 'Active',
+        'highest_qualification' => 'Master of Information Technology',
+        'specialization' => 'Software Engineering',
+        'email' => 'maria.santos@cids.edu.ph',
+        'program_id' => $program->id,
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get("/faculties/{$faculty->id}")
+        ->assertOk();
+
+    $page = $response->viewData('page');
+    expect($page['component'])->toBe('faculties/show');
+
+    $props = $page['props'];
+    expect($props)->toHaveKeys([
+        'faculty',
+        'current_period',
+        'available_periods',
+        'kpis',
+        'workload',
+        'requirements',
+        'monitoring',
+        'activity_log',
+        'user_permissions',
+    ]);
+
+    expect($props['faculty']['id'])->toBe($faculty->id)
+        ->and($props['faculty']['faculty_id'])->toBe('CIDS-2026-001')
+        ->and($props['faculty']['academic_rank'])->toBe('Assistant Professor I')
+        ->and($props['kpis'])->toHaveKeys([
+            'compliance_rate',
+            'teaching_units',
+            'pending_requirements',
+            'overdue_requirements',
+            'submitted_requirements',
+            'verified_requirements',
+            'on_time_rate',
+        ]);
+});
+
+test('faculty profile reflects custom academic period query filters', function () {
+    $user = User::factory()->create();
+    $program = Program::first() ?? Program::create(['code' => 'BSIT', 'name' => 'Information Technology']);
+
+    $faculty = Faculty::create([
+        'first_name' => 'Maria',
+        'last_name' => 'Santos',
+        'program_id' => $program->id,
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get("/faculties/{$faculty->id}?academic_year=2025-2026&semester=2nd+Semester")
+        ->assertOk();
+
+    $props = $response->viewData('page')['props'];
+    expect($props['current_period']['academic_year'])->toBe('2025-2026')
+        ->and($props['current_period']['semester'])->toBe('2nd Semester');
+});
+
+test('editing faculty name updates display without modifying spreadsheet instructor string', function () {
+    $user = User::factory()->create();
+    $program = Program::first() ?? Program::create(['code' => 'BSIT', 'name' => 'Information Technology']);
+
+    $faculty = Faculty::create([
+        'first_name' => 'Maria',
+        'last_name' => 'Santos',
+        'spreadsheet_name' => 'SANTOS, M',
+        'program_id' => $program->id,
+        'academic_rank' => 'Assistant Professor I',
+    ]);
+
+    $schedule = RoomSchedule::factory()->create([
+        'room_name' => 'CLR 3',
+        'day_of_week' => 'Wednesday',
+        'start_time' => '10:00:00',
+        'end_time' => '12:00:00',
+        'instructor' => 'SANTOS, M',
+        'faculty_id' => $faculty->id,
+    ]);
+
+    $facility = FacilityMonitoring::create([
+        'room_name' => 'CLR 3',
+        'room_type' => 'Laboratory',
+        'current_class' => 'Web Development',
+        'instructor' => 'SANTOS, M',
+        'status' => 'In Use',
+        'faculty_id' => $faculty->id,
+    ]);
+
+    // Update faculty name in Faculty Management
+    $response = $this->actingAs($user)
+        ->put("/faculties/{$faculty->id}", [
+            'first_name' => 'Dr. Maria Clara',
+            'last_name' => 'Santos-Roxas',
+            'spreadsheet_name' => 'SANTOS, M',
+            'program_id' => $program->id,
+            'academic_rank' => 'Associate Professor I',
+        ]);
+
+    $response->assertRedirect();
+    $faculty->refresh();
+    $schedule->refresh();
+    $facility->refresh();
+
+    // The faculty object is renamed
+    expect($faculty->first_name)->toBe('Dr. Maria Clara')
+        ->and($faculty->last_name)->toBe('Santos-Roxas')
+        ->and($faculty->academic_rank)->toBe('Associate Professor I');
+
+    // Room schedule raw spreadsheet instructor remains intact
+    expect($schedule->instructor)->toBe('SANTOS, M')
+        ->and($schedule->display_instructor)->toBe('Prof. Dr. Maria Clara Santos-Roxas');
+
+    // Real-time facility monitoring reflects the updated title/name
+    expect($facility->instructor)->toBe('Prof. Dr. Maria Clara Santos-Roxas');
 });

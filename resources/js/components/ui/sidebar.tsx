@@ -1,6 +1,6 @@
 import { Slot } from '@radix-ui/react-slot';
 import { VariantProps, cva } from 'class-variance-authority';
-import { PanelLeft } from 'lucide-react';
+import { PanelLeft, Menu } from 'lucide-react';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -191,7 +191,7 @@ const Sidebar = React.forwardRef<
             {/* This is what handles the sidebar gap on desktop */}
             <div
                 className={cn(
-                    'relative h-svh w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear',
+                    'relative h-[calc(100svh-4rem)] w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear',
                     'group-data-[collapsible=offcanvas]:w-0',
                     'group-data-[side=right]:rotate-180',
                     variant === 'floating' || variant === 'inset'
@@ -226,7 +226,7 @@ const Sidebar = React.forwardRef<
 Sidebar.displayName = 'Sidebar';
 
 const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.ComponentProps<typeof Button>>(
-    ({ className, onClick, ...props }, ref) => {
+    ({ className, onClick, children, ...props }, ref) => {
         const { toggleSidebar } = useSidebar();
 
         return (
@@ -235,14 +235,14 @@ const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.C
                 data-sidebar="trigger"
                 variant="ghost"
                 size="icon"
-                className={cn('h-7 w-7', className)}
+                className={cn('h-8 w-8', className)}
                 onClick={(event) => {
                     onClick?.(event);
                     toggleSidebar();
                 }}
                 {...props}
             >
-                <PanelLeft />
+                {children ?? <Menu className="h-5 w-5" />}
                 <span className="sr-only">Toggle Sidebar</span>
             </Button>
         );

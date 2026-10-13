@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Jobs\SyncFacilityMonitoring;
 use App\Models\Activity;
 use App\Models\Announcement;
 use App\Models\FacilityMonitoring;
@@ -37,29 +38,39 @@ class DummyDataSeeder extends Seeder
         }
 
         // 2. Faculty
-        $facultyNames = [
-            ['first' => 'Arnel', 'last' => 'Reyes'],
-            ['first' => 'Cristina', 'last' => 'Lopez'],
-            ['first' => 'Juan', 'last' => 'Dela Cruz'],
-            ['first' => 'Maria', 'last' => 'Santos'],
-            ['first' => 'Peter', 'last' => 'Parker'],
-            ['first' => 'Tony', 'last' => 'Stark'],
-            ['first' => 'Bruce', 'last' => 'Wayne'],
-            ['first' => 'Clark', 'last' => 'Kent'],
-            ['first' => 'Diana', 'last' => 'Prince'],
-            ['first' => 'Barry', 'last' => 'Allen'],
+        $facultyData = [
+            ['first' => 'Maria', 'last' => 'Santos', 'id' => 'CIDS-2026-001', 'rank' => 'Assistant Professor I', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Master of Information Technology', 'spec' => 'Software Engineering', 'email' => 'msantos@cids.edu', 'phone' => '+63 917 555 0192', 'room' => 'Room 304, CIDS Building', 'date' => '2022-08-15'],
+            ['first' => 'Arnel', 'last' => 'Reyes', 'id' => 'CIDS-2026-002', 'rank' => 'Associate Professor II', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Ph.D. in Computer Science', 'spec' => 'Database Systems & Data Engineering', 'email' => 'areyes@cids.edu', 'phone' => '+63 918 555 0110', 'room' => 'Room 305, CIDS Building', 'date' => '2019-06-01'],
+            ['first' => 'Cristina', 'last' => 'Lopez', 'id' => 'CIDS-2026-003', 'rank' => 'Assistant Professor III', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Master of Science in Computer Science', 'spec' => 'Algorithms & Machine Learning', 'email' => 'clopez@cids.edu', 'phone' => '+63 920 555 0145', 'room' => 'Room 302, CIDS Building', 'date' => '2021-01-10'],
+            ['first' => 'Juan', 'last' => 'Dela Cruz', 'id' => 'CIDS-2026-004', 'rank' => 'Instructor II', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Master in Information Systems', 'spec' => 'Enterprise Architecture & Cloud', 'email' => 'jdelacruz@cids.edu', 'phone' => '+63 919 555 0167', 'room' => 'Room 301, CIDS Building', 'date' => '2023-08-01'],
+            ['first' => 'Peter', 'last' => 'Parker', 'id' => 'CIDS-2026-005', 'rank' => 'Assistant Professor I', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Master of Science in Information Technology', 'spec' => 'Mobile Applications & UI/UX', 'email' => 'pparker@cids.edu', 'phone' => '+63 921 555 0134', 'room' => 'Mac Lab, 4th Floor', 'date' => '2023-01-15'],
+            ['first' => 'Tony', 'last' => 'Stark', 'id' => 'CIDS-2026-006', 'rank' => 'Professor I', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Ph.D. in Computer Engineering', 'spec' => 'Cybersecurity & Embedded Systems', 'email' => 'tstark@cids.edu', 'phone' => '+63 917 555 0999', 'room' => 'Network Lab 5, CIDS', 'date' => '2018-09-01'],
+            ['first' => 'Bruce', 'last' => 'Wayne', 'id' => 'CIDS-2026-007', 'rank' => 'Associate Professor I', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Ph.D. in Information Assurance', 'spec' => 'Digital Forensics & Security Audit', 'email' => 'bwayne@cids.edu', 'phone' => '+63 917 555 0777', 'room' => 'Security Operations Center', 'date' => '2020-02-15'],
+            ['first' => 'Clark', 'last' => 'Kent', 'id' => 'CIDS-2026-008', 'rank' => 'Instructor III', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Master in Information Systems', 'spec' => 'Information Management & Ethics', 'email' => 'ckent@cids.edu', 'phone' => '+63 918 555 0333', 'room' => 'Room 208, CIDS Building', 'date' => '2022-01-20'],
+            ['first' => 'Diana', 'last' => 'Prince', 'id' => 'CIDS-2026-009', 'rank' => 'Associate Professor II', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Ph.D. in Computer Science', 'spec' => 'Distributed Systems & Web Tech', 'email' => 'dprince@cids.edu', 'phone' => '+63 919 555 0444', 'room' => 'Room 310, CIDS Building', 'date' => '2019-11-10'],
+            ['first' => 'Barry', 'last' => 'Allen', 'id' => 'CIDS-2026-010', 'rank' => 'Assistant Professor II', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Master of Science in Information Technology', 'spec' => 'High-Performance Computing & Networks', 'email' => 'ballen@cids.edu', 'phone' => '+63 920 555 0888', 'room' => 'Room 205, CIDS Building', 'date' => '2021-07-01'],
         ];
 
         $faculties = [];
-        foreach ($facultyNames as $i => $name) {
+        foreach ($facultyData as $i => $item) {
             $program = $programs[$i % count($programs)];
             $faculties[] = Faculty::updateOrCreate(
                 [
-                    'first_name' => $name['first'],
-                    'last_name' => $name['last'],
+                    'first_name' => $item['first'],
+                    'last_name' => $item['last'],
                 ],
                 [
                     'program_id' => $program->id,
+                    'faculty_id' => $item['id'],
+                    'academic_rank' => $item['rank'],
+                    'employment_type' => $item['type'],
+                    'status' => $item['status'],
+                    'highest_qualification' => $item['qual'],
+                    'specialization' => $item['spec'],
+                    'email' => $item['email'],
+                    'phone' => $item['phone'],
+                    'office_room' => $item['room'],
+                    'employment_date' => $item['date'],
                 ]
             );
         }
@@ -439,8 +450,12 @@ class DummyDataSeeder extends Seeder
             ],
         ];
 
+        $faculties = Faculty::all();
+
         foreach ($days as $day) {
             foreach ($scheduleTemplates as $sched) {
+                $faculty = SyncFacilityMonitoring::resolveFaculty($sched['instructor'], $faculties);
+
                 RoomSchedule::updateOrCreate(
                     [
                         'room_name' => $sched['room_name'],
@@ -449,6 +464,7 @@ class DummyDataSeeder extends Seeder
                     ],
                     array_merge($sched, [
                         'day_of_week' => $day,
+                        'faculty_id' => $faculty?->id,
                         'raw_text' => "{$sched['course_code']} - {$sched['course_title']} ({$sched['section']}) / {$sched['instructor']}",
                     ])
                 );
