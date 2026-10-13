@@ -61,6 +61,7 @@ Route::middleware(['auth'])->group(function () {
     // Performance Section
     Route::prefix('performance')->name('performance.')->group(function () {
         Route::get('faculty', [FacultyPerformanceController::class, 'index'])->name('faculty');
+        Route::get('faculty/report', [FacultyPerformanceController::class, 'report'])->name('faculty.report');
         Route::get('program', [ProgramPerformanceController::class, 'index'])->name('program');
         Route::resource('rules', RecognitionRuleController::class);
     });
@@ -91,6 +92,7 @@ Route::middleware(['auth'])->group(function () {
     // Faculty Attendance & Monitoring
     Route::prefix('faculty-attendance')->name('faculty-attendance.')->group(function () {
         Route::get('/', [FacultyAttendanceController::class, 'index'])->name('index');
+        Route::get('/report', [FacultyAttendanceController::class, 'report'])->name('report');
         Route::post('/sync', [FacultyAttendanceController::class, 'sync'])->name('sync');
         Route::post('/link-faculty', [FacultyAttendanceController::class, 'linkFaculty'])->name('link-faculty');
     });

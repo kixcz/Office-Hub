@@ -33,7 +33,7 @@ const navGroups: NavGroup[] = [
             { title: 'Calendar', url: '/schedule/calendar', icon: Calendar },
             { title: 'Meetings', url: '/schedule/meetings', icon: Users },
             { title: 'Activities', url: '/schedule/activities', icon: Calendar },
-            { title: 'Classroom Monitoring', url: '/classroom-monitoring', icon: Monitor },
+            { title: 'Lab Monitoring', url: '/classroom-monitoring', icon: Monitor },
             { title: 'Faculty Attendance', url: '/faculty-attendance', icon: ClipboardCheck },
         ],
     },

@@ -5,7 +5,6 @@ import { Head, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import {
     Dialog,
     DialogContent,
@@ -22,9 +21,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
     Plus,
-    MoreVertical,
+    MoreHorizontal,
     Edit,
-    Trash,
+    Trash2,
     Eye,
     FileCheck,
     Search,
@@ -33,7 +32,18 @@ import {
     AlertCircle,
     Calendar,
     Users,
+    ChevronDown,
+    FileText,
+    TrendingUp,
+    CheckCircle2,
+    RotateCw,
+    ChevronLeft,
+    ChevronRight,
+    Building2,
+    Layers,
+    ListFilter
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -60,14 +70,22 @@ interface Requirement {
     academic_year: string;
     semester: string;
     due_date: string;
-    program_id: number;
-    program?: Program;
+    program_id: number | null;
+    program?: Program | null;
     submissions?: Submission[];
+}
+
+interface KPIs {
+    total_requirements: number;
+    active_programs: number;
+    open_deadlines: number;
+    total_submissions: number;
 }
 
 interface Props {
     requirements: Requirement[];
     programs: Program[];
+    kpis?: KPIs;
 }
 
 const formatDatetimeLocal = (dateStr?: string) => {
@@ -78,28 +96,35 @@ const formatDatetimeLocal = (dateStr?: string) => {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-export default function RequirementsIndex({ requirements = [], programs = [] }: Props) {
-    // Create Modal state
+export default function RequirementsIndex({
+    requirements = [],
+    programs = [],
+    kpis,
+}: Props) {
+    // Dialogs state
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-
-    // Edit Modal state
     const [editingRequirement, setEditingRequirement] = useState<Requirement | null>(null);
-
-    // View Details Modal state
     const [viewingRequirement, setViewingRequirement] = useState<Requirement | null>(null);
 
-    // Search and filter states
+    // Filters and sorting
     const [searchQuery, setSearchQuery] = useState('');
     const [programFilter, setProgramFilter] = useState<string>('all');
+    const [periodFilter, setPeriodFilter] = useState<string>('all');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [sortOrder, setSortOrder] = useState<string>('newest');
+
+    // Pagination (6 per page matching mockup: "Showing 6 of 9 requirements")
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 6;
 
     // Create form using Inertia useForm
     const createForm = useForm({
         title: '',
         document_type: '',
         academic_year: '2026-2027',
-        semester: '1st',
+        semester: '1st Semester',
         due_date: '',
-        program_id: programs.length > 0 ? String(programs[0].id) : '',
+        program_id: '',
     });
 
     // Edit form using Inertia useForm
@@ -115,9 +140,14 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
     const openCreateDialog = () => {
         createForm.reset();
         createForm.clearErrors();
-        if (programs.length > 0) {
-            createForm.setData('program_id', String(programs[0].id));
-        }
+        createForm.setData({
+            title: '',
+            document_type: '',
+            academic_year: '2026-2027',
+            semester: '1st Semester',
+            due_date: '',
+            program_id: '',
+        });
         setIsCreateOpen(true);
     };
 
@@ -137,10 +167,10 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
         editForm.setData({
             title: req.title,
             document_type: req.document_type,
-            academic_year: req.academic_year || '',
-            semester: req.semester || '',
+            academic_year: req.academic_year || '2026-2027',
+            semester: req.semester || '1st Semester',
             due_date: formatDatetimeLocal(req.due_date),
-            program_id: String(req.program_id),
+            program_id: req.program_id ? String(req.program_id) : '',
         });
     };
 
@@ -161,341 +191,623 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
         }
     };
 
-    // Filter requirements
-    const filteredRequirements = useMemo(() => {
-        return requirements.filter((req) => {
-            const searchLower = searchQuery.toLowerCase();
-            const matchesSearch =
-                !searchQuery ||
-                req.title.toLowerCase().includes(searchLower) ||
-                req.document_type.toLowerCase().includes(searchLower) ||
-                (req.program?.code || '').toLowerCase().includes(searchLower);
+    // Calculate deadline status & pills
+    const getDeadlineMeta = (dueDateStr?: string) => {
+        if (!dueDateStr) {
+            return {
+                formattedDate: 'No Deadline',
+                badgeText: 'No Date',
+                isOverdue: false,
+                isDueSoon: false,
+                colorClass: 'text-muted-foreground bg-muted',
+                status: 'Upcoming',
+            };
+        }
 
-            const matchesProgram =
-                programFilter === 'all' || String(req.program_id) === programFilter;
-
-            return matchesSearch && matchesProgram;
+        const due = new Date(dueDateStr);
+        const formattedDate = due.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
         });
-    }, [requirements, searchQuery, programFilter]);
 
-    // Urgency helper
-    const getUrgency = (dueDateStr?: string) => {
-        if (!dueDateStr) return { label: 'No Deadline', color: 'text-muted-foreground bg-muted' };
-        const due = new Date(dueDateStr).getTime();
-        const now = Date.now();
-        const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+        const now = new Date();
+        // Zero out time components for day difference
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const target = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+        const diffMs = target.getTime() - today.getTime();
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
         if (diffDays < 0) {
             return {
-                label: `Overdue (${Math.abs(diffDays)}d)`,
-                color: 'text-red-700 bg-red-500/10 border-red-500/20 dark:text-red-400',
+                formattedDate,
+                badgeText: `Overdue (${Math.abs(diffDays)}d)`,
+                isOverdue: true,
+                isDueSoon: false,
+                badgeStyle: 'text-rose-600 bg-rose-500/10 border-rose-500/20 dark:text-rose-400',
+                status: 'Overdue',
             };
-        }
-        if (diffDays === 0) {
+        } else if (diffDays === 0) {
             return {
-                label: 'Due Today',
-                color: 'text-orange-700 bg-orange-500/10 border-orange-500/20 dark:text-orange-400',
+                formattedDate,
+                badgeText: 'Due Today',
+                isOverdue: false,
+                isDueSoon: true,
+                badgeStyle: 'text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400',
+                status: 'Due Soon',
             };
-        }
-        if (diffDays <= 3) {
+        } else if (diffDays <= 3) {
             return {
-                label: `Due in ${diffDays}d`,
-                color: 'text-amber-700 bg-amber-500/10 border-amber-500/20 dark:text-amber-400',
+                formattedDate,
+                badgeText: `Due in ${diffDays}d`,
+                isOverdue: false,
+                isDueSoon: true,
+                badgeStyle: 'text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400',
+                status: 'Due Soon',
+            };
+        } else if (diffDays <= 20) {
+            return {
+                formattedDate,
+                badgeText: `Due in ${diffDays}d`,
+                isOverdue: false,
+                isDueSoon: false,
+                badgeStyle: 'text-sky-600 bg-sky-500/10 border-sky-500/20 dark:text-sky-400',
+                status: 'In Progress',
+            };
+        } else {
+            return {
+                formattedDate,
+                badgeText: `Due in ${diffDays}d`,
+                isOverdue: false,
+                isDueSoon: false,
+                badgeStyle: 'text-blue-600 bg-blue-500/10 border-blue-500/20 dark:text-blue-400',
+                status: 'Upcoming',
             };
         }
-        return {
-            label: `Due in ${diffDays}d`,
-            color: 'text-blue-700 bg-blue-500/10 border-blue-500/20 dark:text-blue-400',
-        };
     };
+
+    // Filter & Sort
+    const filteredRequirements = useMemo(() => {
+        return requirements
+            .filter((req) => {
+                const searchLower = searchQuery.toLowerCase();
+                const matchesSearch =
+                    !searchQuery ||
+                    req.title.toLowerCase().includes(searchLower) ||
+                    req.document_type.toLowerCase().includes(searchLower) ||
+                    (req.program?.code || '').toLowerCase().includes(searchLower);
+
+                const matchesProgram =
+                    programFilter === 'all' ||
+                    (programFilter === 'unassigned' && !req.program_id) ||
+                    (req.program?.code || '').toLowerCase() === programFilter.toLowerCase() ||
+                    String(req.program_id) === programFilter;
+
+                const matchesPeriod =
+                    periodFilter === 'all' ||
+                    (req.academic_year && req.academic_year.includes(periodFilter)) ||
+                    (req.semester && req.semester.includes(periodFilter));
+
+                const deadlineMeta = getDeadlineMeta(req.due_date);
+                const totalSubs = req.submissions ? req.submissions.length : 0;
+                const completedSubs = req.submissions
+                    ? req.submissions.filter((s) => s.submitted_at !== null).length
+                    : 0;
+
+                let derivedStatus = deadlineMeta.status;
+                if (completedSubs > 0 && completedSubs < totalSubs) {
+                    derivedStatus = 'In Progress';
+                }
+
+                const matchesStatus =
+                    statusFilter === 'all' ||
+                    derivedStatus.toLowerCase() === statusFilter.toLowerCase();
+
+                return matchesSearch && matchesProgram && matchesPeriod && matchesStatus;
+            })
+            .sort((a, b) => {
+                if (sortOrder === 'oldest') {
+                    return new Date(a.due_date || '').getTime() - new Date(b.due_date || '').getTime();
+                }
+                if (sortOrder === 'title') {
+                    return a.title.localeCompare(b.title);
+                }
+                // Default: newest first
+                return new Date(b.created_at || b.due_date || '').getTime() - new Date(a.created_at || a.due_date || '').getTime();
+            });
+    }, [requirements, searchQuery, programFilter, periodFilter, statusFilter, sortOrder]);
+
+    // Paginated list
+    const totalPages = Math.ceil(filteredRequirements.length / pageSize) || 1;
+    const paginatedRequirements = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return filteredRequirements.slice(start, start + pageSize);
+    }, [filteredRequirements, currentPage, pageSize]);
+
+    // Unique academic periods for filter
+    const academicPeriods = useMemo(() => {
+        const periods = new Set<string>();
+        requirements.forEach((r) => {
+            if (r.academic_year) periods.add(r.academic_year);
+            if (r.semester) periods.add(r.semester);
+        });
+        return Array.from(periods);
+    }, [requirements]);
+
+    // KPI values
+    const totalReqs = kpis?.total_requirements ?? requirements.length;
+    const activeProgs = kpis?.active_programs ?? programs.length;
+    const openDeadlinesCount = kpis?.open_deadlines ?? requirements.filter((r) => {
+        const meta = getDeadlineMeta(r.due_date);
+        return !meta.isOverdue;
+    }).length;
+    const totalSubmissionsCount = kpis?.total_submissions ?? requirements.reduce(
+        (acc, r) => acc + (r.submissions ? r.submissions.length : 0),
+        0
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Requirements" />
+            <Head title="Requirements Management" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6">
-                {/* Header Section */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                                <FileCheck className="w-5 h-5" />
-                            </span>
-                            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
+                {/* 1. TOP MODULE HEADER */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20 shadow-xs">
+                            <FileText className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-0.5">
+                            <h1 className="text-2xl font-black tracking-tight text-foreground">
                                 Requirements Management
                             </h1>
+                            <p className="text-xs text-muted-foreground font-medium">
+                                Create, distribute, and manage compliance requirements across academic programs.
+                            </p>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Create, distribute, and manage compliance requirements across academic programs.
-                        </p>
                     </div>
 
                     <Button
                         onClick={openCreateDialog}
-                        className="inline-flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                        className="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 cursor-pointer shadow-xs transition-colors"
                     >
-                        <Plus className="w-4 h-4" />
-                        Add Requirement
+                        <Plus className="w-4 h-4 stroke-[3]" />
+                        <span>Add Requirement</span>
                     </Button>
                 </div>
 
-                {/* Metric Summary Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase text-muted-foreground">
-                                Total Requirements
-                            </span>
-                            <span className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                                <FileCheck className="w-4 h-4" />
-                            </span>
+                {/* 2. FOUR KPI STAT CARDS (Exact match to mockup) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Card 1: TOTAL REQUIREMENTS */}
+                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden flex items-center justify-between">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                                <FileText className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
+                                    TOTAL REQUIREMENTS
+                                </span>
+                                <div className="text-2xl font-black text-foreground mt-0.5">
+                                    {totalReqs}
+                                </div>
+                                <span className="text-[11px] text-muted-foreground">
+                                    assigned tasks
+                                </span>
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-foreground">
-                                {requirements.length}
-                            </span>
-                            <span className="text-xs text-muted-foreground">assigned tasks</span>
-                        </div>
-                    </div>
-
-                    <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase text-muted-foreground">
-                                Academic Programs
-                            </span>
-                            <span className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                                <GraduationCap className="w-4 h-4" />
-                            </span>
-                        </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-foreground">
-                                {programs.length}
-                            </span>
-                            <span className="text-xs text-muted-foreground">active programs</span>
+                        <div className="text-amber-500">
+                            <TrendingUp className="w-5 h-5" />
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase text-muted-foreground">
-                                Total Submissions
-                            </span>
-                            <span className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                                <Users className="w-4 h-4" />
-                            </span>
+                    {/* Card 2: ACTIVE PROGRAMS */}
+                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden flex items-center justify-between">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+                                <GraduationCap className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
+                                    ACTIVE PROGRAMS
+                                </span>
+                                <div className="text-2xl font-black text-foreground mt-0.5">
+                                    {activeProgs}
+                                </div>
+                                <span className="text-[11px] text-muted-foreground">
+                                    with requirements
+                                </span>
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-foreground">
-                                {requirements.reduce(
-                                    (acc, r) => acc + (r.submissions ? r.submissions.length : 0),
-                                    0
-                                )}
-                            </span>
-                            <span className="text-xs text-muted-foreground">distributed outputs</span>
+                        <div className="text-sky-500">
+                            <Users className="w-5 h-5" />
+                        </div>
+                    </div>
+
+                    {/* Card 3: OPEN DEADLINES */}
+                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden flex items-center justify-between">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+                                <Clock className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
+                                    OPEN DEADLINES
+                                </span>
+                                <div className="text-2xl font-black text-foreground mt-0.5">
+                                    {openDeadlinesCount}
+                                </div>
+                                <span className="text-[11px] text-muted-foreground">
+                                    upcoming or overdue
+                                </span>
+                            </div>
+                        </div>
+                        <div className="text-rose-500">
+                            <Calendar className="w-5 h-5" />
+                        </div>
+                    </div>
+
+                    {/* Card 4: TOTAL SUBMISSIONS */}
+                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden flex items-center justify-between">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                                <Users className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
+                                    TOTAL SUBMISSIONS
+                                </span>
+                                <div className="text-2xl font-black text-foreground mt-0.5">
+                                    {totalSubmissionsCount}
+                                </div>
+                                <span className="text-[11px] text-muted-foreground">
+                                    distributed outputs
+                                </span>
+                            </div>
+                        </div>
+                        <div className="text-emerald-500">
+                            <FileCheck className="w-5 h-5" />
                         </div>
                     </div>
                 </div>
 
-                {/* Filters and Search Bar */}
-                <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-card p-4 rounded-xl border border-border shadow-sm">
-                    <div className="flex flex-1 flex-col sm:flex-row gap-3 items-center">
-                        <div className="relative w-full sm:w-80">
-                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search by title, document type, or program..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 h-9"
-                            />
-                        </div>
+                {/* 3. FILTER & SEARCH CONTROLS BAR (Matches Mockup) */}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+                    {/* Search Bar */}
+                    <div className="relative flex-1 min-w-[280px]">
+                        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        <Input
+                            placeholder="Search requirements by title, document type, or keywords..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="h-10 pl-9.5 pr-4 text-xs rounded-xl border border-border bg-card text-foreground shadow-2xs"
+                        />
+                    </div>
 
-                        <div className="w-full sm:w-56">
+                    {/* Filter Dropdowns */}
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        {/* All Programs */}
+                        <div className="relative min-w-[140px]">
+                            <GraduationCap className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                             <select
                                 value={programFilter}
-                                onChange={(e) => setProgramFilter(e.target.value)}
-                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                onChange={(e) => {
+                                    setProgramFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="h-10 pl-8 pr-7 text-xs font-semibold rounded-xl border border-border bg-card text-foreground focus:outline-hidden appearance-none w-full cursor-pointer shadow-2xs"
                             >
                                 <option value="all">All Programs</option>
+                                <option value="unassigned">All Unassigned</option>
                                 {programs.map((prog) => (
-                                    <option key={prog.id} value={String(prog.id)}>
-                                        {prog.code} — {prog.name}
+                                    <option key={prog.id} value={prog.code}>
+                                        {prog.code}
                                     </option>
                                 ))}
                             </select>
+                            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        </div>
+
+                        {/* All Academic Periods */}
+                        <div className="relative min-w-[160px]">
+                            <Calendar className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            <select
+                                value={periodFilter}
+                                onChange={(e) => {
+                                    setPeriodFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="h-10 pl-8 pr-7 text-xs font-semibold rounded-xl border border-border bg-card text-foreground focus:outline-hidden appearance-none w-full cursor-pointer shadow-2xs"
+                            >
+                                <option value="all">All Academic Periods</option>
+                                <option value="2026-2027">2026-2027</option>
+                                <option value="1st Semester">1st Semester</option>
+                                <option value="2nd Semester">2nd Semester</option>
+                            </select>
+                            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        </div>
+
+                        {/* All Statuses */}
+                        <div className="relative min-w-[130px]">
+                            <ListFilter className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => {
+                                    setStatusFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="h-10 pl-8 pr-7 text-xs font-semibold rounded-xl border border-border bg-card text-foreground focus:outline-hidden appearance-none w-full cursor-pointer shadow-2xs"
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="Overdue">Overdue</option>
+                                <option value="Due Soon">Due Soon</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Upcoming">Upcoming</option>
+                            </select>
+                            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        </div>
+
+                        {/* Sort Order */}
+                        <div className="relative min-w-[130px]">
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value)}
+                                className="h-10 px-3 pr-7 text-xs font-semibold rounded-xl border border-border bg-card text-foreground focus:outline-hidden appearance-none w-full cursor-pointer shadow-2xs"
+                            >
+                                <option value="newest">⇅ Newest First</option>
+                                <option value="oldest">⇅ Oldest Deadline</option>
+                                <option value="title">⇅ By Title (A-Z)</option>
+                            </select>
+                            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                         </div>
                     </div>
-
-                    <span className="text-xs text-muted-foreground">
-                        Showing {filteredRequirements.length} of {requirements.length} requirements
-                    </span>
                 </div>
 
-                {/* Requirements Table Card */}
-                <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden flex flex-col">
-                    {filteredRequirements.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center p-12 text-center">
-                            <div className="p-4 rounded-full bg-muted/60 mb-3">
-                                <AlertCircle className="h-8 w-8 text-muted-foreground/60" />
-                            </div>
-                            <h3 className="text-base font-semibold text-foreground">
-                                No requirements found
-                            </h3>
-                            <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                                {searchQuery || programFilter !== 'all'
-                                    ? 'No requirements match your search or program filter.'
-                                    : 'Get started by creating your first academic requirement using the "Add Requirement" button.'}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-xs text-muted-foreground uppercase bg-muted/40 border-b border-border">
+                {/* 4. MAIN REQUIREMENTS TABLE CARD (Matches Mockup) */}
+                <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                            <thead>
+                                <tr className="border-b border-border/80 bg-muted/20 text-muted-foreground font-bold uppercase tracking-wider text-[11px]">
+                                    <th className="py-3.5 px-6 font-bold">REQUIREMENT</th>
+                                    <th className="py-3.5 px-4 font-bold">ASSIGNED PROGRAM</th>
+                                    <th className="py-3.5 px-4 font-bold">ACADEMIC PERIOD</th>
+                                    <th className="py-3.5 px-4 font-bold">DEADLINE</th>
+                                    <th className="py-3.5 px-4 font-bold min-w-[160px]">SUBMISSION PROGRESS</th>
+                                    <th className="py-3.5 px-4 font-bold text-center">STATUS</th>
+                                    <th className="py-3.5 px-4 font-bold text-right">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/60 font-medium">
+                                {paginatedRequirements.length === 0 ? (
                                     <tr>
-                                        <th scope="col" className="px-6 py-3 font-semibold">
-                                            Title & Document Type
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 font-semibold">
-                                            Assigned Program
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 font-semibold">
-                                            Academic Period
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 font-semibold">
-                                            Deadline & Urgency
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 font-semibold">
-                                            Submissions
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 font-semibold text-right">
-                                            Actions
-                                        </th>
+                                        <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                                            No compliance requirements found matching your criteria.
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border">
-                                    {filteredRequirements.map((req) => {
-                                        const urgency = getUrgency(req.due_date);
+                                ) : (
+                                    paginatedRequirements.map((req, idx) => {
+                                        const deadlineMeta = getDeadlineMeta(req.due_date);
                                         const totalSubs = req.submissions ? req.submissions.length : 0;
                                         const completedSubs = req.submissions
                                             ? req.submissions.filter((s) => s.submitted_at !== null).length
                                             : 0;
+                                        const progressPercent = totalSubs > 0 ? Math.round((completedSubs / totalSubs) * 100) : 0;
+
+                                        // Left requirement icon color variety matching mockup
+                                        const iconColorVariants = [
+                                            'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+                                            'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+                                            'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+                                            'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+                                            'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+                                            'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+                                        ];
+                                        const iconStyle = iconColorVariants[idx % iconColorVariants.length];
+
+                                        // Determine Status Pill
+                                        let statusLabel = deadlineMeta.status;
+                                        let statusPillClass = 'bg-slate-500/10 text-slate-600 border-slate-500/20';
+                                        let StatusIcon = Clock;
+
+                                        if (progressPercent > 0 && progressPercent < 100) {
+                                            statusLabel = 'In Progress';
+                                            statusPillClass = 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20';
+                                            StatusIcon = RotateCw;
+                                        } else if (progressPercent === 100) {
+                                            statusLabel = 'Completed';
+                                            statusPillClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+                                            StatusIcon = CheckCircle2;
+                                        } else if (deadlineMeta.isOverdue) {
+                                            statusLabel = 'Overdue';
+                                            statusPillClass = 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20';
+                                            StatusIcon = AlertCircle;
+                                        } else if (deadlineMeta.isDueSoon) {
+                                            statusLabel = 'Due Soon';
+                                            statusPillClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+                                            StatusIcon = Clock;
+                                        } else {
+                                            statusLabel = 'Upcoming';
+                                            statusPillClass = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+                                            StatusIcon = Clock;
+                                        }
 
                                         return (
-                                            <tr key={req.id} className="hover:bg-muted/40 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <div>
-                                                        <div className="font-semibold text-foreground">
-                                                            {req.title}
+                                            <tr key={req.id} className="hover:bg-muted/30 transition-colors">
+                                                {/* 1. REQUIREMENT TITLE & TYPE */}
+                                                <td className="py-4 px-6">
+                                                    <div className="flex items-center gap-3.5">
+                                                        <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border", iconStyle)}>
+                                                            <FileText className="w-4 h-4" />
                                                         </div>
-                                                        <div className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">
-                                                            {req.document_type}
+                                                        <div className="flex flex-col">
+                                                            <span className="font-bold text-sm text-foreground hover:text-primary transition-colors cursor-pointer" onClick={() => setViewingRequirement(req)}>
+                                                                {req.title}
+                                                            </span>
+                                                            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-0.5">
+                                                                {req.document_type || 'DOCUMENT'}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </td>
 
-                                                <td className="px-6 py-4">
+                                                {/* 2. ASSIGNED PROGRAM */}
+                                                <td className="py-4 px-4">
                                                     {req.program ? (
-                                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
                                                             <GraduationCap className="w-3.5 h-3.5" />
-                                                            <span className="font-semibold">{req.program.code}</span>
-                                                            <span className="text-muted-foreground">·</span>
-                                                            <span>{req.program.name}</span>
+                                                            <span>{req.program.code}</span>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-xs text-muted-foreground italic">
-                                                            Unassigned
-                                                        </span>
+                                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+                                                            <Users className="w-3.5 h-3.5" />
+                                                            <span>All Programs</span>
+                                                        </div>
                                                     )}
                                                 </td>
 
-                                                <td className="px-6 py-4">
-                                                    <div className="text-xs text-foreground font-medium">
-                                                        {req.academic_year || '—'}
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {req.semester || '—'}
-                                                    </div>
-                                                </td>
-
-                                                <td className="px-6 py-4">
-                                                    <div className="flex flex-col gap-1 items-start">
-                                                        <span className="text-xs text-foreground">
-                                                            {req.due_date
-                                                                ? new Date(req.due_date).toLocaleDateString(undefined, {
-                                                                      month: 'short',
-                                                                      day: 'numeric',
-                                                                      year: 'numeric',
-                                                                  })
-                                                                : 'No date'}
+                                                {/* 3. ACADEMIC PERIOD */}
+                                                <td className="py-4 px-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-xs text-foreground">
+                                                            {req.academic_year || '2026-2027'}
                                                         </span>
-                                                        <span
-                                                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${urgency.color}`}
-                                                        >
-                                                            {urgency.label}
+                                                        <span className="text-[11px] text-muted-foreground mt-0.5">
+                                                            {req.semester || '1st Semester'}
                                                         </span>
                                                     </div>
                                                 </td>
 
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="text-xs">
-                                                            <span className="font-semibold text-foreground">
-                                                                {completedSubs}
-                                                            </span>
-                                                            <span className="text-muted-foreground">
-                                                                /{totalSubs} submitted
-                                                            </span>
+                                                {/* 4. DEADLINE */}
+                                                <td className="py-4 px-4">
+                                                    <div className="flex flex-col items-start gap-1">
+                                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                                                            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                                                            <span>{deadlineMeta.formattedDate}</span>
                                                         </div>
-                                                        {totalSubs > 0 && (
-                                                            <Badge
-                                                                variant={
-                                                                    completedSubs === totalSubs
-                                                                        ? 'default'
-                                                                        : 'secondary'
-                                                                }
-                                                                className="text-[10px] px-1.5 py-0"
-                                                            >
-                                                                {Math.round((completedSubs / totalSubs) * 100)}%
-                                                            </Badge>
+                                                        {deadlineMeta.badgeText && (
+                                                            <span className={cn(
+                                                                "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border",
+                                                                deadlineMeta.badgeStyle
+                                                            )}>
+                                                                {deadlineMeta.badgeText}
+                                                            </span>
                                                         )}
                                                     </div>
                                                 </td>
 
-                                                <td className="px-6 py-4 text-right">
+                                                {/* 5. SUBMISSION PROGRESS */}
+                                                <td className="py-4 px-4">
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <div className="flex items-center justify-between text-[11px]">
+                                                            <span className="font-semibold text-foreground">
+                                                                {completedSubs} / {totalSubs} submitted
+                                                            </span>
+                                                            <span className="font-bold text-muted-foreground">
+                                                                {progressPercent}%
+                                                            </span>
+                                                        </div>
+                                                        <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                                                            <div
+                                                                className={cn(
+                                                                    "h-full rounded-full transition-all duration-300",
+                                                                    progressPercent === 100
+                                                                        ? "bg-emerald-500"
+                                                                        : progressPercent > 0
+                                                                        ? "bg-emerald-500"
+                                                                        : "bg-muted-foreground/30"
+                                                                )}
+                                                                style={{ width: `${progressPercent}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                {/* 6. STATUS */}
+                                                <td className="py-4 px-4 text-center">
+                                                    <span className={cn(
+                                                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border",
+                                                        statusPillClass
+                                                    )}>
+                                                        <StatusIcon className="w-3.5 h-3.5" />
+                                                        <span>{statusLabel}</span>
+                                                    </span>
+                                                </td>
+
+                                                {/* 7. ACTIONS */}
+                                                <td className="py-4 px-4 text-right">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <button
-                                                                aria-label={`Actions for ${req.title}`}
-                                                                className="p-1.5 hover:bg-muted rounded-md transition-colors text-muted-foreground"
-                                                            >
-                                                                <MoreVertical className="h-4 w-4" />
+                                                            <button className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer transition-colors border border-border">
+                                                                <MoreHorizontal className="w-4 h-4" />
                                                             </button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end" className="w-40">
-                                                            <DropdownMenuItem onClick={() => setViewingRequirement(req)}>
-                                                                <Eye className="h-4 w-4 mr-2" />
-                                                                View Details
+                                                            <DropdownMenuItem onClick={() => setViewingRequirement(req)} className="cursor-pointer">
+                                                                <Eye className="w-3.5 h-3.5 mr-2" />
+                                                                <span>View Details</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => openEditDialog(req)}>
-                                                                <Edit className="h-4 w-4 mr-2" />
-                                                                Edit
+                                                            <DropdownMenuItem onClick={() => openEditDialog(req)} className="cursor-pointer">
+                                                                <Edit className="w-3.5 h-3.5 mr-2" />
+                                                                <span>Edit</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                                                                onClick={() => handleDelete(req)}
-                                                            >
-                                                                <Trash className="h-4 w-4 mr-2" />
-                                                                Delete
+                                                            <DropdownMenuItem onClick={() => handleDelete(req)} className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/50 cursor-pointer">
+                                                                <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                                                <span>Delete</span>
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </td>
                                             </tr>
                                         );
-                                    })}
-                                </tbody>
-                            </table>
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination footer (Matches Mockup: Showing 6 of 9 requirements) */}
+                    <div className="p-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                        <span className="text-muted-foreground font-medium">
+                            Showing {paginatedRequirements.length} of {filteredRequirements.length} requirements
+                        </span>
+
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+                                <button
+                                    key={pageNumber}
+                                    onClick={() => setCurrentPage(pageNumber)}
+                                    className={cn(
+                                        "w-8 h-8 rounded-lg font-bold text-xs transition-colors cursor-pointer",
+                                        currentPage === pageNumber
+                                            ? "bg-amber-500 text-slate-950 shadow-xs"
+                                            : "border border-border bg-card hover:bg-muted text-foreground"
+                                    )}
+                                >
+                                    {pageNumber}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
                         </div>
-                    )}
+                    </div>
                 </div>
 
                 {/* CREATE REQUIREMENT MODAL */}
@@ -503,11 +815,11 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                     <DialogContent className="sm:max-w-[480px]">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
-                                <Plus className="w-5 h-5 text-primary" />
+                                <Plus className="w-5 h-5 text-amber-500" />
                                 Create New Requirement
                             </DialogTitle>
                             <DialogDescription className="text-xs text-muted-foreground">
-                                Add an academic output requirement. A submission record will automatically be generated for each faculty assigned to the program.
+                                Add an academic output requirement. A submission record will automatically be generated for assigned faculty members.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -519,7 +831,7 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                                 <Input
                                     value={createForm.data.title}
                                     onChange={(e) => createForm.setData('title', e.target.value)}
-                                    placeholder="e.g. Course Syllabus - 1st Semester"
+                                    placeholder="e.g. Submission of TOS and TQ"
                                     required
                                 />
                                 {createForm.errors.title && (
@@ -535,7 +847,7 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                                     <Input
                                         value={createForm.data.document_type}
                                         onChange={(e) => createForm.setData('document_type', e.target.value)}
-                                        placeholder="e.g. Syllabus, TOS, Exam"
+                                        placeholder="e.g. Teaching Load Documents"
                                         required
                                     />
                                     {createForm.errors.document_type && (
@@ -545,15 +857,14 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
 
                                 <div className="space-y-1.5">
                                     <Label className="text-xs font-semibold text-foreground">
-                                        Academic Program <span className="text-red-500">*</span>
+                                        Assigned Program
                                     </Label>
                                     <select
                                         value={createForm.data.program_id}
                                         onChange={(e) => createForm.setData('program_id', e.target.value)}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                        required
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
-                                        <option value="">Select a Program</option>
+                                        <option value="">All Programs</option>
                                         {programs.map((prog) => (
                                             <option key={prog.id} value={String(prog.id)}>
                                                 {prog.code} — {prog.name}
@@ -600,7 +911,7 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
 
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-semibold text-foreground">
-                                    Due Date & Time <span className="text-red-500">*</span>
+                                    Deadline <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                     type="datetime-local"
@@ -624,9 +935,9 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                                 <Button
                                     type="submit"
                                     disabled={createForm.processing}
-                                    className="bg-primary text-primary-foreground font-semibold"
+                                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
                                 >
-                                    {createForm.processing ? 'Creating...' : 'Create Requirement'}
+                                    {createForm.processing ? 'Saving...' : 'Create Requirement'}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -634,19 +945,13 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                 </Dialog>
 
                 {/* EDIT REQUIREMENT MODAL */}
-                <Dialog
-                    open={!!editingRequirement}
-                    onOpenChange={(open) => !open && setEditingRequirement(null)}
-                >
+                <Dialog open={!!editingRequirement} onOpenChange={(open) => !open && setEditingRequirement(null)}>
                     <DialogContent className="sm:max-w-[480px]">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
-                                <Edit className="w-5 h-5 text-primary" />
+                                <Edit className="w-5 h-5 text-amber-500" />
                                 Edit Requirement
                             </DialogTitle>
-                            <DialogDescription className="text-xs text-muted-foreground">
-                                Modify requirement details, period, or deadline.
-                            </DialogDescription>
                         </DialogHeader>
 
                         <form onSubmit={handleEditSubmit} className="flex flex-col gap-4 mt-2">
@@ -657,7 +962,6 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                                 <Input
                                     value={editForm.data.title}
                                     onChange={(e) => editForm.setData('title', e.target.value)}
-                                    placeholder="Title"
                                     required
                                 />
                                 {editForm.errors.title && (
@@ -673,7 +977,6 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                                     <Input
                                         value={editForm.data.document_type}
                                         onChange={(e) => editForm.setData('document_type', e.target.value)}
-                                        placeholder="e.g. Syllabus, TOS"
                                         required
                                     />
                                     {editForm.errors.document_type && (
@@ -683,15 +986,14 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
 
                                 <div className="space-y-1.5">
                                     <Label className="text-xs font-semibold text-foreground">
-                                        Program Assignment <span className="text-red-500">*</span>
+                                        Assigned Program
                                     </Label>
                                     <select
                                         value={editForm.data.program_id}
                                         onChange={(e) => editForm.setData('program_id', e.target.value)}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                        required
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
-                                        <option value="">Select a Program</option>
+                                        <option value="">All Programs</option>
                                         {programs.map((prog) => (
                                             <option key={prog.id} value={String(prog.id)}>
                                                 {prog.code} — {prog.name}
@@ -712,7 +1014,6 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                                     <Input
                                         value={editForm.data.academic_year}
                                         onChange={(e) => editForm.setData('academic_year', e.target.value)}
-                                        placeholder="e.g. 2026-2027"
                                         required
                                     />
                                     {editForm.errors.academic_year && (
@@ -727,7 +1028,6 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                                     <Input
                                         value={editForm.data.semester}
                                         onChange={(e) => editForm.setData('semester', e.target.value)}
-                                        placeholder="e.g. 1st Semester"
                                         required
                                     />
                                     {editForm.errors.semester && (
@@ -738,7 +1038,7 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
 
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-semibold text-foreground">
-                                    Due Date & Time <span className="text-red-500">*</span>
+                                    Deadline <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                     type="datetime-local"
@@ -762,7 +1062,7 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                                 <Button
                                     type="submit"
                                     disabled={editForm.processing}
-                                    className="bg-primary text-primary-foreground font-semibold"
+                                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
                                 >
                                     {editForm.processing ? 'Saving...' : 'Update Requirement'}
                                 </Button>
@@ -772,23 +1072,20 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                 </Dialog>
 
                 {/* VIEW DETAILS MODAL */}
-                <Dialog
-                    open={!!viewingRequirement}
-                    onOpenChange={(open) => !open && setViewingRequirement(null)}
-                >
+                <Dialog open={!!viewingRequirement} onOpenChange={(open) => !open && setViewingRequirement(null)}>
                     <DialogContent className="sm:max-w-[480px]">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
-                                <Eye className="w-5 h-5 text-primary" />
+                                <Eye className="w-5 h-5 text-amber-500" />
                                 Requirement Details
                             </DialogTitle>
                         </DialogHeader>
 
                         {viewingRequirement && (
                             <div className="flex flex-col gap-4 mt-2">
-                                <div className="p-4 rounded-lg bg-muted/40 border border-border space-y-3">
+                                <div className="p-4 rounded-xl bg-muted/40 border border-border space-y-3">
                                     <div>
-                                        <span className="text-xs font-semibold uppercase text-muted-foreground">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                                             Title
                                         </span>
                                         <h3 className="text-base font-bold text-foreground">
@@ -798,32 +1095,32 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
 
                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                         <div>
-                                            <span className="text-muted-foreground">Document Type:</span>
-                                            <div className="font-semibold text-foreground uppercase">
+                                            <span className="text-muted-foreground text-[11px]">Document Type:</span>
+                                            <div className="font-bold text-foreground uppercase">
                                                 {viewingRequirement.document_type}
                                             </div>
                                         </div>
                                         <div>
-                                            <span className="text-muted-foreground">Program:</span>
-                                            <div className="font-semibold text-foreground">
-                                                {viewingRequirement.program?.code || '—'}
+                                            <span className="text-muted-foreground text-[11px]">Assigned Program:</span>
+                                            <div className="font-bold text-foreground">
+                                                {viewingRequirement.program?.code || 'All Programs'}
                                             </div>
                                         </div>
                                         <div>
-                                            <span className="text-muted-foreground">Academic Year:</span>
-                                            <div className="font-semibold text-foreground">
+                                            <span className="text-muted-foreground text-[11px]">Academic Year:</span>
+                                            <div className="font-bold text-foreground">
                                                 {viewingRequirement.academic_year || '—'}
                                             </div>
                                         </div>
                                         <div>
-                                            <span className="text-muted-foreground">Semester:</span>
-                                            <div className="font-semibold text-foreground">
+                                            <span className="text-muted-foreground text-[11px]">Semester:</span>
+                                            <div className="font-bold text-foreground">
                                                 {viewingRequirement.semester || '—'}
                                             </div>
                                         </div>
                                         <div className="col-span-2">
-                                            <span className="text-muted-foreground">Due Date:</span>
-                                            <div className="font-semibold text-foreground">
+                                            <span className="text-muted-foreground text-[11px]">Deadline:</span>
+                                            <div className="font-bold text-foreground">
                                                 {viewingRequirement.due_date
                                                     ? new Date(viewingRequirement.due_date).toLocaleString()
                                                     : 'No deadline'}
@@ -832,24 +1129,24 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                                     </div>
                                 </div>
 
-                                <div className="p-4 rounded-lg border border-border bg-card">
-                                    <span className="text-xs font-semibold uppercase text-muted-foreground">
+                                <div className="p-4 rounded-xl border border-border bg-card">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                                         Submission Statistics
                                     </span>
-                                    <div className="mt-2 flex items-center justify-between text-sm">
-                                        <span>Total Assigned Faculty:</span>
+                                    <div className="mt-2 flex items-center justify-between text-xs">
+                                        <span className="text-muted-foreground">Total Assigned Faculty:</span>
                                         <span className="font-bold text-foreground">
                                             {viewingRequirement.submissions?.length || 0}
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between text-sm mt-1">
-                                        <span>Completed Submissions:</span>
+                                    <div className="flex items-center justify-between text-xs mt-1">
+                                        <span className="text-muted-foreground">Completed Submissions:</span>
                                         <span className="font-bold text-emerald-600 dark:text-emerald-400">
                                             {viewingRequirement.submissions?.filter((s) => s.submitted_at !== null).length || 0}
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between text-sm mt-1">
-                                        <span>Pending Submissions:</span>
+                                    <div className="flex items-center justify-between text-xs mt-1">
+                                        <span className="text-muted-foreground">Pending Submissions:</span>
                                         <span className="font-bold text-amber-600 dark:text-amber-400">
                                             {viewingRequirement.submissions?.filter((s) => s.submitted_at === null).length || 0}
                                         </span>
@@ -871,7 +1168,7 @@ export default function RequirementsIndex({ requirements = [], programs = [] }: 
                                             setViewingRequirement(null);
                                             openEditDialog(req);
                                         }}
-                                        className="gap-1.5"
+                                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold gap-1.5"
                                     >
                                         <Edit className="w-3.5 h-3.5" />
                                         Edit Requirement

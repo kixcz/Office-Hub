@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import {
     Dialog,
     DialogContent,
@@ -22,22 +21,29 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-    CheckSquare,
-    CheckCircle2,
+    Plus,
     Clock,
+    CheckCircle2,
     FileText,
+    TrendingUp,
     Search,
-    Filter,
-    MoreVertical,
+    ChevronDown,
+    ChevronRight,
+    CheckSquare,
+    Download,
+    MoreHorizontal,
     Edit,
     RotateCcw,
+    X,
+    Check,
     GraduationCap,
     Users,
     AlertCircle,
     Calendar,
-    Check,
-    X,
+    Sparkles,
+    BarChart3
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -55,6 +61,7 @@ interface Faculty {
     id: number;
     first_name: string;
     last_name: string;
+    photo_url?: string;
     program?: Program;
 }
 
@@ -80,10 +87,19 @@ interface Submission {
     requirement?: Requirement;
 }
 
+interface KPIs {
+    pending_outputs: number;
+    completed_records: number;
+    active_requirements: number;
+    submission_rate: number;
+}
+
 interface Props {
     submissions: Submission[];
     pendingSubmissions: Submission[];
     requirements?: Requirement[];
+    programs?: Program[];
+    kpis?: KPIs;
 }
 
 const getLocalDatetimeString = () => {
@@ -96,20 +112,19 @@ export default function SubmissionsIndex({
     submissions = [],
     pendingSubmissions = [],
     requirements = [],
+    programs = [],
+    kpis,
 }: Props) {
     const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
 
     // Selection state for pending submissions
     const [selectedSubmissionIds, setSelectedSubmissionIds] = useState<number[]>([]);
 
-    // Search & filter states for Pending tab
-    const [pendingSearch, setPendingSearch] = useState('');
-    const [pendingRequirementFilter, setPendingRequirementFilter] = useState<string>('all');
-    const [pendingProgramFilter, setPendingProgramFilter] = useState<string>('all');
-
-    // Search & filter states for Completed tab
-    const [completedSearch, setCompletedSearch] = useState('');
-    const [completedStatusFilter, setCompletedStatusFilter] = useState<string>('all');
+    // Search & Filter state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [requirementFilter, setRequirementFilter] = useState<string>('all');
+    const [programFilter, setProgramFilter] = useState<string>('all');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
 
     // Batch Record Modal state
     const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
@@ -126,63 +141,75 @@ export default function SubmissionsIndex({
     const [editingSubmission, setEditingSubmission] = useState<Submission | null>(null);
     const [isEditSubmitting, setIsEditSubmitting] = useState(false);
     const [editFormData, setEditFormData] = useState({
-        submitted_at: '',
+        submitted_at: getLocalDatetimeString(),
         status: 'approved',
         reviewer_comments: '',
     });
 
-    // Extract unique programs from pending and completed
+    // Available programs list
     const availablePrograms = useMemo(() => {
-        const progMap = new Map<number, Program>();
-        pendingSubmissions.forEach((sub) => {
+        if (programs && programs.length > 0) return programs;
+        const map = new Map<number, Program>();
+        [...submissions, ...pendingSubmissions].forEach((sub) => {
             const p = sub.faculty?.program || sub.requirement?.program;
-            if (p) progMap.set(p.id, p);
+            if (p) map.set(p.id, p);
         });
-        submissions.forEach((sub) => {
-            const p = sub.faculty?.program || sub.requirement?.program;
-            if (p) progMap.set(p.id, p);
-        });
-        return Array.from(progMap.values());
-    }, [pendingSubmissions, submissions]);
+        return Array.from(map.values());
+    }, [programs, submissions, pendingSubmissions]);
 
-    // Filtered pending submissions for the Pending tab
+    // Filter pending submissions
     const filteredPending = useMemo(() => {
         return pendingSubmissions.filter((sub) => {
             const facultyName = `${sub.faculty?.first_name || ''} ${sub.faculty?.last_name || ''}`.toLowerCase();
             const reqTitle = (sub.requirement?.title || '').toLowerCase();
-            const searchLower = pendingSearch.toLowerCase();
-            const matchesSearch = !pendingSearch || facultyName.includes(searchLower) || reqTitle.includes(searchLower);
+            const searchLower = searchQuery.toLowerCase();
+
+            const matchesSearch = !searchQuery || facultyName.includes(searchLower) || reqTitle.includes(searchLower);
 
             const matchesReq =
-                pendingRequirementFilter === 'all' ||
-                String(sub.requirement_id) === pendingRequirementFilter;
+                requirementFilter === 'all' || String(sub.requirement_id) === requirementFilter;
 
-            const progId = sub.faculty?.program?.id || sub.requirement?.program?.id;
-            const matchesProg =
-                pendingProgramFilter === 'all' ||
-                String(progId) === pendingProgramFilter;
+            const subProgramId = sub.faculty?.program?.id || sub.requirement?.program?.id;
+            const subProgramCode = sub.faculty?.program?.code || sub.requirement?.program?.code;
+            const matchesProgram =
+                programFilter === 'all' ||
+                String(subProgramId) === programFilter ||
+                (subProgramCode && subProgramCode.toLowerCase() === programFilter.toLowerCase());
 
-            return matchesSearch && matchesReq && matchesProg;
+            const matchesStatus =
+                statusFilter === 'all' || sub.status.toLowerCase() === statusFilter.toLowerCase();
+
+            return matchesSearch && matchesReq && matchesProgram && matchesStatus;
         });
-    }, [pendingSubmissions, pendingSearch, pendingRequirementFilter, pendingProgramFilter]);
+    }, [pendingSubmissions, searchQuery, requirementFilter, programFilter, statusFilter]);
 
-    // Filtered completed submissions for the Completed tab
+    // Filter completed submissions
     const filteredCompleted = useMemo(() => {
         return submissions.filter((sub) => {
             const facultyName = `${sub.faculty?.first_name || ''} ${sub.faculty?.last_name || ''}`.toLowerCase();
             const reqTitle = (sub.requirement?.title || '').toLowerCase();
-            const searchLower = completedSearch.toLowerCase();
-            const matchesSearch = !completedSearch || facultyName.includes(searchLower) || reqTitle.includes(searchLower);
+            const searchLower = searchQuery.toLowerCase();
+
+            const matchesSearch = !searchQuery || facultyName.includes(searchLower) || reqTitle.includes(searchLower);
+
+            const matchesReq =
+                requirementFilter === 'all' || String(sub.requirement_id) === requirementFilter;
+
+            const subProgramId = sub.faculty?.program?.id || sub.requirement?.program?.id;
+            const subProgramCode = sub.faculty?.program?.code || sub.requirement?.program?.code;
+            const matchesProgram =
+                programFilter === 'all' ||
+                String(subProgramId) === programFilter ||
+                (subProgramCode && subProgramCode.toLowerCase() === programFilter.toLowerCase());
 
             const matchesStatus =
-                completedStatusFilter === 'all' ||
-                sub.status.toLowerCase() === completedStatusFilter.toLowerCase();
+                statusFilter === 'all' || sub.status.toLowerCase() === statusFilter.toLowerCase();
 
-            return matchesSearch && matchesStatus;
+            return matchesSearch && matchesReq && matchesProgram && matchesStatus;
         });
-    }, [submissions, completedSearch, completedStatusFilter]);
+    }, [submissions, searchQuery, requirementFilter, programFilter, statusFilter]);
 
-    // Items displayed inside the Batch Record Modal
+    // Filter pending list inside the Batch modal
     const modalPendingList = useMemo(() => {
         return pendingSubmissions.filter((sub) => {
             const matchesReq =
@@ -307,18 +334,15 @@ export default function SubmissionsIndex({
         );
     };
 
-    // Revert completed to pending
     const handleRevertToPending = (sub: Submission) => {
-        const facultyName = `${sub.faculty?.first_name || ''} ${sub.faculty?.last_name || ''}`;
-        const reqTitle = sub.requirement?.title || 'this requirement';
-        if (confirm(`Revert submission for ${facultyName} (${reqTitle}) back to pending?`)) {
+        if (confirm(`Are you sure you want to revert the submission for ${sub.faculty?.first_name} ${sub.faculty?.last_name} back to pending?`)) {
             router.delete(`/compliance/submissions/${sub.id}`);
         }
     };
 
-    // Urgency helper
+    // Deadline urgency helper
     const getUrgency = (dueDateStr?: string) => {
-        if (!dueDateStr) return { label: 'Pending', color: 'text-muted-foreground bg-muted' };
+        if (!dueDateStr) return { label: 'No Deadline', color: 'text-muted-foreground bg-muted border-border' };
         const due = new Date(dueDateStr).getTime();
         const now = Date.now();
         const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
@@ -326,283 +350,391 @@ export default function SubmissionsIndex({
         if (diffDays < 0) {
             return {
                 label: `Overdue (${Math.abs(diffDays)}d)`,
-                color: 'text-red-700 bg-red-500/10 border-red-500/20 dark:text-red-400',
+                color: 'text-rose-600 bg-rose-500/10 border-rose-500/20 dark:text-rose-400',
             };
         }
         if (diffDays === 0) {
             return {
                 label: 'Due Today',
-                color: 'text-orange-700 bg-orange-500/10 border-orange-500/20 dark:text-orange-400',
+                color: 'text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400',
             };
         }
         if (diffDays <= 3) {
             return {
                 label: `Due in ${diffDays}d`,
-                color: 'text-amber-700 bg-amber-500/10 border-amber-500/20 dark:text-amber-400',
+                color: 'text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400',
             };
         }
         return {
             label: `Due in ${diffDays}d`,
-            color: 'text-blue-700 bg-blue-500/10 border-blue-500/20 dark:text-blue-400',
+            color: 'text-sky-600 bg-sky-500/10 border-sky-500/20 dark:text-sky-400',
         };
     };
+
+    // KPIs values
+    const pendingCount = kpis?.pending_outputs ?? pendingSubmissions.length;
+    const completedCount = kpis?.completed_records ?? submissions.length;
+    const activeReqsCount = kpis?.active_requirements ?? requirements.length;
+    const subRate = kpis?.submission_rate ?? (pendingCount + completedCount > 0 ? Math.round((completedCount / (pendingCount + completedCount)) * 100) : 100);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Submission Records" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6">
-                {/* Header Section */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                                <CheckSquare className="w-5 h-5" />
-                            </span>
-                            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
+                {/* 1. TOP MODULE HEADER (Matches Mockup) */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20 shadow-xs">
+                            <FileText className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-0.5">
+                            <h1 className="text-2xl font-black tracking-tight text-foreground">
                                 Submission Records
                             </h1>
+                            <p className="text-xs text-muted-foreground font-medium">
+                                Track faculty outputs, inspect compliance, and batch-mark multiple faculty submissions at once.
+                            </p>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Track faculty outputs, inspect compliance, and batch-mark multiple faculty submissions at once.
-                        </p>
                     </div>
 
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <Button
-                            onClick={() => openBatchModal()}
-                            className="w-full sm:w-auto gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
-                        >
-                            <CheckSquare className="w-4 h-4" />
-                            Record Submissions
-                        </Button>
-                    </div>
+                    <Button
+                        onClick={() => openBatchModal()}
+                        className="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 cursor-pointer shadow-xs transition-colors"
+                    >
+                        <Plus className="w-4 h-4 stroke-[3]" />
+                        <span>Record Submission</span>
+                    </Button>
                 </div>
 
-                {/* Metric Summary Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* 2. FOUR KPI CARDS (Exact Match to Mockup) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Card 1: Pending Outputs */}
                     <div
                         onClick={() => setActiveTab('pending')}
-                        className={`cursor-pointer rounded-xl border p-4 transition-all ${
+                        className={cn(
+                            "rounded-2xl border p-5 shadow-xs relative overflow-hidden flex items-center justify-between cursor-pointer transition-all",
                             activeTab === 'pending'
-                                ? 'bg-card border-primary/50 ring-1 ring-primary/20 shadow-sm'
-                                : 'bg-card border-border hover:border-border/80'
-                        }`}
+                                ? "border-amber-400 bg-card ring-1 ring-amber-400/30"
+                                : "border-border bg-card hover:border-border/80"
+                        )}
                     >
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase text-muted-foreground">
-                                Pending Outputs
-                            </span>
-                            <span className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                                <Clock className="w-4 h-4" />
-                            </span>
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                                <Clock className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-[11px] font-bold text-muted-foreground block">
+                                    Pending Outputs
+                                </span>
+                                <div className="text-2xl font-black text-foreground mt-0.5">
+                                    {pendingCount}
+                                </div>
+                                <span className="text-[11px] text-muted-foreground">
+                                    awaiting submission
+                                </span>
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-foreground">
-                                {pendingSubmissions.length}
-                            </span>
-                            <span className="text-xs text-muted-foreground">awaiting submission</span>
-                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
 
+                    {/* Card 2: Completed Records */}
                     <div
                         onClick={() => setActiveTab('completed')}
-                        className={`cursor-pointer rounded-xl border p-4 transition-all ${
+                        className={cn(
+                            "rounded-2xl border p-5 shadow-xs relative overflow-hidden flex items-center justify-between cursor-pointer transition-all",
                             activeTab === 'completed'
-                                ? 'bg-card border-primary/50 ring-1 ring-primary/20 shadow-sm'
-                                : 'bg-card border-border hover:border-border/80'
-                        }`}
+                                ? "border-emerald-500 bg-card ring-1 ring-emerald-500/30"
+                                : "border-border bg-card hover:border-border/80"
+                        )}
                     >
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase text-muted-foreground">
-                                Completed Records
-                            </span>
-                            <span className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                                <CheckCircle2 className="w-4 h-4" />
-                            </span>
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                                <CheckCircle2 className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-[11px] font-bold text-muted-foreground block">
+                                    Completed Records
+                                </span>
+                                <div className="text-2xl font-black text-foreground mt-0.5">
+                                    {completedCount}
+                                </div>
+                                <span className="text-[11px] text-muted-foreground">
+                                    recorded & verified
+                                </span>
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-foreground">
-                                {submissions.length}
-                            </span>
-                            <span className="text-xs text-muted-foreground">recorded & verified</span>
-                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
 
-                    <div className="rounded-xl border border-border bg-card p-4">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase text-muted-foreground">
-                                Compliance Requirements
-                            </span>
-                            <span className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                                <FileText className="w-4 h-4" />
-                            </span>
+                    {/* Card 3: Active Requirements */}
+                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden flex items-center justify-between">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+                                <FileText className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-[11px] font-bold text-muted-foreground block">
+                                    Active Requirements
+                                </span>
+                                <div className="text-2xl font-black text-foreground mt-0.5">
+                                    {activeReqsCount}
+                                </div>
+                                <span className="text-[11px] text-muted-foreground">
+                                    active requirements
+                                </span>
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-foreground">
-                                {requirements.length}
-                            </span>
-                            <span className="text-xs text-muted-foreground">active requirements</span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </div>
+
+                    {/* Card 4: Submission Rate */}
+                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden flex items-center justify-between">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                                <BarChart3 className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-[11px] font-bold text-muted-foreground block">
+                                    Submission Rate
+                                </span>
+                                <div className="text-2xl font-black text-foreground mt-0.5">
+                                    {subRate}%
+                                </div>
+                                <span className="text-[11px] text-muted-foreground">
+                                    requirements submitted
+                                </span>
+                            </div>
                         </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
                 </div>
 
-                {/* Tab Switcher */}
-                <div className="flex border-b border-border">
+                {/* 3. TABS SWITCHER (Matches Mockup) */}
+                <div className="flex items-center gap-8 border-b border-border/80 pb-0">
+                    {/* Tab 1: Pending Submissions */}
                     <button
                         onClick={() => setActiveTab('pending')}
-                        className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                        className={cn(
+                            "flex items-center gap-2 pb-3 text-xs font-bold transition-all relative cursor-pointer",
                             activeTab === 'pending'
-                                ? 'border-primary text-primary'
-                                : 'border-transparent text-muted-foreground hover:text-foreground'
-                        }`}
+                                ? "text-amber-500"
+                                : "text-muted-foreground hover:text-foreground"
+                        )}
                     >
                         <Clock className="w-4 h-4" />
                         <span>Pending Submissions</span>
-                        <Badge
-                            variant="secondary"
-                            className="ml-1 text-xs px-2 py-0.5 rounded-full"
-                        >
-                            {pendingSubmissions.length}
-                        </Badge>
+                        <span className={cn(
+                            "px-2 py-0.5 rounded-full text-[11px] font-black",
+                            activeTab === 'pending'
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                : "bg-muted text-muted-foreground"
+                        )}>
+                            {pendingCount}
+                        </span>
+                        {activeTab === 'pending' && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500 rounded-full" />
+                        )}
                     </button>
 
+                    {/* Tab 2: Completed Submissions */}
                     <button
                         onClick={() => setActiveTab('completed')}
-                        className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                        className={cn(
+                            "flex items-center gap-2 pb-3 text-xs font-bold transition-all relative cursor-pointer",
                             activeTab === 'completed'
-                                ? 'border-primary text-primary'
-                                : 'border-transparent text-muted-foreground hover:text-foreground'
-                        }`}
+                                ? "text-amber-500"
+                                : "text-muted-foreground hover:text-foreground"
+                        )}
                     >
                         <CheckCircle2 className="w-4 h-4" />
                         <span>Completed Submissions</span>
-                        <Badge
-                            variant="secondary"
-                            className="ml-1 text-xs px-2 py-0.5 rounded-full"
-                        >
-                            {submissions.length}
-                        </Badge>
+                        <span className={cn(
+                            "px-2 py-0.5 rounded-full text-[11px] font-black",
+                            activeTab === 'completed'
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                : "bg-muted text-muted-foreground"
+                        )}>
+                            {completedCount}
+                        </span>
+                        {activeTab === 'completed' && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500 rounded-full" />
+                        )}
                     </button>
                 </div>
 
-                {/* TAB 1: PENDING SUBMISSIONS */}
-                {activeTab === 'pending' && (
-                    <div className="flex flex-col gap-4">
-                        {/* Filters and Search Bar */}
-                        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-card p-4 rounded-xl border border-border shadow-sm">
-                            <div className="flex flex-1 flex-col sm:flex-row gap-3 items-center">
-                                <div className="relative w-full sm:w-72">
-                                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Search faculty or requirement..."
-                                        value={pendingSearch}
-                                        onChange={(e) => setPendingSearch(e.target.value)}
-                                        className="pl-9 h-9"
-                                    />
-                                </div>
-
-                                <div className="w-full sm:w-56">
-                                    <select
-                                        value={pendingRequirementFilter}
-                                        onChange={(e) => setPendingRequirementFilter(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    >
-                                        <option value="all">All Requirements</option>
-                                        {requirements.map((req) => (
-                                            <option key={req.id} value={String(req.id)}>
-                                                {req.title} {req.program?.code ? `(${req.program.code})` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="w-full sm:w-44">
-                                    <select
-                                        value={pendingProgramFilter}
-                                        onChange={(e) => setPendingProgramFilter(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    >
-                                        <option value="all">All Programs</option>
-                                        {availablePrograms.map((prog) => (
-                                            <option key={prog.id} value={String(prog.id)}>
-                                                {prog.code} — {prog.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 justify-end">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => openBatchModal(pendingRequirementFilter)}
-                                    className="gap-1.5 h-9"
-                                >
-                                    <CheckSquare className="w-3.5 h-3.5 text-primary" />
-                                    <span>Batch Select</span>
-                                </Button>
-                            </div>
+                {/* 4. FILTERS & SEARCH CONTROLS BAR (Matches Mockup) */}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-3 flex-1">
+                        {/* Search Input */}
+                        <div className="relative flex-1 min-w-[260px]">
+                            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            <Input
+                                placeholder="Search faculty or requirement..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="h-10 pl-9.5 pr-4 text-xs rounded-xl border border-border bg-card text-foreground shadow-2xs"
+                            />
                         </div>
 
-                        {/* Floating / Sticky Bulk Action Toolbar */}
-                        {selectedSubmissionIds.length > 0 && (
-                            <div className="sticky top-2 z-10 flex items-center justify-between gap-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-950 dark:text-amber-200 shadow-md backdrop-blur-sm transition-all">
-                                <div className="flex items-center gap-2.5">
-                                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-xs">
-                                        ✓
-                                    </span>
-                                    <span className="font-semibold text-sm">
-                                        {selectedSubmissionIds.length} faculty member
-                                        {selectedSubmissionIds.length > 1 ? 's' : ''} selected
-                                    </span>
-                                </div>
+                        {/* All Requirements */}
+                        <div className="relative min-w-[170px]">
+                            <select
+                                value={requirementFilter}
+                                onChange={(e) => setRequirementFilter(e.target.value)}
+                                className="h-10 px-3 pr-8 text-xs font-semibold rounded-xl border border-border bg-card text-foreground focus:outline-hidden appearance-none w-full cursor-pointer shadow-2xs"
+                            >
+                                <option value="all">All Requirements</option>
+                                {requirements.map((req) => (
+                                    <option key={req.id} value={String(req.id)}>
+                                        {req.title} {req.program?.code ? `(${req.program.code})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        </div>
 
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={clearSelection}
-                                        className="h-8 text-xs border-amber-500/30 hover:bg-amber-500/20"
-                                    >
-                                        <X className="w-3.5 h-3.5 mr-1" />
-                                        Clear
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        onClick={() => openBatchModal(pendingRequirementFilter)}
-                                        className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold gap-1.5 shadow-xs"
-                                    >
-                                        <Check className="w-3.5 h-3.5" />
-                                        Mark Selected as Submitted ({selectedSubmissionIds.length})
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
+                        {/* All Programs */}
+                        <div className="relative min-w-[150px]">
+                            <select
+                                value={programFilter}
+                                onChange={(e) => setProgramFilter(e.target.value)}
+                                className="h-10 px-3 pr-8 text-xs font-semibold rounded-xl border border-border bg-card text-foreground focus:outline-hidden appearance-none w-full cursor-pointer shadow-2xs"
+                            >
+                                <option value="all">All Programs</option>
+                                {availablePrograms.map((prog) => (
+                                    <option key={prog.id} value={String(prog.id)}>
+                                        {prog.code} — {prog.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        </div>
 
-                        {/* Pending Table Card */}
-                        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden flex flex-col">
+                        {/* All Statuses */}
+                        <div className="relative min-w-[140px]">
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="h-10 px-3 pr-8 text-xs font-semibold rounded-xl border border-border bg-card text-foreground focus:outline-hidden appearance-none w-full cursor-pointer shadow-2xs"
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="approved">Approved</option>
+                                <option value="submitted">Submitted</option>
+                                <option value="pending">Pending</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        </div>
+                    </div>
+
+                    {/* Right Action Buttons */}
+                    <div className="flex items-center gap-2.5">
+                        {/* Batch Select Button */}
+                        <Button
+                            variant="outline"
+                            onClick={() => openBatchModal(requirementFilter)}
+                            className="h-10 px-3.5 text-xs font-bold rounded-xl border border-border bg-card hover:bg-muted text-foreground flex items-center gap-2 cursor-pointer shadow-2xs"
+                        >
+                            <CheckSquare className="w-3.5 h-3.5 text-primary" />
+                            <span>Batch Select</span>
+                        </Button>
+
+                        {/* Export Button */}
+                        <div className="relative">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    const listToExport = activeTab === 'pending' ? filteredPending : filteredCompleted;
+                                    const csvContent =
+                                        'data:text/csv;charset=utf-8,' +
+                                        ['Faculty Name', 'Requirement', 'Document Type', 'Program', 'Status', 'Submitted At'].join(',') +
+                                        '\n' +
+                                        listToExport
+                                            .map((s) =>
+                                                [
+                                                    `"${s.faculty?.first_name} ${s.faculty?.last_name}"`,
+                                                    `"${s.requirement?.title || ''}"`,
+                                                    `"${s.requirement?.document_type || ''}"`,
+                                                    `"${s.faculty?.program?.code || s.requirement?.program?.code || ''}"`,
+                                                    `"${s.status}"`,
+                                                    `"${s.submitted_at || 'Pending'}"`,
+                                                ].join(',')
+                                            )
+                                            .join('\n');
+                                    const encodedUri = encodeURI(csvContent);
+                                    const link = document.createElement('a');
+                                    link.setAttribute('href', encodedUri);
+                                    link.setAttribute('download', `submission-records-${activeTab}.csv`);
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                }}
+                                className="h-10 px-3.5 text-xs font-bold rounded-xl border border-border bg-card hover:bg-muted text-foreground flex items-center gap-2 cursor-pointer shadow-2xs"
+                            >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Export</span>
+                                <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 5. MAIN CONTENT CARD (Matches Mockup) */}
+                <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
+                    {/* TAB 1: PENDING SUBMISSIONS */}
+                    {activeTab === 'pending' && (
+                        <div>
                             {filteredPending.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center p-12 text-center">
-                                    <div className="p-4 rounded-full bg-muted/60 mb-3">
-                                        <CheckCircle2 className="h-8 w-8 text-emerald-500/80" />
+                                /* ZERO PENDING EMPTY STATE (Matches Mockup Exactly) */
+                                <div className="flex flex-col items-center justify-center p-16 sm:p-24 text-center">
+                                    {/* Illustrated Document Graphic */}
+                                    <div className="relative mb-6">
+                                        <div className="w-24 h-24 rounded-full bg-amber-500/10 absolute -inset-2 blur-xl pointer-events-none" />
+                                        <div className="w-24 h-28 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg flex flex-col items-center justify-center p-4 relative">
+                                            <div className="w-12 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 mb-2" />
+                                            <div className="w-10 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 mb-2" />
+                                            <div className="w-8 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 mb-3" />
+                                            <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
+                                                <Check className="w-6 h-6 stroke-[3]" />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <h3 className="text-base font-semibold text-foreground">
+
+                                    <h3 className="text-xl font-black text-foreground tracking-tight">
                                         No pending outputs found
                                     </h3>
-                                    <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                                        {pendingSearch || pendingRequirementFilter !== 'all' || pendingProgramFilter !== 'all'
-                                            ? 'No pending faculty matching your filter criteria. Try adjusting or clearing filters.'
-                                            : 'Great job! All assigned requirements have been submitted.'}
+                                    <p className="text-xs text-muted-foreground mt-1.5 max-w-sm font-medium">
+                                        Great job! All assigned requirements have been submitted.
                                     </p>
+
+                                    {/* 2 Buttons */}
+                                    <div className="flex items-center gap-3 mt-6">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setActiveTab('completed')}
+                                            className="h-10 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-bold text-xs flex items-center gap-2 cursor-pointer shadow-2xs"
+                                        >
+                                            <FileText className="w-4 h-4 text-amber-500" />
+                                            <span>View Completed Records</span>
+                                        </Button>
+
+                                        <Button
+                                            onClick={() => openBatchModal()}
+                                            className="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 cursor-pointer shadow-xs"
+                                        >
+                                            <Plus className="w-4 h-4 stroke-[3]" />
+                                            <span>Record New Submission</span>
+                                        </Button>
+                                    </div>
                                 </div>
                             ) : (
+                                /* PENDING TABLE */
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="text-xs text-muted-foreground uppercase bg-muted/40 border-b border-border">
-                                            <tr>
-                                                <th scope="col" className="px-4 py-3 w-10 text-center">
+                                    <table className="w-full text-xs text-left">
+                                        <thead>
+                                            <tr className="border-b border-border/80 bg-muted/20 text-muted-foreground font-bold uppercase tracking-wider text-[11px]">
+                                                <th className="py-3.5 px-4 w-10 text-center">
                                                     <Checkbox
                                                         checked={
                                                             isAllFilteredPendingSelected
@@ -612,27 +744,17 @@ export default function SubmissionsIndex({
                                                                 : false
                                                         }
                                                         onCheckedChange={toggleSelectAllFilteredPending}
-                                                        aria-label="Select all pending faculty"
+                                                        aria-label="Select all"
                                                     />
                                                 </th>
-                                                <th scope="col" className="px-6 py-3 font-semibold">
-                                                    Faculty Member
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 font-semibold">
-                                                    Missing Requirement
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 font-semibold">
-                                                    Program
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 font-semibold">
-                                                    Deadline & Urgency
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 font-semibold text-right">
-                                                    Quick Action
-                                                </th>
+                                                <th className="py-3.5 px-6 font-bold">FACULTY MEMBER</th>
+                                                <th className="py-3.5 px-4 font-bold">MISSING REQUIREMENT</th>
+                                                <th className="py-3.5 px-4 font-bold">PROGRAM</th>
+                                                <th className="py-3.5 px-4 font-bold">DEADLINE & URGENCY</th>
+                                                <th className="py-3.5 px-6 font-bold text-right">QUICK ACTION</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-border">
+                                        <tbody className="divide-y divide-border/60 font-medium">
                                             {filteredPending.map((sub) => {
                                                 const isSelected = selectedSubmissionIds.includes(sub.id);
                                                 const urgency = getUrgency(sub.requirement?.due_date);
@@ -642,107 +764,66 @@ export default function SubmissionsIndex({
                                                 return (
                                                     <tr
                                                         key={sub.id}
-                                                        className={`transition-colors cursor-pointer ${
-                                                            isSelected
-                                                                ? 'bg-amber-500/10 dark:bg-amber-500/15'
-                                                                : 'hover:bg-muted/40'
-                                                        }`}
+                                                        className={cn(
+                                                            "transition-colors cursor-pointer",
+                                                            isSelected ? "bg-amber-500/10" : "hover:bg-muted/30"
+                                                        )}
                                                         onClick={() => toggleSelectOne(sub.id)}
                                                     >
-                                                        <td
-                                                            className="px-4 py-3.5 text-center"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        >
+                                                        <td className="py-4 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                                                             <Checkbox
                                                                 checked={isSelected}
                                                                 onCheckedChange={() => toggleSelectOne(sub.id)}
-                                                                aria-label={`Select ${sub.faculty?.first_name} ${sub.faculty?.last_name}`}
                                                             />
                                                         </td>
-
-                                                        <td className="px-6 py-3.5">
+                                                        <td className="py-4 px-6">
                                                             <div className="flex items-center gap-3">
-                                                                {sub.faculty?.photo_url ? (
-                                                                    <img
-                                                                        src={sub.faculty.photo_url}
-                                                                        alt={`${sub.faculty?.first_name} ${sub.faculty?.last_name}`}
-                                                                        className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center shrink-0">
-                                                                        {sub.faculty?.first_name?.[0]}
-                                                                        {sub.faculty?.last_name?.[0]}
-                                                                    </div>
-                                                                )}
-                                                                <div>
-                                                                    <div className="font-medium text-foreground">
+                                                                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
+                                                                    {sub.faculty?.first_name?.[0]}
+                                                                    {sub.faculty?.last_name?.[0]}
+                                                                </div>
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-bold text-foreground">
                                                                         {sub.faculty?.first_name} {sub.faculty?.last_name}
-                                                                    </div>
-                                                                    <div className="text-xs text-muted-foreground">
+                                                                    </span>
+                                                                    <span className="text-[10px] text-muted-foreground">
                                                                         Faculty Member
-                                                                    </div>
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </td>
-
-                                                        <td className="px-6 py-3.5">
-                                                            <div>
-                                                                <div className="font-medium text-foreground">
+                                                        <td className="py-4 px-4">
+                                                            <div className="flex flex-col">
+                                                                <span className="font-bold text-foreground">
                                                                     {sub.requirement?.title}
-                                                                </div>
-                                                                <div className="text-xs text-muted-foreground uppercase tracking-wider">
+                                                                </span>
+                                                                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                                                                     {sub.requirement?.document_type}
-                                                                </div>
+                                                                </span>
                                                             </div>
                                                         </td>
-
-                                                        <td className="px-6 py-3.5">
+                                                        <td className="py-4 px-4">
                                                             {programCode ? (
-                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-muted text-foreground border border-border">
-                                                                    <GraduationCap className="w-3 h-3 text-muted-foreground" />
+                                                                <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
                                                                     {programCode}
                                                                 </span>
                                                             ) : (
-                                                                <span className="text-xs text-muted-foreground italic">
-                                                                    —
-                                                                </span>
+                                                                <span className="text-muted-foreground italic">—</span>
                                                             )}
                                                         </td>
-
-                                                        <td className="px-6 py-3.5">
-                                                            <div className="flex flex-col gap-1 items-start">
-                                                                <span className="text-xs text-foreground">
-                                                                    {sub.requirement?.due_date
-                                                                        ? new Date(sub.requirement.due_date).toLocaleDateString(
-                                                                              undefined,
-                                                                              {
-                                                                                  month: 'short',
-                                                                                  day: 'numeric',
-                                                                                  year: 'numeric',
-                                                                              }
-                                                                          )
-                                                                        : 'No date'}
-                                                                </span>
-                                                                <span
-                                                                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${urgency.color}`}
-                                                                >
-                                                                    {urgency.label}
-                                                                </span>
-                                                            </div>
+                                                        <td className="py-4 px-4">
+                                                            <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold border", urgency.color)}>
+                                                                {urgency.label}
+                                                            </span>
                                                         </td>
-
-                                                        <td
-                                                            className="px-6 py-3.5 text-right"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        >
+                                                        <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
                                                             <Button
                                                                 size="sm"
-                                                                variant="outline"
                                                                 onClick={() => openSingleRecord(sub)}
-                                                                className="h-8 text-xs gap-1.5"
+                                                                className="h-8 px-3 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg gap-1.5"
                                                             >
-                                                                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                                                Record
+                                                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                                                <span>Record</span>
                                                             </Button>
                                                         </td>
                                                     </tr>
@@ -753,341 +834,201 @@ export default function SubmissionsIndex({
                                 </div>
                             )}
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* TAB 2: COMPLETED SUBMISSIONS */}
-                {activeTab === 'completed' && (
-                    <div className="flex flex-col gap-4">
-                        {/* Search & Status Filters */}
-                        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-card p-4 rounded-xl border border-border shadow-sm">
-                            <div className="flex flex-1 flex-col sm:flex-row gap-3 items-center">
-                                <div className="relative w-full sm:w-72">
-                                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Search completed records..."
-                                        value={completedSearch}
-                                        onChange={(e) => setCompletedSearch(e.target.value)}
-                                        className="pl-9 h-9"
-                                    />
-                                </div>
-
-                                <div className="w-full sm:w-48">
-                                    <select
-                                        value={completedStatusFilter}
-                                        onChange={(e) => setCompletedStatusFilter(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    >
-                                        <option value="all">All Statuses</option>
-                                        <option value="approved">Approved</option>
-                                        <option value="submitted">Submitted</option>
-                                        <option value="accepted">Accepted</option>
-                                        <option value="rejected">Rejected</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <span className="text-xs text-muted-foreground">
-                                Showing {filteredCompleted.length} of {submissions.length} records
-                            </span>
-                        </div>
-
-                        {/* Completed Table Card */}
-                        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden flex flex-col">
+                    {/* TAB 2: COMPLETED SUBMISSIONS */}
+                    {activeTab === 'completed' && (
+                        <div className="overflow-x-auto">
                             {filteredCompleted.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center p-12 text-center">
-                                    <div className="p-4 rounded-full bg-muted/60 mb-3">
-                                        <AlertCircle className="h-8 w-8 text-muted-foreground/60" />
-                                    </div>
-                                    <h3 className="text-base font-semibold text-foreground">
-                                        No completed submissions found
-                                    </h3>
-                                    <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                                        {completedSearch || completedStatusFilter !== 'all'
-                                            ? 'No records match your search filter.'
-                                            : 'No submissions have been recorded yet. Click "Record Submissions" to record faculty outputs.'}
-                                    </p>
+                                <div className="p-16 text-center text-muted-foreground">
+                                    No completed submission records found matching the filter criteria.
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="text-xs text-muted-foreground uppercase bg-muted/40 border-b border-border">
-                                            <tr>
-                                                <th scope="col" className="px-6 py-3 font-semibold">
-                                                    Faculty Member
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 font-semibold">
-                                                    Requirement
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 font-semibold">
-                                                    Submitted At
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 font-semibold">
-                                                    Status
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 font-semibold">
-                                                    Remarks / Notes
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 font-semibold text-right">
-                                                    Actions
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-border">
-                                            {filteredCompleted.map((sub) => {
-                                                const programCode =
-                                                    sub.faculty?.program?.code || sub.requirement?.program?.code;
-
-                                                const statusVariant =
-                                                    sub.status === 'approved' || sub.status === 'accepted'
-                                                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
-                                                        : sub.status === 'rejected'
-                                                        ? 'bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20'
-                                                        : 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20';
-
-                                                return (
-                                                    <tr key={sub.id} className="hover:bg-muted/40 transition-colors">
-                                                        <td className="px-6 py-3.5">
-                                                            <div className="flex items-center gap-3">
-                                                                {sub.faculty?.photo_url ? (
-                                                                    <img
-                                                                        src={sub.faculty.photo_url}
-                                                                        alt={`${sub.faculty?.first_name} ${sub.faculty?.last_name}`}
-                                                                        className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center shrink-0">
-                                                                        {sub.faculty?.first_name?.[0]}
-                                                                        {sub.faculty?.last_name?.[0]}
-                                                                    </div>
-                                                                )}
-                                                                <div>
-                                                                    <div className="font-medium text-foreground">
-                                                                        {sub.faculty?.first_name} {sub.faculty?.last_name}
-                                                                    </div>
-                                                                    {programCode && (
-                                                                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                                                            <GraduationCap className="w-3 h-3" />
-                                                                            {programCode}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-
-                                                        <td className="px-6 py-3.5">
-                                                            <div className="font-medium text-foreground">
-                                                                {sub.requirement?.title}
-                                                            </div>
-                                                            <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                                                                {sub.requirement?.document_type}
-                                                            </div>
-                                                        </td>
-
-                                                        <td className="px-6 py-3.5 text-xs text-foreground">
-                                                            {sub.submitted_at
-                                                                ? new Date(sub.submitted_at).toLocaleString(undefined, {
-                                                                      month: 'short',
-                                                                      day: 'numeric',
-                                                                      year: 'numeric',
-                                                                      hour: '2-digit',
-                                                                      minute: '2-digit',
-                                                                  })
-                                                                : '—'}
-                                                        </td>
-
-                                                        <td className="px-6 py-3.5">
-                                                            <span
-                                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize border ${statusVariant}`}
-                                                            >
-                                                                {sub.status}
-                                                            </span>
-                                                        </td>
-
-                                                        <td className="px-6 py-3.5 text-xs text-muted-foreground max-w-xs truncate">
-                                                            {sub.reviewer_comments || <span className="italic">—</span>}
-                                                        </td>
-
-                                                        <td className="px-6 py-3.5 text-right">
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <button className="p-1.5 hover:bg-muted rounded-md transition-colors text-muted-foreground">
-                                                                        <MoreVertical className="h-4 w-4" />
-                                                                    </button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end" className="w-44">
-                                                                    <DropdownMenuItem onClick={() => openEditDialog(sub)}>
-                                                                        <Edit className="h-4 w-4 mr-2" />
-                                                                        Edit Details
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuItem
-                                                                        className="text-amber-600 focus:text-amber-600 focus:bg-amber-50 dark:focus:bg-amber-950/20"
-                                                                        onClick={() => handleRevertToPending(sub)}
-                                                                    >
-                                                                        <RotateCcw className="h-4 w-4 mr-2" />
-                                                                        Revert to Pending
-                                                                    </DropdownMenuItem>
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* BATCH RECORD MODAL DIALOG */}
-                <Dialog open={isBatchModalOpen} onOpenChange={setIsBatchModalOpen}>
-                    <DialogContent className="sm:max-w-[620px] max-h-[90vh] flex flex-col p-6">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                                <CheckSquare className="w-5 h-5 text-primary" />
-                                Record Faculty Submissions
-                            </DialogTitle>
-                            <DialogDescription className="text-xs text-muted-foreground">
-                                Mark multiple faculty members who submitted what. Select a requirement, check all faculty members, and record in one click.
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <form onSubmit={handleBulkSubmit} className="flex flex-col gap-4 mt-2 overflow-hidden flex-1">
-                            {/* Step 1: Requirement Selector */}
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-semibold text-foreground">
-                                    Filter by Requirement
-                                </Label>
-                                <select
-                                    value={modalRequirementFilter}
-                                    onChange={(e) => setModalRequirementFilter(e.target.value)}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                >
-                                    <option value="all">
-                                        All Requirements ({pendingSubmissions.length} pending total)
-                                    </option>
-                                    {requirements.map((req) => {
-                                        const pendingForReq = pendingSubmissions.filter(
-                                            (s) => s.requirement_id === req.id
-                                        ).length;
-                                        return (
-                                            <option key={req.id} value={String(req.id)}>
-                                                {req.title} {req.program?.code ? `(${req.program.code})` : ''} — {pendingForReq} pending
-                                            </option>
-                                        );
-                                    })}
-                                </select>
-                            </div>
-
-                            {/* Step 2: Faculty Checklist */}
-                            <div className="flex flex-col gap-2 flex-1 min-h-[160px]">
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="relative flex-1">
-                                        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                                        <Input
-                                            placeholder="Filter faculty name..."
-                                            value={modalFacultySearch}
-                                            onChange={(e) => setModalFacultySearch(e.target.value)}
-                                            className="pl-8 h-8 text-xs"
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                const currentIds = modalPendingList.map((s) => s.id);
-                                                const allSelected = currentIds.every((id) =>
-                                                    selectedSubmissionIds.includes(id)
-                                                );
-                                                if (allSelected) {
-                                                    setSelectedSubmissionIds((prev) =>
-                                                        prev.filter((id) => !currentIds.includes(id))
-                                                    );
-                                                } else {
-                                                    setSelectedSubmissionIds((prev) =>
-                                                        Array.from(new Set([...prev, ...currentIds]))
-                                                    );
-                                                }
-                                            }}
-                                            className="h-8 text-xs"
-                                        >
-                                            {modalPendingList.every((s) => selectedSubmissionIds.includes(s.id)) &&
-                                            modalPendingList.length > 0
-                                                ? 'Deselect All'
-                                                : `Select All (${modalPendingList.length})`}
-                                        </Button>
-
-                                        <span className="text-xs font-semibold px-2 py-1 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
-                                            {selectedSubmissionIds.length} selected
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Scrollable List of Faculty */}
-                                <div className="rounded-lg border border-border bg-muted/20 p-2 max-h-[190px] overflow-y-auto divide-y divide-border/60">
-                                    {modalPendingList.length === 0 ? (
-                                        <div className="p-6 text-center text-xs text-muted-foreground">
-                                            No pending faculty found for this requirement filter.
-                                        </div>
-                                    ) : (
-                                        modalPendingList.map((sub) => {
-                                            const isChecked = selectedSubmissionIds.includes(sub.id);
+                                <table className="w-full text-xs text-left">
+                                    <thead>
+                                        <tr className="border-b border-border/80 bg-muted/20 text-muted-foreground font-bold uppercase tracking-wider text-[11px]">
+                                            <th className="py-3.5 px-6 font-bold">FACULTY MEMBER</th>
+                                            <th className="py-3.5 px-4 font-bold">REQUIREMENT</th>
+                                            <th className="py-3.5 px-4 font-bold">SUBMITTED AT</th>
+                                            <th className="py-3.5 px-4 font-bold">STATUS</th>
+                                            <th className="py-3.5 px-4 font-bold">REMARKS / NOTES</th>
+                                            <th className="py-3.5 px-6 font-bold text-right">ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/60 font-medium">
+                                        {filteredCompleted.map((sub) => {
                                             const programCode =
                                                 sub.faculty?.program?.code || sub.requirement?.program?.code;
 
                                             return (
-                                                <div
-                                                    key={sub.id}
-                                                    onClick={() => toggleSelectOne(sub.id)}
-                                                    className={`flex items-center justify-between gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                                                        isChecked
-                                                            ? 'bg-amber-500/15 dark:bg-amber-500/20'
-                                                            : 'hover:bg-muted/60'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <Checkbox
-                                                            checked={isChecked}
-                                                            onCheckedChange={() => toggleSelectOne(sub.id)}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        />
-                                                        {sub.faculty?.photo_url ? (
-                                                            <img
-                                                                src={sub.faculty.photo_url}
-                                                                alt={`${sub.faculty?.first_name} ${sub.faculty?.last_name}`}
-                                                                className="w-7 h-7 rounded-full object-cover border border-border shrink-0"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-7 h-7 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
+                                                <tr key={sub.id} className="hover:bg-muted/30 transition-colors">
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 font-bold text-xs flex items-center justify-center shrink-0">
                                                                 {sub.faculty?.first_name?.[0]}
                                                                 {sub.faculty?.last_name?.[0]}
                                                             </div>
-                                                        )}
-                                                        <div>
-                                                            <div className="text-xs font-semibold text-foreground">
-                                                                {sub.faculty?.first_name} {sub.faculty?.last_name}
-                                                            </div>
-                                                            <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                                                                {programCode && <span>[{programCode}]</span>}
-                                                                <span>{sub.requirement?.title}</span>
+                                                            <div className="flex flex-col">
+                                                                <span className="font-bold text-foreground">
+                                                                    {sub.faculty?.first_name} {sub.faculty?.last_name}
+                                                                </span>
+                                                                {programCode && (
+                                                                    <span className="text-[10px] text-muted-foreground">
+                                                                        {programCode}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                    </div>
-
-                                                    <span className="text-[11px] text-muted-foreground shrink-0">
-                                                        Due{' '}
-                                                        {sub.requirement?.due_date
-                                                            ? new Date(sub.requirement.due_date).toLocaleDateString(
-                                                                  undefined,
-                                                                  { month: 'short', day: 'numeric' }
-                                                              )
+                                                    </td>
+                                                    <td className="py-4 px-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-bold text-foreground">
+                                                                {sub.requirement?.title}
+                                                            </span>
+                                                            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                                                                {sub.requirement?.document_type}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-4 text-muted-foreground font-semibold">
+                                                        {sub.submitted_at
+                                                            ? new Date(sub.submitted_at).toLocaleString('en-US', {
+                                                                  month: 'short',
+                                                                  day: 'numeric',
+                                                                  year: 'numeric',
+                                                                  hour: '2-digit',
+                                                                  minute: '2-digit',
+                                                              })
                                                             : '—'}
-                                                    </span>
+                                                    </td>
+                                                    <td className="py-4 px-4">
+                                                        <span className={cn(
+                                                            "px-2.5 py-1 rounded-full text-[10px] font-bold border capitalize",
+                                                            sub.status === 'approved' || sub.status === 'accepted'
+                                                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                                                : sub.status === 'rejected'
+                                                                ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                                                                : "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20"
+                                                        )}>
+                                                            {sub.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-4 text-muted-foreground">
+                                                        {sub.reviewer_comments || 'Verified on time'}
+                                                    </td>
+                                                    <td className="py-4 px-6 text-right">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <button className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer transition-colors border border-border">
+                                                                    <MoreHorizontal className="w-4 h-4" />
+                                                                </button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="w-40">
+                                                                <DropdownMenuItem onClick={() => openEditDialog(sub)} className="cursor-pointer">
+                                                                    <Edit className="w-3.5 h-3.5 mr-2" />
+                                                                    <span>Edit Record</span>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleRevertToPending(sub)} className="text-amber-600 focus:text-amber-600 cursor-pointer">
+                                                                    <RotateCcw className="w-3.5 h-3.5 mr-2" />
+                                                                    <span>Revert to Pending</span>
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* BATCH RECORD SUBMISSIONS MODAL */}
+                <Dialog open={isBatchModalOpen} onOpenChange={setIsBatchModalOpen}>
+                    <DialogContent className="sm:max-w-[560px]">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Plus className="w-5 h-5 text-amber-500" />
+                                Record Submissions
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-muted-foreground">
+                                Select the requirement and faculty members whose outputs have been received.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <form onSubmit={handleBulkSubmit} className="flex flex-col gap-4 mt-2">
+                            {/* Requirement Selector */}
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold text-foreground">
+                                    Target Requirement <span className="text-red-500">*</span>
+                                </Label>
+                                <select
+                                    value={modalRequirementFilter}
+                                    onChange={(e) => setModalRequirementFilter(e.target.value)}
+                                    className="flex h-10 w-full rounded-xl border border-input bg-card px-3 py-2 text-xs font-semibold focus-visible:outline-none"
+                                >
+                                    <option value="all">All Requirements</option>
+                                    {requirements.map((req) => (
+                                        <option key={req.id} value={String(req.id)}>
+                                            {req.title} {req.program?.code ? `(${req.program.code})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Faculty Selection Box */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs font-semibold text-foreground">
+                                        Select Faculty ({selectedSubmissionIds.length} chosen)
+                                    </Label>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const currentIds = modalPendingList.map((s) => s.id);
+                                            const allSelected = currentIds.every((id) => selectedSubmissionIds.includes(id));
+                                            if (allSelected) {
+                                                setSelectedSubmissionIds((prev) => prev.filter((id) => !currentIds.includes(id)));
+                                            } else {
+                                                setSelectedSubmissionIds((prev) => Array.from(new Set([...prev, ...currentIds])));
+                                            }
+                                        }}
+                                        className="text-xs text-amber-600 dark:text-amber-400 font-bold hover:underline"
+                                    >
+                                        {modalPendingList.every((s) => selectedSubmissionIds.includes(s.id)) && modalPendingList.length > 0
+                                            ? 'Deselect All'
+                                            : `Select All (${modalPendingList.length})`}
+                                    </button>
+                                </div>
+
+                                <div className="rounded-xl border border-border bg-muted/20 p-2 max-h-[180px] overflow-y-auto divide-y divide-border/60">
+                                    {modalPendingList.length === 0 ? (
+                                        <div className="p-6 text-center text-xs text-muted-foreground">
+                                            No pending faculty found for this requirement.
+                                        </div>
+                                    ) : (
+                                        modalPendingList.map((sub) => {
+                                            const isChecked = selectedSubmissionIds.includes(sub.id);
+                                            return (
+                                                <div
+                                                    key={sub.id}
+                                                    onClick={() => toggleSelectOne(sub.id)}
+                                                    className={cn(
+                                                        "flex items-center justify-between gap-3 p-2 rounded-lg cursor-pointer transition-colors",
+                                                        isChecked ? "bg-amber-500/15" : "hover:bg-muted/50"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <Checkbox checked={isChecked} onCheckedChange={() => toggleSelectOne(sub.id)} />
+                                                        <span className="text-xs font-bold text-foreground">
+                                                            {sub.faculty?.first_name} {sub.faculty?.last_name}
+                                                        </span>
+                                                        <span className="text-[10px] text-muted-foreground">
+                                                            ({sub.requirement?.title})
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             );
                                         })
@@ -1095,8 +1036,8 @@ export default function SubmissionsIndex({
                                 </div>
                             </div>
 
-                            {/* Step 3: Shared Submission Details */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border">
+                            {/* Details Grid */}
+                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
                                 <div className="space-y-1.5">
                                     <Label className="text-xs font-semibold text-foreground">
                                         Submitted Date & Time <span className="text-red-500">*</span>
@@ -1104,11 +1045,9 @@ export default function SubmissionsIndex({
                                     <Input
                                         type="datetime-local"
                                         value={bulkFormData.submitted_at}
-                                        onChange={(e) =>
-                                            setBulkFormData({ ...bulkFormData, submitted_at: e.target.value })
-                                        }
+                                        onChange={(e) => setBulkFormData({ ...bulkFormData, submitted_at: e.target.value })}
                                         required
-                                        className="h-9 text-xs"
+                                        className="h-10 text-xs rounded-xl"
                                     />
                                 </div>
 
@@ -1118,13 +1057,11 @@ export default function SubmissionsIndex({
                                     </Label>
                                     <select
                                         value={bulkFormData.status}
-                                        onChange={(e) =>
-                                            setBulkFormData({ ...bulkFormData, status: e.target.value })
-                                        }
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        onChange={(e) => setBulkFormData({ ...bulkFormData, status: e.target.value })}
+                                        className="flex h-10 w-full rounded-xl border border-input bg-card px-3 py-2 text-xs font-semibold focus-visible:outline-none"
                                     >
                                         <option value="approved">Approved</option>
-                                        <option value="submitted">Submitted / Under Review</option>
+                                        <option value="submitted">Submitted</option>
                                         <option value="accepted">Accepted</option>
                                         <option value="rejected">Rejected</option>
                                     </select>
@@ -1133,58 +1070,40 @@ export default function SubmissionsIndex({
 
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-semibold text-foreground">
-                                    Remarks / Reviewer Comments (Optional)
+                                    Remarks / Notes (Optional)
                                 </Label>
                                 <Input
-                                    placeholder="e.g. Received hardcopy, complete and verified"
+                                    placeholder="e.g. Received hardcopy, verified complete"
                                     value={bulkFormData.reviewer_comments}
-                                    onChange={(e) =>
-                                        setBulkFormData({ ...bulkFormData, reviewer_comments: e.target.value })
-                                    }
-                                    className="h-9 text-xs"
+                                    onChange={(e) => setBulkFormData({ ...bulkFormData, reviewer_comments: e.target.value })}
+                                    className="h-10 text-xs rounded-xl"
                                 />
                             </div>
 
-                            <DialogFooter className="mt-2 pt-2 border-t border-border flex items-center justify-between sm:justify-between w-full">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsBatchModalOpen(false)}
-                                    className="h-9 text-xs"
-                                >
+                            <DialogFooter className="mt-4 gap-2">
+                                <Button type="button" variant="outline" onClick={() => setIsBatchModalOpen(false)}>
                                     Cancel
                                 </Button>
-
                                 <Button
                                     type="submit"
-                                    disabled={selectedSubmissionIds.length === 0 || isBulkSubmitting}
-                                    className="h-9 text-xs bg-primary text-primary-foreground font-semibold disabled:opacity-50 gap-1.5"
+                                    disabled={isBulkSubmitting || selectedSubmissionIds.length === 0}
+                                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
                                 >
-                                    <Check className="w-3.5 h-3.5" />
-                                    {isBulkSubmitting
-                                        ? 'Recording...'
-                                        : `Record Submissions (${selectedSubmissionIds.length} Faculty)`}
+                                    {isBulkSubmitting ? 'Recording...' : `Mark ${selectedSubmissionIds.length} Submitted`}
                                 </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
                 </Dialog>
 
-                {/* SINGLE EDIT MODAL DIALOG */}
+                {/* EDIT SUBMISSION MODAL */}
                 <Dialog open={!!editingSubmission} onOpenChange={(open) => !open && setEditingSubmission(null)}>
                     <DialogContent className="sm:max-w-[480px]">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
-                                <Edit className="w-5 h-5 text-primary" />
+                                <Edit className="w-5 h-5 text-amber-500" />
                                 Edit Submission Record
                             </DialogTitle>
-                            <DialogDescription className="text-xs text-muted-foreground">
-                                Update submitted date, status, or remarks for{' '}
-                                <span className="font-semibold text-foreground">
-                                    {editingSubmission?.faculty?.first_name} {editingSubmission?.faculty?.last_name}
-                                </span>{' '}
-                                ({editingSubmission?.requirement?.title}).
-                            </DialogDescription>
                         </DialogHeader>
 
                         <form onSubmit={handleEditSubmit} className="flex flex-col gap-4 mt-2">
@@ -1195,10 +1114,9 @@ export default function SubmissionsIndex({
                                 <Input
                                     type="datetime-local"
                                     value={editFormData.submitted_at}
-                                    onChange={(e) =>
-                                        setEditFormData({ ...editFormData, submitted_at: e.target.value })
-                                    }
+                                    onChange={(e) => setEditFormData({ ...editFormData, submitted_at: e.target.value })}
                                     required
+                                    className="h-10 text-xs rounded-xl"
                                 />
                             </div>
 
@@ -1208,13 +1126,11 @@ export default function SubmissionsIndex({
                                 </Label>
                                 <select
                                     value={editFormData.status}
-                                    onChange={(e) =>
-                                        setEditFormData({ ...editFormData, status: e.target.value })
-                                    }
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                                    className="flex h-10 w-full rounded-xl border border-input bg-card px-3 py-2 text-xs font-semibold focus-visible:outline-none"
                                 >
                                     <option value="approved">Approved</option>
-                                    <option value="submitted">Submitted / Under Review</option>
+                                    <option value="submitted">Submitted</option>
                                     <option value="accepted">Accepted</option>
                                     <option value="rejected">Rejected</option>
                                 </select>
@@ -1222,31 +1138,25 @@ export default function SubmissionsIndex({
 
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-semibold text-foreground">
-                                    Remarks / Comments
+                                    Remarks / Notes
                                 </Label>
                                 <Input
                                     value={editFormData.reviewer_comments}
-                                    onChange={(e) =>
-                                        setEditFormData({ ...editFormData, reviewer_comments: e.target.value })
-                                    }
-                                    placeholder="Remarks or feedback"
+                                    onChange={(e) => setEditFormData({ ...editFormData, reviewer_comments: e.target.value })}
+                                    className="h-10 text-xs rounded-xl"
                                 />
                             </div>
 
                             <DialogFooter className="mt-4 gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setEditingSubmission(null)}
-                                >
+                                <Button type="button" variant="outline" onClick={() => setEditingSubmission(null)}>
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
                                     disabled={isEditSubmitting}
-                                    className="bg-primary text-primary-foreground font-semibold"
+                                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
                                 >
-                                    {isEditSubmitting ? 'Saving...' : 'Save Changes'}
+                                    {isEditSubmitting ? 'Saving...' : 'Update Record'}
                                 </Button>
                             </DialogFooter>
                         </form>

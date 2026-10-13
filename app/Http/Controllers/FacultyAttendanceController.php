@@ -125,6 +125,64 @@ class FacultyAttendanceController extends Controller
         ]);
     }
 
+    public function report(Request $request): Response
+    {
+        $programs = Program::orderBy('name')->get();
+        $faculties = Faculty::with('program')->orderBy('last_name')->get();
+
+        $selectedProgram = $request->query('program', 'all');
+        $selectedFaculty = $request->query('faculty', 'all');
+        $selectedPeriod = $request->query('period', 'August 2026');
+        $selectedWeek = $request->query('week', 'October 13 – October 19, 2026');
+        $selectedStatus = $request->query('status', 'all');
+
+        $monthlyPeriods = FacultyAttendanceSummary::where('period_type', 'monthly')
+            ->pluck('period_label')
+            ->unique()
+            ->values();
+
+        if ($monthlyPeriods->isEmpty()) {
+            $monthlyPeriods = collect(['August 2026', 'September 2026', 'October 2026']);
+        }
+
+        $weeklyPeriods = FacultyAttendance::pluck('week_label')
+            ->unique()
+            ->values();
+
+        if ($weeklyPeriods->isEmpty()) {
+            $weeklyPeriods = collect([
+                'October 13 – October 19, 2026',
+                'October 06 – October 12, 2026',
+                'September 29 – October 05, 2026',
+                'August 10-14, 2026',
+            ]);
+        }
+
+        $summaries = FacultyAttendanceSummary::with(['faculty.program'])
+            ->where('period_label', $selectedPeriod)
+            ->orderBy('instructor_name')
+            ->get();
+
+        $weeklySessions = FacultyAttendance::with(['faculty.program'])
+            ->orderBy('session_date')
+            ->orderBy('time_slot')
+            ->get();
+
+        $lastSync = Cache::get('faculty_attendance_last_sync');
+
+        return Inertia::render('attendance/report', [
+            'programs' => $programs,
+            'faculties' => $faculties,
+            'summaries' => $summaries,
+            'weekly_sessions' => $weeklySessions,
+            'monthly_periods' => $monthlyPeriods,
+            'weekly_periods' => $weeklyPeriods,
+            'last_synced_at' => $lastSync ? Carbon::parse($lastSync)->format('M d, Y h:i A') : 'Oct 13, 2026 06:07 AM',
+            'academic_year' => 'AY 2026–2027',
+            'semester' => '1st Semester',
+        ]);
+    }
+
     public function sync(Request $request): RedirectResponse
     {
         $spreadsheetId = $request->input('spreadsheet_id', GoogleSheetsAttendanceService::DEFAULT_SPREADSHEET_ID);

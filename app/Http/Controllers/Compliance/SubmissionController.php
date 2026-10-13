@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Compliance;
 
 use App\Http\Controllers\Controller;
+use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\Submission;
 use Illuminate\Http\RedirectResponse;
@@ -31,10 +32,26 @@ class SubmissionController extends Controller
             ->latest()
             ->get();
 
+        $programs = Program::orderBy('code')->get(['id', 'code', 'name']);
+
+        $totalSubmissions = $submissions->count();
+        $totalPending = $pendingSubmissions->count();
+        $totalCombined = $totalSubmissions + $totalPending;
+        $submissionRate = $totalCombined > 0 ? round(($totalSubmissions / $totalCombined) * 100) : 100;
+
+        $kpis = [
+            'pending_outputs' => $totalPending,
+            'completed_records' => $totalSubmissions,
+            'active_requirements' => $requirements->count(),
+            'submission_rate' => $submissionRate,
+        ];
+
         return Inertia::render('compliance/submissions/index', [
             'submissions' => $submissions,
             'pendingSubmissions' => $pendingSubmissions,
             'requirements' => $requirements,
+            'programs' => $programs,
+            'kpis' => $kpis,
         ]);
     }
 
