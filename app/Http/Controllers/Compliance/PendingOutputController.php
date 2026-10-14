@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Compliance;
 
 use App\Http\Controllers\Controller;
 use App\Models\Submission;
+use App\Services\ComplianceService;
 use Carbon\Carbon;
 use Inertia\Inertia;
 
@@ -11,6 +12,8 @@ class PendingOutputController extends Controller
 {
     public function index()
     {
+        ComplianceService::syncPendingSubmissions();
+
         $pendingSubmissions = Submission::with(['faculty.program', 'requirement'])
             ->whereNull('submitted_at')
             ->get()

@@ -21,6 +21,7 @@ import {
     Laptop,
     Lightbulb,
     MapPin,
+    Medal,
     Megaphone,
     Monitor,
     ChevronDown,
@@ -930,75 +931,73 @@ function SlideThree({ data, isDark = false }: any) {
                 <div className="col-span-5 flex flex-col gap-4 min-h-0">
 
                     {/* Top Card: Pending & Overdue */}
-                    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-2xs flex-1 min-h-0 flex flex-col justify-between">
-                        <div>
-                            {/* Card Header */}
-                            <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-                                <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 flex items-center justify-center shrink-0">
-                                    <AlertTriangle className="w-4 h-4" />
-                                </div>
-                                <div>
-                                    <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight">
-                                        Pending &amp; Overdue
-                                    </h3>
-                                    <p className="text-[11px] text-slate-400 font-medium">
-                                        List of requirements with pending or overdue status.
-                                    </p>
-                                </div>
+                    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-2xs flex-1 min-h-0 flex flex-col overflow-hidden">
+                        {/* Card Header */}
+                        <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-4 h-4" />
                             </div>
+                            <div>
+                                <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight">
+                                    Pending &amp; Overdue
+                                </h3>
+                                <p className="text-[11px] text-slate-400 font-medium">
+                                    List of requirements with pending or overdue status.
+                                </p>
+                            </div>
+                        </div>
 
-                            {/* Center Illustration Empty State or List */}
-                            {pendingOutputs.length > 0 ? (
-                                <div className="divide-y divide-slate-100 dark:divide-slate-800/60 overflow-y-auto max-h-56 mt-2">
-                                    {pendingOutputs.map((p: any) => (
-                                        <div key={p.id} className="py-2.5 flex items-center justify-between gap-3">
-                                            <div className="flex items-center gap-2.5 min-w-0">
-                                                <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold">
-                                                    {p.faculty ? p.faculty.slice(0, 2).toUpperCase() : 'FC'}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{p.faculty}</div>
-                                                    <div className="text-[10px] text-slate-400 truncate">{p.requirement}</div>
-                                                </div>
+                        {/* Center Illustration Empty State or List spanning full available height */}
+                        {pendingOutputs.length > 0 ? (
+                            <div className="divide-y divide-slate-100 dark:divide-slate-800/60 flex-1 min-h-0 overflow-y-auto no-scrollbar py-1">
+                                {pendingOutputs.map((p: any) => (
+                                    <div key={p.id} className="py-2.5 flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                                                {p.faculty ? p.faculty.slice(0, 2).toUpperCase() : 'FC'}
                                             </div>
-                                            <span className={cn(
-                                                "px-2 py-0.5 rounded text-[10px] font-bold",
-                                                p.status === 'Overdue' ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
-                                            )}>
-                                                {p.status}
-                                            </span>
+                                            <div className="min-w-0">
+                                                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{p.faculty}</div>
+                                                <div className="text-[10px] text-slate-400 truncate">{p.requirement}</div>
+                                            </div>
                                         </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center text-center py-6">
-                                    {/* Big Circle Illustration matching mockup */}
-                                    <div className="w-32 h-32 rounded-full bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center justify-center relative my-2">
-                                        {/* Sparkle icons floating */}
-                                        <span className="absolute top-4 left-4 text-amber-400 font-black text-sm">✦</span>
-                                        <span className="absolute top-6 right-4 text-amber-400 font-black text-sm">✧</span>
+                                        <span className={cn(
+                                            "px-2 py-0.5 rounded text-[10px] font-bold shrink-0",
+                                            p.status === 'Overdue' ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900" : "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900"
+                                        )}>
+                                            {p.status}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center py-4">
+                                {/* Big Circle Illustration matching mockup */}
+                                <div className="w-28 h-28 rounded-full bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center justify-center relative my-2">
+                                    {/* Sparkle icons floating */}
+                                    <span className="absolute top-3 left-3 text-amber-400 font-black text-sm">✦</span>
+                                    <span className="absolute top-5 right-3 text-amber-400 font-black text-sm">✧</span>
 
-                                        <div className="w-16 h-20 rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 flex flex-col justify-center px-2 shadow-xs relative">
-                                            <div className="w-6 h-1 bg-slate-300 dark:bg-slate-600 rounded mb-1.5" />
-                                            <div className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded mb-1.5" />
-                                            <div className="w-8 h-1 bg-slate-300 dark:bg-slate-600 rounded" />
+                                    <div className="w-14 h-18 rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 flex flex-col justify-center px-2 shadow-xs relative">
+                                        <div className="w-5 h-1 bg-slate-300 dark:bg-slate-600 rounded mb-1.5" />
+                                        <div className="w-8 h-1 bg-slate-300 dark:bg-slate-600 rounded mb-1.5" />
+                                        <div className="w-6 h-1 bg-slate-300 dark:bg-slate-600 rounded" />
 
-                                            {/* Green checkmark circle pill */}
-                                            <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
-                                                <CheckCircle2 className="w-4 h-4 stroke-[3]" />
-                                            </div>
+                                        {/* Green checkmark circle pill */}
+                                        <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                                            <CheckCircle2 className="w-4 h-4 stroke-[3]" />
                                         </div>
                                     </div>
-
-                                    <h4 className="text-base font-black text-slate-900 dark:text-white mt-1">
-                                        No pending or overdue outputs
-                                    </h4>
-                                    <p className="text-xs text-slate-400 mt-1">
-                                        All requirements are on track. Keep up the good work!
-                                    </p>
                                 </div>
-                            )}
-                        </div>
+
+                                <h4 className="text-sm font-black text-slate-900 dark:text-white mt-1">
+                                    No pending or overdue outputs
+                                </h4>
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                    All requirements are on track. Keep up the good work!
+                                </p>
+                            </div>
+                        )}
 
                         {/* Bottom Mini Counters (Pending: 0, Overdue: 0) */}
                         <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -1096,6 +1095,79 @@ function SlideFour({ data, isDark = false }: any) {
             initials: f.name.split(' ').map((n: string) => n[0]).slice(0, 2).join(''),
         }))
         : fallbackFaculty;
+
+    const fallbackCategories = [
+        {
+            id: 'on_time',
+            title: 'Top Performing Faculty',
+            subtitle: 'Highest on-time submission rate this semester',
+            metric: 'On-Time Submission Rate',
+            leaders: displayFaculty.map((f: any) => ({
+                ...f,
+                value: `${f.on_time_rate}%`,
+                progress: f.on_time_rate,
+                subtext: 'on time',
+            })),
+        },
+        {
+            id: 'compliance',
+            title: 'Most Compliant Faculty',
+            subtitle: 'Highest overall requirement compliance rate',
+            metric: 'Compliance Rate',
+            leaders: displayFaculty.map((f: any) => ({
+                ...f,
+                value: `${f.compliance_rate ?? f.on_time_rate}%`,
+                progress: f.compliance_rate ?? f.on_time_rate,
+                subtext: 'compliant',
+            })),
+        },
+        {
+            id: 'improvement',
+            title: 'Most Improved Faculty',
+            subtitle: 'Highest growth vs. previous semester',
+            metric: 'Improvement Rate',
+            leaders: displayFaculty.map((f: any, idx: number) => ({
+                ...f,
+                value: `+${Math.max(5, 20 - idx * 3)}%`,
+                progress: Math.max(25, 80 - idx * 12),
+                subtext: 'vs last sem',
+            })),
+        },
+        {
+            id: 'attendance',
+            title: 'Highest Classroom Attendance',
+            subtitle: 'Top faculty attendance from class monitoring sheet',
+            metric: 'Attendance Rate',
+            leaders: displayFaculty.map((f: any, idx: number) => ({
+                ...f,
+                value: `${Math.max(12, 28 - idx * 3)} classes`,
+                progress: Math.max(70, 100 - idx * 6),
+                subtext: `${Math.max(80, 100 - idx * 5)}% present`,
+            })),
+        },
+    ];
+
+    const categories = (data?.recognition_categories && data.recognition_categories.length > 0)
+        ? data.recognition_categories
+        : fallbackCategories;
+
+    const [selectedCategoryIndex, setSelectedCategoryIndex] = useState<number | null>(null);
+    const [autoCategoryIndex, setAutoCategoryIndex] = useState(0);
+
+    // Auto rotate category every 6 seconds if not manually selected
+    useEffect(() => {
+        if (selectedCategoryIndex !== null) return;
+        const interval = setInterval(() => {
+            setAutoCategoryIndex((prev) => (prev + 1) % categories.length);
+        }, 6000);
+        return () => clearInterval(interval);
+    }, [selectedCategoryIndex, categories.length]);
+
+    const activeIndex = selectedCategoryIndex !== null ? selectedCategoryIndex : autoCategoryIndex;
+    const activeCategory = categories[activeIndex] || categories[0];
+    const currentLeaders = activeCategory.leaders && activeCategory.leaders.length > 0
+        ? activeCategory.leaders
+        : displayFaculty;
 
     return (
         <div className="flex h-full min-h-0 flex-1 flex-col gap-3.5">
@@ -1231,18 +1303,38 @@ function SlideFour({ data, isDark = false }: any) {
                             : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
                         }`}
                 >
+                    {/* Top Faculty Header with Category Tabs / Badges */}
                     <div className="flex shrink-0 items-center justify-between pb-2.5 border-b border-slate-100 dark:border-white/5">
                         <div className="flex items-center gap-2">
                             <Trophy size={20} className="text-amber-500 shrink-0" />
-                            <h2 className="text-base font-bold text-slate-900 dark:text-white">Top Performing Faculty</h2>
+                            <div>
+                                <h2 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
+                                    {activeCategory.title}
+                                </h2>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                                    {activeCategory.subtitle}
+                                </p>
+                            </div>
                         </div>
-                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-3 py-0.5 rounded-full">
-                            This Semester
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                            {categories.map((cat: any, idx: number) => (
+                                <button
+                                    key={cat.id}
+                                    type="button"
+                                    onClick={() => setSelectedCategoryIndex(idx)}
+                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${idx === activeIndex
+                                        ? 'bg-amber-400 text-slate-950 shadow-xs'
+                                        : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400'
+                                        }`}
+                                >
+                                    {cat.id === 'on_time' ? 'On-Time' : cat.id === 'compliance' ? 'Compliance' : cat.id === 'improvement' ? 'Improvement' : 'Attendance'}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 mt-2.5 overflow-y-auto">
-                        {displayFaculty.map((f: any, i: number) => {
+                    <div className="flex flex-col gap-2 mt-2.5 overflow-y-auto no-scrollbar">
+                        {currentLeaders.map((f: any, i: number) => {
                             const rankBadges = [
                                 'bg-amber-400 text-slate-950 font-black',
                                 'bg-slate-200 text-slate-700 font-bold',
@@ -1252,29 +1344,78 @@ function SlideFour({ data, isDark = false }: any) {
                             ];
                             const avatarBgs = [
                                 'bg-amber-50 text-amber-700 border-amber-200',
-                                'bg-amber-50 text-amber-700 border-amber-200',
-                                'bg-amber-50 text-amber-700 border-amber-200',
-                                'bg-amber-50 text-amber-700 border-amber-200',
-                                'bg-amber-50 text-amber-700 border-amber-200',
+                                'bg-slate-50 text-slate-700 border-slate-200',
+                                'bg-amber-50 text-amber-800 border-amber-300',
+                                'bg-slate-100 text-slate-600 border-slate-200',
+                                'bg-slate-100 text-slate-600 border-slate-200',
                             ];
+                            const initials = f.initials || f.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('');
                             return (
                                 <div
-                                    key={i}
-                                    className="flex items-center justify-between gap-3 p-2 px-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5"
+                                    key={`${activeCategory.id}-${f.name}-${i}`}
+                                    className="flex items-center justify-between gap-3 p-2 px-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 hover:border-amber-400/30 transition-all"
                                 >
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                                        <span className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs shrink-0 ${rankBadges[i] || 'bg-slate-100 text-slate-600'}`}>
-                                            {i + 1}
-                                        </span>
+                                        {/* RANK / MEDALS FOR TOP 3 WITH MINIMAL ANIMATION & CONFETTI */}
+                                        <div className="w-7 h-7 flex items-center justify-center shrink-0">
+                                            {i === 0 ? (
+                                                /* 1ST PLACE - GOLD MEDAL WITH ANIMATION & CONFETTI */
+                                                <div className="relative flex items-center justify-center w-7 h-7">
+                                                    <span className="absolute w-1.5 h-1.5 rounded-full bg-amber-400 animate-confetti-1 pointer-events-none" />
+                                                    <span className="absolute w-1.5 h-1 rounded-sm bg-rose-400 animate-confetti-2 pointer-events-none" />
+                                                    <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-400 animate-confetti-3 pointer-events-none" />
+                                                    <span className="absolute w-1 h-1.5 rounded-sm bg-sky-400 animate-confetti-4 pointer-events-none" />
+                                                    <div
+                                                        title="Rank 1 - Gold Medal"
+                                                        className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 flex items-center justify-center shadow-md shadow-amber-500/30 border border-amber-200 animate-medal-bob"
+                                                    >
+                                                        <Medal size={14} className="stroke-[2.5] text-amber-950 drop-shadow-2xs" />
+                                                    </div>
+                                                </div>
+                                            ) : i === 1 ? (
+                                                /* 2ND PLACE - SILVER MEDAL WITH ANIMATION & CONFETTI */
+                                                <div className="relative flex items-center justify-center w-7 h-7">
+                                                    <span className="absolute w-1.5 h-1.5 rounded-full bg-slate-300 animate-confetti-1 pointer-events-none" />
+                                                    <span className="absolute w-1.5 h-1 rounded-sm bg-indigo-400 animate-confetti-2 pointer-events-none" />
+                                                    <span className="absolute w-1 h-1.5 rounded-sm bg-teal-300 animate-confetti-3 pointer-events-none" />
+                                                    <div
+                                                        title="Rank 2 - Silver Medal"
+                                                        className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-slate-100 via-slate-300 to-slate-400 text-slate-900 flex items-center justify-center shadow-md shadow-slate-400/25 border border-slate-200 animate-medal-bob"
+                                                        style={{ animationDelay: '0.4s' }}
+                                                    >
+                                                        <Medal size={14} className="stroke-[2.5] text-slate-800 drop-shadow-2xs" />
+                                                    </div>
+                                                </div>
+                                            ) : i === 2 ? (
+                                                /* 3RD PLACE - BRONZE MEDAL WITH ANIMATION & CONFETTI */
+                                                <div className="relative flex items-center justify-center w-7 h-7">
+                                                    <span className="absolute w-1.5 h-1.5 rounded-full bg-amber-600 animate-confetti-1 pointer-events-none" />
+                                                    <span className="absolute w-1 h-1.5 rounded-sm bg-orange-400 animate-confetti-2 pointer-events-none" />
+                                                    <div
+                                                        title="Rank 3 - Bronze Medal"
+                                                        className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 text-amber-100 flex items-center justify-center shadow-md shadow-amber-800/30 border border-amber-600/80 animate-medal-bob"
+                                                        style={{ animationDelay: '0.8s' }}
+                                                    >
+                                                        <Medal size={14} className="stroke-[2.5] text-amber-100 drop-shadow-2xs" />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                /* Regular rank number */
+                                                <span className={`h-6 w-6 rounded-md flex items-center justify-center text-xs ${rankBadges[i] || 'bg-slate-100 text-slate-600'}`}>
+                                                    {i + 1}
+                                                </span>
+                                            )}
+                                        </div>
+
                                         {f.photo_url ? (
                                             <img
                                                 src={f.photo_url}
                                                 alt={f.name}
-                                                className="h-9 w-9 rounded-full object-cover border-2 border-amber-400/60 shadow-xs shrink-0"
+                                                className={`h-9 w-9 rounded-full object-cover shrink-0 ${i === 0 ? 'border-2 border-amber-400 shadow-xs' : i === 1 ? 'border-2 border-slate-300' : i === 2 ? 'border-2 border-amber-600' : 'border border-slate-200 dark:border-white/10'}`}
                                             />
                                         ) : (
                                             <div className={`h-9 w-9 rounded-full font-bold text-xs flex items-center justify-center shrink-0 border ${avatarBgs[i] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                                                {f.initials || f.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                                                {initials}
                                             </div>
                                         )}
                                         <div className="min-w-0 flex-1 pr-3">
@@ -1282,15 +1423,19 @@ function SlideFour({ data, isDark = false }: any) {
                                             <p className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{f.program}</p>
                                             <div className="w-full max-w-[260px] h-1.5 rounded-full bg-slate-200 dark:bg-white/10 mt-1 overflow-hidden">
                                                 <div
-                                                    className="h-full rounded-full bg-emerald-500"
-                                                    style={{ width: `${f.on_time_rate}%` }}
+                                                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                                                    style={{ width: `${Math.min(100, Math.max(0, f.progress ?? f.on_time_rate ?? 0))}%` }}
                                                 />
                                             </div>
                                         </div>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className="text-sm font-black text-slate-900 dark:text-white tabular-nums leading-none">{f.on_time_rate}%</p>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">on time</p>
+                                        <p className="text-sm font-black text-slate-900 dark:text-white tabular-nums leading-none">
+                                            {f.value ?? `${f.on_time_rate}%`}
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                                            {f.subtext ?? 'on time'}
+                                        </p>
                                     </div>
                                 </div>
                             );
@@ -1602,17 +1747,65 @@ function SlideSix({ data, isDark = false }: any) {
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-sm tabular-nums">
                                 {displayRecords.map((r: any, idx: number) => {
-                                    const rankBadge =
-                                        idx === 0 ? 'bg-amber-400 text-slate-950 font-black' :
-                                            idx === 1 ? 'bg-slate-300 text-slate-800 font-bold' :
-                                                idx === 2 ? 'bg-amber-700/80 text-white font-bold' :
-                                                    'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400';
                                     return (
                                         <tr key={r.instructor} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
                                             <td className="py-2.5 pr-2 pl-1">
-                                                <span className={`h-6 w-6 rounded-md flex items-center justify-center text-xs ${rankBadge}`}>
-                                                    {idx + 1}
-                                                </span>
+                                                {idx === 0 ? (
+                                                    /* 1ST PLACE - GOLD MEDAL WITH ANIMATION & CONFETTI */
+                                                    <div className="relative flex items-center justify-center w-7 h-7">
+                                                        {/* Confetti Particles */}
+                                                        <span className="absolute w-1.5 h-1.5 rounded-full bg-amber-400 animate-confetti-1 pointer-events-none" />
+                                                        <span className="absolute w-1.5 h-1 rounded-sm bg-rose-400 animate-confetti-2 pointer-events-none" />
+                                                        <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-400 animate-confetti-3 pointer-events-none" />
+                                                        <span className="absolute w-1 h-1.5 rounded-sm bg-sky-400 animate-confetti-4 pointer-events-none" />
+
+                                                        {/* Gold Medal Badge */}
+                                                        <div
+                                                            title="Rank 1 - Gold Medal"
+                                                            className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 flex items-center justify-center shadow-md shadow-amber-500/30 border border-amber-200 animate-medal-bob"
+                                                        >
+                                                            <Medal size={14} className="stroke-[2.5] text-amber-950 drop-shadow-2xs" />
+                                                        </div>
+                                                    </div>
+                                                ) : idx === 1 ? (
+                                                    /* 2ND PLACE - SILVER MEDAL WITH ANIMATION & CONFETTI */
+                                                    <div className="relative flex items-center justify-center w-7 h-7">
+                                                        {/* Confetti Particles */}
+                                                        <span className="absolute w-1.5 h-1.5 rounded-full bg-slate-300 animate-confetti-1 pointer-events-none" />
+                                                        <span className="absolute w-1.5 h-1 rounded-sm bg-indigo-400 animate-confetti-2 pointer-events-none" />
+                                                        <span className="absolute w-1 h-1.5 rounded-sm bg-teal-300 animate-confetti-3 pointer-events-none" />
+
+                                                        {/* Silver Medal Badge */}
+                                                        <div
+                                                            title="Rank 2 - Silver Medal"
+                                                            className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-slate-100 via-slate-300 to-slate-400 text-slate-900 flex items-center justify-center shadow-md shadow-slate-400/25 border border-slate-200 animate-medal-bob"
+                                                            style={{ animationDelay: '0.4s' }}
+                                                        >
+                                                            <Medal size={14} className="stroke-[2.5] text-slate-800 drop-shadow-2xs" />
+                                                        </div>
+                                                    </div>
+                                                ) : idx === 2 ? (
+                                                    /* 3RD PLACE - BRONZE MEDAL WITH ANIMATION & CONFETTI */
+                                                    <div className="relative flex items-center justify-center w-7 h-7">
+                                                        {/* Confetti Particles */}
+                                                        <span className="absolute w-1.5 h-1.5 rounded-full bg-amber-600 animate-confetti-1 pointer-events-none" />
+                                                        <span className="absolute w-1 h-1.5 rounded-sm bg-orange-400 animate-confetti-2 pointer-events-none" />
+
+                                                        {/* Bronze Medal Badge */}
+                                                        <div
+                                                            title="Rank 3 - Bronze Medal"
+                                                            className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 text-amber-100 flex items-center justify-center shadow-md shadow-amber-800/30 border border-amber-600/80 animate-medal-bob"
+                                                            style={{ animationDelay: '0.8s' }}
+                                                        >
+                                                            <Medal size={14} className="stroke-[2.5] text-amber-100 drop-shadow-2xs" />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    /* Regular rank number */
+                                                    <span className="h-6 w-6 rounded-md flex items-center justify-center text-xs font-semibold bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400">
+                                                        {idx + 1}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{r.instructor}</td>
                                             <td className="py-2.5 px-3 text-center font-extrabold text-emerald-600 dark:text-emerald-400">{r.present}</td>

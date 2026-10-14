@@ -53,6 +53,41 @@ class AcademicCalendarImportService
                 return (string) file_get_contents($file->getRealPath());
             }
 
+            // DOCX / Word file text extraction via ZipArchive and document.xml
+            if ($extension === 'docx' || $extension === 'dotx') {
+                if (class_exists(\ZipArchive::class)) {
+                    $zip = new \ZipArchive;
+                    if ($zip->open($file->getRealPath()) === true) {
+                        $xmlContent = $zip->getFromName('word/document.xml');
+                        $zip->close();
+                        if ($xmlContent) {
+                            // Replace paragraph/break tags with newlines and clean XML
+                            $cleanXml = str_replace(['</w:p>', '</w:tr>', '<w:br/>', '<w:cr/>'], "\n", $xmlContent);
+                            $cleanText = strip_tags($cleanXml);
+                            $cleanText = html_entity_decode($cleanText, ENT_QUOTES | ENT_XML1, 'UTF-8');
+                            $cleanText = preg_replace("/[ \t]+/", ' ', $cleanText);
+                            $cleanText = preg_replace("/\n{3,}/", "\n\n", $cleanText);
+
+                            if (mb_strlen(trim($cleanText)) > 20) {
+                                return trim($cleanText);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Legacy DOC or RTF fallback string cleaning
+            if ($extension === 'doc' || $extension === 'rtf') {
+                $rawDoc = @file_get_contents($file->getRealPath());
+                if ($rawDoc) {
+                    $clean = preg_replace('/[^\x20-\x7E\t\r\n]/', ' ', $rawDoc);
+                    $clean = preg_replace('/\s+/', ' ', $clean);
+                    if (mb_strlen(trim($clean)) > 50) {
+                        return mb_substr($clean, 0, 15000);
+                    }
+                }
+            }
+
             if ($extension === 'xlsx' || $extension === 'xls') {
                 // Read sheet lines or sample table
                 $content = @file_get_contents($file->getRealPath());
@@ -172,30 +207,50 @@ EOT;
                     }
                 }
 
-                $response = Http::withHeaders([
-                    'Content-Type' => 'application/json',
-                ])->timeout(60)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={$apiKey}", [
-                    'contents' => [
-                        [
-                            'parts' => $parts,
-                        ],
-                    ],
-                    'generationConfig' => [
-                        'temperature' => 0.1,
-                        'responseMimeType' => 'application/json',
-                    ],
-                ]);
+                $modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+                $response = null;
 
-                if ($response->successful()) {
+                foreach ($modelsToTry as $modelName) {
+                    try {
+                        $res = Http::withHeaders([
+                            'Content-Type' => 'application/json',
+                        ])->timeout(90)->post("https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$apiKey}", [
+                            'contents' => [
+                                [
+                                    'parts' => $parts,
+                                ],
+                            ],
+                            'generationConfig' => [
+                                'temperature' => 0.1,
+                                'responseMimeType' => 'application/json',
+                            ],
+                        ]);
+
+                        if ($res->successful()) {
+                            $response = $res;
+                            break;
+                        } else {
+                            Log::warning("Gemini model {$modelName} returned {$res->status()}: {$res->body()}");
+                        }
+                    } catch (\Throwable $attemptErr) {
+                        Log::warning("Gemini model {$modelName} attempt error: {$attemptErr->getMessage()}");
+                    }
+                }
+
+                if ($response && $response->successful()) {
                     $json = $response->json();
                     $text = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                    $decoded = json_decode($text, true);
+                    // Clean any markdown code blocks if model wrapped JSON in ```json ... ```
+                    $cleanJson = trim($text);
+                    if (str_starts_with($cleanJson, '```')) {
+                        $cleanJson = preg_replace('/^```(?:json)?\s*/i', '', $cleanJson);
+                        $cleanJson = preg_replace('/\s*```$/', '', $cleanJson);
+                    }
+                    $decoded = json_decode($cleanJson, true);
                     if (is_array($decoded) && ! empty($decoded)) {
                         $candidateEvents = $decoded;
                         $rawResponse = $json;
                     }
-                } else {
-                    Log::warning('Gemini API returned non-200: '.$response->status().' - '.$response->body());
                 }
             } catch (\Throwable $e) {
                 Log::warning('Gemini API call failed: '.$e->getMessage());
@@ -322,6 +377,8 @@ EOT;
             ]);
             $destinationType = 'Requirement';
             $destinationId = $requirement->id;
+
+            ComplianceService::syncPendingSubmissions();
         } else {
             // Push into Activity (which shows on Consolidated Calendar & TV display)
             $activity = Activity::create([

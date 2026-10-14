@@ -57,6 +57,7 @@ export interface CalendarEvent {
     status?: string;
     program?: string;
     program_id?: number | null;
+    program_ids?: number[];
     description?: string;
 }
 
@@ -151,7 +152,14 @@ export default function ConsolidatedCalendarIndex({
     const filteredEvents = useMemo(() => {
         return events.filter((ev) => {
             if (selectedType !== 'all' && ev.type !== selectedType) return false;
-            if (selectedProgram !== 'all' && ev.program !== selectedProgram) return false;
+            if (selectedProgram !== 'all') {
+                if (!ev.program) return false;
+                // If event program is "All" or includes selectedProgram code
+                const progCodes = ev.program.split(',').map((p) => p.trim());
+                if (!progCodes.includes(selectedProgram) && ev.program !== 'All') {
+                    return false;
+                }
+            }
             if (selectedVenue !== 'all' && ev.venue !== selectedVenue) return false;
             return true;
         });

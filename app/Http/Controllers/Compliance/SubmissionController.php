@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\Submission;
+use App\Services\ComplianceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,8 @@ class SubmissionController extends Controller
      */
     public function index(Request $request): Response
     {
+        ComplianceService::syncPendingSubmissions();
+
         $submissions = Submission::with(['faculty.program', 'requirement.program'])
             ->whereNotNull('submitted_at')
             ->latest('submitted_at')

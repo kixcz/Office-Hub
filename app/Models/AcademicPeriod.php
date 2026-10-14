@@ -55,20 +55,28 @@ class AcademicPeriod extends Model
     }
 
     /**
-     * Activate this period, setting it to Active & current,
-     * while transitioning any previously active/current periods to Closed.
+     * Activate this period, setting it to Active & current.
+     * Enforces single-current-period rule.
+     * Optionally formally close previous active periods if specified.
      */
-    public function activate(): void
+    public function activate(bool $closePrevious = false): void
     {
-        self::where('id', '!=', $this->id)
+        $previousQuery = self::where('id', '!=', $this->id)
             ->where(function ($q) {
                 $q->where('is_current', true)
                     ->orWhere('status', 'Active');
-            })
-            ->update([
+            });
+
+        if ($closePrevious) {
+            $previousQuery->update([
                 'is_current' => false,
                 'status' => 'Closed',
             ]);
+        } else {
+            $previousQuery->update([
+                'is_current' => false,
+            ]);
+        }
 
         $this->update([
             'status' => 'Active',

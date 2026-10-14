@@ -1,4 +1,5 @@
 import AppLayout from '@/layouts/app-layout';
+import { SchedulingWorkspaceLayout } from '@/components/scheduling-workspace-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import {
@@ -119,7 +120,8 @@ export default function TimetableEditorIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Timetable Editor - Interactive Drag & Drop" />
 
-            <div className="flex flex-col gap-6 p-6 font-['Poppins']">
+            <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
+                <div className="flex flex-col gap-6 p-6 font-['Poppins']">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                     <div className="space-y-1">
@@ -309,7 +311,8 @@ export default function TimetableEditorIndex({
                         </table>
                     </div>
                 </div>
-            </div>
+                </div>
+            </SchedulingWorkspaceLayout>
         </AppLayout>
     );
 }

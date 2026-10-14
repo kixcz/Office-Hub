@@ -123,9 +123,10 @@ class AcademicPeriodController extends Controller
         return redirect()->back()->with('success', 'Academic Period updated successfully.');
     }
 
-    public function activate(AcademicPeriod $academicPeriod)
+    public function activate(Request $request, AcademicPeriod $academicPeriod)
     {
-        $academicPeriod->activate();
+        $closePrevious = $request->boolean('close_previous', false);
+        $academicPeriod->activate($closePrevious);
 
         return redirect()->back()->with('success', "{$academicPeriod->academic_year} {$academicPeriod->semester} is now the active academic period.");
     }

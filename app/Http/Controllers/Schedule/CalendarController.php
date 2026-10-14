@@ -37,6 +37,14 @@ class CalendarController extends Controller
         self::ensureBaselineEvents();
 
         $meetings = Meeting::with('program')->get()->map(function ($m) {
+            $programs = $m->programs;
+            $programCode = 'All';
+            if ($programs->isNotEmpty()) {
+                $programCode = $programs->pluck('code')->filter()->implode(', ');
+            } elseif ($m->program) {
+                $programCode = $m->program->code;
+            }
+
             return [
                 'id' => 'm_'.$m->id,
                 'raw_id' => $m->id,
@@ -47,8 +55,9 @@ class CalendarController extends Controller
                 'end_time' => Carbon::parse($m->end_time)->format('h:i A'),
                 'venue' => $m->venue ?: 'N/A',
                 'status' => $m->status ?: 'Scheduled',
-                'program' => $m->program ? $m->program->code : 'All',
+                'program' => $programCode,
                 'program_id' => $m->program_id,
+                'program_ids' => $m->program_ids ?: ($m->program_id ? [$m->program_id] : []),
                 'description' => $m->agenda ?: $m->notes,
             ];
         });

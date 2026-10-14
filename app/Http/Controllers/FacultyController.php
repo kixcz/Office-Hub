@@ -10,6 +10,7 @@ use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\RoomSchedule;
 use App\Models\Submission;
+use App\Services\ComplianceService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,8 @@ class FacultyController extends Controller
 
     public function show(Request $request, Faculty $faculty): Response
     {
+        ComplianceService::syncPendingSubmissions();
+
         $faculty->load('program');
 
         // User role checks for Dean vs Super Admin vs Reviewer
@@ -318,6 +321,8 @@ class FacultyController extends Controller
                 }
             });
         $matchQuery->update(['faculty_id' => $faculty->id]);
+
+        ComplianceService::syncPendingSubmissions();
 
         return redirect()->route('faculties.show', $faculty->id)->with('success', 'Faculty profile created successfully.');
     }

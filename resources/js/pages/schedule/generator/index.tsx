@@ -1,4 +1,5 @@
 import AppLayout from '@/layouts/app-layout';
+import { SchedulingWorkspaceLayout } from '@/components/scheduling-workspace-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import {
@@ -221,7 +222,8 @@ export default function ScheduleGeneratorDashboard({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Semester Schedule Generator - CIDS OfficeHub" />
 
-            <div className="flex flex-col gap-6 p-6 font-['Poppins']">
+            <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
+                <div className="flex flex-col gap-6 p-6 font-['Poppins']">
                 {/* 1. Header Area with Action Buttons */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1">
@@ -1070,7 +1072,8 @@ export default function ScheduleGeneratorDashboard({
                         </div>
                     </DialogContent>
                 </Dialog>
-            </div>
+                </div>
+            </SchedulingWorkspaceLayout>
         </AppLayout>
     );
 }

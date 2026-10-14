@@ -179,3 +179,102 @@
     background: rgba(245, 158, 11, 0.7);
 }
 
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Medal & Confetti Animations */
+@keyframes medal-bob {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-2px) scale(1.05);
+    }
+}
+
+@keyframes confetti-pop-1 {
+    0% {
+        transform: translate(0, 0) scale(0) rotate(0deg);
+        opacity: 0;
+    }
+    30% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-10px, -12px) scale(1) rotate(45deg);
+        opacity: 0;
+    }
+}
+
+@keyframes confetti-pop-2 {
+    0% {
+        transform: translate(0, 0) scale(0) rotate(0deg);
+        opacity: 0;
+    }
+    30% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(12px, -10px) scale(1) rotate(-40deg);
+        opacity: 0;
+    }
+}
+
+@keyframes confetti-pop-3 {
+    0% {
+        transform: translate(0, 0) scale(0) rotate(0deg);
+        opacity: 0;
+    }
+    30% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(9px, 9px) scale(1) rotate(60deg);
+        opacity: 0;
+    }
+}
+
+@keyframes confetti-pop-4 {
+    0% {
+        transform: translate(0, 0) scale(0) rotate(0deg);
+        opacity: 0;
+    }
+    30% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-9px, 8px) scale(1) rotate(-55deg);
+        opacity: 0;
+    }
+}
+
+.animate-medal-bob {
+    animation: medal-bob 2.6s ease-in-out infinite;
+}
+
+.animate-confetti-1 {
+    animation: confetti-pop-1 2.2s cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
+}
+
+.animate-confetti-2 {
+    animation: confetti-pop-2 2.2s cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
+    animation-delay: 0.35s;
+}
+
+.animate-confetti-3 {
+    animation: confetti-pop-3 2.2s cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
+    animation-delay: 0.7s;
+}
+
+.animate-confetti-4 {
+    animation: confetti-pop-4 2.2s cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
+    animation-delay: 1.05s;
+}
+
+

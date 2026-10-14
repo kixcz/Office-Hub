@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Faculty;
 use App\Models\Program;
 use App\Models\Requirement;
+use App\Services\ComplianceService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,18 +59,7 @@ class RequirementController extends Controller
         $validated['reviewer_id'] = Auth::id();
         $requirement = Requirement::create($validated);
 
-        if ($programId) {
-            $faculties = Faculty::where('program_id', $programId)->get();
-        } else {
-            $faculties = Faculty::all();
-        }
-
-        foreach ($faculties as $faculty) {
-            $requirement->submissions()->create([
-                'faculty_id' => $faculty->id,
-                'status' => 'pending',
-            ]);
-        }
+        ComplianceService::syncPendingSubmissions();
 
         return redirect()->back()->with('success', 'Requirement created and distributed successfully.');
     }
@@ -90,13 +80,7 @@ class RequirementController extends Controller
 
         // If the program was changed, ensure faculty in the new program have pending submission records
         if ((int) $oldProgramId !== (int) $validated['program_id']) {
-            $faculties = Faculty::where('program_id', $validated['program_id'])->get();
-            foreach ($faculties as $faculty) {
-                $requirement->submissions()->firstOrCreate(
-                    ['faculty_id' => $faculty->id],
-                    ['status' => 'pending']
-                );
-            }
+            ComplianceService::syncPendingSubmissions();
         }
 
         return redirect()->back()->with('success', 'Requirement updated successfully.');

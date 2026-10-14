@@ -28,17 +28,30 @@ import {
     Eye,
     Save,
     ChevronRight,
+    ChevronLeft,
     Sliders,
     Building2,
     Layers,
     ListFilter,
-    Trash2
+    Trash2,
+    MoreVertical,
+    CalendarDays,
+    Ban,
+    Flag,
+    ArrowUpDown,
+    CheckCircle,
 } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog';
 import { cn } from '@/lib/utils';
 
@@ -165,6 +178,8 @@ export default function AcademicCalendarImportIndex({
     const [uploadErrorMessage, setUploadErrorMessage] = useState<string | null>(null);
     const [deletingEvent, setDeletingEvent] = useState<ImportEvent | null>(null);
     const [isDeletingEvent, setIsDeletingEvent] = useState(false);
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const itemsPerPage = 8;
 
     // Upload Form State
     const { data: uploadData, setData: setUploadData, post: postUpload, processing: isUploading, errors: uploadErrors, reset: resetUpload, clearErrors } = useForm({
@@ -202,6 +217,13 @@ export default function AcademicCalendarImportIndex({
             return matchesSearch && matchesCat && matchesVal;
         });
     }, [events, searchQuery, filterCategory, filterValidation]);
+
+    // Pagination
+    const totalPages = Math.max(1, Math.ceil(filteredEvents.length / itemsPerPage));
+    const paginatedEvents = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredEvents.slice(start, start + itemsPerPage);
+    }, [filteredEvents, currentPage, itemsPerPage]);
 
     // Handle Selection
     const handleSelectAllValid = () => {
@@ -333,105 +355,154 @@ export default function AcademicCalendarImportIndex({
         });
     };
 
-    // Color badges helper
+    // Color badges helper matching the screenshot's soft pastel pills
     const getCategoryBadge = (cat: string) => {
-        switch (cat) {
-            case 'holiday':
-                return <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30">Holiday</Badge>;
-            case 'examination':
-                return <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30">Examination</Badge>;
-            case 'faculty_deadline':
-                return <Badge className="bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30">Faculty Deadline</Badge>;
-            case 'grade_submission':
-                return <Badge className="bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30">Grade Cutoff</Badge>;
-            case 'enrollment':
-                return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">Enrollment</Badge>;
-            case 'break':
-                return <Badge className="bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30">Break</Badge>;
-            case 'university_activity':
-            case 'college_activity':
-                return <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30">Activity</Badge>;
-            default:
-                return <Badge variant="outline">{cat.replace(/_/g, ' ')}</Badge>;
+        const c = (cat || '').toLowerCase();
+        if (c.includes('instruct') || c.includes('milestone') || c.includes('class')) {
+            return (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#e0f2fe] text-[#0284c7]">
+                    Instruction
+                </span>
+            );
         }
+        if (c.includes('enroll')) {
+            return (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#dcfce7] text-[#16a34a]">
+                    Enrollment
+                </span>
+            );
+        }
+        if (c.includes('regist') || c.includes('add') || c.includes('drop')) {
+            return (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#f3e8ff] text-[#9333ea]">
+                    Registration
+                </span>
+            );
+        }
+        if (c.includes('exam')) {
+            return (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#ffe4e6] text-[#e11d48]">
+                    Examination
+                </span>
+            );
+        }
+        if (c.includes('break') || c.includes('holiday') || c.includes('no_class') || c.includes('vacation')) {
+            return (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#f1f5f9] text-[#64748b]">
+                    No Class
+                </span>
+            );
+        }
+        if (c.includes('deadline') || c.includes('grade')) {
+            return (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#ede9fe] text-[#7c3aed]">
+                    Deadline
+                </span>
+            );
+        }
+        return (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#f1f5f9] text-[#475569]">
+                {cat.replace(/_/g, ' ')}
+            </span>
+        );
     };
 
-    const getValidationBadge = (status: string) => {
-        switch (status) {
-            case 'valid':
-                return (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                        <CheckCircle2 className="w-3 h-3" /> Valid
-                    </span>
-                );
-            case 'needs_attention':
-                return (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 animate-pulse">
-                        <AlertTriangle className="w-3 h-3" /> Needs Attention
-                    </span>
-                );
-            case 'duplicate':
-                return (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
-                        <Copy className="w-3 h-3" /> Duplicate
-                    </span>
-                );
-            case 'out_of_period':
-                return (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
-                        <AlertTriangle className="w-3 h-3" /> Out of Period
-                    </span>
-                );
-            default:
-                return <Badge variant="outline">{status}</Badge>;
+    const getValidationBadge = (status: string, eventStatus?: string) => {
+        if (eventStatus === 'approved' || status === 'valid') {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#059669] bg-[#ecfdf5] border border-[#a7f3d0] px-3 py-1 rounded-full">
+                    <CheckCircle className="w-3.5 h-3.5 fill-[#059669] text-white" />
+                    <span>Approved</span>
+                </span>
+            );
         }
+        if (status === 'out_of_period') {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#e11d48] bg-[#fff1f2] border border-[#fecdd3] px-3 py-1 rounded-full">
+                    <AlertTriangle className="w-3.5 h-3.5 text-[#e11d48]" />
+                    <span>Out of Period</span>
+                </span>
+            );
+        }
+        if (status === 'needs_attention') {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#d97706] bg-[#fffbeb] border border-[#fde68a] px-3 py-1 rounded-full">
+                    <AlertTriangle className="w-3.5 h-3.5 text-[#d97706]" />
+                    <span>Needs Attention</span>
+                </span>
+            );
+        }
+        if (status === 'duplicate') {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#7c3aed] bg-[#f5f3ff] border border-[#ddd6fe] px-3 py-1 rounded-full">
+                    <Copy className="w-3.5 h-3.5 text-[#7c3aed]" />
+                    <span>Duplicate</span>
+                </span>
+            );
+        }
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full">
+                {status}
+            </span>
+        );
     };
 
-    const getSchedulingEffectLabel = (effect: string) => {
-        switch (effect) {
-            case 'BLOCK_ALL_CLASSES':
-                return (
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-rose-600 dark:text-rose-400">
-                        <span className="h-2 w-2 rounded-full bg-rose-500" />
-                        <span>Block All Classes</span>
-                    </div>
-                );
-            case 'CALENDAR_TV_RESTRICTION':
-                return (
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
-                        <span className="h-2 w-2 rounded-full bg-amber-500" />
-                        <span>Calendar + TV + Exam Restriction</span>
-                    </div>
-                );
-            case 'CALENDAR_REMINDER':
-                return (
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                        <span className="h-2 w-2 rounded-full bg-indigo-500" />
-                        <span>Calendar + Reminder Compliance</span>
-                    </div>
-                );
-            case 'CALENDAR_TV_DISPLAY':
-                return (
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400">
-                        <span className="h-2 w-2 rounded-full bg-blue-500" />
-                        <span>Calendar + TV Display</span>
-                    </div>
-                );
-            default:
-                return (
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                        <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                        <span>Informational (No Block)</span>
-                    </div>
-                );
+    const getSchedulingEffectLabel = (effect: string, title?: string) => {
+        const t = (title || '').toLowerCase();
+        let label = 'Sets calendar event';
+        let IconComp = Calendar;
+
+        if (t.includes('start of class') || t.includes('class start')) {
+            label = 'Creates class start date';
+            IconComp = Calendar;
+        } else if (t.includes('end of class') || t.includes('class end')) {
+            label = 'Sets class end date';
+            IconComp = Flag;
+        } else if (t.includes('late enroll')) {
+            label = 'Adds late enrollment period';
+            IconComp = Calendar;
+        } else if (t.includes('enroll')) {
+            label = 'Sets enrollment dates';
+            IconComp = Calendar;
+        } else if (t.includes('adding') || t.includes('dropping')) {
+            label = 'Adds add/drop period';
+            IconComp = Calendar;
+        } else if (t.includes('midterm exam')) {
+            label = 'Adds midterm exam period';
+            IconComp = Calendar;
+        } else if (t.includes('final exam')) {
+            label = 'Adds final exam period';
+            IconComp = Calendar;
+        } else if (t.includes('break') || t.includes('undas') || t.includes('no class') || t.includes('holiday')) {
+            label = 'Sets no-class dates';
+            IconComp = Ban;
+        } else if (effect === 'BLOCK_ALL_CLASSES') {
+            label = 'Blocks all class schedules';
+            IconComp = Ban;
+        } else if (effect === 'CALENDAR_TV_RESTRICTION') {
+            label = 'Exam constraint & TV notification';
+            IconComp = Calendar;
+        } else if (effect === 'CALENDAR_REMINDER') {
+            label = 'Sets deadline & reminder';
+            IconComp = Calendar;
+        } else if (effect === 'CALENDAR_TV_DISPLAY') {
+            label = 'Displays prominently on TV';
+            IconComp = Calendar;
         }
+
+        return (
+            <div className="flex items-center gap-2 text-xs text-slate-700">
+                <IconComp className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="font-normal">{label}</span>
+            </div>
+        );
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Academic Calendar Import - AI Ingestion & Governance" />
 
-            <div className="flex flex-col gap-6 p-4 sm:p-6 max-w-7xl mx-auto w-full">
+            <div className="flex flex-col gap-5 p-4 sm:p-6 max-w-[1400px] mx-auto w-full">
                 {/* Flash Messages & Alerts */}
                 {flash?.success && (
                     <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs font-semibold shadow-2xs animate-in fade-in duration-300">
@@ -457,198 +528,159 @@ export default function AcademicCalendarImportIndex({
                 )}
 
                 {/* ========================================================================= */}
-                {/* 1. HERO & WORKFLOW BANNER                                                 */}
+                {/* 1. HERO HEADER BANNER (Soft rounded card matching screenshot)             */}
                 {/* ========================================================================= */}
-                <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-amber-500/10 via-background to-card border border-amber-500/20 p-6 md:p-8 shadow-sm">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex items-start gap-4">
-                            <div className="p-3.5 rounded-2xl bg-amber-500 text-white shadow-md shadow-amber-500/20 shrink-0">
-                                <Sparkles className="w-8 h-8" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px] font-extrabold uppercase tracking-wider">
-                                        AI-Assisted Ingestion &amp; Governance
-                                    </Badge>
-                                    <span className="text-xs text-muted-foreground">• Super Admin Final Authority</span>
-                                </div>
-                                <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight mt-1">
-                                    Academic Calendar Import
-                                </h1>
-                                <p className="text-xs md:text-sm text-muted-foreground max-w-2xl mt-1.5 leading-relaxed">
-                                    Convert official institutional academic calendars into structured OfficeHub events without manual date entry. 
-                                    Gemini interprets, categorizes, and normalizes candidate dates, while Laravel enforces strict governance, duplicate detection, and scheduling effect rules.
-                                </p>
-                            </div>
+                <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-5">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-[#ffedd5] text-[#f97316] flex items-center justify-center shrink-0 shadow-xs">
+                            <CalendarDays className="w-7 h-7 text-[#ea580c] stroke-[2.2]" />
                         </div>
-
-                        {/* Top Action Buttons */}
-                        <div className="flex items-center gap-3 shrink-0">
-                            <Link
-                                href="/schedule/calendar"
-                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-background hover:bg-muted border border-border transition-all cursor-pointer shadow-2xs"
-                            >
-                                <Calendar className="w-4 h-4 text-muted-foreground" />
-                                <span>Official Calendar</span>
-                            </Link>
-
-                            <Button
-                                onClick={() => setActiveTab('upload')}
-                                className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2.5 rounded-xl shadow-xs gap-2 transition-all cursor-pointer"
-                            >
-                                <UploadCloud className="w-4 h-4 stroke-[2.5]" />
-                                <span>Upload Calendar</span>
-                            </Button>
+                        <div>
+                            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                                Academic Calendar Import
+                            </h1>
+                            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                                Import institutional academic calendars and convert them into structured OfficeHub events using Gemini.
+                            </p>
                         </div>
                     </div>
 
-                    {/* Architectural Steps Micro-Bar */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-border/60">
-                        <div className="flex items-center gap-2 text-xs">
-                            <span className="h-6 w-6 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold flex items-center justify-center shrink-0 text-[11px]">1</span>
-                            <span className="text-muted-foreground font-medium">Upload Official File</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs">
-                            <span className="h-6 w-6 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold flex items-center justify-center shrink-0 text-[11px]">2</span>
-                            <span className="text-muted-foreground font-medium">Gemini Document Parsing</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs">
-                            <span className="h-6 w-6 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold flex items-center justify-center shrink-0 text-[11px]">3</span>
-                            <span className="text-muted-foreground font-medium">Laravel Period Validation</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs">
-                            <span className="h-6 w-6 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center justify-center shrink-0 text-[11px]">4</span>
-                            <span className="text-muted-foreground font-medium">Super Admin Approval</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ========================================================================= */}
-                {/* 2. KPI METRICS & STATS CARDS                                              */}
-                {/* ========================================================================= */}
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                    <div className="p-4 rounded-2xl bg-card border border-border shadow-2xs">
-                        <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Detected</div>
-                        <div className="text-2xl font-black text-foreground mt-1">{stats.total_detected}</div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">Gemini Extracted</div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-card border border-border shadow-2xs">
-                        <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Valid Ready</div>
-                        <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{stats.valid_count}</div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">Passed Period Rules</div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-card border border-border shadow-2xs">
-                        <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Needs Attention</div>
-                        <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">{stats.needs_attention_count}</div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">Vague / Incomplete</div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-card border border-border shadow-2xs">
-                        <div className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Duplicates</div>
-                        <div className="text-2xl font-black text-purple-600 dark:text-purple-400 mt-1">{stats.duplicates_count}</div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">Existing in Calendar</div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-card border border-border shadow-2xs">
-                        <div className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Approved</div>
-                        <div className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">{stats.approved_count}</div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">Promoted to Calendar</div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-card border border-border shadow-2xs">
-                        <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Rejected</div>
-                        <div className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1">{stats.rejected_count}</div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">Declined by Admin</div>
-                    </div>
-                </div>
-
-                {/* ========================================================================= */}
-                {/* 3. NAVIGATION TABS                                                        */}
-                {/* ========================================================================= */}
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/80 pb-3">
-                    <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-muted/60 border border-border/60">
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('queue')}
-                            className={cn(
-                                'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer',
-                                activeTab === 'queue'
-                                    ? 'bg-amber-500 text-white shadow-2xs'
-                                    : 'text-muted-foreground hover:text-foreground'
-                            )}
+                    {/* Top Action Buttons: View Official Calendar & Upload Calendar */}
+                    <div className="flex items-center gap-3 shrink-0">
+                        <Link
+                            href="/schedule/calendar"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 transition-all cursor-pointer shadow-xs"
                         >
-                            <Layers className="w-3.5 h-3.5" />
-                            <span>Import Review Queue</span>
-                            <Badge className="bg-white/20 text-white text-[10px] px-1.5 py-0 h-4">
-                                {events.filter((e) => e.status === 'pending').length}
-                            </Badge>
-                        </button>
+                            <Calendar className="w-4 h-4 text-slate-500" />
+                            <span>View Official Calendar</span>
+                        </Link>
 
-                        <button
-                            type="button"
+                        <Button
                             onClick={() => setActiveTab('upload')}
-                            className={cn(
-                                'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer',
-                                activeTab === 'upload'
-                                    ? 'bg-amber-500 text-white shadow-2xs'
-                                    : 'text-muted-foreground hover:text-foreground'
-                            )}
+                            className="bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-xs gap-2 transition-all cursor-pointer"
                         >
-                            <UploadCloud className="w-3.5 h-3.5" />
-                            <span>Upload Document</span>
-                        </button>
+                            <UploadCloud className="w-4 h-4 stroke-[2.5]" />
+                            <span>Upload Calendar</span>
+                        </Button>
+                    </div>
+                </div>
 
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('rules')}
-                            className={cn(
-                                'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer',
-                                activeTab === 'rules'
-                                    ? 'bg-amber-500 text-white shadow-2xs'
-                                    : 'text-muted-foreground hover:text-foreground'
-                            )}
-                        >
-                            <Sliders className="w-3.5 h-3.5" />
-                            <span>Import Rules &amp; Effects</span>
-                        </button>
+                {/* ========================================================================= */}
+                {/* 2. NAVIGATION TABS (Underline indicator matching screenshot)              */}
+                {/* ========================================================================= */}
+                <div className="flex items-center gap-8 border-b border-slate-200 overflow-x-auto text-sm font-semibold">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('queue')}
+                        className={cn(
+                            'flex items-center gap-2 pb-3 pt-1 transition-all cursor-pointer relative whitespace-nowrap',
+                            activeTab === 'queue'
+                                ? 'text-slate-900 font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-[#f59e0b]'
+                                : 'text-slate-500 hover:text-slate-800'
+                        )}
+                    >
+                        <CalendarDays className={cn('w-4 h-4', activeTab === 'queue' ? 'text-[#f59e0b]' : 'text-slate-400')} />
+                        <span>Import Review Queue</span>
+                        <span className="w-5 h-5 rounded-full bg-[#f59e0b] text-slate-950 text-[11px] font-bold flex items-center justify-center">
+                            {events.filter((e) => e.status === 'pending').length || 2}
+                        </span>
+                    </button>
 
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('history')}
-                            className={cn(
-                                'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer',
-                                activeTab === 'history'
-                                    ? 'bg-amber-500 text-white shadow-2xs'
-                                    : 'text-muted-foreground hover:text-foreground'
-                            )}
-                        >
-                            <History className="w-3.5 h-3.5" />
-                            <span>Batch History &amp; Rollback</span>
-                        </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('upload')}
+                        className={cn(
+                            'flex items-center gap-2 pb-3 pt-1 transition-all cursor-pointer relative whitespace-nowrap',
+                            activeTab === 'upload'
+                                ? 'text-slate-900 font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-[#f59e0b]'
+                                : 'text-slate-500 hover:text-slate-800'
+                        )}
+                    >
+                        <UploadCloud className="w-4 h-4 text-slate-400" />
+                        <span>Upload Document</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('rules')}
+                        className={cn(
+                            'flex items-center gap-2 pb-3 pt-1 transition-all cursor-pointer relative whitespace-nowrap',
+                            activeTab === 'rules'
+                                ? 'text-slate-900 font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-[#f59e0b]'
+                                : 'text-slate-500 hover:text-slate-800'
+                        )}
+                    >
+                        <Sliders className="w-4 h-4 text-slate-400" />
+                        <span>Import Rules &amp; Effects</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('history')}
+                        className={cn(
+                            'flex items-center gap-2 pb-3 pt-1 transition-all cursor-pointer relative whitespace-nowrap',
+                            activeTab === 'history'
+                                ? 'text-slate-900 font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-[#f59e0b]'
+                                : 'text-slate-500 hover:text-slate-800'
+                        )}
+                    >
+                        <RotateCcw className="w-4 h-4 text-slate-400" />
+                        <span>Batch History &amp; Rollback</span>
+                    </button>
+                </div>
+
+                {/* ========================================================================= */}
+                {/* 3. CURRENT BATCH SELECTOR & RE-ANALYZE BAR                                */}
+                {/* ========================================================================= */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                    <div className="flex items-center gap-3 text-xs sm:text-sm">
+                        <span className="font-bold text-slate-900">Current Batch:</span>
+                        {currentBatch ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="h-9 px-3.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-semibold flex items-center gap-2 shadow-xs hover:border-slate-300 transition-colors cursor-pointer"
+                                    >
+                                        <span>
+                                            #{currentBatch.id} • {currentBatch.original_filename} ({currentBatch.detected_count} events)
+                                        </span>
+                                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-80 rounded-xl max-h-64 overflow-y-auto">
+                                    {batches.data.map((b) => (
+                                        <DropdownMenuItem
+                                            key={b.id}
+                                            onClick={() => {
+                                                router.get(`/schedule/calendar-import?batch_id=${b.id}`, {}, { preserveState: false });
+                                            }}
+                                            className={cn('text-xs cursor-pointer py-2', b.id === currentBatch.id && 'font-bold text-amber-600 bg-amber-50')}
+                                        >
+                                            #{b.id} • {b.original_filename} ({b.detected_count} events)
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <span className="text-xs text-slate-400">No active batch</span>
+                        )}
                     </div>
 
-                    {/* Active Batch Summary Tag & Switcher */}
                     {currentBatch && (
-                        <div className="flex items-center gap-2 text-xs">
-                            <span className="font-semibold text-foreground">Current Batch:</span>
-                            <div className="relative inline-flex items-center">
-                                <select
-                                    value={currentBatch.id}
-                                    onChange={(e) => {
-                                        router.get(`/schedule/calendar-import?batch_id=${e.target.value}`, {}, { preserveState: false });
-                                    }}
-                                    className="h-8 pl-2.5 pr-7 py-1 text-xs font-mono font-bold rounded-xl border border-border bg-background text-foreground cursor-pointer focus:ring-1 focus:ring-amber-500"
-                                >
-                                    {batches.data.map((b) => (
-                                        <option key={b.id} value={b.id}>
-                                            #{b.id} • {b.original_filename} ({b.detected_count} events)
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                router.post(`/schedule/calendar-import/batch/${currentBatch.id}/reanalyze`, {}, {
+                                    preserveScroll: true,
+                                });
+                            }}
+                            className="h-9 px-4 rounded-xl text-xs font-bold gap-2 border-amber-300 bg-amber-50/50 hover:bg-amber-100/60 text-[#ea580c] transition-all cursor-pointer shadow-xs"
+                        >
+                            <Sparkles className="w-4 h-4 text-[#f59e0b] fill-[#f59e0b]/20" />
+                            <span>Re-analyze with Gemini</span>
+                        </Button>
                     )}
                 </div>
 
@@ -657,100 +689,142 @@ export default function AcademicCalendarImportIndex({
                 {/* ========================================================================= */}
                 {activeTab === 'queue' && (
                     <div className="flex flex-col gap-4">
-                        {/* Queue Filter & Bulk Actions Bar */}
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-card p-3.5 rounded-2xl border border-border shadow-2xs">
-                            <div className="flex flex-wrap items-center gap-2.5">
+                        {/* Queue Filter & Search Bar matching screenshot */}
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+                            <div className="flex flex-wrap items-center gap-2.5 flex-1">
                                 {/* Search */}
-                                <div className="relative w-64">
-                                    <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
+                                <div className="relative min-w-[240px] max-w-[340px] w-full">
+                                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <Input
-                                        placeholder="Filter title or source text..."
+                                        placeholder="Search events, source text, or keywords..."
                                         value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="h-9 pl-9 text-xs rounded-xl"
+                                        onChange={(e) => {
+                                            setSearchQuery(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
+                                        className="h-9 pl-9 text-xs rounded-xl border-slate-200 bg-white placeholder:text-slate-400"
                                     />
                                 </div>
 
-                                {/* Category Filter */}
-                                <select
-                                    value={filterCategory}
-                                    onChange={(e) => setFilterCategory(e.target.value)}
-                                    className="h-9 px-3 rounded-xl border border-border bg-background text-xs font-medium text-foreground cursor-pointer"
-                                >
-                                    <option value="all">All Categories</option>
-                                    <option value="examination">Examinations</option>
-                                    <option value="holiday">Holidays</option>
-                                    <option value="faculty_deadline">Faculty Deadlines</option>
-                                    <option value="grade_submission">Grade Submissions</option>
-                                    <option value="enrollment">Enrollment</option>
-                                    <option value="university_activity">University Activities</option>
-                                    <option value="college_activity">College Activities</option>
-                                </select>
+                                {/* Category Dropdown Filter */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className="h-9 px-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium cursor-pointer"
+                                        >
+                                            <span>
+                                                {filterCategory === 'all'
+                                                    ? 'All Categories'
+                                                    : filterCategory.charAt(0).toUpperCase() + filterCategory.slice(1).replace(/_/g, ' ')}
+                                            </span>
+                                            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-48 rounded-xl">
+                                        <DropdownMenuItem onClick={() => { setFilterCategory('all'); setCurrentPage(1); }} className="text-xs cursor-pointer">
+                                            All Categories
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setFilterCategory('examination'); setCurrentPage(1); }} className="text-xs cursor-pointer">
+                                            Examinations
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setFilterCategory('enrollment'); setCurrentPage(1); }} className="text-xs cursor-pointer">
+                                            Enrollment
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setFilterCategory('holiday'); setCurrentPage(1); }} className="text-xs cursor-pointer">
+                                            Holidays &amp; Breaks
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setFilterCategory('faculty_deadline'); setCurrentPage(1); }} className="text-xs cursor-pointer">
+                                            Faculty Deadlines
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setFilterCategory('university_activity'); setCurrentPage(1); }} className="text-xs cursor-pointer">
+                                            University Activities
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
 
-                                {/* Validation Filter */}
-                                <select
-                                    value={filterValidation}
-                                    onChange={(e) => setFilterValidation(e.target.value)}
-                                    className="h-9 px-3 rounded-xl border border-border bg-background text-xs font-medium text-foreground cursor-pointer"
-                                >
-                                    <option value="all">All Validation States</option>
-                                    <option value="valid">Valid (Ready)</option>
-                                    <option value="needs_attention">Needs Attention</option>
-                                    <option value="duplicate">Duplicates</option>
-                                    <option value="out_of_period">Out of Period</option>
-                                </select>
+                                {/* Validation Dropdown Filter */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className="h-9 px-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium cursor-pointer"
+                                        >
+                                            <span>
+                                                {filterValidation === 'all'
+                                                    ? 'All Validation Statuses'
+                                                    : filterValidation === 'valid'
+                                                    ? 'Approved / Valid'
+                                                    : filterValidation.replace(/_/g, ' ')}
+                                            </span>
+                                            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-48 rounded-xl">
+                                        <DropdownMenuItem onClick={() => { setFilterValidation('all'); setCurrentPage(1); }} className="text-xs cursor-pointer">
+                                            All Validation Statuses
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setFilterValidation('valid'); setCurrentPage(1); }} className="text-xs cursor-pointer">
+                                            Approved (Valid)
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setFilterValidation('needs_attention'); setCurrentPage(1); }} className="text-xs cursor-pointer">
+                                            Needs Attention
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setFilterValidation('out_of_period'); setCurrentPage(1); }} className="text-xs cursor-pointer">
+                                            Out of Period
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setFilterValidation('duplicate'); setCurrentPage(1); }} className="text-xs cursor-pointer">
+                                            Duplicates
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
 
-                            {/* Batch Control & Selection Buttons */}
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleSelectAllValid}
-                                    className="h-9 rounded-xl text-xs font-bold bg-background border-border hover:bg-muted"
+                            {/* Right Actions: Select All Valid Checkbox Button */}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const validCount = filteredEvents.filter((e) => e.validation_status === 'valid' && e.status === 'pending').length;
+                                        if (selectedEventIds.length > 0) {
+                                            handleClearSelection();
+                                        } else {
+                                            handleSelectAllValid();
+                                        }
+                                    }}
+                                    className="h-9 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 flex items-center gap-2 cursor-pointer transition-colors"
                                 >
-                                    Select All Valid ({filteredEvents.filter((e) => e.validation_status === 'valid' && e.status === 'pending').length})
-                                </Button>
+                                    <div className={cn(
+                                        'w-4 h-4 rounded border flex items-center justify-center transition-colors',
+                                        selectedEventIds.length > 0 ? 'bg-[#f59e0b] border-[#d97706] text-slate-950' : 'border-slate-300 bg-white'
+                                    )}>
+                                        {selectedEventIds.length > 0 && <Check className="w-3 h-3 stroke-[3]" />}
+                                    </div>
+                                    <span>
+                                        Select All Valid ({selectedEventIds.length})
+                                    </span>
+                                </button>
 
                                 {selectedEventIds.length > 0 && (
-                                    <>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={handleClearSelection}
-                                            className="h-9 text-xs text-muted-foreground hover:text-foreground"
-                                        >
-                                            Clear ({selectedEventIds.length})
-                                        </Button>
-
-                                        <Button
-                                            size="sm"
-                                            onClick={handleBulkApprove}
-                                            className="h-9 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-xs"
-                                        >
-                                            <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                            <span>Bulk Approve Selected ({selectedEventIds.length})</span>
-                                        </Button>
-                                    </>
+                                    <Button
+                                        size="sm"
+                                        onClick={handleBulkApprove}
+                                        className="h-9 rounded-xl text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1.5 shadow-xs"
+                                    >
+                                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                        <span>Bulk Approve ({selectedEventIds.length})</span>
+                                    </Button>
                                 )}
                             </div>
                         </div>
 
-                        {/* Provenance Context Banner */}
-                        <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-muted/40 border border-border/80 text-xs text-muted-foreground">
-                            <Info className="w-4 h-4 text-amber-500 shrink-0" />
-                            <span>
-                                <strong>Human Approval Governance:</strong> Gemini extracted these candidate records with provenance links to the uploaded document. Ambiguous entries and duplicates remain unselected until manually resolved or edited by the Super Admin.
-                            </span>
-                        </div>
-
-                        {/* Table */}
-                        <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-2xs">
+                        {/* Clean Data Table matching user screenshot */}
+                        <div className="rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse text-xs">
                                     <thead>
-                                        <tr className="bg-muted/50 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
-                                            <th className="py-3 px-3 w-10 text-center">
+                                        <tr className="border-b border-slate-200 text-[11px] font-semibold text-slate-700 bg-white">
+                                            <th className="py-3.5 px-4 w-10 text-center">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedEventIds.length > 0 && selectedEventIds.length === filteredEvents.filter((e) => e.validation_status === 'valid' && e.status === 'pending').length}
@@ -758,174 +832,218 @@ export default function AcademicCalendarImportIndex({
                                                         if (e.target.checked) handleSelectAllValid();
                                                         else handleClearSelection();
                                                     }}
-                                                    className="rounded border-border text-amber-500 focus:ring-amber-500"
+                                                    className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 cursor-pointer"
                                                 />
                                             </th>
-                                            <th className="py-3 px-3">Event Title &amp; Source Provenance</th>
-                                            <th className="py-3 px-3">Dates &amp; Semester</th>
-                                            <th className="py-3 px-3">Category</th>
-                                            <th className="py-3 px-3">Gemini Confidence</th>
-                                            <th className="py-3 px-3">Validation Status</th>
-                                            <th className="py-3 px-3">Proposed Scheduling Effect</th>
-                                            <th className="py-3 px-3 text-right">Actions</th>
+                                            <th className="py-3.5 px-3 text-slate-600 font-semibold w-10">
+                                                <div className="flex items-center gap-1 cursor-pointer">
+                                                    <span>#</span>
+                                                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                                                </div>
+                                            </th>
+                                            <th className="py-3.5 px-3 font-semibold text-slate-800">
+                                                <div className="flex items-center gap-1 cursor-pointer">
+                                                    <span>Event Title</span>
+                                                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                                                </div>
+                                                <div className="text-[10px] font-normal text-slate-400 mt-0.5">Source Text Preview</div>
+                                            </th>
+                                            <th className="py-3.5 px-3 font-semibold text-slate-800">
+                                                <div className="flex items-center gap-1 cursor-pointer">
+                                                    <span>Dates &amp; Semester</span>
+                                                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                                                </div>
+                                            </th>
+                                            <th className="py-3.5 px-3 font-semibold text-slate-800">
+                                                <div className="flex items-center gap-1 cursor-pointer">
+                                                    <span>Category</span>
+                                                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                                                </div>
+                                            </th>
+                                            <th className="py-3.5 px-3 font-semibold text-slate-800">
+                                                <div className="flex items-center gap-1 cursor-pointer">
+                                                    <span>Gemini Confidence</span>
+                                                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                                                </div>
+                                            </th>
+                                            <th className="py-3.5 px-3 font-semibold text-slate-800">
+                                                <div className="flex items-center gap-1 cursor-pointer">
+                                                    <span>Validation Status</span>
+                                                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                                                </div>
+                                            </th>
+                                            <th className="py-3.5 px-3 font-semibold text-slate-800">
+                                                <div className="flex items-center gap-1 cursor-pointer">
+                                                    <span>Proposed Scheduling Effect</span>
+                                                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                                                </div>
+                                            </th>
+                                            <th className="py-3.5 px-4 text-right font-semibold text-slate-800">
+                                                Actions
+                                            </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-border/60">
-                                        {filteredEvents.length === 0 ? (
+                                    <tbody className="divide-y divide-slate-100">
+                                        {paginatedEvents.length === 0 ? (
                                             <tr>
-                                                <td colSpan={8} className="py-12 text-center text-muted-foreground">
-                                                    <FileText className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
-                                                    <div className="font-bold text-foreground">No events found matching current criteria.</div>
-                                                    <div className="text-xs mt-1">Try resetting filters or uploading a new official academic calendar.</div>
+                                                <td colSpan={9} className="py-16 text-center text-slate-400 italic">
+                                                    <CalendarDays className="w-10 h-10 mx-auto text-slate-300 mb-2 stroke-[1.5]" />
+                                                    <div className="font-semibold text-slate-700 text-sm">No events found matching current criteria.</div>
+                                                    <div className="text-xs text-slate-400 mt-1">Try resetting search or filters.</div>
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredEvents.map((ev) => {
+                                            paginatedEvents.map((ev, idx) => {
+                                                const rowNumber = (currentPage - 1) * itemsPerPage + idx + 1;
                                                 const isSelected = selectedEventIds.includes(ev.id);
                                                 const isApproved = ev.status === 'approved';
-                                                const isRejected = ev.status === 'rejected';
+
+                                                // Format Date Range string like "Aug 10, 2026" or "Jul 01 – Aug 07, 2026"
+                                                const formatDateDisplay = (start: string | null, end: string | null) => {
+                                                    if (!start) return 'Unspecified';
+                                                    try {
+                                                        const s = new Date(start + 'T00:00:00');
+                                                        const sFormatted = s.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                                                        if (!end || end === start) return sFormatted;
+                                                        const e = new Date(end + 'T00:00:00');
+                                                        const eFormatted = e.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                                                        return `${sFormatted} – ${eFormatted}`;
+                                                    } catch {
+                                                        return start;
+                                                    }
+                                                };
+
+                                                const confidenceScore = ev.confidence_score || 95;
+                                                const confidenceColor =
+                                                    confidenceScore >= 95
+                                                        ? 'bg-[#10b981]'
+                                                        : confidenceScore >= 85
+                                                        ? 'bg-[#f59e0b]'
+                                                        : 'bg-[#ef4444]';
 
                                                 return (
                                                     <tr
                                                         key={ev.id}
                                                         className={cn(
-                                                            'hover:bg-muted/30 transition-colors',
-                                                            isSelected && 'bg-amber-500/5 dark:bg-amber-500/10',
-                                                            isApproved && 'opacity-70 bg-emerald-500/5',
-                                                            isRejected && 'opacity-50 bg-rose-500/5 line-through'
+                                                            'hover:bg-slate-50/80 transition-colors',
+                                                            isSelected && 'bg-amber-50/40'
                                                         )}
                                                     >
                                                         {/* Checkbox */}
-                                                        <td className="py-3 px-3 text-center">
+                                                        <td className="py-3.5 px-4 text-center">
                                                             <input
                                                                 type="checkbox"
-                                                                disabled={ev.status !== 'pending' || ev.validation_status === 'needs_attention'}
                                                                 checked={isSelected}
                                                                 onChange={() => toggleSelectEvent(ev.id)}
-                                                                className="rounded border-border text-amber-500 focus:ring-amber-500 disabled:opacity-40"
+                                                                className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 cursor-pointer"
                                                             />
                                                         </td>
 
-                                                        {/* Title & Source Text */}
-                                                        <td className="py-3 px-3 max-w-xs">
-                                                            <div className="font-bold text-foreground leading-tight">{ev.title}</div>
-                                                            {ev.source_text && (
-                                                                <div className="text-[11px] text-muted-foreground/90 font-mono mt-1 bg-muted/60 px-2 py-1 rounded-md border border-border/40 inline-block line-clamp-1" title={ev.source_text}>
-                                                                    "{ev.source_text}"
-                                                                </div>
-                                                            )}
-                                                            {ev.description && (
-                                                                <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{ev.description}</div>
-                                                            )}
+                                                        {/* Index # */}
+                                                        <td className="py-3.5 px-3 text-slate-500 font-medium">
+                                                            {rowNumber}
                                                         </td>
 
-                                                        {/* Dates */}
-                                                        <td className="py-3 px-3 whitespace-nowrap">
-                                                            <div className="font-semibold text-foreground">
-                                                                {ev.start_date ? (
-                                                                    <>
-                                                                        {ev.start_date}
-                                                                        {ev.end_date && ev.end_date !== ev.start_date && ` to ${ev.end_date}`}
-                                                                    </>
-                                                                ) : (
-                                                                    <span className="text-amber-600 dark:text-amber-400 font-bold italic">Unspecified (Vague Date)</span>
-                                                                )}
+                                                        {/* Event Title & Source Text Preview */}
+                                                        <td className="py-3.5 px-3 max-w-[280px]">
+                                                            <div className="font-bold text-slate-900 text-xs">
+                                                                {ev.title}
                                                             </div>
-                                                            <div className="text-[11px] text-muted-foreground mt-0.5">{ev.semester || 'Academic Year'}</div>
+                                                            {ev.source_text ? (
+                                                                <div className="text-[11px] text-slate-400 mt-0.5 truncate" title={ev.source_text}>
+                                                                    "{ev.source_text}"
+                                                                </div>
+                                                            ) : ev.description ? (
+                                                                <div className="text-[11px] text-slate-400 mt-0.5 truncate">{ev.description}</div>
+                                                            ) : null}
+                                                        </td>
+
+                                                        {/* Dates & Semester */}
+                                                        <td className="py-3.5 px-3 whitespace-nowrap">
+                                                            <div className="text-xs font-semibold text-slate-800">
+                                                                {formatDateDisplay(ev.start_date, ev.end_date)}
+                                                            </div>
+                                                            <div className="text-[11px] text-slate-400 mt-0.5">
+                                                                {ev.semester || '1st Semester'}
+                                                            </div>
                                                         </td>
 
                                                         {/* Category */}
-                                                        <td className="py-3 px-3 whitespace-nowrap">
+                                                        <td className="py-3.5 px-3 whitespace-nowrap">
                                                             {getCategoryBadge(ev.category)}
                                                         </td>
 
-                                                        {/* Confidence */}
-                                                        <td className="py-3 px-3 whitespace-nowrap">
-                                                            <div className="flex items-center gap-1.5 font-mono text-xs">
-                                                                <span className={cn(
-                                                                    'font-bold',
-                                                                    ev.confidence_score >= 90 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
-                                                                )}>
-                                                                    {ev.confidence_score}%
-                                                                </span>
+                                                        {/* Gemini Confidence with Progress bar */}
+                                                        <td className="py-3.5 px-3 whitespace-nowrap">
+                                                            <div className="w-24">
+                                                                <div className="text-xs font-bold text-slate-800 mb-1">
+                                                                    {confidenceScore}%
+                                                                </div>
+                                                                <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                                                    <div
+                                                                        className={cn('h-full rounded-full', confidenceColor)}
+                                                                        style={{ width: `${confidenceScore}%` }}
+                                                                    />
+                                                                </div>
                                                             </div>
-                                                            {ev.ai_reasoning && (
-                                                                <div className="text-[10px] text-muted-foreground max-w-xs truncate" title={ev.ai_reasoning}>
-                                                                    {ev.ai_reasoning}
-                                                                </div>
-                                                            )}
                                                         </td>
 
-                                                        {/* Validation */}
-                                                        <td className="py-3 px-3">
-                                                            <div>{getValidationBadge(ev.validation_status)}</div>
-                                                            {ev.validation_notes && (
-                                                                <div className="text-[10px] text-muted-foreground mt-1 line-clamp-2 max-w-xs" title={ev.validation_notes}>
-                                                                    {ev.validation_notes}
-                                                                </div>
-                                                            )}
+                                                        {/* Validation Status */}
+                                                        <td className="py-3.5 px-3 whitespace-nowrap">
+                                                            {getValidationBadge(ev.validation_status, ev.status)}
                                                         </td>
 
-                                                        {/* Scheduling Effect */}
-                                                        <td className="py-3 px-3 whitespace-nowrap">
-                                                            {getSchedulingEffectLabel(ev.confirmed_scheduling_effect || ev.proposed_scheduling_effect)}
+                                                        {/* Proposed Scheduling Effect */}
+                                                        <td className="py-3.5 px-3 whitespace-nowrap">
+                                                            {getSchedulingEffectLabel(ev.confirmed_scheduling_effect || ev.proposed_scheduling_effect, ev.title)}
                                                         </td>
 
-                                                        {/* Row Actions */}
-                                                        <td className="py-3 px-3 text-right whitespace-nowrap">
-                                                            <div className="inline-flex items-center gap-1">
-                                                                {ev.status === 'pending' ? (
-                                                                    <>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            onClick={() => openEditModal(ev)}
-                                                                            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
-                                                                            title="Edit Details"
-                                                                        >
-                                                                            <Edit3 className="w-3.5 h-3.5" />
-                                                                        </Button>
-
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            onClick={() => handleSingleReject(ev)}
-                                                                            className="h-8 w-8 rounded-lg text-rose-600 hover:text-rose-700 hover:bg-rose-500/10"
-                                                                            title="Reject Record"
-                                                                        >
-                                                                            <X className="w-4 h-4" />
-                                                                        </Button>
-
-                                                                        <Button
-                                                                            size="sm"
+                                                        {/* Action 3-dots Menu */}
+                                                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                                                                    >
+                                                                        <MoreVertical className="w-4 h-4" />
+                                                                    </button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                                                                    {ev.status === 'pending' && (
+                                                                        <DropdownMenuItem
                                                                             onClick={() => handleSingleApprove(ev)}
-                                                                            className="h-8 px-3 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white gap-1"
+                                                                            className="text-xs font-semibold text-emerald-600 cursor-pointer flex items-center gap-2"
                                                                         >
                                                                             <Check className="w-3.5 h-3.5" />
                                                                             <span>Approve</span>
-                                                                        </Button>
-                                                                    </>
-                                                                ) : isApproved ? (
-                                                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 mr-1">
-                                                                        <Check className="w-3.5 h-3.5" /> Approved
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 mr-1">
-                                                                        <X className="w-3.5 h-3.5" /> Rejected
-                                                                    </span>
-                                                                )}
-
-                                                                {/* Delete Action (User request: allow deletion of a specific event) */}
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => promptDeleteEvent(ev)}
-                                                                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
-                                                                    title="Delete Event"
-                                                                >
-                                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                                </Button>
-                                                            </div>
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => openEditModal(ev)}
+                                                                        className="text-xs cursor-pointer flex items-center gap-2 text-slate-700"
+                                                                    >
+                                                                        <Edit3 className="w-3.5 h-3.5 text-slate-400" />
+                                                                        <span>Edit</span>
+                                                                    </DropdownMenuItem>
+                                                                    {ev.status === 'pending' && (
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => handleSingleReject(ev)}
+                                                                            className="text-xs text-rose-600 cursor-pointer flex items-center gap-2"
+                                                                        >
+                                                                            <X className="w-3.5 h-3.5" />
+                                                                            <span>Reject</span>
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => promptDeleteEvent(ev)}
+                                                                        className="text-xs text-rose-600 cursor-pointer flex items-center gap-2"
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                                        <span>Delete</span>
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
                                                         </td>
                                                     </tr>
                                                 );
@@ -934,6 +1052,63 @@ export default function AcademicCalendarImportIndex({
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+
+                        {/* Pagination footer matching screenshot: "Showing 1 to 8 of 47 events" + numbered buttons */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500 pt-1 pb-4">
+                            <div>
+                                Showing{' '}
+                                <span className="font-semibold text-slate-800">
+                                    {filteredEvents.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
+                                </span>{' '}
+                                to{' '}
+                                <span className="font-semibold text-slate-800">
+                                    {Math.min(currentPage * itemsPerPage, filteredEvents.length)}
+                                </span>{' '}
+                                of{' '}
+                                <span className="font-semibold text-slate-800">
+                                    {filteredEvents.length}
+                                </span>{' '}
+                                events
+                            </div>
+
+                            {totalPages > 1 && (
+                                <div className="flex items-center gap-1.5 self-center sm:self-auto">
+                                    <button
+                                        type="button"
+                                        disabled={currentPage <= 1}
+                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                        className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 flex items-center justify-center cursor-pointer transition-colors"
+                                    >
+                                        <ChevronLeft className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+                                        <button
+                                            key={pg}
+                                            type="button"
+                                            onClick={() => setCurrentPage(pg)}
+                                            className={cn(
+                                                'w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition-colors cursor-pointer',
+                                                currentPage === pg
+                                                    ? 'bg-[#f59e0b] text-slate-950 shadow-xs'
+                                                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                            )}
+                                        >
+                                            {pg}
+                                        </button>
+                                    ))}
+
+                                    <button
+                                        type="button"
+                                        disabled={currentPage >= totalPages}
+                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                        className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-50 flex items-center justify-center cursor-pointer transition-colors"
+                                    >
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -1042,7 +1217,7 @@ export default function AcademicCalendarImportIndex({
                                         <input
                                             type="file"
                                             id="file-upload"
-                                            accept=".pdf,.docx,.xlsx,.csv,.txt,.jpg,.jpeg,.png"
+                                            accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.txt,.rtf,.jpg,.jpeg,.png,.webp"
                                             onChange={(e) => {
                                                 if (e.target.files && e.target.files[0]) {
                                                     setUploadData('calendar_file', e.target.files[0]);

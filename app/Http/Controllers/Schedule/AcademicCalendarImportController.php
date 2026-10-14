@@ -93,7 +93,18 @@ class AcademicCalendarImportController extends Controller
             'academic_year' => 'required|string',
             'semester_scope' => 'required|string',
             'institution' => 'nullable|string',
-            'calendar_file' => 'required|file|mimes:pdf,docx,xlsx,csv,txt,jpg,jpeg,png|max:20480',
+            'calendar_file' => [
+                'required',
+                'file',
+                'max:25600',
+                function ($attribute, $value, $fail) {
+                    $ext = strtolower($value->getClientOriginalExtension());
+                    $allowedExts = ['pdf', 'doc', 'docx', 'dot', 'dotx', 'xlsx', 'xls', 'csv', 'txt', 'rtf', 'jpg', 'jpeg', 'png', 'webp'];
+                    if (! in_array($ext, $allowedExts)) {
+                        $fail('The '.$attribute.' must be a valid document file (DOCX, DOC, PDF, XLSX, CSV, TXT, or Image).');
+                    }
+                },
+            ],
         ]);
 
         try {
@@ -239,6 +250,24 @@ class AcademicCalendarImportController extends Controller
         $rule->update($validated);
 
         return redirect()->back()->with('success', 'Import rule updated successfully.');
+    }
+
+    /**
+     * Re-run Gemini AI interpretation on an existing batch.
+     */
+    public function reanalyzeBatch(AcademicCalendarImportBatch $batch): RedirectResponse
+    {
+        @set_time_limit(180);
+
+        try {
+            $batch->events()->delete();
+            $candidateEvents = $this->importService->interpretWithGemini($batch);
+            $this->importService->validateAndQueueEvents($batch, $candidateEvents);
+
+            return redirect()->back()->with('success', "Batch #{$batch->id} re-analyzed with Gemini AI. Detected {$batch->fresh()->detected_count} events.");
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Failed to re-analyze batch: '.$e->getMessage());
+        }
     }
 
     /**

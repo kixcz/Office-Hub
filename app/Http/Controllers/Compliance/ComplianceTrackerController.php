@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Compliance;
 use App\Http\Controllers\Controller;
 use App\Models\Program;
 use App\Models\Requirement;
+use App\Models\Submission;
+use App\Services\ComplianceService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,6 +16,8 @@ class ComplianceTrackerController extends Controller
 {
     public function index(Request $request): Response
     {
+        ComplianceService::syncPendingSubmissions();
+
         $programs = Program::orderBy('code')->get();
         $requirements = Requirement::orderBy('title')->get();
 
@@ -23,100 +28,98 @@ class ComplianceTrackerController extends Controller
         $selectedStatus = $request->query('status', 'all');
         $search = $request->query('search', '');
 
-        // 1. Program Compliance Data (Matching screenshot table: 4 programs, 33 total requirements)
-        $programStats = [
-            [
-                'id' => 1,
-                'code' => 'BSIT',
-                'name' => 'BSIT – Bachelor of Science in Information Technology',
-                'submitted' => 8,
-                'pending' => 0,
-                'overdue' => 0,
-                'total' => 8,
-                'compliance_rate' => 100,
-                'status' => 'Compliant',
-            ],
-            [
-                'id' => 2,
-                'code' => 'BSIS',
-                'name' => 'BSIS – Bachelor of Science in Information Systems',
-                'submitted' => 8,
-                'pending' => 0,
-                'overdue' => 0,
-                'total' => 8,
-                'compliance_rate' => 100,
-                'status' => 'Compliant',
-            ],
-            [
-                'id' => 3,
-                'code' => 'BLIS',
-                'name' => 'BLIS – Bachelor of Library and Information Science',
-                'submitted' => 8,
-                'pending' => 0,
-                'overdue' => 0,
-                'total' => 8,
-                'compliance_rate' => 100,
-                'status' => 'Compliant',
-            ],
-            [
-                'id' => 4,
-                'code' => 'BSCS',
-                'name' => 'BSCS – Bachelor of Science in Computer Science',
-                'submitted' => 9,
-                'pending' => 0,
-                'overdue' => 0,
-                'total' => 9,
-                'compliance_rate' => 100,
-                'status' => 'Compliant',
-            ],
-        ];
+        $now = Carbon::now();
 
-        // 2. Requirement Progress Items (Matching right upper card in screenshot)
-        $requirementProgress = [
-            ['title' => 'Course Syllabi', 'completed' => 4, 'total' => 4, 'status' => 'Completed'],
-            ['title' => 'Class Schedules', 'completed' => 4, 'total' => 4, 'status' => 'Completed'],
-            ['title' => 'Faculty Load', 'completed' => 4, 'total' => 4, 'status' => 'Completed'],
-            ['title' => 'Class and Laboratory Monitoring', 'completed' => 4, 'total' => 4, 'status' => 'Completed'],
-            ['title' => 'Student Assessment Reports', 'completed' => 4, 'total' => 4, 'status' => 'Completed'],
-        ];
+        // 1. Program Compliance Data dynamically computed from real submissions
+        $allSubmissions = Submission::with(['faculty.program', 'requirement'])->get();
 
-        // 3. Upcoming Deadlines (Matching right lower card in screenshot)
-        $upcomingDeadlines = [
-            [
-                'day' => '20',
-                'month' => 'OCT',
-                'title' => 'Student Assessment Reports',
-                'scope' => 'All Programs',
-                'badge' => 'Due Soon',
-                'badge_color' => 'amber',
-                'days_left' => '7 days left',
-            ],
-            [
-                'day' => '25',
-                'month' => 'OCT',
-                'title' => 'Class and Laboratory Monitoring',
-                'scope' => 'BSIT, BSIS',
-                'badge' => 'Due Soon',
-                'badge_color' => 'amber',
-                'days_left' => '12 days left',
-            ],
-            [
-                'day' => '30',
-                'month' => 'OCT',
-                'title' => 'Faculty Performance Review',
-                'scope' => 'All Programs',
-                'badge' => 'Upcoming',
-                'badge_color' => 'blue',
-                'days_left' => '17 days left',
-            ],
-        ];
+        $programStats = $programs->map(function ($prog) use ($allSubmissions, $now) {
+            $progSubmissions = $allSubmissions->filter(function ($s) use ($prog) {
+                return $s->faculty && $s->faculty->program_id === $prog->id;
+            });
 
-        // Total numbers matching screenshot
-        $totalCompleted = 33;
+            $total = $progSubmissions->count();
+            $submitted = $progSubmissions->whereNotNull('submitted_at')->count();
+            $pending = 0;
+            $overdue = 0;
+
+            foreach ($progSubmissions->whereNull('submitted_at') as $sub) {
+                $dueDate = $sub->requirement ? Carbon::parse($sub->requirement->due_date) : $now;
+                if ($now->greaterThan($dueDate)) {
+                    $overdue++;
+                } else {
+                    $pending++;
+                }
+            }
+
+            $rate = $total > 0 ? round(($submitted / $total) * 100) : 100;
+            $status = $rate >= 80 ? 'Compliant' : ($rate >= 50 ? 'In Progress' : 'Needs Attention');
+
+            return [
+                'id' => $prog->id,
+                'code' => $prog->code,
+                'name' => "{$prog->code} – {$prog->name}",
+                'submitted' => $submitted,
+                'pending' => $pending,
+                'overdue' => $overdue,
+                'total' => $total,
+                'compliance_rate' => $rate,
+                'status' => $status,
+            ];
+        })->values()->toArray();
+
+        // 2. Requirement Progress Items (Computed from actual requirements and submissions)
+        $requirementProgress = $requirements->take(5)->map(function ($req) use ($allSubmissions) {
+            $reqSubs = $allSubmissions->where('requirement_id', $req->id);
+            $total = $reqSubs->count();
+            $completed = $reqSubs->whereNotNull('submitted_at')->count();
+            $status = $total > 0 && $completed === $total ? 'Completed' : 'In Progress';
+
+            return [
+                'title' => $req->title,
+                'completed' => $completed,
+                'total' => $total,
+                'status' => $status,
+            ];
+        })->values()->toArray();
+
+        // 3. Upcoming Deadlines
+        $upcomingDeadlines = $requirements->filter(function ($r) use ($now) {
+            return $r->due_date && Carbon::parse($r->due_date)->greaterThanOrEqualTo($now->copy()->subDays(1));
+        })->sortBy('due_date')->take(3)->map(function ($r) use ($now) {
+            $d = Carbon::parse($r->due_date);
+            $diff = $now->diffInDays($d, false);
+            $badge = $diff < 0 ? 'Overdue' : ($diff <= 3 ? 'Due Soon' : 'Upcoming');
+            $badgeColor = $diff < 0 ? 'rose' : ($diff <= 3 ? 'amber' : 'blue');
+            $daysLeft = $diff < 0 ? abs($diff).' days overdue' : ($diff === 0 ? 'Due Today' : "{$diff} days left");
+
+            return [
+                'day' => $d->format('d'),
+                'month' => strtoupper($d->format('M')),
+                'title' => $r->title,
+                'scope' => $r->program ? $r->program->code : 'All Programs',
+                'badge' => $badge,
+                'badge_color' => $badgeColor,
+                'days_left' => $daysLeft,
+            ];
+        })->values()->toArray();
+
+        // Total metrics matching exact database state
+        $totalCompleted = $allSubmissions->whereNotNull('submitted_at')->count();
+        $totalSubmissionsCount = $allSubmissions->count();
         $totalPending = 0;
         $totalOverdue = 0;
-        $totalActive = 33;
-        $overallRate = 100;
+
+        foreach ($allSubmissions->whereNull('submitted_at') as $sub) {
+            $dueDate = $sub->requirement ? Carbon::parse($sub->requirement->due_date) : $now;
+            if ($now->greaterThan($dueDate)) {
+                $totalOverdue++;
+            } else {
+                $totalPending++;
+            }
+        }
+
+        $overallRate = $totalSubmissionsCount > 0 ? round(($totalCompleted / $totalSubmissionsCount) * 100) : 100;
 
         return Inertia::render('compliance/tracker/index', [
             'stats' => [
@@ -125,8 +128,8 @@ class ComplianceTrackerController extends Controller
                 'completed' => $totalCompleted,
                 'pending' => $totalPending,
                 'overdue' => $totalOverdue,
-                'active_requirements' => $totalActive,
-                'total_programs' => 4,
+                'active_requirements' => $requirements->count(),
+                'total_programs' => $programs->count(),
             ],
             'program_stats' => $programStats,
             'requirement_progress' => $requirementProgress,

@@ -70,6 +70,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('calendar-import/event/{event}', [AcademicCalendarImportController::class, 'updateEvent'])->name('calendar.import.update-event');
         Route::put('calendar-import/rule/{rule}', [AcademicCalendarImportController::class, 'updateRule'])->name('calendar.import.update-rule');
         Route::post('calendar-import/batch/{batch}/rollback', [AcademicCalendarImportController::class, 'rollbackBatch'])->name('calendar.import.rollback');
+        Route::post('calendar-import/batch/{batch}/reanalyze', [AcademicCalendarImportController::class, 'reanalyzeBatch'])->name('calendar.import.reanalyze');
 
         // Semester Schedule Generator System
         Route::get('generator', [SemesterScheduleController::class, 'generator'])->name('generator');

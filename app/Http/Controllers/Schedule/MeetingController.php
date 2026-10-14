@@ -15,7 +15,10 @@ class MeetingController extends Controller
         $meetings = Meeting::with(['organizer', 'program'])
             ->orderBy('date', 'desc')
             ->orderBy('start_time', 'desc')
-            ->get();
+            ->get()
+            ->each(function ($meeting) {
+                $meeting->append('programs');
+            });
 
         $programs = Program::all();
 
@@ -37,7 +40,22 @@ class MeetingController extends Controller
             'notes' => 'nullable|string',
             'status' => 'required|string',
             'program_id' => 'nullable|exists:programs,id',
+            'program_ids' => 'nullable|array',
+            'program_ids.*' => 'exists:programs,id',
         ]);
+
+        $programIds = $validated['program_ids'] ?? [];
+        if (! empty($validated['program_id']) && ! in_array($validated['program_id'], $programIds)) {
+            $programIds[] = $validated['program_id'];
+        }
+
+        if (! empty($programIds)) {
+            $validated['program_ids'] = array_values(array_unique(array_map('intval', $programIds)));
+            $validated['program_id'] = $validated['program_ids'][0] ?? null;
+        } else {
+            $validated['program_ids'] = null;
+            $validated['program_id'] = null;
+        }
 
         $validated['organizer_id'] = $request->user()->id;
 

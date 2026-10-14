@@ -37,32 +37,6 @@ const navGroups: NavGroup[] = [
                 title: 'Schedule Generator',
                 url: '/schedule/generator',
                 icon: Calendar,
-                items: [
-                    { title: 'Overview', url: '/schedule/generator' },
-                    { title: 'Academic Calendar Import', url: '/schedule/calendar-import' },
-                    { title: 'Academic Periods', url: '/administration/academic-periods' },
-                    { title: 'Programs & Curriculum', url: '/programs' },
-                    { title: 'Sections & Offerings', url: '/schedule/sections' },
-                    { title: 'Faculty & Specializations', url: '/faculties' },
-                    { title: 'Rooms & Laboratories', url: '/classroom-monitoring' },
-                    { title: 'Load Policies', url: '/schedule/loading?view=policies' },
-                    { title: 'Faculty Availability', url: '/schedule/loading?view=availability' },
-                    { title: 'Load Assignments', url: '/schedule/loading' },
-                    { title: 'Constraint Rules', url: '/schedule/generator?tab=constraints' },
-                    { title: 'Readiness & Validation', url: '/schedule/generator?tab=readiness' },
-                    { title: 'Generation Settings', url: '/schedule/generator?tab=generate' },
-                    { title: 'Candidate Comparison', url: '/schedule/generator?tab=candidates' },
-                    { title: 'Timetable Editor', url: '/schedule/timetable' },
-                    { title: 'Conflict Center', url: '/schedule/conflicts' },
-                    { title: 'Program Head Reviews', url: '/schedule/reviews?role=program_head' },
-                    { title: 'Dean Inspection', url: '/schedule/reviews?role=dean' },
-                    { title: 'Final Approval & Publish', url: '/schedule/reviews?tab=publish' },
-                    { title: 'Versions & Audit Trail', url: '/schedule/reviews?tab=versions' },
-                    { title: 'Published Views', url: '/schedule/master-timetable' },
-                    { title: 'Room Utilization', url: '/schedule/master-timetable?view=room' },
-                    { title: 'Faculty Distribution', url: '/schedule/master-timetable?tab=distribution' },
-                    { title: 'Gemini Assistant', url: '/schedule/gemini' },
-                ],
             },
         ],
     },
@@ -118,10 +92,34 @@ const footerNavItems: NavItem[] = [
     },
 ];
 
+import { useEffect, useRef } from 'react';
+
 export function AppSidebar() {
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const el = contentRef.current;
+        if (!el) return;
+
+        // Restore scroll position from sessionStorage
+        const savedScroll = sessionStorage.getItem('officehub_sidebar_scroll');
+        if (savedScroll) {
+            el.scrollTop = parseInt(savedScroll, 10);
+        }
+
+        const handleScroll = () => {
+            sessionStorage.setItem('officehub_sidebar_scroll', el.scrollTop.toString());
+        };
+
+        el.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            el.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
+
     return (
         <Sidebar collapsible="icon" variant="sidebar" className="top-16 h-[calc(100svh-4rem)] border-r border-border/80 bg-sidebar">
-            <SidebarContent className="pt-2">
+            <SidebarContent ref={contentRef} className="pt-2">
                 <NavMain groups={navGroups} />
             </SidebarContent>
 

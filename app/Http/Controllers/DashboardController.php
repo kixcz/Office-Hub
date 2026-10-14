@@ -8,6 +8,7 @@ use App\Models\Meeting;
 use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\Submission;
+use App\Services\ComplianceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,6 +17,8 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
+        ComplianceService::syncPendingSubmissions();
+
         $now = Carbon::now();
 
         // Basic Stats

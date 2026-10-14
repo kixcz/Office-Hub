@@ -1,4 +1,5 @@
 import AppLayout from '@/layouts/app-layout';
+import SchedulingWorkspaceLayout from '@/components/scheduling-workspace-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import {
@@ -111,7 +112,8 @@ export default function GeminiSchedulingAssistantIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Gemini Scheduling Assistant - CIDS OfficeHub" />
 
-            <div className="flex flex-col gap-6 p-6 font-['Poppins']">
+            <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
+                <div className="flex flex-col gap-6 p-6 font-['Poppins']">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white p-6 rounded-2xl border border-purple-800/40 shadow-lg">
                     <div className="space-y-1">
@@ -246,6 +248,7 @@ export default function GeminiSchedulingAssistantIndex({
                     </div>
                 </div>
             </div>
+            </SchedulingWorkspaceLayout>
         </AppLayout>
     );
 }

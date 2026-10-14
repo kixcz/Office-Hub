@@ -208,7 +208,7 @@ const DEFAULT_PENDING_SUBMISSIONS: PendingOutputItem[] = [
 export default function PendingOutputsIndex({ pendingSubmissions }: { pendingSubmissions?: any[] }) {
     // Merge database items if available or use the full 12 realistic records
     const initialList = useMemo(() => {
-        if (pendingSubmissions && pendingSubmissions.length > 3) {
+        if (pendingSubmissions && pendingSubmissions.length > 0) {
             return pendingSubmissions.map((sub, idx) => {
                 const name = sub.faculty ? `${sub.faculty.first_name} ${sub.faculty.last_name}` : `Faculty Member ${idx + 1}`;
                 const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
@@ -224,7 +224,7 @@ export default function PendingOutputsIndex({ pendingSubmissions }: { pendingSub
                     id: sub.id,
                     faculty_name: name,
                     faculty_initials: initials,
-                    faculty_avatar_color: DEFAULT_PENDING_SUBMISSIONS[idx % DEFAULT_PENDING_SUBMISSIONS.length].faculty_avatar_color,
+                    faculty_avatar_color: DEFAULT_PENDING_SUBMISSIONS[idx % DEFAULT_PENDING_SUBMISSIONS.length]?.faculty_avatar_color || 'bg-amber-100 text-amber-800 border-amber-200',
                     missing_output: output,
                     program: prog,
                     deadline: dueDate,
@@ -233,6 +233,9 @@ export default function PendingOutputsIndex({ pendingSubmissions }: { pendingSub
                     urgency_type: urgType,
                 };
             });
+        }
+        if (pendingSubmissions && pendingSubmissions.length === 0) {
+            return [];
         }
         return DEFAULT_PENDING_SUBMISSIONS;
     }, [pendingSubmissions]);
