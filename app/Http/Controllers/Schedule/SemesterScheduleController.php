@@ -434,4 +434,76 @@ class SemesterScheduleController extends Controller
             'timestamp' => now()->format('h:i A'),
         ]);
     }
+
+    /**
+     * Scheduling Master Data: Academic Periods context view.
+     */
+    public function masterDataAcademicPeriods(Request $request): Response
+    {
+        $currentPeriod = AcademicPeriod::current();
+        $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
+
+        return Inertia::render('schedule/master-data/academic-periods/index', [
+            'currentPeriod' => $currentPeriod,
+            'academicPeriods' => $academicPeriods,
+        ]);
+    }
+
+    /**
+     * Scheduling Master Data: Programs & Curriculum demand view.
+     */
+    public function masterDataPrograms(Request $request): Response
+    {
+        $currentPeriod = AcademicPeriod::current();
+        $programs = Program::orderBy('code')->get();
+
+        return Inertia::render('schedule/master-data/programs/index', [
+            'currentPeriod' => $currentPeriod,
+            'programs' => $programs,
+        ]);
+    }
+
+    /**
+     * Scheduling Master Data: Faculty & Specializations matrix view.
+     */
+    public function masterDataFaculty(Request $request): Response
+    {
+        $currentPeriod = AcademicPeriod::current();
+        $faculties = Faculty::with('program')->orderBy('last_name')->get();
+
+        return Inertia::render('schedule/master-data/faculty/index', [
+            'currentPeriod' => $currentPeriod,
+            'faculties' => $faculties,
+        ]);
+    }
+
+    /**
+     * Scheduling Master Data: Rooms & Laboratories inventory view.
+     */
+    public function masterDataRooms(Request $request): Response
+    {
+        $currentPeriod = AcademicPeriod::current();
+        $rawRooms = RoomSchedule::select('room_name')
+            ->distinct()
+            ->whereNotNull('room_name')
+            ->where('room_name', '!=', '')
+            ->pluck('room_name');
+
+        $rooms = $rawRooms->map(function ($name) {
+            $isLab = str_contains(strtolower($name), 'lab') || str_contains(strtolower($name), 'clr') || str_contains(strtolower($name), 'chs');
+            $count = RoomSchedule::where('room_name', $name)->count();
+
+            return [
+                'room_name' => $name,
+                'type' => $isLab ? 'Laboratory' : 'Lecture',
+                'capacity' => $isLab ? 40 : 50,
+                'scheduled_count' => $count,
+            ];
+        });
+
+        return Inertia::render('schedule/master-data/rooms/index', [
+            'currentPeriod' => $currentPeriod,
+            'rooms' => $rooms,
+        ]);
+    }
 }

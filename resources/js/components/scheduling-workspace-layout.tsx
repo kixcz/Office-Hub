@@ -56,12 +56,12 @@ export const SCHEDULING_NAV_GROUPS: SchedulingNavGroup[] = [
     {
         title: '01 · MASTER DATA',
         items: [
-            { id: 'periods', title: 'Academic Periods', url: '/administration/academic-periods', icon: Clock },
+            { id: 'periods', title: 'Academic Periods', url: '/schedule/master-data/academic-periods', icon: Clock },
             { id: 'calendar', title: 'Academic Calendar Import', url: '/schedule/calendar-import', icon: CalendarDays },
-            { id: 'curriculum', title: 'Programs & Curriculum', url: '/programs', icon: GraduationCap },
+            { id: 'curriculum', title: 'Programs & Curriculum', url: '/schedule/master-data/programs', icon: GraduationCap },
             { id: 'sections', title: 'Sections & Offerings', url: '/schedule/sections', icon: Table },
-            { id: 'faculty', title: 'Faculty & Specializations', url: '/faculties', icon: Users },
-            { id: 'rooms', title: 'Rooms & Laboratories', url: '/classroom-monitoring', icon: Building2 },
+            { id: 'faculty', title: 'Faculty & Specializations', url: '/schedule/master-data/faculty', icon: Users },
+            { id: 'rooms', title: 'Rooms & Laboratories', url: '/schedule/master-data/rooms', icon: Building2 },
         ],
     },
     {
@@ -118,8 +118,9 @@ interface SchedulingWorkspaceLayoutProps {
 }
 
 export function SchedulingWorkspaceLayout({ children, currentPeriod }: SchedulingWorkspaceLayoutProps) {
-    const page = usePage();
+    const page = usePage<any>();
     const currentUrl = page.url;
+    const activePeriod = currentPeriod || page.props.currentAcademicPeriod;
 
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [searchFilter, setSearchFilter] = useState('');
@@ -200,10 +201,10 @@ export function SchedulingWorkspaceLayout({ children, currentPeriod }: Schedulin
                             className="block p-2.5 rounded-xl border border-amber-200/80 bg-amber-50/60 hover:bg-amber-100/50 transition-colors"
                         >
                             <div className="text-[10px] text-slate-500 font-medium leading-none">
-                                {currentPeriod?.academic_year || 'AY 2026–2027'}
+                                {activePeriod?.academic_year || 'AY 2026–2027'}
                             </div>
                             <div className="text-xs font-bold text-slate-900 mt-1 flex items-center justify-between">
-                                <span>{currentPeriod?.semester || '1st Semester'}</span>
+                                <span>{activePeriod?.semester || '1st Semester'}</span>
                                 <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                             </div>
                         </Link>

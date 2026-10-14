@@ -72,6 +72,14 @@ Route::middleware(['auth'])->group(function () {
         Route::post('calendar-import/batch/{batch}/rollback', [AcademicCalendarImportController::class, 'rollbackBatch'])->name('calendar.import.rollback');
         Route::post('calendar-import/batch/{batch}/reanalyze', [AcademicCalendarImportController::class, 'reanalyzeBatch'])->name('calendar.import.reanalyze');
 
+        // Master Data Modules (Dedicated to Scheduling Workspace)
+        Route::prefix('master-data')->name('master-data.')->group(function () {
+            Route::get('academic-periods', [SemesterScheduleController::class, 'masterDataAcademicPeriods'])->name('academic-periods');
+            Route::get('programs', [SemesterScheduleController::class, 'masterDataPrograms'])->name('programs');
+            Route::get('faculty', [SemesterScheduleController::class, 'masterDataFaculty'])->name('faculty');
+            Route::get('rooms', [SemesterScheduleController::class, 'masterDataRooms'])->name('rooms');
+        });
+
         // Semester Schedule Generator System
         Route::get('generator', [SemesterScheduleController::class, 'generator'])->name('generator');
         Route::post('generator/import', [SemesterScheduleController::class, 'importAcademicData'])->name('generator.import');
