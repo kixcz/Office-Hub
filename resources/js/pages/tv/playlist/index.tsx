@@ -814,6 +814,7 @@ export default function PlaylistIndex({
                                 <option value="Slide 8 - Consolidated Calendar">Consolidated Calendar (Meetings, Activities & Exams)</option>
                                 <option value="Slide 9 - Compliance Tracker">Compliance Tracker (Institutional Overview & Program Matrix)</option>
                                 <option value="Slide 10 - Tasks & Projects">Tasks & Projects (Workflow & Assignments)</option>
+                                <option value="Slide 11 - Program Performance">Program Performance (Comparative Program Matrix & Highlights)</option>
                             </select>
                         </div>
 
@@ -889,6 +890,7 @@ export default function PlaylistIndex({
                                 <option value="Slide 8 - Consolidated Calendar">Consolidated Calendar (Meetings, Activities & Exams)</option>
                                 <option value="Slide 9 - Compliance Tracker">Compliance Tracker (Institutional Overview & Program Matrix)</option>
                                 <option value="Slide 10 - Tasks & Projects">Tasks & Projects (Workflow & Assignments)</option>
+                                <option value="Slide 11 - Program Performance">Program Performance (Comparative Program Matrix & Highlights)</option>
                             </select>
                         </div>
 

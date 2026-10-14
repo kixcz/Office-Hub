@@ -368,6 +368,9 @@ export default function VisualSlideBuilder({ slide, slides = [] }: Props) {
                                     <DropdownMenuItem onClick={() => setSlideType('Slide 6 - Class Monitoring')}>Class Monitoring</DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setSlideType('Slide 7 - Faculty Schedule')}>Faculty Schedule</DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setSlideType('Slide 8 - Consolidated Calendar')}>Consolidated Calendar</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setSlideType('Slide 9 - Compliance Tracker')}>Compliance Tracker</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setSlideType('Slide 10 - Tasks & Projects')}>Tasks & Projects</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setSlideType('Slide 11 - Program Performance')}>Program Performance</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
@@ -918,6 +921,7 @@ export default function VisualSlideBuilder({ slide, slides = [] }: Props) {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="start" className="w-56">
                                         <DropdownMenuItem onClick={() => setDataSource('Faculty Performance')}>Faculty Performance</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setDataSource('Program Performance')}>Program Performance</DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setDataSource('Compliance Tracker')}>Compliance Tracker</DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setDataSource('Tasks & Projects')}>Tasks & Projects</DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setDataSource('Schedule & Monitoring')}>Schedule & Monitoring</DropdownMenuItem>

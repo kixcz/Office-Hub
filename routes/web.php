@@ -10,7 +10,7 @@ use App\Http\Controllers\Compliance\RequirementController;
 use App\Http\Controllers\Compliance\SubmissionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentRouteController;
-use App\Http\Controllers\Faculty\WorkspaceController;
+use App\Http\Controllers\Faculty\FacultyPortalController;
 use App\Http\Controllers\FacultyAttendanceController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\OfficeRequestController;
@@ -178,8 +178,40 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{report}', [RoomComplaintReportController::class, 'destroy'])->name('destroy');
     });
 
-    // Faculty Workspace
-    Route::get('/faculty/workspace', [WorkspaceController::class, 'index'])->name('faculty.workspace');
+    // Faculty Personal Academic & Administrative Workspace (7 Groups, 17 Modules)
+    Route::prefix('faculty')->name('faculty.')->group(function () {
+        Route::get('/dashboard', [FacultyPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/calendar', [FacultyPortalController::class, 'calendar'])->name('calendar');
+        Route::get('/schedule', [FacultyPortalController::class, 'schedule'])->name('schedule');
+        Route::get('/loading', [FacultyPortalController::class, 'loading'])->name('loading');
+        Route::get('/attendance', [FacultyPortalController::class, 'attendance'])->name('attendance');
+        Route::get('/availability', [FacultyPortalController::class, 'availability'])->name('availability');
+        Route::post('/availability', [FacultyPortalController::class, 'updateAvailability'])->name('availability.update');
+
+        Route::get('/requirements', [FacultyPortalController::class, 'requirements'])->name('requirements');
+        Route::post('/requirements/{requirement}/submit', [FacultyPortalController::class, 'submitRequirement'])->name('requirements.submit');
+        Route::get('/submissions', [FacultyPortalController::class, 'submissions'])->name('submissions');
+
+        Route::get('/tasks', [FacultyPortalController::class, 'tasks'])->name('tasks');
+        Route::patch('/tasks/{task}/status', [FacultyPortalController::class, 'updateTaskStatus'])->name('tasks.status');
+
+        Route::get('/research-extension', [FacultyPortalController::class, 'researchExtension'])->name('research-extension');
+        Route::get('/meetings', [FacultyPortalController::class, 'meetings'])->name('meetings');
+        Route::get('/accomplishments', [FacultyPortalController::class, 'accomplishments'])->name('accomplishments');
+        Route::post('/accomplishments', [FacultyPortalController::class, 'storeAccomplishment'])->name('accomplishments.store');
+
+        Route::get('/documents', [FacultyPortalController::class, 'documents'])->name('documents');
+        Route::get('/profile', [FacultyPortalController::class, 'profile'])->name('profile');
+        Route::post('/profile', [FacultyPortalController::class, 'updateProfile'])->name('profile.update');
+
+        Route::get('/corrections', [FacultyPortalController::class, 'corrections'])->name('corrections');
+        Route::post('/corrections', [FacultyPortalController::class, 'storeCorrection'])->name('corrections.store');
+
+        Route::get('/notifications', [FacultyPortalController::class, 'notifications'])->name('notifications');
+
+        // Legacy / shortcut workspace redirect
+        Route::get('/workspace', [FacultyPortalController::class, 'dashboard'])->name('workspace');
+    });
 
     // Administration -> Academic Periods
     Route::prefix('administration/academic-periods')->name('administration.academic-periods.')->group(function () {

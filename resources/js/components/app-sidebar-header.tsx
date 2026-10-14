@@ -7,13 +7,15 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem as BreadcrumbItemType, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, Calendar as CalendarIcon, ChevronDown, LayoutGrid, Monitor } from 'lucide-react';
+import { Bell, Calendar as CalendarIcon, ChevronDown, LayoutGrid, Monitor, Moon, Sun } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useAppearance } from '@/hooks/use-appearance';
 
 export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItemType[] }) {
     const { auth } = usePage<SharedData>().props;
     const user = auth.user;
     const getInitials = useInitials();
+    const { appearance, updateAppearance } = useAppearance();
 
     // Live clock state
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -122,6 +124,21 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                         </span>
                     </button>
 
+                    {/* Light / Dark Mode Toggle */}
+                    <button
+                        type="button"
+                        onClick={() => updateAppearance(appearance === 'dark' ? 'light' : 'dark')}
+                        className="flex items-center justify-center p-2 rounded-xl border border-border bg-background hover:bg-muted/70 transition-colors shadow-2xs group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                        title={appearance === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                        aria-label="Toggle theme mode"
+                    >
+                        {appearance === 'dark' ? (
+                            <Sun className="h-4 w-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
+                        ) : (
+                            <Moon className="h-4 w-4 text-slate-700 dark:text-foreground group-hover:-rotate-12 transition-transform duration-300" />
+                        )}
+                    </button>
+
                     {/* Notification Bell */}
                     <button
                         type="button"
@@ -148,20 +165,29 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                         </div>
                     </Link>
 
-                    {/* User Profile Dropdown Pill */}
+                    {/* User / Faculty Profile Dropdown Pill */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button
                                 type="button"
                                 className="flex items-center gap-2 rounded-xl border border-border px-2.5 py-1.5 bg-background hover:bg-muted/60 transition-colors shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
-                                <div className="w-6 h-6 rounded-full bg-muted-foreground/15 text-foreground font-bold text-[11px] flex items-center justify-center shrink-0">
-                                    {user ? getInitials(user.name) : 'SA'}
+                                <div className="w-7 h-7 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-500/20">
+                                    {(user as any)?.faculty?.photo_url ? (
+                                        <img src={(user as any).faculty.photo_url} alt={user.name} className="w-full h-full rounded-full object-cover" />
+                                    ) : (
+                                        user ? getInitials(user.name) : 'SA'
+                                    )}
                                 </div>
-                                <span className="text-xs font-semibold text-foreground max-w-[120px] truncate hidden sm:inline">
-                                    {user ? user.name : 'Super Admin'}
-                                </span>
-                                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                <div className="hidden sm:flex flex-col text-left leading-none max-w-[140px]">
+                                    <span className="text-xs font-bold text-foreground truncate">
+                                        {(user as any)?.faculty?.full_name || user?.name || 'Super Admin'}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground font-medium truncate mt-0.5">
+                                        {(user as any)?.faculty?.academic_rank || (user as any)?.roles?.[0] || 'Administrator'}
+                                    </span>
+                                </div>
+                                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-1" />
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 rounded-xl">

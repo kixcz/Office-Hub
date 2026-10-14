@@ -19,6 +19,18 @@ import {
     ShieldCheck,
     Building2,
     Mail,
+    AlertTriangle,
+    Clock,
+    CheckCircle2,
+    ChevronRight,
+    Filter,
+    Download,
+    Eye,
+    LayoutGrid,
+    List,
+    AlertCircle,
+    FileText,
+    ArrowUpRight,
 } from 'lucide-react';
 import React, { useState, useMemo, useRef } from 'react';
 import {
@@ -72,14 +84,82 @@ interface Faculty {
     program_id?: number | null;
     program?: Program;
     spreadsheet_name?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    submissions?: any[];
+}
+
+interface NeedsAttentionItem {
+    id: number;
+    name: string;
+    initials: string;
+    program: string;
+    primary_issue: string;
+    severity: 'warning' | 'destructive';
+    issue_count: number;
+    issues: Array<{
+        label: string;
+        type: string;
+        severity: string;
+    }>;
+    photo_url: string | null;
+}
+
+interface RecentUpdateItem {
+    id: number;
+    faculty_name: string;
+    program: string;
+    action: string;
+    time_formatted: string;
+    time_ago: string;
+    type: 'create' | 'update';
 }
 
 interface Props {
     faculties: Faculty[];
     programs: Program[];
+    ranks?: string[];
+    stats?: {
+        total_faculty: number;
+        active_faculty: number;
+        full_time: number;
+        part_time: number;
+        needs_attention: number;
+        needs_attention_pct: number;
+    };
+    needsAttention?: NeedsAttentionItem[];
+    profileCompletion?: {
+        completion_rate: number;
+        complete_count: number;
+        incomplete_count: number;
+        missing_requirements_count: number;
+        total_faculty: number;
+    };
+    recentUpdates?: RecentUpdateItem[];
 }
 
-export default function FacultiesIndex({ faculties = [], programs = [] }: Props) {
+export default function FacultiesIndex({
+    faculties = [],
+    programs = [],
+    ranks = [],
+    stats = {
+        total_faculty: faculties.length,
+        active_faculty: faculties.filter((f) => f.status === 'Active').length,
+        full_time: faculties.filter((f) => (f.employment_type || '').toLowerCase().includes('full')).length,
+        part_time: faculties.filter((f) => (f.employment_type || '').toLowerCase().includes('part')).length,
+        needs_attention: 0,
+        needs_attention_pct: 0,
+    },
+    needsAttention = [],
+    profileCompletion = {
+        completion_rate: 0,
+        complete_count: 0,
+        incomplete_count: 0,
+        missing_requirements_count: 0,
+        total_faculty: faculties.length,
+    },
+    recentUpdates = [],
+}: Props) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingFaculty, setEditingFaculty] = useState<Faculty | null>(null);
     const [deletingFaculty, setDeletingFaculty] = useState<Faculty | null>(null);
@@ -88,6 +168,11 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
     // Search and filter state
     const [searchQuery, setSearchQuery] = useState('');
     const [programFilter, setProgramFilter] = useState('all');
+    const [employmentStatusFilter, setEmploymentStatusFilter] = useState('all');
+    const [academicRankFilter, setAcademicRankFilter] = useState('all');
+    const [attentionStatusFilter, setAttentionStatusFilter] = useState('all');
+    const [sortBy, setSortBy] = useState<'name_asc' | 'name_desc' | 'recent' | 'rank'>('name_asc');
+    const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
     // Form fields
     const [firstName, setFirstName] = useState('');
@@ -111,13 +196,18 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Set of faculty IDs needing attention computed from real data
+    const attentionFacultyIds = useMemo(() => {
+        return new Set(needsAttention.map((item) => item.id));
+    }, [needsAttention]);
+
     const openAddDialog = () => {
         setEditingFaculty(null);
         setFirstName('');
         setLastName('');
         setFacultyId('');
         setSpreadsheetName('');
-        setAcademicRank('Instructor I');
+        setAcademicRank(ranks.length > 0 ? ranks[0] : 'Instructor I');
         setEmploymentType('Full-time');
         setStatus('Active');
         setProgramId(programs.length > 0 ? String(programs[0].id) : '');
@@ -243,13 +333,14 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
         }
     };
 
-    // Filter faculties
+    // Filter & Sort faculties from actual DB state
     const filteredFaculties = useMemo(() => {
-        return faculties.filter((faculty) => {
+        let result = faculties.filter((faculty) => {
             const fullName = `${faculty.first_name} ${faculty.last_name}`.toLowerCase();
             const idNumber = (faculty.faculty_id || faculty.employee_id || '').toLowerCase();
             const rank = (faculty.academic_rank || '').toLowerCase();
             const programCode = (faculty.program?.code || '').toLowerCase();
+            const specialization = (faculty.specialization || '').toLowerCase();
             const searchLower = searchQuery.toLowerCase();
 
             const matchesSearch =
@@ -257,83 +348,714 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                 fullName.includes(searchLower) ||
                 idNumber.includes(searchLower) ||
                 rank.includes(searchLower) ||
-                programCode.includes(searchLower);
+                programCode.includes(searchLower) ||
+                specialization.includes(searchLower);
 
             const matchesProgram =
                 programFilter === 'all' ||
                 String(faculty.program_id) === programFilter;
 
-            return matchesSearch && matchesProgram;
+            const matchesEmployment =
+                employmentStatusFilter === 'all' ||
+                (faculty.employment_type || '').toLowerCase() === employmentStatusFilter.toLowerCase() ||
+                (faculty.status || '').toLowerCase() === employmentStatusFilter.toLowerCase();
+
+            const matchesRank =
+                academicRankFilter === 'all' ||
+                (faculty.academic_rank || '').toLowerCase() === academicRankFilter.toLowerCase();
+
+            const matchesAttention =
+                attentionStatusFilter === 'all' ||
+                (attentionStatusFilter === 'needs_attention' && attentionFacultyIds.has(faculty.id)) ||
+                (attentionStatusFilter === 'compliant' && !attentionFacultyIds.has(faculty.id));
+
+            return matchesSearch && matchesProgram && matchesEmployment && matchesRank && matchesAttention;
         });
-    }, [faculties, searchQuery, programFilter]);
+
+        // Sorting
+        result.sort((a, b) => {
+            if (sortBy === 'name_asc') {
+                return a.last_name.localeCompare(b.last_name);
+            }
+            if (sortBy === 'name_desc') {
+                return b.last_name.localeCompare(a.last_name);
+            }
+            if (sortBy === 'rank') {
+                return (a.academic_rank || '').localeCompare(b.academic_rank || '');
+            }
+            if (sortBy === 'recent') {
+                return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
+            }
+            return 0;
+        });
+
+        return result;
+    }, [
+        faculties,
+        searchQuery,
+        programFilter,
+        employmentStatusFilter,
+        academicRankFilter,
+        attentionStatusFilter,
+        sortBy,
+        attentionFacultyIds,
+    ]);
+
+    // Unique academic ranks for dropdown
+    const rankOptions = useMemo(() => {
+        if (ranks && ranks.length > 0) return ranks;
+        const set = new Set<string>();
+        faculties.forEach((f) => {
+            if (f.academic_rank) set.add(f.academic_rank);
+        });
+        return Array.from(set).sort();
+    }, [ranks, faculties]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Faculty Management" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6">
-                {/* Header Section */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6 bg-slate-50/50 dark:bg-slate-950/20 font-['Poppins',sans-serif]">
+                {/* Header Banner */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-card p-6 rounded-2xl border border-border shadow-xs">
                     <div>
-                        <div className="flex items-center gap-2">
-                            <span className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                                <Users className="w-5 h-5" />
+                        <div className="flex items-center gap-3">
+                            <span className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                                <Users className="w-6 h-6" />
                             </span>
-                            <h1 className="text-2xl font-bold tracking-tight text-foreground">Faculty Management</h1>
+                            <div>
+                                <h1 className="text-2xl font-bold tracking-tight text-foreground">Faculty Management</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    View and manage faculty profiles, teaching workload, requirements, and performance.
+                                </p>
+                            </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Click any faculty member to open their complete profile, teaching workload, requirements tracker, and performance dossier.
-                        </p>
                     </div>
 
                     <button
                         onClick={openAddDialog}
-                        className="inline-flex items-center justify-center rounded-lg text-sm font-semibold transition-all bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 shadow-sm"
+                        className="inline-flex items-center justify-center rounded-xl text-xs font-semibold transition-all bg-slate-900 text-white hover:bg-slate-800 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 h-10 px-5 py-2 shadow-xs cursor-pointer"
                     >
-                        <Plus className="w-4 h-4 mr-2" />
+                        <Plus className="w-4 h-4 mr-1.5" />
                         Add Faculty
                     </button>
                 </div>
 
-                {/* Filters and Search Bar */}
-                <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-card p-4 rounded-xl border border-border shadow-xs">
-                    <div className="flex flex-1 flex-col sm:flex-row gap-3 items-center">
-                        <div className="relative w-full sm:w-80">
-                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <input
-                                type="text"
-                                placeholder="Search by name, ID, rank, or program..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            />
+                {/* Main 2-Column Content: Left (Cards + Table) | Right (Needs Attention, Profile Completion, Recent Updates) */}
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                    {/* Left Column (8 or 9 cols) */}
+                    <div className="xl:col-span-8 flex flex-col gap-6">
+                        {/* 4 Metric Summary Cards */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            {/* Total Faculty */}
+                            <div className="bg-white dark:bg-card p-4 rounded-2xl border border-border shadow-xs flex items-center gap-3.5">
+                                <div className="p-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                                    <Users className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[11px] font-medium text-muted-foreground truncate">Total Faculty</p>
+                                    <h3 className="text-xl font-bold text-foreground mt-0.5">{stats.total_faculty}</h3>
+                                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">All faculty members</p>
+                                </div>
+                            </div>
+
+                            {/* Active Faculty */}
+                            <div className="bg-white dark:bg-card p-4 rounded-2xl border border-border shadow-xs flex items-center gap-3.5">
+                                <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                                    <UserCheck className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[11px] font-medium text-muted-foreground truncate">Active Faculty</p>
+                                    <h3 className="text-xl font-bold text-foreground mt-0.5">{stats.active_faculty}</h3>
+                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium truncate mt-0.5">
+                                        {stats.total_faculty > 0 ? Math.round((stats.active_faculty / stats.total_faculty) * 100) : 0}% of total
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Full-Time */}
+                            <div className="bg-white dark:bg-card p-4 rounded-2xl border border-border shadow-xs flex items-center gap-3.5">
+                                <div className="p-3 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                                    <Briefcase className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[11px] font-medium text-muted-foreground truncate">Full-Time</p>
+                                    <h3 className="text-xl font-bold text-foreground mt-0.5">{stats.full_time}</h3>
+                                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                        {stats.total_faculty > 0 ? Math.round((stats.full_time / stats.total_faculty) * 100) : 0}% of total
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Needs Attention */}
+                            <div
+                                onClick={() => setAttentionStatusFilter(attentionStatusFilter === 'needs_attention' ? 'all' : 'needs_attention')}
+                                className={`p-4 rounded-2xl border shadow-xs flex items-center gap-3.5 cursor-pointer transition-all ${
+                                    attentionStatusFilter === 'needs_attention'
+                                        ? 'bg-rose-50 border-rose-300 dark:bg-rose-950/30 dark:border-rose-800'
+                                        : 'bg-white dark:bg-card border-border hover:border-rose-200'
+                                }`}
+                            >
+                                <div className="p-3 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
+                                    <AlertTriangle className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[11px] font-medium text-rose-600 dark:text-rose-400 truncate">Needs Attention</p>
+                                    <h3 className="text-xl font-bold text-rose-600 dark:text-rose-400 mt-0.5">{stats.needs_attention}</h3>
+                                    <p className="text-[10px] text-rose-500 truncate mt-0.5">
+                                        {stats.needs_attention_pct}% of total
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="w-full sm:w-56">
-                            <select
-                                value={programFilter}
-                                onChange={(e) => setProgramFilter(e.target.value)}
-                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            >
-                                <option value="all">All Programs</option>
-                                {programs.map((prog) => (
-                                    <option key={prog.id} value={String(prog.id)}>
-                                        {prog.code} — {prog.name}
-                                    </option>
-                                ))}
-                            </select>
+                        {/* Search & Comprehensive Filters Bar matching Mockup */}
+                        <div className="bg-white dark:bg-card p-4 rounded-2xl border border-border shadow-xs flex flex-col gap-3">
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                                {/* Search input */}
+                                <div className="md:col-span-5 relative">
+                                    <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search faculty by name, ID, rank, program, or specialization..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="flex h-9 w-full rounded-xl border border-input bg-background pl-9 pr-3 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground text-xs"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Program dropdown */}
+                                <div className="md:col-span-2">
+                                    <select
+                                        value={programFilter}
+                                        onChange={(e) => setProgramFilter(e.target.value)}
+                                        className="flex h-9 w-full rounded-xl border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        <option value="all">All Programs</option>
+                                        {programs.map((prog) => (
+                                            <option key={prog.id} value={String(prog.id)}>
+                                                {prog.code}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Employment Status */}
+                                <div className="md:col-span-2">
+                                    <select
+                                        value={employmentStatusFilter}
+                                        onChange={(e) => setEmploymentStatusFilter(e.target.value)}
+                                        className="flex h-9 w-full rounded-xl border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        <option value="all">All Statuses</option>
+                                        <option value="Full-time">Full-time</option>
+                                        <option value="Part-time">Part-time</option>
+                                        <option value="Active">Active</option>
+                                    </select>
+                                </div>
+
+                                {/* Academic Rank */}
+                                <div className="md:col-span-3">
+                                    <select
+                                        value={academicRankFilter}
+                                        onChange={(e) => setAcademicRankFilter(e.target.value)}
+                                        className="flex h-9 w-full rounded-xl border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        <option value="all">All Ranks</option>
+                                        {rankOptions.map((r) => (
+                                            <option key={r} value={r}>
+                                                {r}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Sub bar: Filter badge, Sort, and View layout switcher */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/60 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-2">
+                                    <span>
+                                        Showing <strong className="text-foreground">{filteredFaculties.length}</strong> of{' '}
+                                        <strong className="text-foreground">{faculties.length}</strong> faculty members
+                                    </span>
+                                    {attentionStatusFilter !== 'all' && (
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-[10px] cursor-pointer hover:bg-destructive/20"
+                                            onClick={() => setAttentionStatusFilter('all')}
+                                        >
+                                            Filtered: Needs Attention <X className="w-3 h-3 ml-1" />
+                                        </Badge>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    {/* Sort dropdown */}
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[11px]">Sort by:</span>
+                                        <select
+                                            value={sortBy}
+                                            onChange={(e) => setSortBy(e.target.value as any)}
+                                            className="h-8 rounded-lg border border-input bg-background px-2 text-[11px] focus-visible:outline-none"
+                                        >
+                                            <option value="name_asc">Name (A-Z)</option>
+                                            <option value="name_desc">Name (Z-A)</option>
+                                            <option value="rank">Academic Rank</option>
+                                            <option value="recent">Recently Updated</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Layout toggle */}
+                                    <div className="flex items-center border border-border rounded-lg p-0.5 bg-muted/40">
+                                        <button
+                                            onClick={() => setViewMode('table')}
+                                            className={`p-1 rounded-md transition-colors ${
+                                                viewMode === 'table' ? 'bg-background shadow-xs text-foreground' : 'text-muted-foreground'
+                                            }`}
+                                            title="Table view"
+                                        >
+                                            <List className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => setViewMode('grid')}
+                                            className={`p-1 rounded-md transition-colors ${
+                                                viewMode === 'grid' ? 'bg-background shadow-xs text-foreground' : 'text-muted-foreground'
+                                            }`}
+                                            title="Grid cards view"
+                                        >
+                                            <LayoutGrid className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Faculty Table / Grid */}
+                        <div className="bg-white dark:bg-card rounded-2xl border border-border shadow-xs overflow-hidden">
+                            {filteredFaculties.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center p-12 text-center">
+                                    <div className="p-4 rounded-full bg-muted/60 mb-3">
+                                        <Users className="h-8 w-8 text-muted-foreground/60" />
+                                    </div>
+                                    <h3 className="text-sm font-semibold text-foreground">No faculty members found</h3>
+                                    <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                                        No faculty match your active filters or search terms. Try clearing filters to view all members.
+                                    </p>
+                                    <button
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setProgramFilter('all');
+                                            setEmploymentStatusFilter('all');
+                                            setAcademicRankFilter('all');
+                                            setAttentionStatusFilter('all');
+                                        }}
+                                        className="mt-4 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted hover:bg-muted/80 text-foreground"
+                                    >
+                                        Clear Filters
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs text-left">
+                                        <thead className="text-[11px] font-semibold text-muted-foreground uppercase bg-slate-50/80 dark:bg-muted/30 border-b border-border">
+                                            <tr>
+                                                <th scope="col" className="px-5 py-3.5">Faculty</th>
+                                                <th scope="col" className="px-4 py-3.5">Academic Rank</th>
+                                                <th scope="col" className="px-4 py-3.5">Assigned Program</th>
+                                                <th scope="col" className="px-4 py-3.5">Employment Status</th>
+                                                <th scope="col" className="px-4 py-3.5">Specialization / Qualification</th>
+                                                <th scope="col" className="px-5 py-3.5 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {filteredFaculties.map((faculty) => {
+                                                const hasAttention = attentionFacultyIds.has(faculty.id);
+                                                const initials = `${faculty.first_name?.[0] || ''}${faculty.last_name?.[0] || ''}`.toUpperCase();
+
+                                                return (
+                                                    <tr
+                                                        key={faculty.id}
+                                                        onClick={() => router.visit(`/faculties/${faculty.id}`)}
+                                                        className="hover:bg-slate-50/80 dark:hover:bg-muted/30 transition-colors cursor-pointer group"
+                                                    >
+                                                        {/* Faculty Name & Photo */}
+                                                        <td className="px-5 py-3.5">
+                                                            <div className="flex items-center gap-3">
+                                                                {faculty.photo_url ? (
+                                                                    <img
+                                                                        src={faculty.photo_url}
+                                                                        alt={`${faculty.first_name} ${faculty.last_name}`}
+                                                                        className="w-10 h-10 rounded-full object-cover border border-border shrink-0 shadow-2xs group-hover:border-primary transition-colors"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-muted text-slate-700 dark:text-foreground font-semibold text-xs flex items-center justify-center shrink-0 border border-border group-hover:border-primary transition-colors">
+                                                                        {initials}
+                                                                    </div>
+                                                                )}
+
+                                                                <div className="min-w-0">
+                                                                    <div className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
+                                                                        <span className="truncate">
+                                                                            {faculty.title_name || `Prof. ${faculty.first_name} ${faculty.last_name}`}
+                                                                        </span>
+                                                                        {hasAttention && (
+                                                                            <span
+                                                                                className="w-2 h-2 rounded-full bg-rose-500 shrink-0"
+                                                                                title="This faculty requires attention"
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                                        <span className="text-[11px] font-mono text-muted-foreground">
+                                                                            {faculty.faculty_id || faculty.employee_id || `CIDS-2026-${faculty.id.toString().padStart(3, '0')}`}
+                                                                        </span>
+                                                                        {faculty.spreadsheet_name && (
+                                                                            <span
+                                                                                className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-mono bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20"
+                                                                                title="Linked Google Sheets Alias"
+                                                                            >
+                                                                                Sheet: {faculty.spreadsheet_name}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Academic Rank */}
+                                                        <td className="px-4 py-3.5">
+                                                            <div className="font-medium text-foreground">
+                                                                {faculty.academic_rank || 'Instructor I'}
+                                                            </div>
+                                                            <div className="text-[10px] text-muted-foreground mt-0.5 truncate max-w-[150px]">
+                                                                {faculty.highest_qualification || '—'}
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Program */}
+                                                        <td className="px-4 py-3.5">
+                                                            {faculty.program ? (
+                                                                <div className="flex flex-col">
+                                                                    <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-400 text-xs">
+                                                                        <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
+                                                                        {faculty.program.code}
+                                                                    </span>
+                                                                    <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">
+                                                                        {faculty.program.name}
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-[11px] text-muted-foreground italic">
+                                                                    Unassigned
+                                                                </span>
+                                                            )}
+                                                        </td>
+
+                                                        {/* Employment Status */}
+                                                        <td className="px-4 py-3.5">
+                                                            <div className="flex flex-col items-start gap-0.5">
+                                                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                    {faculty.status || 'Active'}
+                                                                </span>
+                                                                <span className="text-[10px] text-muted-foreground">
+                                                                    {faculty.employment_type || 'Full-time'}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Specialization / Qualification */}
+                                                        <td className="px-4 py-3.5">
+                                                            {faculty.specialization ? (
+                                                                <div>
+                                                                    <div className="font-medium text-foreground truncate max-w-[180px]">
+                                                                        {faculty.specialization}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-muted-foreground truncate max-w-[180px]">
+                                                                        {faculty.highest_qualification || 'Degree verified'}
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-[11px] text-muted-foreground italic">
+                                                                    Not yet specified
+                                                                </div>
+                                                            )}
+                                                        </td>
+
+                                                        {/* Actions */}
+                                                        <td className="px-5 py-3.5 text-right">
+                                                            <div
+                                                                className="flex items-center justify-end gap-1.5"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <button
+                                                                    onClick={() => router.visit(`/faculties/${faculty.id}`)}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
+                                                                >
+                                                                    <User className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                    <span>View Profile</span>
+                                                                </button>
+
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <button
+                                                                            className="p-1.5 hover:bg-muted rounded-md transition-colors text-muted-foreground"
+                                                                            title="Actions"
+                                                                        >
+                                                                            <MoreVertical className="h-4 w-4" />
+                                                                        </button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end" className="w-44 text-xs font-['Poppins']">
+                                                                        <DropdownMenuItem onClick={() => router.visit(`/faculties/${faculty.id}`)}>
+                                                                            <User className="h-3.5 w-3.5 mr-2 text-primary" />
+                                                                            View Dossier
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={() => openEditDialog(faculty)}>
+                                                                            <Edit className="h-3.5 w-3.5 mr-2" />
+                                                                            Edit Credentials
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuSeparator />
+                                                                        <DropdownMenuItem
+                                                                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                                                            onClick={() => setDeletingFaculty(faculty)}
+                                                                        >
+                                                                            <Trash className="h-3.5 w-3.5 mr-2" />
+                                                                            Delete Faculty
+                                                                        </DropdownMenuItem>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-                        <span>Showing {filteredFaculties.length} of {faculties.length} faculty members</span>
+                    {/* Right Column (4 cols) — Real DB Data: Faculty Needing Attention, Profile Completion, Recent Updates */}
+                    <div className="xl:col-span-4 flex flex-col gap-6">
+                        {/* 1. Faculty Needing Attention Panel (Live from DB) */}
+                        <div className="bg-white dark:bg-card p-5 rounded-2xl border border-border shadow-xs">
+                            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+                                <div className="flex items-center gap-2">
+                                    <span className="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                                        <AlertTriangle className="w-4 h-4" />
+                                    </span>
+                                    <div>
+                                        <h2 className="text-xs font-bold text-foreground">Faculty Needing Attention</h2>
+                                        <p className="text-[10px] text-muted-foreground">
+                                            Incomplete profiles or missing requirements
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                    {needsAttention.length}
+                                </span>
+                            </div>
+
+                            <div className="divide-y divide-border/60 mt-2">
+                                {needsAttention.length === 0 ? (
+                                    <div className="py-6 text-center text-xs text-muted-foreground">
+                                        <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1.5" />
+                                        All faculty profiles and compliance requirements are up to date!
+                                    </div>
+                                ) : (
+                                    needsAttention.slice(0, 5).map((item) => (
+                                        <div
+                                            key={item.id}
+                                            onClick={() => router.visit(`/faculties/${item.id}`)}
+                                            className="py-3 flex items-center justify-between gap-3 hover:bg-slate-50/60 dark:hover:bg-muted/30 px-2 rounded-xl transition-colors cursor-pointer group"
+                                        >
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                {item.photo_url ? (
+                                                    <img
+                                                        src={item.photo_url}
+                                                        alt={item.name}
+                                                        className="w-9 h-9 rounded-full object-cover shrink-0 border border-border"
+                                                    />
+                                                ) : (
+                                                    <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-muted text-slate-700 dark:text-foreground font-semibold text-xs flex items-center justify-center shrink-0">
+                                                        {item.initials}
+                                                    </div>
+                                                )}
+
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                                                        {item.name}
+                                                    </p>
+                                                    <p className="text-[10px] font-medium text-amber-600 dark:text-amber-400 truncate mt-0.5">
+                                                        {item.primary_issue}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-[10px] py-0 px-1.5 border-rose-500/30 text-rose-600 bg-rose-500/10"
+                                                >
+                                                    {item.program}
+                                                </Badge>
+                                                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {needsAttention.length > 5 && (
+                                <button
+                                    onClick={() => setAttentionStatusFilter('needs_attention')}
+                                    className="w-full mt-3 py-2 text-center text-xs font-semibold text-primary hover:bg-primary/5 rounded-xl border border-transparent hover:border-primary/20 transition-all flex items-center justify-center gap-1"
+                                >
+                                    <span>View All ({needsAttention.length})</span>
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* 2. Profile Completion Widget (Live from DB) */}
+                        <div className="bg-white dark:bg-card p-5 rounded-2xl border border-border shadow-xs">
+                            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+                                <div className="flex items-center gap-2">
+                                    <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                        <Clock className="w-4 h-4" />
+                                    </span>
+                                    <h2 className="text-xs font-bold text-foreground">Profile Completion</h2>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 py-4">
+                                {/* Circular gauge */}
+                                <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
+                                    <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                                        <path
+                                            className="text-muted/30"
+                                            strokeWidth="3.5"
+                                            stroke="currentColor"
+                                            fill="none"
+                                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                        />
+                                        <path
+                                            className="text-emerald-500 transition-all duration-1000 ease-out"
+                                            strokeDasharray={`${profileCompletion.completion_rate}, 100`}
+                                            strokeWidth="3.5"
+                                            strokeLinecap="round"
+                                            stroke="currentColor"
+                                            fill="none"
+                                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                        />
+                                    </svg>
+                                    <span className="absolute text-xs font-bold text-foreground">
+                                        {profileCompletion.completion_rate}%
+                                    </span>
+                                </div>
+
+                                <div className="min-w-0">
+                                    <h3 className="text-xs font-bold text-foreground">Complete Profiles</h3>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                                        {profileCompletion.complete_count} of {profileCompletion.total_faculty} faculty members
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Status item rows */}
+                            <div className="space-y-2 pt-2 border-t border-border/60 text-xs">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                        <span className="text-muted-foreground text-[11px]">Complete</span>
+                                    </div>
+                                    <span className="font-bold text-foreground">{profileCompletion.complete_count}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                        <span className="text-muted-foreground text-[11px]">Incomplete</span>
+                                    </div>
+                                    <span className="font-bold text-foreground">{profileCompletion.incomplete_count}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                                        <span className="text-muted-foreground text-[11px]">Missing Requirements</span>
+                                    </div>
+                                    <span className="font-bold text-foreground">{profileCompletion.missing_requirements_count}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. Recent Updates Panel (Live from DB) */}
+                        <div className="bg-white dark:bg-card p-5 rounded-2xl border border-border shadow-xs">
+                            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+                                <div className="flex items-center gap-2">
+                                    <span className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                                        <Clock className="w-4 h-4" />
+                                    </span>
+                                    <h2 className="text-xs font-bold text-foreground">Recent Updates</h2>
+                                </div>
+                                <span className="text-[11px] text-primary font-semibold hover:underline cursor-pointer">
+                                    Audit Trail
+                                </span>
+                            </div>
+
+                            <div className="divide-y divide-border/60 mt-2">
+                                {recentUpdates.length === 0 ? (
+                                    <div className="py-4 text-center text-xs text-muted-foreground">
+                                        No recent updates logged.
+                                    </div>
+                                ) : (
+                                    recentUpdates.map((update, idx) => (
+                                        <div
+                                            key={`${update.id}-${idx}`}
+                                            onClick={() => router.visit(`/faculties/${update.id}`)}
+                                            className="py-2.5 flex items-start gap-2.5 hover:bg-slate-50/60 dark:hover:bg-muted/30 px-2 rounded-xl transition-colors cursor-pointer group"
+                                        >
+                                            <span
+                                                className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                                                    update.type === 'create'
+                                                        ? 'bg-amber-500'
+                                                        : idx % 2 === 0
+                                                        ? 'bg-emerald-500'
+                                                        : 'bg-blue-500'
+                                                }`}
+                                            />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-xs font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                                                    {update.faculty_name}
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground truncate">
+                                                    {update.action}
+                                                </p>
+                                                <p className="text-[9px] text-muted-foreground/80 mt-0.5">
+                                                    {update.time_formatted} ({update.time_ago})
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {/* Add / Edit Dialog */}
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogContent className="sm:max-w-[620px] max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-[620px] max-h-[90vh] overflow-y-auto font-['Poppins']">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <UserCheck className="w-5 h-5 text-primary" />
@@ -416,7 +1138,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                         type="text"
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         placeholder="e.g. Maria"
                                         required
                                     />
@@ -433,7 +1155,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                         type="text"
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         placeholder="e.g. Santos"
                                         required
                                     />
@@ -450,7 +1172,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                         type="text"
                                         value={facultyId}
                                         onChange={(e) => setFacultyId(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         placeholder="e.g. CIDS-2026-001"
                                     />
                                 </div>
@@ -468,7 +1190,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                         type="text"
                                         value={spreadsheetName}
                                         onChange={(e) => setSpreadsheetName(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-mono text-xs"
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-mono"
                                         placeholder="e.g. ROXAS or Santos, M. (optional alias)"
                                     />
                                     <p className="text-[11px] text-muted-foreground">
@@ -483,7 +1205,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                     <select
                                         value={programId}
                                         onChange={(e) => setProgramId(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         required
                                     >
                                         <option value="">Select a Program</option>
@@ -506,7 +1228,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                         type="text"
                                         value={academicRank}
                                         onChange={(e) => setAcademicRank(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         placeholder="e.g. Assistant Professor I"
                                     />
                                 </div>
@@ -518,7 +1240,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                     <select
                                         value={employmentType}
                                         onChange={(e) => setEmploymentType(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
                                         <option value="Full-time">Full-time Faculty</option>
                                         <option value="Part-time">Part-time Faculty</option>
@@ -534,7 +1256,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                         type="text"
                                         value={highestQualification}
                                         onChange={(e) => setHighestQualification(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         placeholder="e.g. Master of Information Technology"
                                     />
                                 </div>
@@ -547,7 +1269,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                         type="text"
                                         value={specialization}
                                         onChange={(e) => setSpecialization(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         placeholder="e.g. Software Engineering"
                                     />
                                 </div>
@@ -560,7 +1282,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         placeholder="e.g. maria.santos@cids.edu.ph"
                                     />
                                 </div>
@@ -573,7 +1295,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                         type="text"
                                         value={officeRoom}
                                         onChange={(e) => setOfficeRoom(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         placeholder="e.g. CIDS Faculty Room 302"
                                     />
                                 </div>
@@ -583,14 +1305,14 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                                 <button
                                     type="button"
                                     onClick={() => setIsDialogOpen(false)}
-                                    className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+                                    className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="inline-flex items-center justify-center rounded-md text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 disabled:opacity-50"
+                                    className="inline-flex items-center justify-center rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 disabled:opacity-50"
                                 >
                                     {isSubmitting ? 'Saving...' : editingFaculty ? 'Update Faculty' : 'Save Faculty'}
                                 </button>
@@ -599,168 +1321,7 @@ export default function FacultiesIndex({ faculties = [], programs = [] }: Props)
                     </DialogContent>
                 </Dialog>
 
-                {/* Faculty Listing Table */}
-                <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden flex-1 flex flex-col">
-                    {filteredFaculties.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center p-12 text-center h-full my-auto">
-                            <div className="p-4 rounded-full bg-muted/60 mb-3">
-                                <Users className="h-8 w-8 text-muted-foreground/60" />
-                            </div>
-                            <h3 className="text-base font-semibold text-foreground">No faculty members found</h3>
-                            <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                                {searchQuery || programFilter !== 'all'
-                                    ? 'No faculty match your search filter. Try clearing filters.'
-                                    : 'Click the "Add Faculty" button above to register your first faculty member and upload their photo.'}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto flex-1">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-xs text-muted-foreground uppercase bg-muted/40 border-b border-border">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3.5 font-semibold">Faculty Dossier & ID</th>
-                                        <th scope="col" className="px-6 py-3.5 font-semibold">Academic Rank</th>
-                                        <th scope="col" className="px-6 py-3.5 font-semibold">Assigned Program</th>
-                                        <th scope="col" className="px-6 py-3.5 font-semibold">Employment Status</th>
-                                        <th scope="col" className="px-6 py-3.5 font-semibold text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border">
-                                    {filteredFaculties.map((faculty) => (
-                                        <tr
-                                            key={faculty.id}
-                                            onClick={() => router.visit(`/faculties/${faculty.id}`)}
-                                            className="hover:bg-muted/40 transition-colors cursor-pointer group"
-                                            title={`Click to view ${faculty.first_name} ${faculty.last_name}'s complete profile`}
-                                        >
-                                            {/* Photo & Faculty Identity */}
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    {faculty.photo_url ? (
-                                                        <img
-                                                            src={faculty.photo_url}
-                                                            alt={`${faculty.first_name} ${faculty.last_name}`}
-                                                            className="w-11 h-11 rounded-full object-cover border-2 border-primary/20 shrink-0 shadow-xs group-hover:border-primary transition-colors"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-11 h-11 rounded-full bg-primary/10 text-primary font-bold text-sm flex items-center justify-center shrink-0 border border-primary/20 group-hover:border-primary transition-colors">
-                                                            {faculty.first_name?.[0]}
-                                                            {faculty.last_name?.[0]}
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <div className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
-                                                            <span>{faculty.title_name || `Prof. ${faculty.first_name} ${faculty.last_name}`}</span>
-                                                            <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
-                                                        </div>
-                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                            <span className="text-xs font-mono text-muted-foreground">
-                                                                {faculty.faculty_id || faculty.employee_id || `CIDS-FAC-${faculty.id.toString().padStart(4, '0')}`}
-                                                            </span>
-                                                            {faculty.spreadsheet_name && (
-                                                                <span
-                                                                    className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
-                                                                    title="Linked Google Sheets Alias"
-                                                                >
-                                                                    Sheet: {faculty.spreadsheet_name}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            {/* Rank & Qualification */}
-                                            <td className="px-6 py-4">
-                                                <div className="text-xs font-medium text-foreground">
-                                                    {faculty.academic_rank || 'Faculty Member'}
-                                                </div>
-                                                {faculty.highest_qualification && (
-                                                    <div className="text-[11px] text-muted-foreground truncate max-w-[200px]" title={faculty.highest_qualification}>
-                                                        {faculty.highest_qualification}
-                                                    </div>
-                                                )}
-                                            </td>
-
-                                            {/* Program */}
-                                            <td className="px-6 py-4">
-                                                {faculty.program ? (
-                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
-                                                        <GraduationCap className="w-3.5 h-3.5" />
-                                                        <span className="font-semibold">{faculty.program.code}</span>
-                                                        <span className="text-muted-foreground">·</span>
-                                                        <span className="truncate max-w-[140px]" title={faculty.program.name}>{faculty.program.name}</span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-xs text-muted-foreground italic">
-                                                        Unassigned
-                                                    </span>
-                                                )}
-                                            </td>
-
-                                            {/* Employment & Status */}
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-col items-start gap-1">
-                                                    <Badge variant="outline" className="text-[11px] font-medium border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
-                                                        {faculty.status || 'Active'}
-                                                    </Badge>
-                                                    <span className="text-[11px] text-muted-foreground">
-                                                        {faculty.employment_type || 'Full-time'}
-                                                    </span>
-                                                </div>
-                                            </td>
-
-                                            {/* Action Menu */}
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                                    <button
-                                                        onClick={() => router.visit(`/faculties/${faculty.id}`)}
-                                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium text-primary hover:bg-primary/10 border border-transparent hover:border-primary/20 transition-colors"
-                                                        title="Open Profile"
-                                                    >
-                                                        <User className="w-3.5 h-3.5" />
-                                                        <span className="hidden sm:inline">Profile</span>
-                                                    </button>
-
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <button
-                                                                className="p-1.5 hover:bg-muted rounded-md transition-colors"
-                                                                title="More actions"
-                                                            >
-                                                                <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                                                            </button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-44">
-                                                            <DropdownMenuItem onClick={() => router.visit(`/faculties/${faculty.id}`)}>
-                                                                <User className="h-4 w-4 mr-2 text-primary" />
-                                                                View Full Profile
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => openEditDialog(faculty)}>
-                                                                <Edit className="h-4 w-4 mr-2" />
-                                                                Quick Edit
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem
-                                                                className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                                                                onClick={() => setDeletingFaculty(faculty)}
-                                                            >
-                                                                <Trash className="h-4 w-4 mr-2" />
-                                                                Delete
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-
+                {/* Delete Confirmation */}
                 <DeleteConfirmDialog
                     open={!!deletingFaculty}
                     onOpenChange={(open) => !open && setDeletingFaculty(null)}

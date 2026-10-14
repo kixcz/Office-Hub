@@ -72,4 +72,20 @@ class User extends Authenticatable
             $query->where('name', $permission);
         })->exists();
     }
+
+    /**
+     * The faculty profile associated with the user.
+     */
+    public function faculty()
+    {
+        return $this->hasOne(Faculty::class);
+    }
+
+    /**
+     * Check if user is a faculty member.
+     */
+    public function isFaculty(): bool
+    {
+        return $this->hasRole('Faculty Member') || $this->faculty()->exists();
+    }
 }

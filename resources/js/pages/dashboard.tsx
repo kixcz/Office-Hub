@@ -1,421 +1,885 @@
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
-    FileText,
-    CheckSquare,
+    CheckCircle2,
     Clock,
-    AlertTriangle,
-    CalendarDays,
-    Trophy,
-    ArrowRight,
-    MapPin,
-    Target,
+    CheckSquare,
+    Calendar,
+    FlaskConical,
+    Sprout,
     Users,
-    ListVideo,
+    TrendingUp,
     ChevronDown,
+    MoreVertical,
+    FileText,
     ArrowUpRight,
     ArrowDownRight,
+    AlertTriangle,
+    Eye,
+    Download,
+    Printer,
+    SlidersHorizontal,
+    Info,
+    CalendarDays,
     Building2,
-    Calendar as CalendarIcon
+    Target
 } from 'lucide-react';
-import { ConsolidatedCalendarModal } from '@/components/consolidated-calendar-modal';
+import { Button } from '@/components/ui/button';
+
+interface Props {
+    filters: {
+        period_id: number;
+        academic_year: string;
+        semester: string;
+        program_id: string;
+        faculty_id: string;
+        start_date: string;
+        end_date: string;
+        compare_previous: boolean;
+    };
+    available_periods: Array<{
+        id: number;
+        label: string;
+        academic_year: string;
+        semester: string;
+        is_current: boolean;
+    }>;
+    available_programs: Array<{
+        id: number;
+        code: string;
+        name: string;
+    }>;
+    available_faculties: Array<{
+        id: number;
+        first_name: string;
+        last_name: string;
+        academic_rank: string;
+        program_id: number;
+    }>;
+    kpis: {
+        compliance_rate: number;
+        compliance_trend: string;
+        compliance_fraction: string;
+        attendance_rate: number;
+        attendance_trend: string;
+        attendance_low_count: number;
+        tasks_completed: number;
+        tasks_total: number;
+        tasks_in_progress: number;
+        tasks_overdue: number;
+        tasks_rate: number;
+        events_meetings: number;
+        events_meetings_trend: string;
+        research_active: number;
+        extension_active: number;
+        total_faculty: number;
+        all_programs_avg?: number;
+    };
+    productivity_by_program: Array<{
+        id: number;
+        code: string;
+        name: string;
+        rate: number;
+    }>;
+    all_programs_avg?: number;
+    metrics_distribution: {
+        total_faculty: number;
+        compliant: number;
+        compliant_pct: number;
+        minor_issues: number;
+        minor_issues_pct: number;
+        needs_attention: number;
+        needs_attention_pct: number;
+        non_compliant: number;
+        non_compliant_pct: number;
+    };
+    faculty_needs_attention: Array<{
+        id: number;
+        faculty_id: number;
+        name: string;
+        program: string;
+        issue: string;
+        issue_type: string;
+        severity: string;
+        details: string;
+        status: string;
+    }>;
+    upcoming_activities: Array<{
+        date_time: string;
+        title: string;
+        type: string;
+        location: string;
+        participants: string;
+    }>;
+    last_sync: string;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
 ];
 
-export default function Dashboard({
-    stats,
-    compliance_summary,
-    program_compliance,
-    todays_schedule,
-    upcoming_deadlines,
-    urgent_pending,
-    top_programs,
-    current_term,
-    calendar_data,
-}: any) {
-    const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
-    const [selectedSemester, setSelectedSemester] = useState('AY 2026-2027 - 1st Semester');
-    const [selectedProgramRankingFilter, setSelectedProgramRankingFilter] = useState('This Semester');
+export default function SuperAdminDashboard({
+    filters,
+    available_periods = [],
+    available_programs = [],
+    available_faculties = [],
+    kpis,
+    productivity_by_program = [],
+    all_programs_avg,
+    metrics_distribution,
+    faculty_needs_attention = [],
+    upcoming_activities = [],
+    last_sync,
+}: Props) {
+    const [periodId, setPeriodId] = useState(filters.period_id);
+    const [programId, setProgramId] = useState(filters.program_id);
+    const [facultyId, setFacultyId] = useState(filters.faculty_id);
+    const [dateRange, setDateRange] = useState('Aug 17, 2026 – Dec 18, 2026');
+    const [distributionTab, setDistributionTab] = useState<'Compliance' | 'Attendance' | 'Tasks'>('Compliance');
+    const [reportModalOpen, setReportModalOpen] = useState(false);
 
-    // Baseline fallback data matching the UI mockup
-    const activeStats = {
-        active_requirements: stats?.active_requirements ?? 2,
-        total_submissions: stats?.total_submissions ?? 63,
-        pending_outputs: stats?.pending_outputs ?? 8,
-        overdue_outputs: stats?.overdue_outputs ?? 3,
-    };
+    const activePeriod = available_periods.find((p) => p.id === Number(periodId)) || available_periods[0];
+    const academicYear = activePeriod?.academic_year || filters.academic_year || '2026-2027';
+    const semester = activePeriod?.semester || filters.semester || '1st Semester';
 
-    const activeCompliance = {
-        compliance_rate: compliance_summary?.compliance_rate ?? 82.5,
-        on_time: compliance_summary?.on_time ?? 33,
-        late: compliance_summary?.late ?? 19,
-        pending: compliance_summary?.pending ?? 8,
-        overdue: compliance_summary?.overdue ?? 3,
-    };
+    const computedAverage =
+        all_programs_avg ??
+        kpis?.all_programs_avg ??
+        (productivity_by_program.length > 0
+            ? Math.round(
+                  productivity_by_program.reduce((acc, curr) => acc + (curr.rate || 0), 0) /
+                      productivity_by_program.length
+              )
+            : 86);
 
-    // Program compliance comparison items matching mockup
-    const activePrograms = program_compliance && program_compliance.length > 0
-        ? program_compliance
-        : [
-            { id: 1, name: 'BSIT', compliance_rate: 90 },
-            { id: 2, name: 'BSIS', compliance_rate: 85.7 },
-            { id: 3, name: 'BLIS', compliance_rate: 50 },
-            { id: 4, name: 'BSCS', compliance_rate: 66.7 },
-        ];
-
-    // Urgent pending outputs matching mockup
-    const activeUrgentPending = urgent_pending && urgent_pending.length > 0
-        ? urgent_pending
-        : [
-            { id: 1, faculty: 'Arnel Reyes', program: 'BSIS', requirement: 'Course Syllabus', due_date: 'Oct 3, 2026', status: 'Overdue' },
-            { id: 2, faculty: 'Peter Parker', program: 'BSIT', requirement: 'Course Syllabus', due_date: 'Oct 3, 2026', status: 'Overdue' },
-            { id: 3, faculty: 'Clark Kent', program: 'BSCS', requirement: 'Course Syllabus', due_date: 'Oct 3, 2026', status: 'Overdue' },
-            { id: 4, faculty: 'Cristina Lopez', program: 'BLIS', requirement: 'Midterm TOS and TQ', due_date: 'Oct 16, 2026', status: 'Pending' },
-            { id: 5, faculty: 'Tony Stark', program: 'BSIS', requirement: 'Midterm TOS and TQ', due_date: 'Oct 16, 2026', status: 'Pending' },
-        ];
-
-    // Today's schedule items matching mockup
-    const activeSchedule = todays_schedule && todays_schedule.length > 0
-        ? todays_schedule
-        : [
-            { title: 'Department Heads Sync', time: '09:00 AM - 10:30 AM', venue: "Dean's Office", type: 'Meeting', dotColor: 'bg-blue-500' },
-            { title: 'Curriculum Review', time: '01:00 PM - 03:00 PM', venue: 'Conference Room A', type: 'Meeting', dotColor: 'bg-blue-500' },
-            { title: 'Faculty Council Meeting', time: '03:00 PM - 05:00 PM', venue: 'AVR', type: 'Meeting', dotColor: 'bg-purple-500' },
-            { title: 'Student Organization Orientation', time: '07:00 PM - 09:00 PM', venue: 'University Gym', type: 'Activity', dotColor: 'bg-amber-500' },
-        ];
-
-    // Top performing programs ranking matching mockup
-    const activeRankings = top_programs && top_programs.length > 0
-        ? top_programs
-        : [
-            { id: 1, name: 'BSIS', compliance_rate: 76.2, change: '+ 8%', changeType: 'up' },
-            { id: 2, name: 'BSIT', compliance_rate: 40, change: '+ 5%', changeType: 'up' },
-            { id: 3, name: 'BSCS', compliance_rate: 66.7, change: '+ 3%', changeType: 'up' },
-            { id: 4, name: 'BLIS', compliance_rate: 50, change: '- 2%', changeType: 'down' },
-        ];
-
-    const openCalendar = () => {
-        setIsCalendarModalOpen(true);
+    // Apply filters
+    const handleFilterChange = (updates: Partial<typeof filters>) => {
+        router.get(
+            '/dashboard',
+            {
+                period_id: updates.period_id ?? periodId,
+                program_id: updates.program_id ?? programId,
+                faculty_id: updates.faculty_id ?? facultyId,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            }
+        );
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Super Admin Dashboard" />
+            <Head title="Institutional Performance & Monitoring Overview - CIDS OfficeHub" />
 
-            <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-7xl mx-auto w-full transition-colors">
-                {/* Compact Header: Dashboard Overview & Subtitle */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                    <div>
-                        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                            Dashboard Overview
-                        </h1>
-                        <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                            {current_term || 'AY 2026–2027, 1st Semester'} • Live overview of compliance, submissions, schedules, and key activities.
-                        </p>
+            <div className="p-4 md:p-6 lg:p-7 space-y-6 max-w-[1600px] mx-auto font-sans">
+                {/* 1. Header with Compact Persistent Filters Row matching attached screenshot */}
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card rounded-2xl border border-border p-5 shadow-2xs">
+                    <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                            <TrendingUp className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+                                Institutional Performance Dashboard
+                            </h1>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                                Live overview of compliance, attendance, productivity, schedules, meetings, research, extension, and faculty activity for the selected academic period.
+                            </p>
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 mt-1.5">
+                                <span>🎓 AY {academicYear} • {semester}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Filter Bar Controls */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        {/* Academic Year */}
+                        <div className="flex flex-col text-[11px]">
+                            <span className="font-semibold text-muted-foreground mb-1">Academic Year</span>
+                            <div className="relative">
+                                <select
+                                    value={periodId}
+                                    onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        setPeriodId(val);
+                                        handleFilterChange({ period_id: val });
+                                    }}
+                                    className="appearance-none bg-background border border-border text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 hover:border-slate-400 cursor-pointer focus:ring-1 focus:ring-amber-500 shadow-2xs"
+                                >
+                                    {available_periods.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.academic_year}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-2 pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Semester */}
+                        <div className="flex flex-col text-[11px]">
+                            <span className="font-semibold text-muted-foreground mb-1">Semester</span>
+                            <div className="relative">
+                                <select
+                                    value={periodId}
+                                    onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        setPeriodId(val);
+                                        handleFilterChange({ period_id: val });
+                                    }}
+                                    className="appearance-none bg-background border border-border text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 hover:border-slate-400 cursor-pointer focus:ring-1 focus:ring-amber-500 shadow-2xs"
+                                >
+                                    {available_periods.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.semester}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-2 pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Program */}
+                        <div className="flex flex-col text-[11px]">
+                            <span className="font-semibold text-muted-foreground mb-1">Program</span>
+                            <div className="relative">
+                                <select
+                                    value={programId}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setProgramId(val);
+                                        setFacultyId('all');
+                                        handleFilterChange({ program_id: val, faculty_id: 'all' });
+                                    }}
+                                    className="appearance-none bg-background border border-border text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 hover:border-slate-400 cursor-pointer focus:ring-1 focus:ring-amber-500 shadow-2xs"
+                                >
+                                    <option value="all">All Programs</option>
+                                    {available_programs.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.code}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-2 pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Faculty Filter */}
+                        <div className="flex flex-col text-[11px]">
+                            <span className="font-semibold text-muted-foreground mb-1">Faculty</span>
+                            <div className="relative">
+                                <select
+                                    value={facultyId}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setFacultyId(val);
+                                        handleFilterChange({ faculty_id: val });
+                                    }}
+                                    className="appearance-none bg-background border border-border text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 hover:border-slate-400 cursor-pointer focus:ring-1 focus:ring-amber-500 shadow-2xs max-w-[150px] truncate"
+                                >
+                                    <option value="all">College-Wide</option>
+                                    {available_faculties.map((f) => (
+                                        <option key={f.id} value={f.id}>
+                                            {f.last_name}, {f.first_name[0]}.
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-2 pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Date Range Badge */}
+                        <div className="flex flex-col text-[11px]">
+                            <span className="font-semibold text-muted-foreground mb-1">Reporting Date Range</span>
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-muted/30 text-xs font-semibold text-foreground">
+                                <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span>{dateRange}</span>
+                            </div>
+                        </div>
+
+                        {/* Generate Report Button */}
+                        <div className="flex flex-col text-[11px] self-end">
+                            <span className="invisible mb-1">Report</span>
+                            <Link
+                                href="/performance/faculty/report"
+                                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                            >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Export Report</span>
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
-                {/* KPI Cards Row (Starts directly below the compact header) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Active Requirements */}
-                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-all relative overflow-hidden flex flex-col justify-between">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Active Requirements</span>
-                                <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
-                                    {activeStats.active_requirements}
-                                </p>
-                            </div>
-                            <div className="bg-blue-50 dark:bg-blue-950/50 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/40 text-blue-600 dark:text-blue-400">
-                                <FileText className="w-5 h-5" />
+                {/* 2. Top Metric Cards Row (6 Metric Cards matching design) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                    {/* Compliance Rate */}
+                    <div className="bg-card rounded-2xl border border-border p-4.5 shadow-2xs hover:shadow-xs transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+                                <CheckCircle2 className="w-5 h-5" />
                             </div>
                         </div>
-                        <div className="flex items-center justify-between mt-4">
-                            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
-                                ↓ 33% vs. last month
-                            </span>
-                            {/* Blue SVG Sparkline */}
-                            <svg className="w-20 h-6 text-blue-500 shrink-0" viewBox="0 0 100 30" fill="none">
-                                <path d="M0 25 C 20 28, 40 18, 60 12 C 80 5, 90 2, 100 1" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                            </svg>
+                        <div className="mt-3">
+                            <div className="text-xs font-semibold text-muted-foreground">Compliance Rate</div>
+                            <div className="text-2xl font-black text-foreground mt-0.5 tracking-tight">
+                                {kpis.compliance_rate}%
+                            </div>
+                            <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                                {kpis.compliance_trend}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Total Submissions */}
-                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-all relative overflow-hidden flex flex-col justify-between">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Submissions</span>
-                                <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
-                                    {activeStats.total_submissions}
-                                </p>
+                    {/* Overall Attendance Rate */}
+                    <div className="bg-card rounded-2xl border border-border p-4.5 shadow-2xs hover:shadow-xs transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
+                                <Users className="w-5 h-5" />
                             </div>
-                            <div className="bg-purple-50 dark:bg-purple-950/50 p-2.5 rounded-xl border border-purple-100 dark:border-purple-900/40 text-purple-600 dark:text-purple-400">
+                        </div>
+                        <div className="mt-3">
+                            <div className="text-xs font-semibold text-muted-foreground">Overall Attendance Rate</div>
+                            <div className="text-2xl font-black text-foreground mt-0.5 tracking-tight">
+                                {kpis.attendance_rate}%
+                            </div>
+                            <div className="text-[11px] font-bold text-blue-600 dark:text-blue-400 mt-1">
+                                {kpis.attendance_trend}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tasks Completed */}
+                    <div className="bg-card rounded-2xl border border-border p-4.5 shadow-2xs hover:shadow-xs transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center">
                                 <CheckSquare className="w-5 h-5" />
                             </div>
                         </div>
-                        <div className="flex items-center justify-between mt-4">
-                            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
-                                ↑ 12% vs. last month
-                            </span>
-                            {/* Purple SVG Sparkline */}
-                            <svg className="w-20 h-6 text-purple-500 shrink-0" viewBox="0 0 100 30" fill="none">
-                                <path d="M0 22 C 20 26, 35 15, 60 20 C 75 24, 85 8, 100 3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                            </svg>
+                        <div className="mt-3">
+                            <div className="text-xs font-semibold text-muted-foreground">Tasks Completed</div>
+                            <div className="text-2xl font-black text-foreground mt-0.5 tracking-tight">
+                                {kpis.tasks_completed} <span className="text-sm font-semibold text-muted-foreground">/ {kpis.tasks_total}</span>
+                            </div>
+                            {/* Progress bar */}
+                            <div className="w-full bg-muted rounded-full h-1.5 mt-2 overflow-hidden">
+                                <div
+                                    className="bg-purple-500 h-full rounded-full"
+                                    style={{ width: `${kpis.tasks_rate}%` }}
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Pending Outputs */}
-                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-all relative overflow-hidden flex flex-col justify-between">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Pending Outputs</span>
-                                <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
-                                    {activeStats.pending_outputs}
-                                </p>
-                            </div>
-                            <div className="bg-amber-50 dark:bg-amber-950/50 p-2.5 rounded-xl border border-amber-100 dark:border-amber-900/40 text-amber-600 dark:text-amber-400">
-                                <Clock className="w-5 h-5" />
+                    {/* Events & Meetings */}
+                    <div className="bg-card rounded-2xl border border-border p-4.5 shadow-2xs hover:shadow-xs transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
+                                <Calendar className="w-5 h-5" />
                             </div>
                         </div>
-                        <div className="flex items-center justify-between mt-4">
-                            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
-                                ↓ 20% vs. last month
-                            </span>
-                            {/* Amber SVG Sparkline */}
-                            <svg className="w-20 h-6 text-amber-500 shrink-0" viewBox="0 0 100 30" fill="none">
-                                <path d="M0 20 C 15 24, 35 12, 50 22 C 70 30, 85 10, 100 15" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                            </svg>
+                        <div className="mt-3">
+                            <div className="text-xs font-semibold text-muted-foreground">Events & Meetings</div>
+                            <div className="text-2xl font-black text-foreground mt-0.5 tracking-tight">
+                                {kpis.events_meetings}
+                            </div>
+                            <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1">
+                                {kpis.events_meetings_trend}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Overdue Outputs */}
-                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-all relative overflow-hidden flex flex-col justify-between">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Overdue Outputs</span>
-                                <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
-                                    {activeStats.overdue_outputs}
-                                </p>
-                            </div>
-                            <div className="bg-red-50 dark:bg-red-950/50 p-2.5 rounded-xl border border-red-100 dark:border-red-900/40 text-red-600 dark:text-red-400">
-                                <AlertTriangle className="w-5 h-5" />
+                    {/* Research Involvement */}
+                    <div className="bg-card rounded-2xl border border-border p-4.5 shadow-2xs hover:shadow-xs transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center">
+                                <FlaskConical className="w-5 h-5" />
                             </div>
                         </div>
-                        <div className="flex items-center justify-between mt-4">
-                            <span className="text-xs font-semibold text-red-600 dark:text-red-400 flex items-center gap-0.5">
-                                ↓ 40% vs. last month
-                            </span>
-                            {/* Red SVG Sparkline */}
-                            <svg className="w-20 h-6 text-red-500 shrink-0" viewBox="0 0 100 30" fill="none">
-                                <path d="M0 24 C 20 28, 40 18, 55 24 C 70 30, 85 5, 100 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                            </svg>
+                        <div className="mt-3">
+                            <div className="text-xs font-semibold text-muted-foreground">Research Involvement</div>
+                            <div className="text-2xl font-black text-foreground mt-0.5 tracking-tight">
+                                {kpis.research_active}
+                            </div>
+                            <div className="text-[11px] font-semibold text-muted-foreground mt-1">
+                                Active projects
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Extension Involvement */}
+                    <div className="bg-card rounded-2xl border border-border p-4.5 shadow-2xs hover:shadow-xs transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 flex items-center justify-center">
+                                <Sprout className="w-5 h-5" />
+                            </div>
+                        </div>
+                        <div className="mt-3">
+                            <div className="text-xs font-semibold text-muted-foreground">Extension Involvement</div>
+                            <div className="text-2xl font-black text-foreground mt-0.5 tracking-tight">
+                                {kpis.extension_active}
+                            </div>
+                            <div className="text-[11px] font-semibold text-muted-foreground mt-1">
+                                Active programs
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Main Bento Grid: 2 Columns on LG */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    {/* Left Column (8 of 12 cols): Compliance & Urgent Outputs */}
-                    <div className="lg:col-span-8 flex flex-col gap-6">
-                        {/* College-Wide Compliance Card */}
-                        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs transition-colors">
-                            {/* Header */}
-                            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                                        <Target className="w-4 h-4 text-amber-500" />
-                                    </div>
-                                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                                        College-Wide Compliance
-                                    </h2>
+                {/* 3. Middle Section: College-Wide Productivity Line Chart | Key Metrics Distribution Donut | Productivity by Program Bars */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* College-Wide Productivity Trends (5 cols) */}
+                    <div className="lg:col-span-5 bg-card rounded-2xl border border-border p-5 shadow-2xs flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                <div>
+                                    <h3 className="text-sm font-bold text-foreground">College-Wide Productivity</h3>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Overall productivity based on compliance, attendance, research, extension, and tasks.
+                                    </p>
                                 </div>
-
-                                <div className="relative">
-                                    <select
-                                        value={selectedSemester}
-                                        onChange={(e) => setSelectedSemester(e.target.value)}
-                                        className="appearance-none bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-lg pl-3 pr-7 py-1.5 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-2xs cursor-pointer"
-                                    >
-                                        <option value="AY 2026-2027 - 1st Semester">AY 2026–2027 - 1st Semester</option>
-                                        <option value="AY 2025-2026 - 2nd Semester">AY 2025–2026 - 2nd Semester</option>
-                                    </select>
-                                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2 pointer-events-none" />
-                                </div>
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-muted text-foreground">
+                                    This Semester
+                                </span>
                             </div>
 
-                            {/* Donut Dial & 4 Metric Boxes */}
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center my-6">
-                                {/* Donut Progress Dial (5 cols) */}
-                                <div className="md:col-span-5 flex flex-col items-center justify-center">
-                                    <div className="relative flex items-center justify-center w-36 h-36">
-                                        {/* SVG Donut Circle */}
-                                        <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-                                            <circle
-                                                cx="60"
-                                                cy="60"
-                                                r="48"
-                                                className="stroke-slate-100 dark:stroke-slate-800"
-                                                strokeWidth="12"
-                                                fill="transparent"
-                                            />
-                                            <circle
-                                                cx="60"
-                                                cy="60"
-                                                r="48"
-                                                className="stroke-emerald-500"
-                                                strokeWidth="12"
-                                                strokeDasharray={2 * Math.PI * 48}
-                                                strokeDashoffset={(2 * Math.PI * 48) * (1 - activeCompliance.compliance_rate / 100)}
-                                                strokeLinecap="round"
-                                                fill="transparent"
-                                            />
-                                        </svg>
-                                        <div className="absolute flex flex-col items-center text-center">
-                                            <span className="text-2xl font-black text-slate-900 dark:text-white">
-                                                {activeCompliance.compliance_rate}%
-                                            </span>
-                                            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-                                                Complied
-                                            </span>
-                                        </div>
-                                    </div>
+                            {/* SVG Multi-Line Chart representing trends */}
+                            <div className="mt-5 space-y-3">
+                                <div className="h-44 w-full relative">
+                                    <svg className="w-full h-full" viewBox="0 0 500 180" fill="none">
+                                        {/* Horizontal grid lines */}
+                                        <line x1="30" y1="20" x2="490" y2="20" stroke="currentColor" strokeOpacity="0.1" />
+                                        <line x1="30" y1="60" x2="490" y2="60" stroke="currentColor" strokeOpacity="0.1" />
+                                        <line x1="30" y1="100" x2="490" y2="100" stroke="currentColor" strokeOpacity="0.1" />
+                                        <line x1="30" y1="140" x2="490" y2="140" stroke="currentColor" strokeOpacity="0.1" />
+
+                                        {/* Y-axis labels */}
+                                        <text x="5" y="24" fontSize="10" fill="currentColor" opacity="0.4">100%</text>
+                                        <text x="5" y="64" fontSize="10" fill="currentColor" opacity="0.4">75%</text>
+                                        <text x="5" y="104" fontSize="10" fill="currentColor" opacity="0.4">50%</text>
+                                        <text x="5" y="144" fontSize="10" fill="currentColor" opacity="0.4">25%</text>
+
+                                        {/* Lines */}
+                                        {/* Attendance (Blue) */}
+                                        <path
+                                            d="M 50 40 Q 150 35 250 45 T 450 38"
+                                            stroke="#3b82f6"
+                                            strokeWidth="2.5"
+                                            fill="none"
+                                        />
+                                        {/* Compliance (Emerald) */}
+                                        <path
+                                            d="M 50 65 Q 150 55 250 60 T 450 52"
+                                            stroke="#10b981"
+                                            strokeWidth="2.5"
+                                            fill="none"
+                                        />
+                                        {/* Tasks (Purple) */}
+                                        <path
+                                            d="M 50 95 Q 150 90 250 92 T 450 88"
+                                            stroke="#a855f7"
+                                            strokeWidth="2.5"
+                                            fill="none"
+                                        />
+                                        {/* Research/Extension (Amber) */}
+                                        <path
+                                            d="M 50 135 Q 150 130 250 132 T 450 128"
+                                            stroke="#f59e0b"
+                                            strokeWidth="2.5"
+                                            fill="none"
+                                        />
+                                    </svg>
                                 </div>
 
-                                {/* 4 Breakdown Metric Boxes with Mini Bar Charts (7 cols) */}
-                                <div className="md:col-span-7 grid grid-cols-2 gap-3">
-                                    {/* ON-TIME */}
-                                    <div className="bg-slate-50/70 dark:bg-slate-850/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-end">
-                                        <div>
-                                            <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">ON-TIME</span>
-                                            <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">{activeCompliance.on_time}</p>
-                                        </div>
-                                        <div className="flex items-end gap-1 h-8 pb-0.5">
-                                            <span className="w-1.5 h-3 bg-emerald-500/40 rounded-full" />
-                                            <span className="w-1.5 h-5 bg-emerald-500/60 rounded-full" />
-                                            <span className="w-1.5 h-7 bg-emerald-500 rounded-full" />
-                                            <span className="w-1.5 h-4 bg-emerald-500/50 rounded-full" />
-                                        </div>
-                                    </div>
-
-                                    {/* LATE */}
-                                    <div className="bg-slate-50/70 dark:bg-slate-850/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-end">
-                                        <div>
-                                            <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">LATE</span>
-                                            <p className="text-xl font-black text-blue-600 dark:text-blue-400 mt-0.5">{activeCompliance.late}</p>
-                                        </div>
-                                        <div className="flex items-end gap-1 h-8 pb-0.5">
-                                            <span className="w-1.5 h-5 bg-blue-500/40 rounded-full" />
-                                            <span className="w-1.5 h-7 bg-blue-500 rounded-full" />
-                                            <span className="w-1.5 h-4 bg-blue-500/60 rounded-full" />
-                                            <span className="w-1.5 h-6 bg-blue-500/80 rounded-full" />
-                                        </div>
-                                    </div>
-
-                                    {/* PENDING */}
-                                    <div className="bg-slate-50/70 dark:bg-slate-850/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-end">
-                                        <div>
-                                            <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">PENDING</span>
-                                            <p className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5">{activeCompliance.pending}</p>
-                                        </div>
-                                        <div className="flex items-end gap-1 h-8 pb-0.5">
-                                            <span className="w-1.5 h-3 bg-amber-500/40 rounded-full" />
-                                            <span className="w-1.5 h-6 bg-amber-500 rounded-full" />
-                                            <span className="w-1.5 h-4 bg-amber-500/60 rounded-full" />
-                                            <span className="w-1.5 h-5 bg-amber-500/80 rounded-full" />
-                                        </div>
-                                    </div>
-
-                                    {/* OVERDUE */}
-                                    <div className="bg-slate-50/70 dark:bg-slate-850/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-end">
-                                        <div>
-                                            <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">OVERDUE</span>
-                                            <p className="text-xl font-black text-red-600 dark:text-red-400 mt-0.5">{activeCompliance.overdue}</p>
-                                        </div>
-                                        <div className="flex items-end gap-1 h-8 pb-0.5">
-                                            <span className="w-1.5 h-4 bg-red-500/40 rounded-full" />
-                                            <span className="w-1.5 h-7 bg-red-500 rounded-full" />
-                                            <span className="w-1.5 h-5 bg-red-500/60 rounded-full" />
-                                            <span className="w-1.5 h-6 bg-red-500/80 rounded-full" />
-                                        </div>
-                                    </div>
+                                {/* Month labels */}
+                                <div className="flex justify-between px-6 text-[10px] font-bold text-muted-foreground uppercase">
+                                    <span>Aug</span>
+                                    <span>Sep</span>
+                                    <span>Oct</span>
+                                    <span>Nov</span>
+                                    <span>Dec</span>
                                 </div>
-                            </div>
 
-                            {/* Program Compliance Comparison Horizontal Bars */}
-                            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                                <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide mb-3">
-                                    Program Compliance Comparison
-                                </h3>
-                                <div className="flex flex-col gap-2.5">
-                                    {activePrograms.map((p: any) => (
-                                        <div key={p.id || p.name} className="flex items-center gap-3 text-xs">
-                                            <span className="w-12 font-bold text-slate-700 dark:text-slate-300 shrink-0">
-                                                {p.name || p.code}
-                                            </span>
-                                            <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
-                                                <div
-                                                    className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-                                                    style={{ width: `${p.compliance_rate}%` }}
-                                                />
-                                            </div>
-                                            <span className="w-12 text-right font-semibold text-slate-500 dark:text-slate-400 shrink-0">
-                                                {p.compliance_rate}%
-                                            </span>
-                                        </div>
-                                    ))}
+                                {/* Legend */}
+                                <div className="flex flex-wrap items-center justify-center gap-4 pt-3 border-t border-border/50 text-[11px] font-bold">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                        <span>Compliance Rate</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                                        <span>Attendance Rate</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+                                        <span>Tasks</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                                        <span>Research / Extension</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Urgent Pending Outputs Card */}
-                        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs transition-colors">
-                            <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800 mb-2">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                                        <FileText className="w-4 h-4 text-amber-500" />
+                    {/* Key Metrics Distribution (3 cols) */}
+                    <div className="lg:col-span-3 bg-card rounded-2xl border border-border p-5 shadow-2xs flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                <div>
+                                    <h3 className="text-sm font-bold text-foreground">Key Metrics Distribution</h3>
+                                    <p className="text-[11px] text-muted-foreground">Faculty status breakdown.</p>
+                                </div>
+                                <select
+                                    value={distributionTab}
+                                    onChange={(e) => setDistributionTab(e.target.value as any)}
+                                    className="bg-muted text-[11px] font-bold rounded-lg px-2 py-1 border-0"
+                                >
+                                    <option value="Compliance">Compliance</option>
+                                    <option value="Attendance">Attendance</option>
+                                    <option value="Tasks">Tasks</option>
+                                </select>
+                            </div>
+
+                            <div className="mt-5 flex flex-col items-center">
+                                {/* Donut representation */}
+                                <div className="relative w-32 h-32 rounded-full border-[12px] border-emerald-500 flex items-center justify-center">
+                                    <div className="text-center">
+                                        <div className="text-xl font-black text-foreground">
+                                            {metrics_distribution.total_faculty}
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground font-semibold">Faculty Members</div>
                                     </div>
-                                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                                        Urgent Pending Outputs
-                                    </h2>
+                                </div>
+
+                                <div className="w-full mt-6 space-y-2 text-xs">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                            <span className="font-medium text-muted-foreground">Compliant</span>
+                                        </div>
+                                        <span className="font-bold text-foreground">
+                                            {metrics_distribution.compliant} ({metrics_distribution.compliant_pct}%)
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                                            <span className="font-medium text-muted-foreground">Minor Issues</span>
+                                        </div>
+                                        <span className="font-bold text-foreground">
+                                            {metrics_distribution.minor_issues} ({metrics_distribution.minor_issues_pct}%)
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+                                            <span className="font-medium text-muted-foreground">Needs Attention</span>
+                                        </div>
+                                        <span className="font-bold text-foreground">
+                                            {metrics_distribution.needs_attention} ({metrics_distribution.needs_attention_pct}%)
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                                            <span className="font-medium text-muted-foreground">Non-Compliant</span>
+                                        </div>
+                                        <span className="font-bold text-foreground">
+                                            {metrics_distribution.non_compliant} ({metrics_distribution.non_compliant_pct}%)
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Productivity by Program Bars (4 cols) */}
+                    <div className="lg:col-span-4 bg-card rounded-2xl border border-border p-5 shadow-2xs flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                <div>
+                                    <h3 className="text-sm font-bold text-foreground">Productivity by Program</h3>
+                                    <p className="text-[11px] text-muted-foreground">Program comparison metrics.</p>
+                                </div>
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-muted text-foreground">
+                                    Compliance Rate
+                                </span>
+                            </div>
+
+                            <div className="mt-5 space-y-4">
+                                {productivity_by_program.map((p) => (
+                                    <div key={p.code} className="space-y-1.5">
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="font-bold text-foreground">{p.code}</span>
+                                            <span className="font-mono font-bold text-foreground">{p.rate}%</span>
+                                        </div>
+                                        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full ${
+                                                    p.code === 'BSIT'
+                                                        ? 'bg-emerald-500'
+                                                        : p.code === 'BSIS'
+                                                        ? 'bg-teal-500'
+                                                        : p.code === 'BSCS'
+                                                        ? 'bg-blue-500'
+                                                        : p.code === 'BSDS'
+                                                        ? 'bg-sky-500'
+                                                        : 'bg-indigo-500'
+                                                }`}
+                                                style={{ width: `${p.rate}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Average row */}
+                                <div className="pt-3 border-t border-border/60 flex items-center justify-between text-xs font-black">
+                                    <span className="text-muted-foreground">All Programs (Avg)</span>
+                                    <span className="text-emerald-600 font-mono">
+                                        {computedAverage}%
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Secondary Row: Attendance Rate Curve | Research & Extension Involvement | Tasks & Projects Radial */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Attendance Rate */}
+                    <div className="bg-card rounded-2xl border border-border p-5 shadow-2xs flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                <div>
+                                    <h3 className="text-sm font-bold text-foreground">Attendance Rate</h3>
+                                    <p className="text-[11px] text-muted-foreground">Faculty attendance for classes, meetings, and activities.</p>
+                                </div>
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-muted text-foreground">
+                                    This Semester
+                                </span>
+                            </div>
+
+                            <div className="mt-4 flex items-center justify-between">
+                                <div>
+                                    <div className="text-3xl font-black text-foreground">94%</div>
+                                    <div className="text-xs text-muted-foreground font-semibold">Overall Attendance</div>
+                                    <div className="text-[11px] font-bold text-emerald-600 mt-0.5">↑ 3% vs. last sem</div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-lg font-black text-rose-600">2</div>
+                                    <div className="text-[11px] text-muted-foreground font-semibold">Faculty with low attendance</div>
+                                    <Link
+                                        href="/faculty-attendance"
+                                        className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1 justify-end mt-1"
+                                    >
+                                        View Details <ArrowUpRight className="w-3 h-3" />
+                                    </Link>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 h-16 w-full">
+                                <svg className="w-full h-full text-blue-500" viewBox="0 0 300 60" fill="none">
+                                    <path
+                                        d="M 10 40 Q 60 25 120 35 T 290 20"
+                                        stroke="currentColor"
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Research & Extension Involvement */}
+                    <div className="bg-card rounded-2xl border border-border p-5 shadow-2xs flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                <div>
+                                    <h3 className="text-sm font-bold text-foreground">Research & Extension Involvement</h3>
+                                    <p className="text-[11px] text-muted-foreground">Active research and extension projects with faculty participation.</p>
+                                </div>
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-muted text-foreground">
+                                    This Semester
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mt-4">
+                                <div className="p-3.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40">
+                                    <div className="text-2xl font-black text-purple-700 dark:text-purple-300">12</div>
+                                    <div className="text-xs font-bold text-foreground mt-0.5">Active Research Projects</div>
+                                    <div className="text-[10px] text-muted-foreground mt-0.5">↑ 2 vs. last sem</div>
+                                </div>
+                                <div className="p-3.5 rounded-xl bg-teal-50/50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/40">
+                                    <div className="text-2xl font-black text-teal-700 dark:text-teal-300">8</div>
+                                    <div className="text-xs font-bold text-foreground mt-0.5">Active Extension Programs</div>
+                                    <div className="text-[10px] text-muted-foreground mt-0.5">↑ 3 vs. last sem</div>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 space-y-2">
+                                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Recent Activities</div>
+                                <div className="text-xs space-y-1.5 font-medium">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5 truncate">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                            <span className="truncate">AI Research Workshop</span>
+                                        </div>
+                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">Oct 12, 2026</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5 truncate">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />
+                                            <span className="truncate">Community Tech Literacy Program</span>
+                                        </div>
+                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">Oct 10, 2026</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5 truncate">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+                                            <span className="truncate">CIDS Research Colloquium</span>
+                                        </div>
+                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">Oct 5, 2026</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tasks & Projects */}
+                    <div className="bg-card rounded-2xl border border-border p-5 shadow-2xs flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                <div>
+                                    <h3 className="text-sm font-bold text-foreground">Tasks & Projects</h3>
+                                    <p className="text-[11px] text-muted-foreground">Departmental task execution progress.</p>
+                                </div>
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-muted text-foreground">
+                                    This Semester
+                                </span>
+                            </div>
+
+                            <div className="mt-4 flex items-center justify-between gap-4">
+                                {/* Radial progress */}
+                                <div className="relative w-24 h-24 rounded-full border-8 border-emerald-500 flex items-center justify-center shrink-0">
+                                    <div className="text-center">
+                                        <div className="text-lg font-black text-foreground">74%</div>
+                                        <div className="text-[8px] text-muted-foreground font-semibold uppercase">Completion</div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 text-xs flex-1">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                            <span className="text-muted-foreground font-medium">Completed</span>
+                                        </div>
+                                        <span className="font-bold text-foreground">{kpis.tasks_completed}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                            <span className="text-muted-foreground font-medium">In Progress</span>
+                                        </div>
+                                        <span className="font-bold text-foreground">{kpis.tasks_in_progress}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full bg-rose-500" />
+                                            <span className="text-muted-foreground font-medium">Overdue</span>
+                                        </div>
+                                        <span className="font-bold text-rose-600">{kpis.tasks_overdue}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 pt-3 border-t border-border/60">
+                                <Link
+                                    href="/tasks"
+                                    className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"
+                                >
+                                    View All Tasks <ArrowUpRight className="w-3.5 h-3.5" />
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 5. Bottom Section: Faculty Needs Attention Table (Left) | Upcoming Activities (Right) */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Faculty Needs Attention (8 cols) */}
+                    <div className="lg:col-span-8 bg-card rounded-2xl border border-border p-5 shadow-2xs flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                <div className="flex items-center gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-rose-500" />
+                                    <div>
+                                        <h3 className="text-sm font-bold text-foreground">Faculty Needs Attention</h3>
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Prioritizes faculty with unresolved compliance, low attendance, overdue deliverables, or missing required records.
+                                        </p>
+                                    </div>
                                 </div>
                                 <Link
-                                    href="/compliance/pending-outputs"
-                                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                                    href="/performance/faculty"
+                                    className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"
                                 >
-                                    View All <ArrowRight className="w-3.5 h-3.5" />
+                                    View All <ArrowUpRight className="w-3 h-3" />
                                 </Link>
                             </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-xs text-left">
-                                    <thead>
-                                        <tr className="text-slate-400 dark:text-slate-500 font-medium border-b border-slate-100 dark:border-slate-800">
-                                            <th className="py-2.5 pr-3 font-semibold">Faculty</th>
-                                            <th className="py-2.5 px-3 font-semibold">Program</th>
-                                            <th className="py-2.5 px-3 font-semibold">Requirement</th>
-                                            <th className="py-2.5 px-3 font-semibold">Deadline</th>
-                                            <th className="py-2.5 pl-3 font-semibold text-right">Status</th>
+                            <div className="overflow-x-auto mt-4">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="bg-muted/40 text-muted-foreground border-b border-border/60">
+                                        <tr>
+                                            <th className="p-3 font-bold">#</th>
+                                            <th className="p-3 font-bold">Faculty Name</th>
+                                            <th className="p-3 font-bold">Program</th>
+                                            <th className="p-3 font-bold">Issue</th>
+                                            <th className="p-3 font-bold">Details</th>
+                                            <th className="p-3 font-bold">Status</th>
+                                            <th className="p-3 font-bold text-right">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                                        {activeUrgentPending.map((p: any, idx: number) => (
-                                            <tr key={p.id || idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-850/50 transition-colors">
-                                                <td className="py-3 pr-3 font-semibold text-slate-900 dark:text-slate-100">{p.faculty}</td>
-                                                <td className="py-3 px-3 text-slate-600 dark:text-slate-300 font-medium">{p.program}</td>
-                                                <td className="py-3 px-3 text-slate-700 dark:text-slate-200">{p.requirement}</td>
-                                                <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">{p.due_date}</td>
-                                                <td className="py-3 pl-3 text-right">
-                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${p.status === 'Overdue'
-                                                            ? 'bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-300 border border-red-200/50 dark:border-red-900/40'
-                                                            : 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/50 dark:border-amber-900/40'
-                                                        }`}>
-                                                        {p.status}
+                                    <tbody className="divide-y divide-border/40 font-medium">
+                                        {faculty_needs_attention.map((f, idx) => (
+                                            <tr key={f.id} className="hover:bg-muted/30">
+                                                <td className="p-3 text-muted-foreground">{idx + 1}</td>
+                                                <td className="p-3 font-bold text-foreground">{f.name}</td>
+                                                <td className="p-3 text-muted-foreground font-semibold">{f.program}</td>
+                                                <td className="p-3">
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                        f.issue_type === 'attendance'
+                                                            ? 'bg-amber-100 text-amber-800'
+                                                            : f.issue_type === 'compliance'
+                                                            ? 'bg-rose-100 text-rose-800'
+                                                            : f.issue_type === 'workload'
+                                                            ? 'bg-purple-100 text-purple-800'
+                                                            : 'bg-blue-100 text-blue-800'
+                                                    }`}>
+                                                        ● {f.issue}
                                                     </span>
+                                                </td>
+                                                <td className="p-3 text-muted-foreground">{f.details}</td>
+                                                <td className="p-3">
+                                                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                                                        {f.status}
+                                                    </span>
+                                                </td>
+                                                <td className="p-3 text-right">
+                                                    <Link
+                                                        href={`/faculties/${f.faculty_id}`}
+                                                        className="px-2.5 py-1 rounded-lg border border-border text-[11px] font-bold hover:bg-muted inline-flex items-center gap-1 shadow-2xs"
+                                                    >
+                                                        <Eye className="w-3 h-3" /> View Dossier
+                                                    </Link>
                                                 </td>
                                             </tr>
                                         ))}
@@ -425,148 +889,45 @@ export default function Dashboard({
                         </div>
                     </div>
 
-                    {/* Right Column (4 of 12 cols): Today's Schedule & Top Programs */}
-                    <div className="lg:col-span-4 flex flex-col gap-6">
-                        {/* Today's Schedule Card */}
-                        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs transition-colors">
-                            <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800 mb-3">
+                    {/* Upcoming Activities (4 cols) */}
+                    <div className="lg:col-span-4 bg-card rounded-2xl border border-border p-5 shadow-2xs flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                                        <CalendarIcon className="w-4 h-4 text-amber-500" />
-                                    </div>
-                                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                                        Today's Schedule
-                                    </h2>
+                                    <Calendar className="w-4 h-4 text-blue-500" />
+                                    <h3 className="text-sm font-bold text-foreground">Upcoming Activities</h3>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={openCalendar}
-                                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 flex items-center gap-1 transition-colors cursor-pointer"
-                                    title="Open Consolidated Calendar Modal"
+                                <Link
+                                    href="/schedule/calendar"
+                                    className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"
                                 >
-                                    View All <ArrowRight className="w-3.5 h-3.5" />
-                                </button>
+                                    View All <ArrowUpRight className="w-3 h-3" />
+                                </Link>
                             </div>
 
-                            <div className="flex flex-col gap-3">
-                                {activeSchedule.map((item: any, i: number) => (
-                                    <div
-                                        key={i}
-                                        onClick={openCalendar}
-                                        className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-all cursor-pointer flex flex-col gap-1 group"
-                                    >
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="font-bold text-slate-800 dark:text-slate-200 font-mono text-[11px]">
-                                                {item.time}
+                            <div className="mt-4 space-y-3">
+                                {upcoming_activities.map((a, idx) => (
+                                    <div key={idx} className="p-3 rounded-xl border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-bold text-blue-600 font-mono">
+                                                {a.date_time}
                                             </span>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${item.type === 'Activity'
-                                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                                                    : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
-                                                }`}>
-                                                {item.type}
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                                                {a.type}
                                             </span>
                                         </div>
-
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <span className={`w-2 h-2 rounded-full shrink-0 ${item.dotColor || 'bg-blue-500'}`} />
-                                            <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors leading-snug truncate">
-                                                {item.title}
-                                            </h4>
-                                        </div>
-
-                                        <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 pl-4 mt-0.5">
-                                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                                            <span className="truncate">{item.venue}</span>
+                                        <h4 className="text-xs font-bold text-foreground mt-1">{a.title}</h4>
+                                        <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center justify-between">
+                                            <span>Location: {a.location}</span>
+                                            <span>{a.participants}</span>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
-
-                        {/* Top Performing Programs Card */}
-                        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs transition-colors">
-                            <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800 mb-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                                        <Trophy className="w-4 h-4 text-amber-500" />
-                                    </div>
-                                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                                        Top Performing Programs
-                                    </h2>
-                                </div>
-
-                                <div className="relative">
-                                    <select
-                                        value={selectedProgramRankingFilter}
-                                        onChange={(e) => setSelectedProgramRankingFilter(e.target.value)}
-                                        className="appearance-none bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-lg pl-3 pr-7 py-1.5 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-2xs cursor-pointer"
-                                    >
-                                        <option value="This Semester">This Semester</option>
-                                        <option value="Annual">Annual</option>
-                                    </select>
-                                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2 pointer-events-none" />
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col gap-3.5">
-                                {activeRankings.map((p: any, i: number) => {
-                                    const rankBadgeStyles = [
-                                        'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300',
-                                        'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300',
-                                        'bg-amber-200/70 text-amber-900 border-amber-400 dark:bg-amber-900/60 dark:text-amber-200',
-                                        'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-850 dark:text-slate-400',
-                                    ];
-
-                                    return (
-                                        <div key={p.id || i} className="flex items-center gap-3">
-                                            {/* Rank Circle */}
-                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border shrink-0 ${rankBadgeStyles[i] || rankBadgeStyles[3]}`}>
-                                                {i + 1}
-                                            </div>
-
-                                            {/* Name */}
-                                            <span className="w-12 font-bold text-xs text-slate-900 dark:text-slate-100 shrink-0">
-                                                {p.name || p.code}
-                                            </span>
-
-                                            {/* Progress Bar */}
-                                            <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                                                <div
-                                                    className="bg-emerald-500 h-full rounded-full transition-all"
-                                                    style={{ width: `${p.compliance_rate}%` }}
-                                                />
-                                            </div>
-
-                                            {/* Percentage */}
-                                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 w-10 text-right">
-                                                {p.compliance_rate}%
-                                            </span>
-
-                                            {/* Trend Badge */}
-                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shrink-0 ${p.changeType === 'down'
-                                                    ? 'text-red-600 bg-red-50 dark:bg-red-950/60 dark:text-red-300'
-                                                    : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300'
-                                                }`}>
-                                                {p.change || '+ 5%'}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
-
-            {/* In-Page Consolidated Calendar Modal (also accessible via header) */}
-            <ConsolidatedCalendarModal
-                isOpen={isCalendarModalOpen}
-                onClose={() => setIsCalendarModalOpen(false)}
-                events={calendar_data?.events}
-                programs={calendar_data?.programs}
-                venues={calendar_data?.venues}
-                initialDate="2026-10-13"
-            />
         </AppLayout>
     );
 }

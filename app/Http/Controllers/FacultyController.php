@@ -22,12 +22,153 @@ class FacultyController extends Controller
 {
     public function index(): Response
     {
-        $faculties = Faculty::with('program')->latest()->get();
+        ComplianceService::syncPendingSubmissions();
+
+        $faculties = Faculty::with(['program', 'submissions'])->latest()->get();
         $programs = Program::all();
+        $totalRequirements = Requirement::count();
+        $now = Carbon::now();
+
+        // 1. Metric Counters from actual records
+        $totalCount = $faculties->count();
+        $activeCount = $faculties->where('status', 'Active')->count();
+        $fullTimeCount = $faculties->filter(fn ($f) => stripos($f->employment_type ?? '', 'Full') !== false)->count();
+        $partTimeCount = $faculties->filter(fn ($f) => stripos($f->employment_type ?? '', 'Part') !== false)->count();
+
+        // 2. Compute individual attention issues & profile completion from DB
+        $completeProfilesCount = 0;
+        $incompleteProfilesCount = 0;
+        $missingRequirementsFacultyCount = 0;
+        $needsAttentionList = [];
+
+        foreach ($faculties as $faculty) {
+            $issues = [];
+            $hasIncompleteProfile = false;
+            $hasMissingRequirements = false;
+
+            // Missing specialization / qualification / bio checks
+            if (empty($faculty->specialization)) {
+                $issues[] = [
+                    'label' => 'Missing specialization',
+                    'type' => 'profile',
+                    'severity' => 'warning',
+                ];
+                $hasIncompleteProfile = true;
+            }
+
+            if (empty($faculty->highest_qualification)) {
+                $issues[] = [
+                    'label' => 'Incomplete qualification',
+                    'type' => 'profile',
+                    'severity' => 'warning',
+                ];
+                $hasIncompleteProfile = true;
+            }
+
+            if (empty($faculty->email) || empty($faculty->phone)) {
+                $hasIncompleteProfile = true;
+            }
+
+            // Submissions analysis
+            $verifiedOrSubmitted = $faculty->submissions
+                ->whereIn('status', ['submitted', 'approved', 'accepted'])
+                ->count();
+            $missingCount = max(0, $totalRequirements - $verifiedOrSubmitted);
+
+            if ($missingCount > 0) {
+                $hasMissingRequirements = true;
+                $missingRequirementsFacultyCount++;
+
+                if ($missingCount >= 5) {
+                    $issues[] = [
+                        'label' => "Missing {$missingCount} required submissions",
+                        'type' => 'compliance',
+                        'severity' => 'destructive',
+                    ];
+                }
+            }
+
+            if ($hasIncompleteProfile) {
+                $incompleteProfilesCount++;
+            } else {
+                $completeProfilesCount++;
+            }
+
+            if (! empty($issues)) {
+                $needsAttentionList[] = [
+                    'id' => $faculty->id,
+                    'name' => $faculty->title_name ?: "Prof. {$faculty->first_name} {$faculty->last_name}",
+                    'initials' => strtoupper(substr($faculty->first_name, 0, 1).substr($faculty->last_name, 0, 1)),
+                    'program' => $faculty->program?->code ?? 'Unassigned',
+                    'primary_issue' => $issues[0]['label'],
+                    'severity' => $issues[0]['severity'],
+                    'issue_count' => count($issues),
+                    'issues' => $issues,
+                    'photo_url' => $faculty->photo_url,
+                ];
+            }
+        }
+
+        $needsAttentionCount = count($needsAttentionList);
+
+        // 3. Profile Completion percentage from DB
+        $profileCompletionRate = $totalCount > 0
+            ? round(($completeProfilesCount / $totalCount) * 100)
+            : 0;
+
+        // 4. Real Recent Updates from DB (faculty records updated or created)
+        $recentUpdates = Faculty::with('program')
+            ->orderBy('updated_at', 'desc')
+            ->take(6)
+            ->get()
+            ->map(function ($f) {
+                $isNew = $f->created_at->diffInHours($f->updated_at) < 1;
+                $action = $isNew ? 'Profile registered' : 'Profile updated';
+
+                if (! empty($f->specialization) && $f->updated_at->diffInDays(Carbon::now()) < 3) {
+                    $action = 'Credentials & specialization updated';
+                }
+
+                return [
+                    'id' => $f->id,
+                    'faculty_name' => $f->title_name ?: "Prof. {$f->first_name} {$f->last_name}",
+                    'program' => $f->program?->code ?? 'CIDS',
+                    'action' => $action,
+                    'time_formatted' => $f->updated_at->format('M d, Y h:i A'),
+                    'time_ago' => $f->updated_at->diffForHumans(),
+                    'type' => $isNew ? 'create' : 'update',
+                ];
+            });
+
+        // 5. Academic rank options directly from DB
+        $ranks = Faculty::whereNotNull('academic_rank')
+            ->where('academic_rank', '!=', '')
+            ->distinct()
+            ->pluck('academic_rank')
+            ->sort()
+            ->values();
 
         return Inertia::render('faculties/index', [
             'faculties' => $faculties,
             'programs' => $programs,
+            'ranks' => $ranks,
+            'stats' => [
+                'total_faculty' => $totalCount,
+                'active_faculty' => $activeCount,
+                'full_time' => $fullTimeCount,
+                'part_time' => $partTimeCount,
+                'needs_attention' => $needsAttentionCount,
+                'needs_attention_pct' => $totalCount > 0 ? round(($needsAttentionCount / $totalCount) * 100) : 0,
+            ],
+            'needsAttention' => $needsAttentionList,
+            'profileCompletion' => [
+                'completion_rate' => $profileCompletionRate,
+                'complete_count' => $completeProfilesCount,
+                'incomplete_count' => $incompleteProfilesCount,
+                'missing_requirements_count' => $missingRequirementsFacultyCount,
+                'total_faculty' => $totalCount,
+            ],
+            'recentUpdates' => $recentUpdates,
         ]);
     }
 

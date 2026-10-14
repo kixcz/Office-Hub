@@ -67,6 +67,7 @@ const SLIDE_TYPES = {
     eight: 'Slide 8 - Consolidated Calendar',
     nine: 'Slide 9 - Compliance Tracker',
     ten: 'Slide 10 - Tasks & Projects',
+    eleven: 'Slide 11 - Program Performance',
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -207,6 +208,7 @@ export default function TvDisplay({ slides, data, current_term }: any) {
                 {currentSlide.type === SLIDE_TYPES.eight && <SlideEight data={data.slide8} isDark={isDark} />}
                 {(currentSlide.type === SLIDE_TYPES.nine || currentSlide.type.includes('Compliance Tracker')) && <SlideNine data={data.slide9} isDark={isDark} />}
                 {(currentSlide.type === SLIDE_TYPES.ten || currentSlide.type.includes('Tasks & Projects') || currentSlide.type.includes('Tasks and Projects')) && <SlideTen data={data.slide10} isDark={isDark} />}
+                {(currentSlide.type === SLIDE_TYPES.eleven || currentSlide.type.includes('Program Performance')) && <SlideEleven data={data.slide11} isDark={isDark} />}
             </div>
 
             {/* Footer - Styled precisely as in reference images */}
@@ -3198,6 +3200,371 @@ function SlideTen({ data, isDark }: { data: any; isDark: boolean }) {
                         </div>
                     </div>
                 ))}
+            </div>
+        </div>
+    );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Slide 11 – Program Performance (Comparative Program Matrix & Highlights)   */
+/* -------------------------------------------------------------------------- */
+
+function SlideEleven({ data, isDark }: { data: any; isDark: boolean }) {
+    if (!data) {
+        return (
+            <div className="flex flex-1 items-center justify-center p-8 text-center text-slate-400">
+                <p>No program performance data currently available.</p>
+            </div>
+        );
+    }
+
+    const { performances = [], kpis = {}, academic_period = {} } = data;
+
+    const rankColors = [
+        'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20 border-amber-300',
+        'bg-slate-200 text-slate-800 border-slate-300',
+        'bg-[#b45309] text-white border-amber-600',
+    ];
+
+    return (
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3.5 select-none overflow-hidden font-['Poppins']">
+            {/* Top KPI Metrics Row (4 Cards) */}
+            <div className="grid grid-cols-4 gap-3.5 shrink-0">
+                {/* 1. Total Programs */}
+                <div className={cn(
+                    "rounded-2xl p-4 flex items-center justify-between border shadow-2xs transition-all",
+                    isDark ? "bg-[#131b2e] border-white/10 text-white" : "bg-white border-slate-200/80 text-slate-900"
+                )}>
+                    <div className="flex items-center gap-3">
+                        <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400 flex items-center justify-center shrink-0">
+                            <Building2 size={22} />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Programs</p>
+                            <p className="text-2xl font-black tabular-nums tracking-tight mt-0.5">
+                                {kpis.total_programs ?? performances.length}
+                            </p>
+                            <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mt-0.5">
+                                Active Academic Units
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. Total Faculty */}
+                <div className={cn(
+                    "rounded-2xl p-4 flex items-center justify-between border shadow-2xs transition-all",
+                    isDark ? "bg-[#131b2e] border-white/10 text-white" : "bg-white border-slate-200/80 text-slate-900"
+                )}>
+                    <div className="flex items-center gap-3">
+                        <div className="h-11 w-11 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-400 flex items-center justify-center shrink-0">
+                            <Users size={22} />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Faculty Members</p>
+                            <p className="text-2xl font-black tabular-nums tracking-tight mt-0.5">
+                                {kpis.total_faculty ?? 0}
+                            </p>
+                            <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                                <CheckCircle2 size={11} /> {kpis.compliant_faculty ?? 0} compliant ({kpis.compliance_rate ?? 0}%)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Average On-Time Rate */}
+                <div className={cn(
+                    "rounded-2xl p-4 flex items-center justify-between border shadow-2xs transition-all",
+                    isDark ? "bg-[#131b2e] border-white/10 text-white" : "bg-white border-slate-200/80 text-slate-900"
+                )}>
+                    <div className="flex items-center gap-3">
+                        <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <Clock size={22} />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Average On-Time Rate</p>
+                            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight mt-0.5">
+                                {kpis.on_time_rate ?? 0}%
+                            </p>
+                            <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                                {kpis.on_time_submissions ?? 0} on-time submissions
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Overdue Cases */}
+                <div className={cn(
+                    "rounded-2xl p-4 flex items-center justify-between border shadow-2xs transition-all",
+                    isDark ? "bg-[#131b2e] border-white/10 text-white" : "bg-white border-slate-200/80 text-slate-900"
+                )}>
+                    <div className="flex items-center gap-3">
+                        <div className="h-11 w-11 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400 flex items-center justify-center shrink-0">
+                            <AlertTriangle size={22} />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Overdue Requirements</p>
+                            <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums tracking-tight mt-0.5">
+                                {kpis.overdue_count ?? 0}
+                            </p>
+                            <p className="text-[10px] font-bold text-rose-500 dark:text-rose-400 mt-0.5">
+                                {kpis.overdue_count > 0 ? 'Requires follow-up' : 'All requirements up to date'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content: Comparative Programs Leaderboard Table + Program Highlight Cards */}
+            <div className="grid grid-cols-12 gap-3.5 flex-1 min-h-0 overflow-hidden">
+                {/* Left (8 Cols): Program Comparative Matrix Table */}
+                <div className={cn(
+                    "col-span-8 flex flex-col rounded-2xl border p-4.5 overflow-hidden shadow-2xs",
+                    isDark ? "bg-[#131b2e] border-white/10 text-white" : "bg-white border-slate-200/80 text-slate-900"
+                )}>
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5 shrink-0">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
+                                <Trophy size={18} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                                    Program Performance Ranking
+                                </h3>
+                                <p className="text-[11px] text-slate-400 font-medium">
+                                    Comparative compliance and on-time delivery across academic programs
+                                </p>
+                            </div>
+                        </div>
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            {academic_period.label || 'AY 2026–2027'}
+                        </span>
+                    </div>
+
+                    {/* Table View */}
+                    <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar pt-2">
+                        <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr className="border-b border-slate-100 dark:border-white/5 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                    <th className="py-2.5 px-3 text-center w-12">Rank</th>
+                                    <th className="py-2.5 px-3">Academic Program</th>
+                                    <th className="py-2.5 px-2 text-center">Faculty</th>
+                                    <th className="py-2.5 px-2 text-center">Compliant</th>
+                                    <th className="py-2.5 px-2 text-center">Overdue</th>
+                                    <th className="py-2.5 px-3 w-40">Compliance Rate</th>
+                                    <th className="py-2.5 px-3 w-36">On-Time Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                                {performances.map((p: any, idx: number) => {
+                                    const isTop = idx === 0;
+                                    return (
+                                        <tr
+                                            key={p.id}
+                                            className={cn(
+                                                "transition-colors",
+                                                isTop ? "bg-amber-500/5 dark:bg-amber-500/10" : "hover:bg-slate-50/60 dark:hover:bg-white/[0.02]"
+                                            )}
+                                        >
+                                            {/* Rank */}
+                                            <td className="py-3 px-3 text-center">
+                                                {idx < 3 ? (
+                                                    <span className={cn(
+                                                        "inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-black border",
+                                                        rankColors[idx]
+                                                    )}>
+                                                        {idx + 1}
+                                                    </span>
+                                                ) : (
+                                                    <span className="font-bold text-slate-400 text-xs">{idx + 1}</span>
+                                                )}
+                                            </td>
+
+                                            {/* Program Info */}
+                                            <td className="py-3 px-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className={cn(
+                                                        "px-2 py-0.5 rounded-md text-[10.5px] font-black uppercase tracking-wider",
+                                                        p.code === 'BSIS' ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300/40" :
+                                                        p.code === 'BSIT' ? "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-300/40" :
+                                                        p.code === 'BLIS' ? "bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300 border border-orange-300/40" :
+                                                        "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300/40"
+                                                    )}>
+                                                        {p.code}
+                                                    </span>
+                                                    <div className="min-w-0">
+                                                        <p className="font-bold text-slate-900 dark:text-white truncate text-xs leading-tight">
+                                                            {p.name}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-400 mt-0.5">
+                                                            {p.total_requirements} total assigned requirements
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {/* Total Faculty */}
+                                            <td className="py-3 px-2 text-center font-bold text-slate-700 dark:text-slate-300">
+                                                {p.total_faculty}
+                                            </td>
+
+                                            {/* Compliant Faculty */}
+                                            <td className="py-3 px-2 text-center font-black text-emerald-600 dark:text-emerald-400">
+                                                {p.compliant_faculty}
+                                            </td>
+
+                                            {/* Overdue */}
+                                            <td className="py-3 px-2 text-center font-black text-rose-600 dark:text-rose-400">
+                                                {p.overdue}
+                                            </td>
+
+                                            {/* Compliance Rate Progress Bar */}
+                                            <td className="py-3 px-3">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center justify-between text-[11px] font-black">
+                                                        <span className="text-emerald-600 dark:text-emerald-400">{p.compliance_rate}%</span>
+                                                        <span className="text-[9px] font-semibold text-slate-400">
+                                                            ({p.complied}/{p.total_requirements})
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                                        <div
+                                                            className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                                                            style={{ width: `${Math.min(100, p.compliance_rate)}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {/* On-Time Rate Progress Bar */}
+                                            <td className="py-3 px-3">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center justify-between text-[11px] font-black">
+                                                        <span className="text-sky-600 dark:text-sky-400">{p.on_time_rate}%</span>
+                                                        <span className="text-[9px] font-semibold text-slate-400">
+                                                            ({p.on_time}/{p.complied > 0 ? p.complied : p.total_requirements})
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                                        <div
+                                                            className="h-full rounded-full bg-sky-500 transition-all duration-500"
+                                                            style={{ width: `${Math.min(100, p.on_time_rate)}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Right (4 Cols): Top Performing Program Spotlight + Recognition Insights */}
+                <div className="col-span-4 flex flex-col gap-3.5 min-h-0 overflow-hidden">
+                    {/* Top Program Spotlight Hero Card */}
+                    {performances.length > 0 && (
+                        <div className="rounded-2xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] border border-slate-800 text-white p-4.5 flex flex-col justify-between shadow-md relative overflow-hidden shrink-0">
+                            <div className="absolute -right-6 -top-6 w-32 h-32 bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
+
+                            <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-7 w-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                                        <Trophy size={16} />
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Leading Program</span>
+                                </div>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-slate-200">
+                                    Rank #1
+                                </span>
+                            </div>
+
+                            <div className="mt-3 relative z-10 flex items-center gap-3">
+                                <div className="relative shrink-0 flex items-center justify-center w-12 h-12">
+                                    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 shadow-lg shadow-amber-500/30">
+                                        <Award size={24} className="drop-shadow-xs" />
+                                    </div>
+                                    <Sparkles size={12} className="absolute -top-1.5 -right-1 text-amber-300 animate-pulse" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="text-2xl font-black text-white leading-tight truncate">
+                                        {performances[0].code}
+                                    </h4>
+                                    <p className="text-[11px] text-slate-300 truncate mt-0.5 leading-snug">
+                                        {performances[0].name}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-3.5 pt-3 border-t border-white/10 grid grid-cols-2 gap-2 text-center relative z-10">
+                                <div className="bg-white/5 rounded-xl p-2">
+                                    <span className="text-[10px] text-slate-400 block font-semibold">Compliance</span>
+                                    <span className="text-lg font-black text-emerald-400 tabular-nums">
+                                        {performances[0].compliance_rate}%
+                                    </span>
+                                </div>
+                                <div className="bg-white/5 rounded-xl p-2">
+                                    <span className="text-[10px] text-slate-400 block font-semibold">On-Time Rate</span>
+                                    <span className="text-lg font-black text-sky-400 tabular-nums">
+                                        {performances[0].on_time_rate}%
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Program Insights List */}
+                    <div className={cn(
+                        "flex-1 min-h-0 flex flex-col rounded-2xl border p-4 overflow-hidden shadow-2xs",
+                        isDark ? "bg-[#131b2e] border-white/10 text-white" : "bg-white border-slate-200/80 text-slate-900"
+                    )}>
+                        <div className="flex items-center gap-2 pb-2.5 border-b border-slate-100 dark:border-white/5 shrink-0">
+                            <Star size={16} className="text-amber-500 shrink-0" />
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                Program Highlights
+                            </h4>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 mt-2.5">
+                            {performances.map((p: any) => (
+                                <div
+                                    key={p.id}
+                                    className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex items-center justify-between gap-2"
+                                >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className={cn(
+                                            "w-7 h-7 rounded-lg flex items-center justify-center font-black text-[10px] shrink-0",
+                                            p.code === 'BSIS' ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300" :
+                                            p.code === 'BSIT' ? "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300" :
+                                            p.code === 'BLIS' ? "bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300" :
+                                            "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300"
+                                        )}>
+                                            {p.code}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                {p.code}
+                                            </p>
+                                            <p className="text-[10px] text-slate-400 truncate">
+                                                {p.compliant_faculty} of {p.total_faculty} faculty compliant
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-right shrink-0">
+                                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 tabular-nums block">
+                                            {p.compliance_rate}%
+                                        </span>
+                                        <span className="text-[9px] font-bold text-slate-400">
+                                            {p.on_time_rate}% on-time
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

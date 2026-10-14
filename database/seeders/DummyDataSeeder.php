@@ -10,6 +10,7 @@ use App\Models\Faculty;
 use App\Models\Meeting;
 use App\Models\Program;
 use App\Models\Requirement;
+use App\Models\Role;
 use App\Models\RoomSchedule;
 use App\Models\Submission;
 use App\Models\TvSetting;
@@ -17,6 +18,7 @@ use App\Models\TvSlide;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DummyDataSeeder extends Seeder
 {
@@ -49,17 +51,35 @@ class DummyDataSeeder extends Seeder
             ['first' => 'Clark', 'last' => 'Kent', 'id' => 'CIDS-2026-008', 'rank' => 'Instructor III', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Master in Information Systems', 'spec' => 'Information Management & Ethics', 'email' => 'ckent@cids.edu', 'phone' => '+63 918 555 0333', 'room' => 'Room 208, CIDS Building', 'date' => '2022-01-20'],
             ['first' => 'Diana', 'last' => 'Prince', 'id' => 'CIDS-2026-009', 'rank' => 'Associate Professor II', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Ph.D. in Computer Science', 'spec' => 'Distributed Systems & Web Tech', 'email' => 'dprince@cids.edu', 'phone' => '+63 919 555 0444', 'room' => 'Room 310, CIDS Building', 'date' => '2019-11-10'],
             ['first' => 'Barry', 'last' => 'Allen', 'id' => 'CIDS-2026-010', 'rank' => 'Assistant Professor II', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Master of Science in Information Technology', 'spec' => 'High-Performance Computing & Networks', 'email' => 'ballen@cids.edu', 'phone' => '+63 920 555 0888', 'room' => 'Room 205, CIDS Building', 'date' => '2021-07-01'],
+            ['first' => 'Jerick Erie', 'last' => 'Vicente', 'id' => 'CIDS-2026-011', 'rank' => 'Instructor I', 'type' => 'Full-time', 'status' => 'Active', 'qual' => 'Master of Information Technology', 'spec' => 'Web Systems & Application Architecture', 'email' => 'jvicente@cids.edu', 'phone' => '+63 917 888 1234', 'room' => 'Room 303, CIDS Building', 'date' => '2023-08-15'],
         ];
+
+        $facultyRole = Role::firstOrCreate(['name' => 'Faculty Member']);
 
         $faculties = [];
         foreach ($facultyData as $i => $item) {
             $program = $programs[$i % count($programs)];
-            $faculties[] = Faculty::updateOrCreate(
+
+            // Ensure faculty has an associated User with default password
+            $user = User::firstOrCreate(
+                ['email' => $item['email']],
+                [
+                    'name' => "{$item['first']} {$item['last']}",
+                    'password' => Hash::make('password'),
+                ]
+            );
+
+            if ($facultyRole && ! $user->roles()->where('role_id', $facultyRole->id)->exists()) {
+                $user->roles()->attach($facultyRole->id);
+            }
+
+            $faculty = Faculty::updateOrCreate(
                 [
                     'first_name' => $item['first'],
                     'last_name' => $item['last'],
                 ],
                 [
+                    'user_id' => $user->id,
                     'program_id' => $program->id,
                     'faculty_id' => $item['id'],
                     'academic_rank' => $item['rank'],
@@ -73,6 +93,8 @@ class DummyDataSeeder extends Seeder
                     'employment_date' => $item['date'],
                 ]
             );
+
+            $faculties[] = $faculty;
         }
 
         // 3. Announcements
@@ -447,6 +469,33 @@ class DummyDataSeeder extends Seeder
                 'course_title' => 'Cybersecurity & Ethical Hacking',
                 'instructor' => 'Bruce Wayne',
                 'section' => 'BSIT 4-B',
+            ],
+            [
+                'room_name' => 'Room 301',
+                'start_time' => '08:00:00',
+                'end_time' => '09:30:00',
+                'course_code' => 'IT 301',
+                'course_title' => 'Object-Oriented Programming',
+                'instructor' => 'Jerick Erie Vicente',
+                'section' => 'BSIT 3A',
+            ],
+            [
+                'room_name' => 'Room 302',
+                'start_time' => '10:00:00',
+                'end_time' => '11:30:00',
+                'course_code' => 'IT 202',
+                'course_title' => 'Data Structures',
+                'instructor' => 'Jerick Erie Vicente',
+                'section' => 'BSIT 2B',
+            ],
+            [
+                'room_name' => 'Room 301',
+                'start_time' => '15:00:00',
+                'end_time' => '16:30:00',
+                'course_code' => 'IT 310',
+                'course_title' => 'Software Engineering',
+                'instructor' => 'Jerick Erie Vicente',
+                'section' => 'BSIT 3A',
             ],
         ];
 

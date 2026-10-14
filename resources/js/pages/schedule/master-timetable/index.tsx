@@ -63,9 +63,11 @@ export default function MasterTimetableIndex({
     sections = [],
     faculties = [],
 }: Props) {
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const initialView = (urlParams?.get('view') as any) || 'college';
     const [viewMode, setViewMode] = useState<
         'college' | 'program' | 'year' | 'section' | 'faculty' | 'room' | 'lab'
-    >('college');
+    >(['college', 'program', 'year', 'section', 'faculty', 'room', 'lab'].includes(initialView) ? initialView : 'college');
     const [filterSection, setFilterSection] = useState<string>('all');
     const [filterRoom, setFilterRoom] = useState<string>('all');
     const [filterFaculty, setFilterFaculty] = useState<string>('all');

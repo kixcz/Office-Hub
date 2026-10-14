@@ -48,62 +48,56 @@ export interface SchedulingNavGroup {
 
 export const SCHEDULING_NAV_GROUPS: SchedulingNavGroup[] = [
     {
-        title: 'WORKSPACE',
+        title: 'Master Data',
         items: [
-            { id: 'overview', title: 'Overview', url: '/schedule/generator', icon: Layers },
+            { id: 'programs-curriculum', title: 'Programs & Curriculum', url: '/schedule/master-data/programs', icon: GraduationCap },
+            { id: 'courses', title: 'Courses', url: '/schedule/sections?tab=courses', icon: BookOpen },
+            { id: 'sections', title: 'Sections', url: '/schedule/sections', icon: Table },
+            { id: 'faculty', title: 'Faculty', url: '/schedule/master-data/faculty', icon: Users },
+            { id: 'faculty-specializations', title: 'Faculty Specializations', url: '/schedule/master-data/faculty?tab=specializations', icon: Sparkles },
+            { id: 'faculty-preferences', title: 'Faculty Preferences', url: '/schedule/master-data/faculty?tab=preferences', icon: Sliders },
+            { id: 'faculty-availability', title: 'Faculty Availability', url: '/schedule/loading?view=availability', icon: Clock },
+            { id: 'rooms-laboratories', title: 'Rooms & Laboratories', url: '/schedule/master-data/rooms', icon: Building2 },
         ],
     },
     {
-        title: '01 · MASTER DATA',
+        title: 'Faculty Loading',
         items: [
-            { id: 'periods', title: 'Academic Periods', url: '/schedule/master-data/academic-periods', icon: Clock },
-            { id: 'calendar', title: 'Academic Calendar Import', url: '/schedule/calendar-import', icon: CalendarDays },
-            { id: 'curriculum', title: 'Programs & Curriculum', url: '/schedule/master-data/programs', icon: GraduationCap },
-            { id: 'sections', title: 'Sections & Offerings', url: '/schedule/sections', icon: Table },
-            { id: 'faculty', title: 'Faculty & Specializations', url: '/schedule/master-data/faculty', icon: Users },
-            { id: 'rooms', title: 'Rooms & Laboratories', url: '/schedule/master-data/rooms', icon: Building2 },
+            { id: 'load-policies', title: 'Load Policies', url: '/schedule/loading?view=policies', icon: SlidersHorizontal },
+            { id: 'faculty-credits', title: 'Faculty Credits', url: '/schedule/loading?view=credits', icon: Scale },
+            { id: 'loading-generator', title: 'Loading Generator', url: '/schedule/loading?view=generator', icon: Cpu },
+            { id: 'loading-review', title: 'Loading Review', url: '/schedule/loading?view=assignments', icon: CheckSquare },
         ],
     },
     {
-        title: '02 · FACULTY LOADING',
+        title: 'Timetable Generation',
         items: [
-            { id: 'policies', title: 'Load Policies', url: '/schedule/loading?view=policies', icon: Sliders },
-            { id: 'availability', title: 'Faculty Availability', url: '/schedule/loading?view=availability', icon: CalendarCheckIcon },
-            { id: 'loading', title: 'Load Assignments', url: '/schedule/loading', icon: Scale },
+            { id: 'constraints', title: 'Constraints', url: '/schedule/generator?tab=constraints', icon: SlidersHorizontal },
+            { id: 'schedule-generator', title: 'Schedule Generator', url: '/schedule/generator?tab=generate', icon: CalendarDays },
+            { id: 'candidate-schedules', title: 'Candidate Schedules', url: '/schedule/generator?tab=candidates', icon: FileSpreadsheet },
+            { id: 'conflict-checker', title: 'Conflict Checker', url: '/schedule/conflicts', icon: ShieldCheck, badge: '!' },
+            { id: 'timetable-editor', title: 'Timetable Editor', url: '/schedule/timetable', icon: Table },
         ],
     },
     {
-        title: '03 · TIMETABLE GENERATION',
+        title: 'Review & Approval',
         items: [
-            { id: 'constraints', title: 'Constraint Rules', url: '/schedule/generator?tab=constraints', icon: SlidersHorizontal },
-            { id: 'readiness', title: 'Readiness & Validation', url: '/schedule/generator?tab=readiness', icon: CheckCircle2 },
-            { id: 'generator', title: 'Generation Settings', url: '/schedule/generator?tab=generate', icon: Cpu },
-            { id: 'candidates', title: 'Candidate Comparison', url: '/schedule/generator?tab=candidates', icon: FileSpreadsheet },
-            { id: 'editor', title: 'Timetable Editor', url: '/schedule/timetable', icon: Table },
-            { id: 'conflicts', title: 'Conflict Center', url: '/schedule/conflicts', icon: ShieldCheck, badge: '!' },
+            { id: 'program-head-review', title: 'Program Head Review', url: '/schedule/reviews?role=program_head', icon: FileCheck },
+            { id: 'dean-review', title: 'Dean Review', url: '/schedule/reviews?role=dean', icon: ShieldCheck },
+            { id: 'flags-comments', title: 'Flags / Comments', url: '/schedule/reviews?tab=flags', icon: Eye },
+            { id: 'final-approval', title: 'Final Approval', url: '/schedule/reviews?tab=publish', icon: CheckCircle2 },
+            { id: 'schedule-versions', title: 'Schedule Versions', url: '/schedule/reviews?tab=versions', icon: Clock },
         ],
     },
     {
-        title: '04 · INSPECTION & APPROVAL',
+        title: 'Published Schedules',
         items: [
-            { id: 'reviews', title: 'Program Head Reviews', url: '/schedule/reviews?role=program_head', icon: FileCheck },
-            { id: 'dean', title: 'Dean Inspection', url: '/schedule/reviews?role=dean', icon: ShieldCheck },
-            { id: 'approval', title: 'Final Approval & Publish', url: '/schedule/reviews?tab=publish', icon: CheckSquare },
-            { id: 'versions', title: 'Versions & Audit Trail', url: '/schedule/reviews?tab=versions', icon: Clock },
-        ],
-    },
-    {
-        title: '05 · OFFICIAL SCHEDULES',
-        items: [
-            { id: 'published', title: 'Published Views', url: '/schedule/master-timetable', icon: Eye },
-            { id: 'utilization', title: 'Room Utilization', url: '/schedule/master-timetable?view=room', icon: BarChart3 },
-            { id: 'distribution', title: 'Faculty Distribution', url: '/schedule/master-timetable?tab=distribution', icon: Send },
-        ],
-    },
-    {
-        title: '06 · AI ASSISTANCE',
-        items: [
-            { id: 'assistant', title: 'Gemini Assistant', url: '/schedule/gemini', icon: Sparkles },
+            { id: 'master-schedule', title: 'Master Schedule', url: '/schedule/master-timetable?view=college', icon: Table },
+            { id: 'program-schedule', title: 'Program Schedule', url: '/schedule/master-timetable?view=program', icon: GraduationCap },
+            { id: 'year-level-schedule', title: 'Year-Level Schedule', url: '/schedule/master-timetable?view=year', icon: Layers },
+            { id: 'section-schedule', title: 'Section Schedule', url: '/schedule/master-timetable?view=section', icon: BookOpen },
+            { id: 'faculty-schedule', title: 'Faculty Schedule', url: '/schedule/master-timetable?view=faculty', icon: Users },
+            { id: 'room-lab-schedule', title: 'Room / Laboratory Schedule', url: '/schedule/master-timetable?view=room', icon: Building2 },
         ],
     },
 ];
@@ -196,7 +190,7 @@ export function SchedulingWorkspaceLayout({ children, currentPeriod }: Schedulin
                         </div>
 
                         <Link
-                            href="/administration/academic-periods"
+                            href="/schedule/master-data/academic-periods"
                             preserveScroll
                             className="block p-2.5 rounded-xl border border-amber-200/80 bg-amber-50/60 hover:bg-amber-100/50 transition-colors"
                         >
@@ -253,9 +247,10 @@ export function SchedulingWorkspaceLayout({ children, currentPeriod }: Schedulin
                                 {!isGroupClosed && (
                                     <div className="space-y-0.5">
                                         {filteredItems.map((item) => {
-                                            const isActive =
-                                                currentUrl === item.url ||
-                                                (item.url !== '/schedule/generator' && currentUrl.startsWith(item.url.split('?')[0]));
+                                            const itemHasQuery = item.url.includes('?');
+                                            const isActive = itemHasQuery
+                                                ? currentUrl === item.url
+                                                : currentUrl.split('?')[0] === item.url;
 
                                             return (
                                                 <Link

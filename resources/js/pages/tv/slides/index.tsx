@@ -306,6 +306,9 @@ export default function SlideConfigIndex({
             case 6: return 'Important announcements';
             case 7: return 'Faculty schedules and availability';
             case 8: return 'Consolidated academic calendar';
+            case 9: return 'Institutional overview and program compliance matrix';
+            case 10: return 'Workflow Kanban board and assignment tracker';
+            case 11: return 'Program performance ranking and comparative metrics';
             default: return 'Custom slide configuration';
         }
     };

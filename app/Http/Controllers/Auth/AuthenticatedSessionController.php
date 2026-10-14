@@ -33,8 +33,12 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if ($request->user()->hasRole('tv_display') || $request->user()->email === 'tv@cids.edu.ph') {
+        if ($request->user()->hasRole('Display Screen') || $request->user()->hasRole('tv_display') || $request->user()->email === 'tv@cids.edu.ph') {
             return redirect()->intended(route('tv-display', absolute: false));
+        }
+
+        if ($request->user()->hasRole('Faculty Member')) {
+            return redirect()->intended(route('faculty.dashboard', absolute: false));
         }
 
         return redirect()->intended(route('dashboard', absolute: false));

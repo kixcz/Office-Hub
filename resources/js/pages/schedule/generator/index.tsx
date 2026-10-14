@@ -108,8 +108,11 @@ export default function ScheduleGeneratorDashboard({
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
 
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const tabParam = urlParams?.get('tab');
+    const initialSection = tabParam === 'constraints' ? 'constraints' : (tabParam === 'specializations' ? 'specialization_assignment' : 'dashboard');
     // Active sub-view or tab
-    const [activeSection, setActiveSection] = useState<'dashboard' | 'specialization_assignment' | 'constraints'>('dashboard');
+    const [activeSection, setActiveSection] = useState<'dashboard' | 'specialization_assignment' | 'constraints'>(initialSection);
 
     // Import Form State
     const [importSource, setImportSource] = useState<'google_sheet' | 'csv_file' | 'sample_data'>('google_sheet');

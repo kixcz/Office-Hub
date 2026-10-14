@@ -12,6 +12,7 @@ class Faculty extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'first_name',
         'last_name',
         'spreadsheet_name',
@@ -98,6 +99,21 @@ class Faculty extends Model
     public function attendanceSummaries()
     {
         return $this->hasMany(FacultyAttendanceSummary::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function corrections()
+    {
+        return $this->hasMany(FacultyCorrection::class);
+    }
+
+    public function availabilities()
+    {
+        return $this->hasMany(FacultyAvailability::class);
     }
 
     public function tasks()

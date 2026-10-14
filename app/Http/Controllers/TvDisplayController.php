@@ -654,6 +654,111 @@ class TvDisplayController extends Controller
             'recent_tasks' => $allTasks->take(8)->map($formatTaskForTv)->all(),
         ];
 
+        // Data for Slide 11 (Program Performance)
+        $progModels = Program::with(['faculties.submissions.requirement'])->get();
+        $progPerformances = [];
+        $progColors = [
+            'BSIS' => 'amber',
+            'BSIT' => 'sky',
+            'BLIS' => 'orange',
+            'BSCS' => 'purple',
+        ];
+
+        foreach ($progModels as $pm) {
+            $pmTotalFaculty = $pm->faculties->count();
+            $pmCompliantFaculty = 0;
+            $pmPerfectFaculty = 0;
+            $pmTotalReqs = 0;
+            $pmCompliedReqs = 0;
+            $pmOnTimeReqs = 0;
+            $pmOverdueReqs = 0;
+            $pmPendingReqs = 0;
+
+            foreach ($pm->faculties as $pf) {
+                $fReqs = $pf->submissions->count();
+                $fComplied = 0;
+                $fOnTime = 0;
+                $fOverdue = 0;
+
+                foreach ($pf->submissions as $sub) {
+                    $pmTotalReqs++;
+                    $subDue = $sub->requirement && $sub->requirement->due_date ? Carbon::parse($sub->requirement->due_date) : $now;
+
+                    if ($sub->submitted_at) {
+                        $pmCompliedReqs++;
+                        $fComplied++;
+                        if (! Carbon::parse($sub->submitted_at)->greaterThan($subDue)) {
+                            $pmOnTimeReqs++;
+                            $fOnTime++;
+                        }
+                    } elseif ($now->greaterThan($subDue)) {
+                        $pmOverdueReqs++;
+                        $fOverdue++;
+                    } else {
+                        $pmPendingReqs++;
+                    }
+                }
+
+                if ($fReqs > 0 && $fComplied >= ($fReqs * 0.8)) {
+                    $pmCompliantFaculty++;
+                }
+                if ($fReqs > 0 && $fComplied === $fReqs && $fOverdue === 0) {
+                    $pmPerfectFaculty++;
+                }
+            }
+
+            $pmComplianceRate = $pmTotalReqs > 0 ? round(($pmCompliedReqs / $pmTotalReqs) * 100, 1) : 0;
+            $pmOnTimeRate = $pmCompliedReqs > 0 ? round(($pmOnTimeReqs / $pmCompliedReqs) * 100, 1) : 0;
+
+            $progPerformances[] = [
+                'id' => $pm->id,
+                'name' => $pm->name,
+                'code' => $pm->code,
+                'badge_color' => $progColors[$pm->code] ?? 'slate',
+                'total_faculty' => $pmTotalFaculty,
+                'compliant_faculty' => $pmCompliantFaculty,
+                'perfect_faculty_count' => $pmPerfectFaculty,
+                'total_requirements' => $pmTotalReqs,
+                'complied' => $pmCompliedReqs,
+                'on_time' => $pmOnTimeReqs,
+                'overdue' => $pmOverdueReqs,
+                'pending' => $pmPendingReqs,
+                'compliance_rate' => $pmComplianceRate,
+                'on_time_rate' => $pmOnTimeRate,
+                'trend' => $pmComplianceRate >= 70 ? 'up' : 'down',
+            ];
+        }
+
+        // Sort programs by compliance rate descending
+        $progPerformances = collect($progPerformances)->sortByDesc('compliance_rate')->values()->all();
+
+        $progTotalFaculty = collect($progPerformances)->sum('total_faculty');
+        $progCompliantFaculty = collect($progPerformances)->sum('compliant_faculty');
+        $progOverallCompliance = $progTotalFaculty > 0 ? round(($progCompliantFaculty / $progTotalFaculty) * 100, 1) : 0;
+        $progTotalCompliedReqs = collect($progPerformances)->sum('complied');
+        $progTotalOnTimeReqs = collect($progPerformances)->sum('on_time');
+        $progOverallOnTime = $progTotalCompliedReqs > 0 ? round(($progTotalOnTimeReqs / $progTotalCompliedReqs) * 100, 1) : 0;
+        $progTotalOverdue = collect($progPerformances)->sum('overdue');
+
+        $programPerformanceData = [
+            'performances' => $progPerformances,
+            'kpis' => [
+                'total_programs' => count($progPerformances),
+                'total_faculty' => $progTotalFaculty,
+                'compliant_faculty' => $progCompliantFaculty,
+                'compliance_rate' => $progOverallCompliance,
+                'on_time_submissions' => $progTotalOnTimeReqs,
+                'on_time_rate' => $progOverallOnTime,
+                'overdue_count' => $progTotalOverdue,
+            ],
+            'academic_period' => [
+                'year' => 'AY 2026–2027',
+                'semester' => '1st Semester',
+                'date_range' => 'Aug 15, 2026 – Dec 15, 2026',
+                'label' => 'AY 2026–2027, 1st Semester',
+            ],
+        ];
+
         return Inertia::render('tv/display', [
             'settings' => $settings,
             'slides' => $slides,
@@ -714,6 +819,7 @@ class TvDisplayController extends Controller
                 ],
                 'slide9' => $complianceTrackerData,
                 'slide10' => $tasksAndProjectsData,
+                'slide11' => $programPerformanceData,
             ],
             'current_term' => $settings['academic_term'] ?? 'AY 2026-2027, 1st Semester',
         ]);

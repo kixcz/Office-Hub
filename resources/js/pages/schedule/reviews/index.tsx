@@ -37,7 +37,11 @@ export default function ScheduleReviewsIndex({
     academicPeriods,
     programs = [],
 }: Props) {
-    const [reviewRole, setReviewRole] = useState<'program_head' | 'dean' | 'super_admin'>('program_head');
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const initialRole = (urlParams?.get('role') as any) || 'program_head';
+    const [reviewRole, setReviewRole] = useState<'program_head' | 'dean' | 'super_admin'>(
+        ['program_head', 'dean', 'super_admin'].includes(initialRole) ? initialRole : 'program_head'
+    );
     const [isConsolidating, setIsConsolidating] = useState(false);
 
     // Initial Program Head flagged issues
