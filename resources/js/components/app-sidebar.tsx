@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavGroup, type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Megaphone, FileCheck, CheckSquare, Trophy, Send, Calendar, Inbox, Monitor, GraduationCap, Users, ListVideo, Sliders, Settings, ClipboardCheck, Sparkles, Briefcase, CalendarRange, Table, Bot, SlidersHorizontal, UserCheck, Eye, Layers } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Megaphone, FileCheck, CheckSquare, Trophy, Send, Calendar, Inbox, Monitor, GraduationCap, Users, ListVideo, Sliders, Settings, ClipboardCheck, Sparkles, Briefcase, CalendarRange, Table, Bot, SlidersHorizontal, UserCheck, Eye, Layers, Tv, Presentation, Projector, Activity, BookCheckIcon, ClipboardEdit, LibraryBig, Star, AlertTriangle } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const navGroups: NavGroup[] = [
@@ -14,6 +14,7 @@ const navGroups: NavGroup[] = [
             { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid },
             { title: 'My Workspace', url: '/faculty/workspace', icon: Folder },
             { title: 'Announcements', url: '/announcements', icon: Megaphone },
+            { title: 'Academic Periods', url: '/administration/academic-periods', icon: Calendar },
         ],
     },
     {
@@ -22,12 +23,12 @@ const navGroups: NavGroup[] = [
             { title: 'Programs', url: '/programs', icon: GraduationCap },
             { title: 'Faculty', url: '/faculties', icon: Users },
             { title: 'Calendar', url: '/schedule/calendar', icon: Calendar },
-            { title: 'Meetings', url: '/schedule/meetings', icon: Users },
-            { title: 'Activities', url: '/schedule/activities', icon: Calendar },
+            { title: 'Meetings', url: '/schedule/meetings', icon: Projector },
+            { title: 'Activities', url: '/schedule/activities', icon: Activity },
             { title: 'Lab Monitoring', url: '/classroom-monitoring', icon: Monitor },
             { title: 'Faculty Attendance', url: '/faculty-attendance', icon: ClipboardCheck },
-            { title: 'Academic Periods', url: '/administration/academic-periods', icon: Calendar },
-            { title: 'Tasks & Projects', url: '/tasks', icon: CheckSquare },
+            { title: 'Facility Reports', url: '/operations/facility-reports', icon: AlertTriangle },
+            { title: 'Tasks & Projects', url: '/tasks', icon: BookCheckIcon },
         ],
     },
     {
@@ -36,16 +37,16 @@ const navGroups: NavGroup[] = [
             {
                 title: 'Schedule Generator',
                 url: '/schedule/generator',
-                icon: Calendar,
+                icon: Sparkles,
             },
         ],
     },
     {
         title: 'COMPLIANCE',
         items: [
-            { title: 'Requirements', url: '/compliance/requirements', icon: FileCheck },
+            { title: 'Requirements', url: '/compliance/requirements', icon: LibraryBig },
             { title: 'Submission Records', url: '/compliance/submissions', icon: FileCheck },
-            { title: 'Pending Outputs', url: '/compliance/pending-outputs', icon: FileCheck, badge: 12 },
+            { title: 'Pending Outputs', url: '/compliance/pending-outputs', icon: ClipboardEdit, badge: 12 },
             { title: 'Compliance Tracker', url: '/compliance/tracker', icon: CheckSquare },
         ],
     },
@@ -62,17 +63,15 @@ const navGroups: NavGroup[] = [
     {
         title: 'PERFORMANCE',
         items: [
-            { title: 'Faculty Performance', url: '/performance/faculty', icon: Trophy },
+            { title: 'Faculty Performance', url: '/performance/faculty', icon: Star },
             { title: 'Program Performance', url: '/performance/program', icon: Trophy },
             { title: 'Recognition Rules', url: '/performance/rules', icon: BookOpen },
         ],
     },
     {
-        title: 'TV CONFIGURATION',
+        title: 'TV DISPLAY STUDIO',
         items: [
-            { title: 'Playlist', url: '/tv-config/playlist', icon: ListVideo },
-            { title: 'Slide Configuration', url: '/tv-config/slides', icon: Sliders },
-            { title: 'Display Settings', url: '/tv-config/settings', icon: Settings },
+            { title: 'TV Workspace', url: '/tv-config/dashboard', icon: Tv },
         ],
     },
     // {
@@ -119,7 +118,7 @@ export function AppSidebar() {
 
     return (
         <Sidebar collapsible="icon" variant="sidebar" className="top-16 h-[calc(100svh-4rem)] border-r border-border/80 bg-sidebar">
-            <SidebarContent ref={contentRef} className="pt-2">
+            <SidebarContent ref={contentRef} className="pt-2 scrollbar-none">
                 <NavMain groups={navGroups} />
             </SidebarContent>
 

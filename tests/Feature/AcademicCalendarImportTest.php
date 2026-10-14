@@ -33,7 +33,7 @@ test('can upload an official academic calendar and extract events', function () 
     $response = $this->post(route('schedule.calendar.import.upload'), [
         'academic_year' => 'AY 2026–2027',
         'semester_scope' => 'Whole Academic Year',
-        'institution' => 'CIDS - College of Information and Computing Sciences',
+        'institution' => 'CIDS - College of Information and Digital Sciences',
         'calendar_file' => $file,
     ]);
 

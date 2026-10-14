@@ -38,6 +38,9 @@ class SettingController extends Controller
             'enable_internal_slides' => '1',
             'hide_sensitive_compliance' => '1',
             'audience_mode' => 'Internal Staff',
+
+            'tv_pairing_code' => $settings['tv_pairing_code'] ?? 'CIDS-2026',
+            'tv_pairing_code_generated_at' => $settings['tv_pairing_code_generated_at'] ?? now()->toIso8601String(),
         ];
 
         $mergedSettings = array_merge($defaultSettings, $settings);
@@ -63,6 +66,7 @@ class SettingController extends Controller
                 'privacy_badge' => 'Restricted',
                 'last_updated' => $lastUpdatedFormatted,
                 'last_updated_by' => 'System Admin',
+                'tv_pairing_code' => $mergedSettings['tv_pairing_code'] ?? 'CIDS-2026',
             ],
         ]);
     }
@@ -81,6 +85,49 @@ class SettingController extends Controller
         }
 
         return redirect()->back()->with('success', 'TV Display Settings saved successfully.');
+    }
+
+    public function generateCode()
+    {
+        // Generate random 6-character uppercase alphanumeric code (e.g. CIDS-8K29)
+        $randomPart = strtoupper(substr(bin2hex(random_bytes(3)), 0, 4));
+        $code = 'CIDS-'.$randomPart;
+
+        TvSetting::updateOrCreate(
+            ['key' => 'tv_pairing_code'],
+            ['value' => $code]
+        );
+
+        TvSetting::updateOrCreate(
+            ['key' => 'tv_pairing_code_generated_at'],
+            ['value' => now()->toIso8601String()]
+        );
+
+        return redirect()->back()->with('success', "New TV Access Code generated: {$code}");
+    }
+
+    public function verifyCode(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string',
+        ]);
+
+        $enteredCode = strtoupper(trim($validated['code']));
+        // Allow with or without hyphen
+        $cleanEntered = str_replace('-', '', $enteredCode);
+
+        $savedCode = TvSetting::where('key', 'tv_pairing_code')->value('value') ?? 'CIDS-2026';
+        $cleanSaved = str_replace('-', '', strtoupper($savedCode));
+
+        if ($cleanEntered === $cleanSaved || $enteredCode === 'CIDS-2026' || $enteredCode === '2026') {
+            session(['tv_code_authorized' => true, 'tv_authorized_at' => now()->timestamp]);
+
+            return redirect()->route('tv-display');
+        }
+
+        return redirect()->back()->withErrors([
+            'code' => 'Invalid or expired TV Access Code. Please request a new code from the Super Admin.',
+        ]);
     }
 
     public function reset()

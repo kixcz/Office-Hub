@@ -185,7 +185,7 @@ export default function AcademicCalendarImportIndex({
     const { data: uploadData, setData: setUploadData, post: postUpload, processing: isUploading, errors: uploadErrors, reset: resetUpload, clearErrors } = useForm({
         academic_year: 'AY 2026–2027',
         semester_scope: 'Whole Academic Year',
-        institution: 'CIDS - College of Information and Computing Sciences',
+        institution: 'CIDS - College of Information and Digital Sciences',
         calendar_file: null as File | null,
     });
 
@@ -1171,7 +1171,7 @@ export default function AcademicCalendarImportIndex({
                                     <Input
                                         value={uploadData.institution}
                                         onChange={(e) => setUploadData('institution', e.target.value)}
-                                        placeholder="e.g. CIDS - College of Information and Computing Sciences"
+                                        placeholder="e.g. CIDS - College of Information and Digital Sciences"
                                         className="h-10 text-xs rounded-xl"
                                     />
                                     {uploadErrors.institution && <span className="text-xs text-rose-500">{uploadErrors.institution}</span>}

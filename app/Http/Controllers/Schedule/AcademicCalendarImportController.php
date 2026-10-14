@@ -112,7 +112,7 @@ class AcademicCalendarImportController extends Controller
                 $request->file('calendar_file'),
                 $validated['academic_year'],
                 $validated['semester_scope'],
-                $validated['institution'] ?? 'CIDS - College of Information and Computing Sciences'
+                $validated['institution'] ?? 'CIDS - College of Information and Digital Sciences'
             );
 
             $candidateEvents = $this->importService->interpretWithGemini($batch);
@@ -288,7 +288,7 @@ class AcademicCalendarImportController extends Controller
         $batch = AcademicCalendarImportBatch::create([
             'academic_year' => 'AY 2026–2027',
             'semester_scope' => 'Whole Academic Year',
-            'institution' => 'CIDS - College of Information and Computing Sciences',
+            'institution' => 'CIDS - College of Information and Digital Sciences',
             'original_filename' => 'Official_CIDS_Academic_Calendar_AY2026_2027.pdf',
             'file_path' => 'academic_calendars/demo_calendar.pdf',
             'file_type' => 'pdf',

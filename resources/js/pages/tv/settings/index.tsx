@@ -27,10 +27,12 @@ import {
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { TvStudioLayout } from '@/components/tv-studio-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'TV Display Settings', href: '/tv-config/settings' },
+    { title: 'TV Studio', href: '/tv-config/dashboard' },
+    { title: 'Display Settings', href: '/tv-config/settings' },
 ];
 
 interface SystemStatus {
@@ -42,6 +44,8 @@ interface SystemStatus {
     privacy_badge: string;
     last_updated: string;
     last_updated_by: string;
+    tv_pairing_code?: string;
+    tv_pairing_code_generated_at?: string;
 }
 
 interface Props {
@@ -50,6 +54,8 @@ interface Props {
         academic_term: string;
         default_audience: string;
         refresh_interval: string;
+        tv_pairing_code?: string;
+        tv_pairing_code_generated_at?: string;
 
         fullscreen_mode: string;
         auto_rotate: string;
@@ -201,14 +207,15 @@ export default function DisplaySettingsIndex({ settings, system_status }: Props)
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="TV Display Settings" />
+            <Head title="Display Settings - TV Studio Workspace" />
 
-            <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-7xl mx-auto w-full transition-colors">
+            <TvStudioLayout>
+                <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-7xl mx-auto w-full transition-colors">
                 
                 {/* 1. Header Banner */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-800/80 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-2xs">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/80 dark:border-amber-800/80 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-2xs">
                             <Tv className="w-6 h-6" />
                         </div>
                         <div>
@@ -226,7 +233,7 @@ export default function DisplaySettingsIndex({ settings, system_status }: Props)
                         href="/tv-display"
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200/80 dark:border-blue-800/60 rounded-xl shadow-2xs transition-all w-fit"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-900 bg-amber-400 hover:bg-amber-500 border border-amber-500/30 rounded-xl shadow-2xs transition-all w-fit cursor-pointer"
                     >
                         <Eye className="w-4 h-4" />
                         <span>Preview TV Display</span>
@@ -640,6 +647,65 @@ export default function DisplaySettingsIndex({ settings, system_status }: Props)
                                 </div>
                             </div>
                         </div>
+
+                        {/* TV Display Code & TV Pairing Card */}
+                        <div className="bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent p-6 rounded-2xl border-2 border-amber-300 dark:border-amber-700/60 shadow-md">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="size-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shadow-2xs">
+                                        <Tv className="size-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                            TV Screen Access Code
+                                        </h3>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            For continuous TV slides display without login
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400 text-slate-950 border border-amber-500/40">
+                                    Active Code
+                                </span>
+                            </div>
+
+                            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800/80 shadow-inner flex flex-col items-center justify-center text-center gap-2 my-2">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                    Current Pairing Code
+                                </span>
+                                <div className="text-2xl sm:text-3xl font-mono font-black tracking-widest text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-6 py-2 rounded-xl border border-amber-200 dark:border-amber-800/80">
+                                    {status.tv_pairing_code || (settings as any).tv_pairing_code || 'CIDS-2026'}
+                                </div>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-xs mt-1">
+                                    Enter this code on the TV login screen to broadcast slides continuously.
+                                </p>
+                            </div>
+
+                            <div className="mt-4 flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        router.post(route('tv-config.settings.generate-code'), {}, {
+                                            preserveScroll: true,
+                                        });
+                                    }}
+                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-900 bg-amber-400 hover:bg-amber-500 rounded-xl shadow-xs transition-colors cursor-pointer border border-amber-500/30"
+                                >
+                                    <RotateCcw className="size-3.5" />
+                                    Generate New Code
+                                </button>
+                                <a
+                                    href="/tv-display"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs transition-colors"
+                                    title="Open TV screen directly"
+                                >
+                                    <Play className="size-3.5 text-amber-500" />
+                                    Open
+                                </a>
+                            </div>
+                        </div>
                     </div>
 
                     {/* BOTTOM ROW: Visibility & Interface Elements + Privacy & Content Rules */}
@@ -902,6 +968,7 @@ export default function DisplaySettingsIndex({ settings, system_status }: Props)
                     onConfirm={confirmReset}
                 />
             </div>
+            </TvStudioLayout>
         </AppLayout>
     );
 }

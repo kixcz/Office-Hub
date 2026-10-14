@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { 
-    FileText, 
-    CheckSquare, 
-    Clock, 
+import {
+    FileText,
+    CheckSquare,
+    Clock,
     AlertTriangle,
     CalendarDays,
     Trophy,
@@ -13,6 +13,7 @@ import {
     MapPin,
     Target,
     Users,
+    ListVideo,
     ChevronDown,
     ArrowUpRight,
     ArrowDownRight,
@@ -25,9 +26,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
 ];
 
-export default function Dashboard({ 
-    stats, 
-    compliance_summary, 
+export default function Dashboard({
+    stats,
+    compliance_summary,
     program_compliance,
     todays_schedule,
     upcoming_deadlines,
@@ -57,8 +58,8 @@ export default function Dashboard({
     };
 
     // Program compliance comparison items matching mockup
-    const activePrograms = program_compliance && program_compliance.length > 0 
-        ? program_compliance 
+    const activePrograms = program_compliance && program_compliance.length > 0
+        ? program_compliance
         : [
             { id: 1, name: 'BSIT', compliance_rate: 90 },
             { id: 2, name: 'BSIS', compliance_rate: 85.7 },
@@ -104,7 +105,7 @@ export default function Dashboard({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Super Admin Dashboard" />
-            
+
             <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-7xl mx-auto w-full transition-colors">
                 {/* Compact Header: Dashboard Overview & Subtitle */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -357,8 +358,8 @@ export default function Dashboard({
                                                 {p.name || p.code}
                                             </span>
                                             <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
-                                                <div 
-                                                    className="bg-emerald-500 h-full rounded-full transition-all duration-500" 
+                                                <div
+                                                    className="bg-emerald-500 h-full rounded-full transition-all duration-500"
                                                     style={{ width: `${p.compliance_rate}%` }}
                                                 />
                                             </div>
@@ -382,8 +383,8 @@ export default function Dashboard({
                                         Urgent Pending Outputs
                                     </h2>
                                 </div>
-                                <Link 
-                                    href="/compliance/pending-outputs" 
+                                <Link
+                                    href="/compliance/pending-outputs"
                                     className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 flex items-center gap-1 transition-colors"
                                 >
                                     View All <ArrowRight className="w-3.5 h-3.5" />
@@ -409,11 +410,10 @@ export default function Dashboard({
                                                 <td className="py-3 px-3 text-slate-700 dark:text-slate-200">{p.requirement}</td>
                                                 <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">{p.due_date}</td>
                                                 <td className="py-3 pl-3 text-right">
-                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                                        p.status === 'Overdue'
+                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${p.status === 'Overdue'
                                                             ? 'bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-300 border border-red-200/50 dark:border-red-900/40'
                                                             : 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/50 dark:border-amber-900/40'
-                                                    }`}>
+                                                        }`}>
                                                         {p.status}
                                                     </span>
                                                 </td>
@@ -438,7 +438,7 @@ export default function Dashboard({
                                         Today's Schedule
                                     </h2>
                                 </div>
-                                <button 
+                                <button
                                     type="button"
                                     onClick={openCalendar}
                                     className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 flex items-center gap-1 transition-colors cursor-pointer"
@@ -450,8 +450,8 @@ export default function Dashboard({
 
                             <div className="flex flex-col gap-3">
                                 {activeSchedule.map((item: any, i: number) => (
-                                    <div 
-                                        key={i} 
+                                    <div
+                                        key={i}
                                         onClick={openCalendar}
                                         className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-all cursor-pointer flex flex-col gap-1 group"
                                     >
@@ -459,11 +459,10 @@ export default function Dashboard({
                                             <span className="font-bold text-slate-800 dark:text-slate-200 font-mono text-[11px]">
                                                 {item.time}
                                             </span>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                                                item.type === 'Activity'
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${item.type === 'Activity'
                                                     ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
                                                     : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
-                                            }`}>
+                                                }`}>
                                                 {item.type}
                                             </span>
                                         </div>
@@ -495,7 +494,7 @@ export default function Dashboard({
                                         Top Performing Programs
                                     </h2>
                                 </div>
-                                
+
                                 <div className="relative">
                                     <select
                                         value={selectedProgramRankingFilter}
@@ -532,7 +531,7 @@ export default function Dashboard({
 
                                             {/* Progress Bar */}
                                             <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                                                <div 
+                                                <div
                                                     className="bg-emerald-500 h-full rounded-full transition-all"
                                                     style={{ width: `${p.compliance_rate}%` }}
                                                 />
@@ -544,11 +543,10 @@ export default function Dashboard({
                                             </span>
 
                                             {/* Trend Badge */}
-                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shrink-0 ${
-                                                p.changeType === 'down'
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shrink-0 ${p.changeType === 'down'
                                                     ? 'text-red-600 bg-red-50 dark:bg-red-950/60 dark:text-red-300'
                                                     : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300'
-                                            }`}>
+                                                }`}>
                                                 {p.change || '+ 5%'}
                                             </span>
                                         </div>

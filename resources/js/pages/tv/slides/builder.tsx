@@ -47,14 +47,17 @@ import {
     PieChart,
     ChevronRight,
     Play,
-    Settings
+    Settings,
+    CheckSquare,
+    ListTodo
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { TvStudioLayout } from '@/components/tv-studio-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'TV Display', href: '/tv-display' },
-    { title: 'Slide Configuration', href: '/tv-config/slides' },
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'TV Studio', href: '/tv-config/dashboard' },
     { title: 'Visual Slide Builder', href: '/tv-config/slides/builder' },
 ];
 
@@ -223,6 +226,7 @@ export default function VisualSlideBuilder({ slide, slides = [] }: Props) {
             title: 'Compliance',
             items: [
                 { id: 'comp_overview', name: 'Compliance Overview', icon: ShieldCheck, bg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400' },
+                { id: 'comp_tracker', name: 'Compliance Tracker Matrix', icon: Layers, bg: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400' },
                 { id: 'pending_outputs', name: 'Pending Outputs', icon: ListFilter, bg: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400' },
                 { id: 'overdue_outputs', name: 'Overdue Outputs', icon: AlertTriangle, bg: 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400' },
             ]
@@ -242,6 +246,13 @@ export default function VisualSlideBuilder({ slide, slides = [] }: Props) {
                 { id: 'prog_compare', name: 'Program Comparison', icon: BarChart3, bg: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400' },
                 { id: 'prog_stats', name: 'Program Statistics', icon: PieChart, bg: 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400' },
             ]
+        },
+        {
+            title: 'Tasks & Projects',
+            items: [
+                { id: 'task_kanban', name: 'Tasks Kanban Board', icon: ListTodo, bg: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400' },
+                { id: 'task_metrics', name: 'Task Performance Metrics', icon: CheckSquare, bg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400' },
+            ]
         }
     ];
 
@@ -256,9 +267,10 @@ export default function VisualSlideBuilder({ slide, slides = [] }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Visual TV Slide Builder - CIDS OfficeHub" />
+            <Head title="Visual TV Slide Builder - TV Studio Workspace" />
 
-            <div className="flex flex-col gap-5 p-4 sm:p-6 lg:p-7 max-w-full mx-auto w-full transition-colors">
+            <TvStudioLayout>
+                <div className="flex flex-col gap-5 p-4 sm:p-5 lg:p-6 max-w-full mx-auto w-full transition-colors">
                 
                 {/* 1. Header Toolbar Bar */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -907,6 +919,7 @@ export default function VisualSlideBuilder({ slide, slides = [] }: Props) {
                                     <DropdownMenuContent align="start" className="w-56">
                                         <DropdownMenuItem onClick={() => setDataSource('Faculty Performance')}>Faculty Performance</DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setDataSource('Compliance Tracker')}>Compliance Tracker</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setDataSource('Tasks & Projects')}>Tasks & Projects</DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setDataSource('Schedule & Monitoring')}>Schedule & Monitoring</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -1038,7 +1051,8 @@ export default function VisualSlideBuilder({ slide, slides = [] }: Props) {
                         </div>
                     </div>
                 </div>
-            </div>
+                </div>
+            </TvStudioLayout>
         </AppLayout>
     );
 }

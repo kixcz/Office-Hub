@@ -29,6 +29,7 @@ class FacultyPerformanceController extends Controller
                 $onTime = 0;
                 $late = 0;
                 $overdue = 0;
+                $pending = 0;
 
                 foreach ($faculty->submissions as $sub) {
                     $dueDate = $sub->requirement ? Carbon::parse($sub->requirement->due_date) : null;
@@ -44,19 +45,29 @@ class FacultyPerformanceController extends Controller
                     } else {
                         if ($dueDate && now()->greaterThan($dueDate)) {
                             $overdue++;
+                        } else {
+                            $pending++;
                         }
                     }
                 }
 
+                // Compliance Rate: Complied submissions divided by Total Assigned Requirements
                 $complianceRate = $totalRequirements > 0 ? round(($complied / $totalRequirements) * 100, 2) : 0;
-                $onTimeRate = $totalRequirements > 0 ? round(($onTime / $totalRequirements) * 100, 2) : 0;
 
-                // Derive status
+                // On-Time Submission Rate: On-Time submissions divided by total eligible submissions (Complied: On-Time + Late)
+                // When 0 items have been complied/submitted yet, on_time_rate is null/0.0 with clear indicator
+                $onTimeRate = $complied > 0 ? round(($onTime / $complied) * 100, 2) : 0;
+
+                // Status derivation based on compliance and overdue items
                 $status = 'Good Standing';
                 if ($overdue > 0) {
                     $status = 'Overdue';
-                } elseif ($complianceRate === 100.0) {
-                    $status = 'Top Performer';
+                } elseif ($complianceRate >= 80.0) {
+                    $status = 'Excellent';
+                } elseif ($complianceRate >= 50.0 || $pending > 0) {
+                    $status = 'On Track';
+                } elseif ($complianceRate < 30.0) {
+                    $status = 'Needs Attention';
                 }
 
                 return [
@@ -73,8 +84,10 @@ class FacultyPerformanceController extends Controller
                     'on_time' => $onTime,
                     'late' => $late,
                     'overdue' => $overdue,
+                    'pending' => $pending,
                     'compliance_rate' => $complianceRate,
                     'on_time_rate' => $onTimeRate,
+                    'has_submitted' => $complied > 0,
                     'status' => $status,
                 ];
             });
@@ -82,7 +95,10 @@ class FacultyPerformanceController extends Controller
         // Calculate KPI values
         $totalFaculty = $faculties->count();
         $avgComplianceRate = $totalFaculty > 0 ? round($faculties->avg('compliance_rate'), 1) : 0;
-        $avgOnTimeRate = $totalFaculty > 0 ? round($faculties->avg('on_time_rate'), 1) : 0;
+
+        // Average On-Time Rate across faculties who have complied submissions
+        $facultiesWithSubmissions = $faculties->filter(fn ($f) => $f['has_submitted']);
+        $avgOnTimeRate = $facultiesWithSubmissions->count() > 0 ? round($facultiesWithSubmissions->avg('on_time_rate'), 1) : 0;
         $totalOverdue = $faculties->sum('overdue');
 
         $kpis = [
@@ -120,6 +136,7 @@ class FacultyPerformanceController extends Controller
                 $onTime = 0;
                 $late = 0;
                 $overdue = 0;
+                $pending = 0;
 
                 foreach ($faculty->submissions as $sub) {
                     $dueDate = $sub->requirement ? Carbon::parse($sub->requirement->due_date) : null;
@@ -135,12 +152,14 @@ class FacultyPerformanceController extends Controller
                     } else {
                         if ($dueDate && now()->greaterThan($dueDate)) {
                             $overdue++;
+                        } else {
+                            $pending++;
                         }
                     }
                 }
 
                 $complianceRate = $totalRequirements > 0 ? round(($complied / $totalRequirements) * 100, 2) : 0;
-                $onTimeRate = $totalRequirements > 0 ? round(($onTime / $totalRequirements) * 100, 2) : 0;
+                $onTimeRate = $complied > 0 ? round(($onTime / $complied) * 100, 2) : 0;
 
                 return [
                     'id' => $faculty->id,
@@ -156,8 +175,10 @@ class FacultyPerformanceController extends Controller
                     'on_time' => $onTime,
                     'late' => $late,
                     'overdue' => $overdue,
+                    'pending' => $pending,
                     'compliance_rate' => $complianceRate,
                     'on_time_rate' => $onTimeRate,
+                    'has_submitted' => $complied > 0,
                 ];
             });
 

@@ -34,10 +34,12 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { TvStudioLayout } from '@/components/tv-studio-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'TV Playlist', href: '/tv-config/playlist' },
+    { title: 'TV Studio', href: '/tv-config/dashboard' },
+    { title: 'Playlist', href: '/tv-config/playlist' },
 ];
 
 interface Slide {
@@ -362,9 +364,10 @@ export default function PlaylistIndex({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="TV Playlist" />
+            <Head title="TV Playlist - TV Studio Workspace" />
 
-            <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-7xl mx-auto w-full transition-colors">
+            <TvStudioLayout>
+                <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-7xl mx-auto w-full transition-colors">
                 
                 {/* 1. Page Header */}
                 <div>
@@ -809,6 +812,8 @@ export default function PlaylistIndex({
                                 <option value="Slide 6 - Class Monitoring">Class & Lab Attendance Summary (Spreadsheet)</option>
                                 <option value="Slide 7 - Faculty Schedule">Faculty Schedule (Class & Lab Timetable)</option>
                                 <option value="Slide 8 - Consolidated Calendar">Consolidated Calendar (Meetings, Activities & Exams)</option>
+                                <option value="Slide 9 - Compliance Tracker">Compliance Tracker (Institutional Overview & Program Matrix)</option>
+                                <option value="Slide 10 - Tasks & Projects">Tasks & Projects (Workflow & Assignments)</option>
                             </select>
                         </div>
 
@@ -882,6 +887,8 @@ export default function PlaylistIndex({
                                 <option value="Slide 6 - Class Monitoring">Class & Lab Attendance Summary (Spreadsheet)</option>
                                 <option value="Slide 7 - Faculty Schedule">Faculty Schedule (Class & Lab Timetable)</option>
                                 <option value="Slide 8 - Consolidated Calendar">Consolidated Calendar (Meetings, Activities & Exams)</option>
+                                <option value="Slide 9 - Compliance Tracker">Compliance Tracker (Institutional Overview & Program Matrix)</option>
+                                <option value="Slide 10 - Tasks & Projects">Tasks & Projects (Workflow & Assignments)</option>
                             </select>
                         </div>
 
@@ -941,6 +948,7 @@ export default function PlaylistIndex({
                 isDeleting={isDeleting}
                 onConfirm={confirmDeleteSlide}
             />
+            </TvStudioLayout>
         </AppLayout>
     );
 }

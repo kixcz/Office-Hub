@@ -12,6 +12,7 @@ use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\RoomSchedule;
 use App\Models\Submission;
+use App\Models\Task;
 use App\Models\TvSetting;
 use App\Models\TvSlide;
 use App\Services\ComplianceService;
@@ -482,6 +483,177 @@ class TvDisplayController extends Controller
             'last_updated' => $scheduleNow->format('M d, Y g:i A'),
         ];
 
+        // Data for Slide 9 (Compliance Tracker)
+        $allTrackerPrograms = Program::orderBy('code')->get();
+        $allTrackerRequirements = Requirement::orderBy('title')->get();
+        $allTrackerSubmissions = Submission::with(['faculty.program', 'requirement'])->get();
+
+        $trackerProgramStats = $allTrackerPrograms->map(function ($prog) use ($allTrackerSubmissions, $now) {
+            $progSubmissions = $allTrackerSubmissions->filter(function ($s) use ($prog) {
+                return $s->faculty && $s->faculty->program_id === $prog->id;
+            });
+
+            $total = $progSubmissions->count();
+            $submitted = $progSubmissions->whereNotNull('submitted_at')->count();
+            $pending = 0;
+            $overdue = 0;
+
+            foreach ($progSubmissions->whereNull('submitted_at') as $sub) {
+                $dueDate = $sub->requirement ? Carbon::parse($sub->requirement->due_date) : $now;
+                if ($now->greaterThan($dueDate)) {
+                    $overdue++;
+                } else {
+                    $pending++;
+                }
+            }
+
+            $rate = $total > 0 ? round(($submitted / $total) * 100) : 100;
+            $status = $rate >= 80 ? 'Compliant' : ($rate >= 50 ? 'In Progress' : 'Needs Attention');
+
+            return [
+                'id' => $prog->id,
+                'code' => $prog->code,
+                'name' => "{$prog->code} – {$prog->name}",
+                'submitted' => $submitted,
+                'pending' => $pending,
+                'overdue' => $overdue,
+                'total' => $total,
+                'compliance_rate' => $rate,
+                'status' => $status,
+            ];
+        })->values()->toArray();
+
+        $trackerRequirementProgress = $allTrackerRequirements->take(6)->map(function ($req) use ($allTrackerSubmissions) {
+            $reqSubs = $allTrackerSubmissions->where('requirement_id', $req->id);
+            $total = $reqSubs->count();
+            $completed = $reqSubs->whereNotNull('submitted_at')->count();
+            $status = $total > 0 && $completed === $total ? 'Completed' : 'In Progress';
+            $rate = $total > 0 ? round(($completed / $total) * 100) : 0;
+
+            return [
+                'title' => $req->title,
+                'completed' => $completed,
+                'total' => $total,
+                'rate' => $rate,
+                'status' => $status,
+            ];
+        })->values()->toArray();
+
+        $trackerTotalCompleted = $allTrackerSubmissions->whereNotNull('submitted_at')->count();
+        $trackerTotalSubmissions = $allTrackerSubmissions->count();
+        $trackerTotalPending = 0;
+        $trackerTotalOverdue = 0;
+
+        foreach ($allTrackerSubmissions->whereNull('submitted_at') as $sub) {
+            $dueDate = $sub->requirement ? Carbon::parse($sub->requirement->due_date) : $now;
+            if ($now->greaterThan($dueDate)) {
+                $trackerTotalOverdue++;
+            } else {
+                $trackerTotalPending++;
+            }
+        }
+
+        $trackerOverallRate = $trackerTotalSubmissions > 0 ? round(($trackerTotalCompleted / $trackerTotalSubmissions) * 100) : 100;
+
+        $trackerUpcomingDeadlines = $allTrackerRequirements->filter(function ($r) use ($now) {
+            return $r->due_date && Carbon::parse($r->due_date)->greaterThanOrEqualTo($now->copy()->subDays(1));
+        })->sortBy('due_date')->take(4)->map(function ($r) use ($now) {
+            $d = Carbon::parse($r->due_date);
+            $diff = $now->diffInDays($d, false);
+            $badge = $diff < 0 ? 'Overdue' : ($diff <= 3 ? 'Due Soon' : 'Upcoming');
+            $badgeColor = $diff < 0 ? 'rose' : ($diff <= 3 ? 'amber' : 'blue');
+            $daysLeft = $diff < 0 ? abs($diff).' days overdue' : ($diff === 0 ? 'Due Today' : "{$diff} days left");
+
+            return [
+                'day' => $d->format('d'),
+                'month' => strtoupper($d->format('M')),
+                'title' => $r->title,
+                'scope' => $r->program ? $r->program->code : 'All Programs',
+                'badge' => $badge,
+                'badge_color' => $badgeColor,
+                'days_left' => $daysLeft,
+            ];
+        })->values()->toArray();
+
+        $complianceTrackerData = [
+            'stats' => [
+                'overall_rate' => $trackerOverallRate,
+                'growth' => '+12%',
+                'completed' => $trackerTotalCompleted,
+                'pending' => $trackerTotalPending,
+                'overdue' => $trackerTotalOverdue,
+                'active_requirements' => $allTrackerRequirements->count(),
+                'total_programs' => $allTrackerPrograms->count(),
+            ],
+            'program_stats' => $trackerProgramStats,
+            'requirement_progress' => $trackerRequirementProgress,
+            'upcoming_deadlines' => $trackerUpcomingDeadlines,
+        ];
+
+        // Data for Slide 10 (Tasks & Projects)
+        $allTasks = Task::with(['creator', 'assignee', 'faculties'])->orderBy('due_date')->get();
+        $totalTaskCount = $allTasks->count();
+        $inProgressTaskCount = $allTasks->where('status', 'in_progress')->count();
+        $dueTodayTaskCount = $allTasks->filter(function ($t) use ($today) {
+            return $t->due_date && Carbon::parse($t->due_date)->format('Y-m-d') === $today;
+        })->count();
+        $completedTaskCount = $allTasks->where('status', 'completed')->count();
+        $reviewTaskCount = $allTasks->where('status', 'review')->count();
+        $toDoTaskCount = $allTasks->where('status', 'to_do')->count();
+
+        $overallTaskCompletion = $totalTaskCount > 0 ? round(($completedTaskCount / $totalTaskCount) * 100) : 0;
+
+        $formatTaskForTv = function ($t) use ($now) {
+            $dueCarbon = $t->due_date ? Carbon::parse($t->due_date) : null;
+            $diffDays = $dueCarbon ? $now->diffInDays($dueCarbon, false) : null;
+            $isOverdue = $dueCarbon && $diffDays < 0 && $t->status !== 'completed';
+
+            return [
+                'id' => $t->id,
+                'title' => $t->title,
+                'description' => $t->description,
+                'priority' => $t->priority,
+                'status' => $t->status,
+                'progress' => $t->progress ?? 0,
+                'due_date' => $dueCarbon ? $dueCarbon->format('M d, Y') : 'No due date',
+                'is_overdue' => $isOverdue,
+                'days_left' => $dueCarbon ? ($diffDays < 0 ? abs($diffDays).'d overdue' : ($diffDays === 0 ? 'Today' : "{$diffDays}d left")) : null,
+                'comments_count' => $t->comments_count ?? 0,
+                'attachments_count' => $t->attachments_count ?? 0,
+                'subtasks_completed' => $t->subtasks_completed ?? 0,
+                'subtasks_total' => $t->subtasks_total ?? 0,
+                'assignee_name' => $t->assignee?->name,
+                'assignee_initials' => $t->assignee_initials ?? ($t->assignee ? strtoupper(substr($t->assignee->name, 0, 2)) : '??'),
+                'extra_assignees_count' => $t->extra_assignees_count ?? 0,
+                'faculties' => $t->faculties->map(fn ($f) => [
+                    'id' => $f->id,
+                    'name' => $f->first_name.' '.$f->last_name,
+                    'photo_url' => $f->photo_url,
+                ])->values()->all(),
+            ];
+        };
+
+        $tasksByColumn = [
+            'to_do' => $allTasks->where('status', 'to_do')->values()->map($formatTaskForTv)->all(),
+            'in_progress' => $allTasks->where('status', 'in_progress')->values()->map($formatTaskForTv)->all(),
+            'review' => $allTasks->where('status', 'review')->values()->map($formatTaskForTv)->all(),
+            'completed' => $allTasks->where('status', 'completed')->values()->map($formatTaskForTv)->all(),
+        ];
+
+        $tasksAndProjectsData = [
+            'stats' => [
+                'total' => $totalTaskCount,
+                'in_progress' => $inProgressTaskCount,
+                'due_today' => $dueTodayTaskCount,
+                'completed' => $completedTaskCount,
+                'review' => $reviewTaskCount,
+                'to_do' => $toDoTaskCount,
+                'completion_rate' => $overallTaskCompletion,
+            ],
+            'columns' => $tasksByColumn,
+            'recent_tasks' => $allTasks->take(8)->map($formatTaskForTv)->all(),
+        ];
+
         return Inertia::render('tv/display', [
             'settings' => $settings,
             'slides' => $slides,
@@ -540,6 +712,8 @@ class TvDisplayController extends Controller
                 'slide8' => [
                     'calendar' => CalendarController::getCalendarData(),
                 ],
+                'slide9' => $complianceTrackerData,
+                'slide10' => $tasksAndProjectsData,
             ],
             'current_term' => $settings['academic_term'] ?? 'AY 2026-2027, 1st Semester',
         ]);

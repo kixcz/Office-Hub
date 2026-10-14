@@ -12,6 +12,7 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    Building2,
     Clock,
     FileSpreadsheet,
     FileText,
@@ -41,6 +42,11 @@ import {
     UserCheck,
     Users,
     UserX,
+    CheckSquare,
+    FolderGit2,
+    ListTodo,
+    Paperclip,
+    MessageSquare,
     type LucideIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -59,6 +65,8 @@ const SLIDE_TYPES = {
     six: 'Slide 6 - Class Monitoring',
     seven: 'Slide 7 - Faculty Schedule',
     eight: 'Slide 8 - Consolidated Calendar',
+    nine: 'Slide 9 - Compliance Tracker',
+    ten: 'Slide 10 - Tasks & Projects',
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -197,6 +205,8 @@ export default function TvDisplay({ slides, data, current_term }: any) {
                 {currentSlide.type === SLIDE_TYPES.six && <SlideSix data={data.slide6} isDark={isDark} />}
                 {currentSlide.type === SLIDE_TYPES.seven && <SlideSeven data={data.slide7} isDark={isDark} />}
                 {currentSlide.type === SLIDE_TYPES.eight && <SlideEight data={data.slide8} isDark={isDark} />}
+                {(currentSlide.type === SLIDE_TYPES.nine || currentSlide.type.includes('Compliance Tracker')) && <SlideNine data={data.slide9} isDark={isDark} />}
+                {(currentSlide.type === SLIDE_TYPES.ten || currentSlide.type.includes('Tasks & Projects') || currentSlide.type.includes('Tasks and Projects')) && <SlideTen data={data.slide10} isDark={isDark} />}
             </div>
 
             {/* Footer - Styled precisely as in reference images */}
@@ -257,8 +267,8 @@ export default function TvDisplay({ slides, data, current_term }: any) {
                             title={isPaused ? 'Resume auto-advance (Space or P)' : 'Pause auto-advance (Space or P)'}
                             onClick={togglePause}
                             className={`h-7 px-2.5 rounded-full flex items-center gap-1 text-[11px] font-bold cursor-pointer shadow-2xs transition-all active:scale-90 border ${isPaused
-                                    ? 'bg-amber-400 text-slate-950 border-amber-300 ring-2 ring-amber-400/40 animate-pulse'
-                                    : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                ? 'bg-amber-400 text-slate-950 border-amber-300 ring-2 ring-amber-400/40 animate-pulse'
+                                : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                                 }`}
                         >
                             {isPaused ? (
@@ -382,12 +392,12 @@ function Kpi({
     return (
         <div
             className={`rounded-2xl p-4 flex items-center justify-between gap-3 ${accent
-                    ? isDark
-                        ? 'bg-amber-500/15 border border-amber-500/30 text-white'
-                        : 'bg-amber-50/70 border border-amber-200/80 text-slate-900 shadow-[0_2px_12px_rgba(245,158,11,0.06)]'
-                    : isDark
-                        ? 'bg-[#131b2e] border border-white/10 text-white shadow-none'
-                        : 'bg-white border border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                ? isDark
+                    ? 'bg-amber-500/15 border border-amber-500/30 text-white'
+                    : 'bg-amber-50/70 border border-amber-200/80 text-slate-900 shadow-[0_2px_12px_rgba(245,158,11,0.06)]'
+                : isDark
+                    ? 'bg-[#131b2e] border border-white/10 text-white shadow-none'
+                    : 'bg-white border border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
                 } ${className}`}
         >
             <div className="flex items-center gap-3.5 min-w-0">
@@ -436,8 +446,8 @@ function BentoTile({
     return (
         <section
             className={`flex min-h-0 min-w-0 flex-col rounded-2xl p-5 overflow-hidden ${isDark
-                    ? 'bg-[#131b2e] border border-white/10 text-white shadow-none'
-                    : 'bg-white border border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                ? 'bg-[#131b2e] border border-white/10 text-white shadow-none'
+                : 'bg-white border border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
                 } ${className}`}
         >
             <header className="flex shrink-0 items-center justify-between pb-3.5 border-b border-slate-100 dark:border-white/10">
@@ -541,10 +551,10 @@ function SlideOne({ data, isDark = false }: any) {
                                     <article
                                         key={a.id}
                                         className={`rounded-xl p-4 border transition-all ${idx === 0
-                                                ? isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50/60 border-amber-200/80'
-                                                : idx === 1
-                                                    ? isDark ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50/60 border-rose-200/80'
-                                                    : isDark ? 'bg-sky-500/10 border-sky-500/20' : 'bg-sky-50/60 border-sky-200/80'
+                                            ? isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50/60 border-amber-200/80'
+                                            : idx === 1
+                                                ? isDark ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50/60 border-rose-200/80'
+                                                : isDark ? 'bg-sky-500/10 border-sky-500/20' : 'bg-sky-50/60 border-sky-200/80'
                                             }`}
                                     >
                                         <div className="flex items-start justify-between gap-3">
@@ -555,10 +565,10 @@ function SlideOne({ data, isDark = false }: any) {
                                                 <h3 className="text-base font-bold text-slate-900 dark:text-white">{a.title}</h3>
                                             </div>
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${idx === 0
-                                                    ? 'bg-amber-200/80 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
-                                                    : idx === 1
-                                                        ? 'bg-rose-200/80 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
-                                                        : 'bg-sky-200/80 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300'
+                                                ? 'bg-amber-200/80 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                                                : idx === 1
+                                                    ? 'bg-rose-200/80 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
+                                                    : 'bg-sky-200/80 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300'
                                                 }`}>
                                                 {tag}
                                             </span>
@@ -684,8 +694,8 @@ function SlideTwo({ data, isDark = false }: any) {
                                 <div
                                     key={i}
                                     className={`flex h-full min-h-0 flex-col rounded-xl border ${day.is_today
-                                            ? 'border-amber-400 bg-amber-50/30 dark:bg-amber-500/10'
-                                            : 'border-slate-200/80 dark:border-white/5 bg-slate-50/70 dark:bg-white/[0.02]'
+                                        ? 'border-amber-400 bg-amber-50/30 dark:bg-amber-500/10'
+                                        : 'border-slate-200/80 dark:border-white/5 bg-slate-50/70 dark:bg-white/[0.02]'
                                         }`}
                                 >
                                     <div className={`px-3 py-2 text-center rounded-t-xl ${day.is_today ? 'bg-amber-400 text-slate-950' : 'border-b border-slate-200/60 dark:border-white/5'}`}>
@@ -1241,8 +1251,8 @@ function SlideFour({ data, isDark = false }: any) {
                 {/* 2. College On-Time Rate KPI (Col 4) */}
                 <div
                     className={`md:col-span-4 rounded-2xl p-4.5 flex items-center justify-between gap-3 border ${isDark
-                            ? 'bg-[#131b2e] border-white/10 text-white'
-                            : 'bg-white border-emerald-100 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                        ? 'bg-[#131b2e] border-white/10 text-white'
+                        : 'bg-white border-emerald-100 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
                         }`}
                 >
                     <div className="flex items-center gap-3.5 min-w-0">
@@ -1267,8 +1277,8 @@ function SlideFour({ data, isDark = false }: any) {
                 {/* 3. Zero Overdue Faculty KPI (Col 4) */}
                 <div
                     className={`md:col-span-4 rounded-2xl p-4.5 flex items-center justify-between gap-3 border ${isDark
-                            ? 'bg-[#131b2e] border-white/10 text-white'
-                            : 'bg-white border-amber-100 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                        ? 'bg-[#131b2e] border-white/10 text-white'
+                        : 'bg-white border-amber-100 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
                         }`}
                 >
                     <div className="flex items-center gap-3.5 min-w-0">
@@ -1299,8 +1309,8 @@ function SlideFour({ data, isDark = false }: any) {
                 {/* Left Column (Col 7): Top Performing Faculty - Compacted row items */}
                 <div
                     className={`col-span-7 h-full min-h-0 flex flex-col rounded-2xl p-4.5 border overflow-hidden ${isDark
-                            ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
-                            : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                        ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
+                        : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
                         }`}
                 >
                     {/* Top Faculty Header with Category Tabs / Badges */}
@@ -1448,8 +1458,8 @@ function SlideFour({ data, isDark = false }: any) {
                     {/* Recent Outputs Status */}
                     <div
                         className={`flex-1 min-h-0 flex flex-col rounded-2xl p-4 border overflow-hidden ${isDark
-                                ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
-                                : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                            ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
+                            : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
                             }`}
                     >
                         <div className="flex shrink-0 items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/5">
@@ -1507,8 +1517,8 @@ function SlideFour({ data, isDark = false }: any) {
                     {/* This Week's Highlights */}
                     <div
                         className={`flex-1 min-h-0 flex flex-col rounded-2xl p-4 border overflow-hidden ${isDark
-                                ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
-                                : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                            ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
+                            : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
                             }`}
                     >
                         <div className="flex shrink-0 items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/5">
@@ -1587,13 +1597,12 @@ function SlideFive({ data, isDark = false }: any) {
                         return (
                             <div
                                 key={room.id}
-                                className={`flex min-h-[175px] flex-col justify-between rounded-2xl p-4 transition-all border ${
-                                    isOccupied
-                                        ? 'border-amber-400 bg-amber-500/[0.04] shadow-[0_0_0_1px_rgba(251,191,36,0.5),0_4px_16px_rgba(245,158,11,0.12)]'
-                                        : isDark
-                                            ? 'bg-[#131b2e] border-white/10'
-                                            : 'bg-white border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
-                                }`}
+                                className={`flex min-h-[175px] flex-col justify-between rounded-2xl p-4 transition-all border ${isOccupied
+                                    ? 'border-amber-400 bg-amber-500/[0.04] shadow-[0_0_0_1px_rgba(251,191,36,0.5),0_4px_16px_rgba(245,158,11,0.12)]'
+                                    : isDark
+                                        ? 'bg-[#131b2e] border-white/10'
+                                        : 'bg-white border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                                    }`}
                             >
                                 <div className="flex items-start justify-between gap-2.5">
                                     <div className="min-w-0">
@@ -2152,10 +2161,10 @@ function SlideSeven({ data, isDark = false }: { data: any; isDark?: boolean }) {
                                             <td className="py-2.5 pl-3 pr-2 text-right">
                                                 <span
                                                     className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${isLive
-                                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
-                                                            : item.status === 'Upcoming'
-                                                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
-                                                                : 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400'
+                                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
+                                                        : item.status === 'Upcoming'
+                                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                                                            : 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400'
                                                         }`}
                                                 >
                                                     {isLive && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />}
@@ -2600,6 +2609,595 @@ function SlideEight({ data, isDark }: { data: any; isDark: boolean }) {
 
                 </div>
 
+            </div>
+        </div>
+    );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Slide 9 – Compliance Tracker (Institutional Overview & Program Matrix)   */
+/* -------------------------------------------------------------------------- */
+
+function SlideNine({ data, isDark = false }: { data: any; isDark: boolean }) {
+    const stats = data?.stats || {
+        overall_rate: 100,
+        growth: '+12%',
+        completed: 33,
+        pending: 0,
+        overdue: 0,
+        active_requirements: 33,
+        total_programs: 4,
+    };
+
+    const programStats = data?.program_stats || [
+        { id: 1, code: 'BSIT', name: 'BSIT – Bachelor of Science in Information Technology', submitted: 8, pending: 0, overdue: 0, total: 8, compliance_rate: 100, status: 'Compliant' },
+        { id: 2, code: 'BSIS', name: 'BSIS – Bachelor of Science in Information Systems', submitted: 8, pending: 0, overdue: 0, total: 8, compliance_rate: 100, status: 'Compliant' },
+        { id: 3, code: 'BLIS', name: 'BLIS – Bachelor of Library and Information Science', submitted: 8, pending: 0, overdue: 0, total: 8, compliance_rate: 100, status: 'Compliant' },
+        { id: 4, code: 'BSCS', name: 'BSCS – Bachelor of Science in Computer Science', submitted: 9, pending: 0, overdue: 0, total: 9, compliance_rate: 100, status: 'Compliant' },
+    ];
+
+    const requirementProgress = data?.requirement_progress || [
+        { title: 'Midterm TOS and TQ', completed: 7, total: 7, rate: 100, status: 'Completed' },
+        { title: 'Course Syllabus', completed: 7, total: 7, rate: 100, status: 'Completed' },
+        { title: 'Faculty Workload Confirmation', completed: 7, total: 7, rate: 100, status: 'Completed' },
+        { title: 'SPAR', completed: 12, total: 12, rate: 100, status: 'Completed' },
+    ];
+
+    const upcomingDeadlines = data?.upcoming_deadlines || [
+        { day: '01', month: 'OCT', title: 'SPAR Submission', scope: 'All Programs', badge: 'Completed', badge_color: 'emerald', days_left: 'Recorded' },
+        { day: '03', month: 'OCT', title: 'Course Syllabus Review', scope: 'All Programs', badge: 'Completed', badge_color: 'emerald', days_left: 'Recorded' },
+        { day: '15', month: 'OCT', title: 'Midterm Assessment Rubrics', scope: 'All Programs', badge: 'Upcoming', badge_color: 'blue', days_left: '1 day left' },
+        { day: '24', month: 'OCT', title: 'Faculty Workload Verification', scope: 'All Programs', badge: 'Upcoming', badge_color: 'amber', days_left: '10 days left' },
+    ];
+
+    return (
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3.5 select-none overflow-hidden font-['Poppins']">
+            {/* 1. TOP METRICS ROW (4 Cards) */}
+            <div className="grid grid-cols-4 gap-3.5 shrink-0">
+                {/* Overall Compliance Rate Donut Tile */}
+                <div className="flex items-center gap-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 shadow-2xs">
+                    <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                        <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+                            <path
+                                className={isDark ? "text-slate-800" : "text-slate-100"}
+                                strokeWidth="4"
+                                stroke="currentColor"
+                                fill="none"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                            <path
+                                className="text-amber-500"
+                                strokeDasharray={`${stats.overall_rate}, 100`}
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                                stroke="currentColor"
+                                fill="none"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                        </svg>
+                        <span className="absolute text-[11px] font-black text-slate-900 dark:text-white">
+                            {stats.overall_rate}%
+                        </span>
+                    </div>
+                    <div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Overall Compliance
+                        </div>
+                        <div className="text-xl font-black text-slate-900 dark:text-white leading-tight">
+                            {stats.overall_rate}% Compliant
+                        </div>
+                        <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            <span>Institutional benchmark met</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Total Completed */}
+                <div className="flex items-center gap-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 shadow-2xs">
+                    <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Completed</div>
+                        <div className="text-2xl font-black text-emerald-600 leading-tight">
+                            {stats.completed}
+                        </div>
+                        <div className="text-[10px] font-medium text-slate-400">Total verified outputs</div>
+                    </div>
+                </div>
+
+                {/* Total Pending */}
+                <div className="flex items-center gap-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 shadow-2xs">
+                    <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pending Outputs</div>
+                        <div className="text-2xl font-black text-blue-600 leading-tight">
+                            {stats.pending}
+                        </div>
+                        <div className="text-[10px] font-medium text-slate-400">Within submission window</div>
+                    </div>
+                </div>
+
+                {/* Total Overdue */}
+                <div className="flex items-center gap-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 shadow-2xs">
+                    <div className="w-11 h-11 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                        <AlertTriangle className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Overdue Outputs</div>
+                        <div className="text-2xl font-black text-rose-600 leading-tight">
+                            {stats.overdue}
+                        </div>
+                        <div className="text-[10px] font-medium text-slate-400">Past official due dates</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. MAIN 2-COLUMN SECTION: PROGRAM PERFORMANCE (Col 7) + REQUIREMENT PROGRESS & DEADLINES (Col 5) */}
+            <div className="grid grid-cols-12 gap-3.5 flex-1 min-h-0">
+                {/* LEFT MAIN CARD: Program Compliance Breakdown Table (Col 7) */}
+                <div className="col-span-7 flex flex-col min-h-0 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs">
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                <Building2 className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                                    Compliance by Academic Program
+                                </h3>
+                                <p className="text-[10px] text-slate-400">
+                                    Tracked departmental compliance across all CIDS courses
+                                </p>
+                            </div>
+                        </div>
+
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60">
+                            CIDS Matrix
+                        </span>
+                    </div>
+
+                    {/* Program Cards / Rows */}
+                    <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 pt-1">
+                        {programStats.map((item: any, idx: number) => {
+                            const is100 = item.compliance_rate >= 100;
+                            return (
+                                <div key={item.id || idx} className="py-2.5 flex items-center gap-3">
+                                    {/* Program Code Badge */}
+                                    <div className="w-14 shrink-0 font-black text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                        <span>{item.code}</span>
+                                    </div>
+
+                                    {/* Progress Bar */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between text-[11px] mb-1">
+                                            <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                                                {item.name}
+                                            </span>
+                                            <span className="font-mono font-black text-slate-900 dark:text-white">
+                                                {item.compliance_rate}%
+                                            </span>
+                                        </div>
+                                        <div className="h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full transition-all duration-700 ${is100 ? 'bg-emerald-500' : 'bg-amber-500'
+                                                    }`}
+                                                style={{ width: `${item.compliance_rate}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Fraction Tag */}
+                                    <div className="w-20 text-right shrink-0">
+                                        <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                                            {item.submitted}/{item.total}
+                                        </span>
+                                        <span className={`block text-[9px] font-extrabold uppercase ${is100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600'
+                                            }`}>
+                                            {item.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* RIGHT COLUMN: Requirement Progress & Upcoming Deadlines (Col 5) */}
+                <div className="col-span-5 flex flex-col gap-3.5 min-h-0">
+                    {/* Upper Right: Requirement Progress */}
+                    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 shadow-2xs flex-1 min-h-0 flex flex-col">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                </div>
+                                <h4 className="text-xs font-black text-slate-900 dark:text-white">
+                                    Requirement Progress
+                                </h4>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400">
+                                Active Outputs
+                            </span>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 pt-1">
+                            {requirementProgress.map((req: any, i: number) => (
+                                <div key={i} className="py-1.5 flex items-center justify-between gap-2 text-xs">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="font-bold text-slate-900 dark:text-white text-[11px] truncate">
+                                            {req.title}
+                                        </div>
+                                        <div className="text-[9px] text-slate-400">
+                                            {req.completed} of {req.total} submitted
+                                        </div>
+                                    </div>
+                                    <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 shrink-0">
+                                        {req.status}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Lower Right: Upcoming Deadlines */}
+                    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 shadow-2xs flex-1 min-h-0 flex flex-col">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                    <Clock className="w-3.5 h-3.5" />
+                                </div>
+                                <h4 className="text-xs font-black text-slate-900 dark:text-white">
+                                    Upcoming Deadlines
+                                </h4>
+                            </div>
+                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                Timeline
+                            </span>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 pt-1">
+                            {upcomingDeadlines.map((dl: any, i: number) => (
+                                <div key={i} className="py-1.5 flex items-center justify-between gap-2 text-xs">
+                                    <div className="flex flex-col items-center leading-none w-7 shrink-0 text-center">
+                                        <span className="text-[8px] font-bold text-slate-400">{dl.month}</span>
+                                        <span className="text-xs font-black text-slate-900 dark:text-white">{dl.day}</span>
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="font-bold text-slate-900 dark:text-white text-[11px] truncate">
+                                            {dl.title}
+                                        </div>
+                                        <div className="text-[9px] text-slate-400 truncate">
+                                            {dl.scope} • {dl.days_left}
+                                        </div>
+                                    </div>
+                                    <span className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider shrink-0 ${dl.badge_color === 'emerald'
+                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                        : dl.badge_color === 'amber'
+                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                                            : 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300'
+                                        }`}>
+                                        {dl.badge}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Slide 10 – Tasks & Projects (Workflow Kanban & Assignment Tracker)        */
+/* -------------------------------------------------------------------------- */
+
+function SlideTen({ data, isDark }: { data: any; isDark: boolean }) {
+    if (!data) {
+        return (
+            <div className="flex flex-1 items-center justify-center p-8 text-center text-slate-400">
+                <p>No task or project workflow data currently available.</p>
+            </div>
+        );
+    }
+
+    const { stats = {}, columns = {}, recent_tasks = [] } = data;
+
+    const kanbanColumns = [
+        {
+            key: 'to_do',
+            title: 'To Do',
+            count: stats.to_do ?? (columns.to_do?.length || 0),
+            tasks: columns.to_do || [],
+            badgeBg: 'bg-slate-100 dark:bg-slate-800',
+            badgeText: 'text-slate-700 dark:text-slate-300',
+            accentBorder: 'border-t-slate-400 dark:border-t-slate-500',
+            headerBg: 'bg-slate-50/80 dark:bg-slate-800/40',
+        },
+        {
+            key: 'in_progress',
+            title: 'In Progress',
+            count: stats.in_progress ?? (columns.in_progress?.length || 0),
+            tasks: columns.in_progress || [],
+            badgeBg: 'bg-amber-100 dark:bg-amber-950/60',
+            badgeText: 'text-amber-700 dark:text-amber-300',
+            accentBorder: 'border-t-amber-500',
+            headerBg: 'bg-amber-50/40 dark:bg-amber-950/20',
+        },
+        {
+            key: 'review',
+            title: 'Under Review',
+            count: stats.review ?? (columns.review?.length || 0),
+            tasks: columns.review || [],
+            badgeBg: 'bg-blue-100 dark:bg-blue-950/60',
+            badgeText: 'text-blue-700 dark:text-blue-300',
+            accentBorder: 'border-t-blue-500',
+            headerBg: 'bg-blue-50/40 dark:bg-blue-950/20',
+        },
+        {
+            key: 'completed',
+            title: 'Completed',
+            count: stats.completed ?? (columns.completed?.length || 0),
+            tasks: columns.completed || [],
+            badgeBg: 'bg-emerald-100 dark:bg-emerald-950/60',
+            badgeText: 'text-emerald-700 dark:text-emerald-300',
+            accentBorder: 'border-t-emerald-500',
+            headerBg: 'bg-emerald-50/40 dark:bg-emerald-950/20',
+        },
+    ];
+
+    const getPriorityBadge = (priority: string) => {
+        switch (priority?.toLowerCase()) {
+            case 'high':
+                return {
+                    label: 'High',
+                    className: 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200/50 dark:border-rose-800/50',
+                };
+            case 'medium':
+                return {
+                    label: 'Medium',
+                    className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/50',
+                };
+            default:
+                return {
+                    label: 'Low',
+                    className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50',
+                };
+        }
+    };
+
+    return (
+        <div className="flex flex-1 flex-col gap-3.5 min-h-0 font-poppins">
+            {/* TOP BAR: KPI Metric Cards */}
+            <div className="grid grid-cols-4 gap-3.5 shrink-0">
+                {/* 1. Total Tasks */}
+                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3 shadow-2xs flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                            Active Tasks
+                        </span>
+                        <div className="text-2xl font-black text-slate-900 dark:text-white leading-none">
+                            {stats.total ?? 0}
+                        </div>
+                        <p className="text-[10px] text-slate-600 dark:text-slate-300">
+                            Projects & Operations
+                        </p>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center shrink-0">
+                        <ListTodo className="w-5 h-5" />
+                    </div>
+                </div>
+
+                {/* 2. In Progress */}
+                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3 shadow-2xs flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                            In Progress
+                        </span>
+                        <div className="text-2xl font-black text-amber-600 dark:text-amber-400 leading-none">
+                            {stats.in_progress ?? 0}
+                        </div>
+                        <p className="text-[10px] text-slate-600 dark:text-slate-300">
+                            Currently being executed
+                        </p>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center shrink-0">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                </div>
+
+                {/* 3. Due Today */}
+                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3 shadow-2xs flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                            Due Today
+                        </span>
+                        <div className="text-2xl font-black text-rose-600 dark:text-rose-400 leading-none">
+                            {stats.due_today ?? 0}
+                        </div>
+                        <p className="text-[10px] text-slate-600 dark:text-slate-300">
+                            Immediate attention
+                        </p>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 flex items-center justify-center shrink-0">
+                        <AlertTriangle className="w-5 h-5" />
+                    </div>
+                </div>
+
+                {/* 4. Completion Rate */}
+                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3 shadow-2xs flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                            Completed
+                        </span>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-none">
+                                {stats.completed ?? 0}
+                            </span>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                                ({stats.completion_rate ?? 0}%)
+                            </span>
+                        </div>
+                        <p className="text-[10px] text-slate-600 dark:text-slate-300">
+                            Delivered successfully
+                        </p>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0">
+                        <CheckSquare className="w-5 h-5" />
+                    </div>
+                </div>
+            </div>
+
+            {/* MAIN CONTENT: Kanban Board Columns */}
+            <div className="grid grid-cols-4 gap-3.5 flex-1 min-h-0">
+                {kanbanColumns.map((col) => (
+                    <div
+                        key={col.key}
+                        className={`rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 border-t-4 ${col.accentBorder} shadow-2xs flex flex-col min-h-0 overflow-hidden`}
+                    >
+                        {/* Column Header */}
+                        <div className={`flex items-center justify-between px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 shrink-0 ${col.headerBg}`}>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                                    {col.title}
+                                </h3>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${col.badgeBg} ${col.badgeText}`}>
+                                    {col.count}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Column Task Cards */}
+                        <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
+                            {col.tasks.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center p-4 text-center">
+                                    <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-2">
+                                        <CheckCircle2 className="w-4 h-4" />
+                                    </div>
+                                    <p className="text-xs font-semibold text-slate-400">No tasks in {col.title.toLowerCase()}</p>
+                                </div>
+                            ) : (
+                                col.tasks.map((task: any) => {
+                                    const priorityBadge = getPriorityBadge(task.priority);
+                                    return (
+                                        <div
+                                            key={task.id}
+                                            className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-2.5 shadow-2xs hover:border-amber-300 dark:hover:border-amber-600/50 transition-all flex flex-col gap-2"
+                                        >
+                                            {/* Priority & Due Date Badge */}
+                                            <div className="flex items-center justify-between gap-1.5">
+                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${priorityBadge.className}`}>
+                                                    {priorityBadge.label}
+                                                </span>
+
+                                                {task.days_left && (
+                                                    <span className={`inline-flex items-center gap-1 text-[9.5px] font-bold ${task.is_overdue
+                                                        ? 'text-rose-600 dark:text-rose-400 font-black'
+                                                        : 'text-slate-500 dark:text-slate-400'
+                                                        }`}>
+                                                        <Clock className="w-3 h-3" />
+                                                        {task.days_left}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Task Title & Description */}
+                                            <div>
+                                                <h4 className="text-[11.5px] font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">
+                                                    {task.title}
+                                                </h4>
+                                                {task.description && (
+                                                    <p className="text-[9.5px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
+                                                        {task.description}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Progress Bar (if in progress or completed) */}
+                                            {task.status !== 'to_do' && (
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center justify-between text-[9px]">
+                                                        <span className="font-semibold text-slate-400">Progress</span>
+                                                        <span className="font-black text-slate-700 dark:text-slate-300 tabular-nums">
+                                                            {task.progress}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                                                        <div
+                                                            className={`h-full rounded-full transition-all duration-500 ${task.progress >= 100
+                                                                ? 'bg-emerald-500'
+                                                                : 'bg-amber-500'
+                                                                }`}
+                                                            style={{ width: `${task.progress}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Footer: Subtasks/Comments & Assignee */}
+                                            <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400">
+                                                <div className="flex items-center gap-2">
+                                                    {task.subtasks_total > 0 && (
+                                                        <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-slate-500">
+                                                            <CheckSquare className="w-3 h-3 text-slate-400" />
+                                                            {task.subtasks_completed}/{task.subtasks_total}
+                                                        </span>
+                                                    )}
+                                                    {task.comments_count > 0 && (
+                                                        <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-slate-400">
+                                                            <MessageSquare className="w-2.5 h-2.5" />
+                                                            {task.comments_count}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Assignee Avatar/Initials */}
+                                                <div className="flex items-center gap-1">
+                                                    {task.faculties && task.faculties.length > 0 ? (
+                                                        <div className="flex -space-x-1.5 overflow-hidden">
+                                                            {task.faculties.slice(0, 2).map((fac: any, idx: number) => (
+                                                                fac.photo_url ? (
+                                                                    <img
+                                                                        key={idx}
+                                                                        src={fac.photo_url}
+                                                                        alt={fac.name}
+                                                                        className="inline-block h-4.5 w-4.5 rounded-full ring-1 ring-white dark:ring-slate-900 object-cover"
+                                                                        title={fac.name}
+                                                                    />
+                                                                ) : (
+                                                                    <div
+                                                                        key={idx}
+                                                                        className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full bg-amber-500 text-[8px] font-black text-white ring-1 ring-white dark:ring-slate-900"
+                                                                        title={fac.name}
+                                                                    >
+                                                                        {fac.name ? fac.name.substring(0, 1) : 'F'}
+                                                                    </div>
+                                                                )
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div
+                                                            className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-[8px] font-black text-slate-700 dark:text-slate-200"
+                                                            title={task.assignee_name || 'Assignee'}
+                                                        >
+                                                            {task.assignee_initials}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );

@@ -18,6 +18,8 @@ use App\Http\Controllers\Performance\FacultyPerformanceController;
 use App\Http\Controllers\Performance\ProgramPerformanceController;
 use App\Http\Controllers\Performance\RecognitionRuleController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\RoomComplaintReportController;
+use App\Http\Controllers\RoomInventoryController;
 use App\Http\Controllers\Schedule\AcademicCalendarImportController;
 use App\Http\Controllers\Schedule\ActivityController;
 use App\Http\Controllers\Schedule\CalendarController;
@@ -27,6 +29,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\Tv\PlaylistController;
 use App\Http\Controllers\Tv\SettingController;
 use App\Http\Controllers\Tv\SlideController;
+use App\Http\Controllers\Tv\TvStudioController;
 use App\Http\Controllers\TvDisplayController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -35,8 +38,11 @@ Route::get('/', function () {
     return Inertia::render('auth/login');
 })->name('home');
 
+// TV Access by Code (Guest or Auth allowed)
+Route::post('/tv-display/verify-code', [SettingController::class, 'verifyCode'])->name('tv-display.verify-code');
+Route::get('/tv-display', [TvDisplayController::class, 'index'])->name('tv-display');
+
 Route::middleware(['auth'])->group(function () {
-    Route::get('/tv-display', [TvDisplayController::class, 'index'])->name('tv-display');
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::resource('requests', OfficeRequestController::class)->only(['index', 'store', 'update']);
@@ -77,7 +83,11 @@ Route::middleware(['auth'])->group(function () {
             Route::get('academic-periods', [SemesterScheduleController::class, 'masterDataAcademicPeriods'])->name('academic-periods');
             Route::get('programs', [SemesterScheduleController::class, 'masterDataPrograms'])->name('programs');
             Route::get('faculty', [SemesterScheduleController::class, 'masterDataFaculty'])->name('faculty');
-            Route::get('rooms', [SemesterScheduleController::class, 'masterDataRooms'])->name('rooms');
+            Route::get('rooms', [RoomInventoryController::class, 'index'])->name('rooms');
+            Route::post('rooms', [RoomInventoryController::class, 'store'])->name('rooms.store');
+            Route::put('rooms/{room}', [RoomInventoryController::class, 'update'])->name('rooms.update');
+            Route::delete('rooms/{room}', [RoomInventoryController::class, 'destroy'])->name('rooms.destroy');
+            Route::post('rooms/report-problem', [RoomInventoryController::class, 'reportProblem'])->name('rooms.report-problem');
         });
 
         // Semester Schedule Generator System
@@ -104,6 +114,9 @@ Route::middleware(['auth'])->group(function () {
 
     // TV Configuration Section
     Route::prefix('tv-config')->name('tv-config.')->group(function () {
+        Route::get('/', [TvStudioController::class, 'dashboard'])->name('index');
+        Route::get('dashboard', [TvStudioController::class, 'dashboard'])->name('dashboard');
+
         Route::get('playlist', [PlaylistController::class, 'index'])->name('playlist.index');
         Route::post('playlist', [PlaylistController::class, 'store'])->name('playlist.store');
         Route::post('playlist/reorder', [PlaylistController::class, 'reorder'])->name('playlist.reorder');
@@ -111,13 +124,21 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('playlist/{playlist}', [PlaylistController::class, 'destroy'])->name('playlist.destroy');
 
         Route::get('slides', [SlideController::class, 'index'])->name('slides.index');
+        Route::post('slides', [SlideController::class, 'store'])->name('slides.store');
         Route::get('slides/builder', [SlideController::class, 'builder'])->name('slides.builder');
         Route::get('slides/{slide}/edit', [SlideController::class, 'edit'])->name('slides.edit');
         Route::put('slides/{slide}', [SlideController::class, 'update'])->name('slides.update');
 
+        Route::get('templates', [TvStudioController::class, 'templates'])->name('templates.index');
+        Route::get('widgets', [TvStudioController::class, 'widgets'])->name('widgets.index');
+
         Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
         Route::post('settings', [SettingController::class, 'store'])->name('settings.store');
         Route::post('settings/reset', [SettingController::class, 'reset'])->name('settings.reset');
+        Route::post('settings/generate-code', [SettingController::class, 'generateCode'])->name('settings.generate-code');
+
+        Route::get('preview', [TvStudioController::class, 'preview'])->name('preview.index');
+        Route::get('history', [TvStudioController::class, 'history'])->name('history.index');
     });
 
     // Classroom Monitoring
@@ -149,6 +170,13 @@ Route::middleware(['auth'])->group(function () {
     // Programs & Faculties
     Route::resource('programs', ProgramController::class);
     Route::resource('faculties', FacultyController::class);
+
+    // Operations -> Facility & Room Problem Reports (Dean / Super Admin)
+    Route::prefix('operations/facility-reports')->name('operations.facility-reports.')->group(function () {
+        Route::get('/', [RoomComplaintReportController::class, 'index'])->name('index');
+        Route::patch('/{report}', [RoomComplaintReportController::class, 'update'])->name('update');
+        Route::delete('/{report}', [RoomComplaintReportController::class, 'destroy'])->name('destroy');
+    });
 
     // Faculty Workspace
     Route::get('/faculty/workspace', [WorkspaceController::class, 'index'])->name('faculty.workspace');

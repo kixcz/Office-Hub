@@ -40,7 +40,7 @@ export default function AuthSplitLayout({ children, title, description }: AuthLa
                 </div>
 
                 <div className="w-full text-center text-xs text-slate-400 dark:text-slate-600 pt-4 pb-2">
-                    &copy; {new Date().getFullYear()} CIDS Office Hub • College of Information and Computing Sciences
+                    &copy; {new Date().getFullYear()} CIDS Office Hub • College of Information and Digital Sciences
                 </div>
             </div>
 
@@ -98,7 +98,7 @@ export default function AuthSplitLayout({ children, title, description }: AuthLa
                         <div className="rounded-2xl bg-white/90 backdrop-blur-md p-6 shadow-2xl border border-white text-slate-800">
                             <div className="flex items-center gap-2 text-xs font-bold text-amber-800 uppercase tracking-wider mb-2">
                                 <span className="size-2 rounded-full bg-amber-500" />
-                                College of Information and Computing Sciences
+                                College of Information and Digital Sciences
                             </div>
                             <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1.5">Welcome to CIDS Office Hub</h3>
                             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
