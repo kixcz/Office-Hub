@@ -14,6 +14,7 @@ import {
     DialogTrigger,
     DialogFooter,
 } from '@/components/ui/dialog';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -78,6 +79,8 @@ export default function MeetingsIndex({
     const [dateRangeFilter, setDateRangeFilter] = useState('Oct 1, 2026 - Oct 31, 2026');
     const [sortField, setSortField] = useState<'date' | 'time' | 'venue' | 'organizer' | 'title'>('date');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    const [deletingMeeting, setDeletingMeeting] = useState<Meeting | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const { data, setData, post, processing, reset, errors } = useForm({
         title: '',
@@ -826,11 +829,7 @@ export default function MeetingsIndex({
                                                             <DropdownMenuContent align="end" className="w-36 rounded-xl">
                                                                 <DropdownMenuItem
                                                                     className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 text-xs cursor-pointer flex items-center gap-2"
-                                                                    onClick={() => {
-                                                                        if (confirm('Are you sure you want to delete this meeting?')) {
-                                                                            router.delete(`/schedule/meetings/${meeting.id}`);
-                                                                        }
-                                                                    }}
+                                                                    onClick={() => setDeletingMeeting(meeting)}
                                                                 >
                                                                     <Trash className="h-3.5 w-3.5" />
                                                                     <span>Delete</span>
@@ -931,6 +930,28 @@ export default function MeetingsIndex({
                         </div>
                     </div>
                 </div>
+
+                {/* Delete Meeting Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={!!deletingMeeting}
+                    onOpenChange={(open) => !open && setDeletingMeeting(null)}
+                    title="Delete Meeting"
+                    description="Are you sure you want to permanently delete this scheduled meeting? Attendees will no longer see it on their calendars."
+                    itemName={deletingMeeting ? `${deletingMeeting.title} (${deletingMeeting.date})` : undefined}
+                    confirmLabel="Delete Meeting"
+                    isDeleting={isDeleting}
+                    onConfirm={() => {
+                        if (!deletingMeeting) return;
+                        setIsDeleting(true);
+                        router.delete(`/schedule/meetings/${deletingMeeting.id}`, {
+                            preserveScroll: true,
+                            onFinish: () => {
+                                setIsDeleting(false);
+                                setDeletingMeeting(null);
+                            },
+                        });
+                    }}
+                />
             </div>
         </AppLayout>
     );

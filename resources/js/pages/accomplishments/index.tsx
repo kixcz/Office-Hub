@@ -5,6 +5,7 @@ import { Trophy, FileText, Download, Plus, Search, MoreVertical, Edit, Trash, Ey
 import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 
 interface User {
     id: number;
@@ -32,7 +33,21 @@ export default function AccomplishmentsIndex({ accomplishments, is_admin }: Prop
     ];
 
     const [isCreating, setIsCreating] = useState(false);
+    const [deletingAcc, setDeletingAcc] = useState<Accomplishment | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const confirmDeleteAcc = () => {
+        if (!deletingAcc) return;
+        setIsDeleting(true);
+        router.delete(`/accomplishments/${deletingAcc.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsDeleting(false);
+                setDeletingAcc(null);
+            },
+        });
+    };
 
     const { data, setData, post, processing, errors, reset } = useForm({
         title: '',
@@ -184,11 +199,7 @@ export default function AccomplishmentsIndex({ accomplishments, is_admin }: Prop
                                                             <Edit className="h-4 w-4 mr-2" />
                                                             Edit
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => {
-                                                            if (confirm('Are you sure you want to delete this accomplishment?')) {
-                                                                router.delete(`/accomplishments/${acc.id}`);
-                                                            }
-                                                        }}>
+                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer" onClick={() => setDeletingAcc(acc)}>
                                                             <Trash className="h-4 w-4 mr-2" />
                                                             Delete
                                                         </DropdownMenuItem>
@@ -202,6 +213,18 @@ export default function AccomplishmentsIndex({ accomplishments, is_admin }: Prop
                         </div>
                     )}
                 </div>
+
+                {/* Delete Accomplishment Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={!!deletingAcc}
+                    onOpenChange={(open) => !open && setDeletingAcc(null)}
+                    title="Delete Accomplishment"
+                    description="Are you sure you want to permanently delete this accomplishment record? Any uploaded certificates or proof documents will also be removed."
+                    itemName={deletingAcc ? `${deletingAcc.title} (${deletingAcc.category})` : undefined}
+                    confirmLabel="Delete Accomplishment"
+                    isDeleting={isDeleting}
+                    onConfirm={confirmDeleteAcc}
+                />
             </div>
         </AppLayout>
     );

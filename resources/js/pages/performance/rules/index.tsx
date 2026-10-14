@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, useForm, router } from '@inertiajs/react';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -165,12 +166,23 @@ export default function RulesIndex({ rules = [], recognitions = [] }: Props) {
         });
     };
 
+    const [deletingRule, setDeletingRule] = useState<RecognitionRuleItem | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const handleDeleteRule = (rule: RecognitionRuleItem) => {
-        if (confirm(`Are you sure you want to delete "${rule.title}"?`)) {
-            router.delete(`/performance/rules/${rule.id}`, {
-                preserveScroll: true,
-            });
-        }
+        setDeletingRule(rule);
+    };
+
+    const confirmDeleteRule = () => {
+        if (!deletingRule) return;
+        setIsDeleting(true);
+        router.delete(`/performance/rules/${deletingRule.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsDeleting(false);
+                setDeletingRule(null);
+            },
+        });
     };
 
     // Calculate metrics matching the 4 top summary cards in the user image
@@ -880,6 +892,18 @@ export default function RulesIndex({ rules = [], recognitions = [] }: Props) {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            {/* Delete Rule Confirmation Modal */}
+            <DeleteConfirmDialog
+                open={!!deletingRule}
+                onOpenChange={(open) => !open && setDeletingRule(null)}
+                title="Delete Recognition Rule"
+                description="Are you sure you want to permanently delete this faculty/program performance rule? Historical evaluations using this rule will remain recorded."
+                itemName={deletingRule ? deletingRule.title : undefined}
+                confirmLabel="Delete Rule"
+                isDeleting={isDeleting}
+                onConfirm={confirmDeleteRule}
+            />
         </AppLayout>
     );
 }

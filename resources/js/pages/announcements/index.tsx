@@ -2,6 +2,7 @@ import React, { useState, FormEventHandler, useMemo } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, router } from '@inertiajs/react';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { 
     Megaphone, 
     Search, 
@@ -609,11 +610,7 @@ export default function AnnouncementsIndex({
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem 
                                                             className="text-red-600 focus:text-red-600 cursor-pointer text-xs" 
-                                                            onClick={() => {
-                                                                if (confirm('Are you sure you want to delete this announcement?')) {
-                                                                    router.delete(`/announcements/${announcement.id}`);
-                                                                }
-                                                            }}
+                                                            onClick={() => setDeletingAnnouncement(announcement)}
                                                         >
                                                             <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
                                                         </DropdownMenuItem>
@@ -837,6 +834,28 @@ export default function AnnouncementsIndex({
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Delete Announcement Confirmation Modal */}
+            <DeleteConfirmDialog
+                open={!!deletingAnnouncement}
+                onOpenChange={(open) => !open && setDeletingAnnouncement(null)}
+                title="Delete Announcement"
+                description="Are you sure you want to permanently delete this announcement? It will be removed from all audience feeds and dashboard carousels."
+                itemName={deletingAnnouncement ? deletingAnnouncement.title : undefined}
+                confirmLabel="Delete Announcement"
+                isDeleting={isDeleting}
+                onConfirm={() => {
+                    if (!deletingAnnouncement) return;
+                    setIsDeleting(true);
+                    router.delete(`/announcements/${deletingAnnouncement.id}`, {
+                        preserveScroll: true,
+                        onFinish: () => {
+                            setIsDeleting(false);
+                            setDeletingAnnouncement(null);
+                        },
+                    });
+                }}
+            />
         </AppLayout>
     );
 }

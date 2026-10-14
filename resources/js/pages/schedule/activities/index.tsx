@@ -13,6 +13,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -82,6 +83,8 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
     const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
+    const [deletingActivity, setDeletingActivity] = useState<Activity | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Filters and pagination state
     const [searchQuery, setSearchQuery] = useState('');
@@ -689,11 +692,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 text-xs cursor-pointer flex items-center gap-2"
-                                                                onClick={() => {
-                                                                    if (confirm(`Are you sure you want to delete "${activity.title}"?`)) {
-                                                                        router.delete(`/schedule/activities/${activity.id}`);
-                                                                    }
-                                                                }}
+                                                                onClick={() => setDeletingActivity(activity)}
                                                             >
                                                                 <Trash className="w-3.5 h-3.5" />
                                                                 <span>Delete</span>
@@ -966,6 +965,28 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                         )}
                     </DialogContent>
                 </Dialog>
+
+                {/* Delete Activity Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={!!deletingActivity}
+                    onOpenChange={(open) => !open && setDeletingActivity(null)}
+                    title="Delete Activity"
+                    description="Are you sure you want to permanently delete this activity? This will remove it from calendar views and public listings."
+                    itemName={deletingActivity ? `${deletingActivity.title} (${deletingActivity.date})` : undefined}
+                    confirmLabel="Delete Activity"
+                    isDeleting={isDeleting}
+                    onConfirm={() => {
+                        if (!deletingActivity) return;
+                        setIsDeleting(true);
+                        router.delete(`/schedule/activities/${deletingActivity.id}`, {
+                            preserveScroll: true,
+                            onFinish: () => {
+                                setIsDeleting(false);
+                                setDeletingActivity(null);
+                            },
+                        });
+                    }}
+                />
             </div>
         </AppLayout>
     );

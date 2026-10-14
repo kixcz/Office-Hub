@@ -2,7 +2,8 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save, Trash2 } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useState } from 'react';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 
 interface Announcement {
     id: number;
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export default function AnnouncementEdit({ announcement }: Props) {
+    const [isDeletingOpen, setIsDeletingOpen] = useState(false);
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Announcements',
@@ -57,9 +59,11 @@ export default function AnnouncementEdit({ announcement }: Props) {
     };
 
     const handleDelete = () => {
-        if (confirm('Are you sure you want to delete this announcement?')) {
-            destroy(`/announcements/${announcement.id}`);
-        }
+        setIsDeletingOpen(true);
+    };
+
+    const confirmDelete = () => {
+        destroy(`/announcements/${announcement.id}`);
     };
 
     return (
@@ -241,6 +245,18 @@ export default function AnnouncementEdit({ announcement }: Props) {
                     </form>
                 </div>
             </div>
+
+            {/* Delete Announcement Confirmation Modal */}
+            <DeleteConfirmDialog
+                open={isDeletingOpen}
+                onOpenChange={setIsDeletingOpen}
+                title="Delete Announcement"
+                description="Are you sure you want to delete this announcement? This action will permanently remove it from the system."
+                itemName={announcement.title}
+                confirmLabel="Delete Announcement"
+                isDeleting={processing}
+                onConfirm={confirmDelete}
+            />
         </AppLayout>
     );
 }

@@ -18,6 +18,7 @@ use App\Http\Controllers\Performance\FacultyPerformanceController;
 use App\Http\Controllers\Performance\ProgramPerformanceController;
 use App\Http\Controllers\Performance\RecognitionRuleController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\Schedule\AcademicCalendarImportController;
 use App\Http\Controllers\Schedule\ActivityController;
 use App\Http\Controllers\Schedule\CalendarController;
 use App\Http\Controllers\Schedule\MeetingController;
@@ -58,6 +59,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('calendar/events-json', [CalendarController::class, 'eventsJson'])->name('calendar.events-json');
         Route::post('calendar', [CalendarController::class, 'store'])->name('calendar.store');
         Route::delete('calendar/{id}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
+
+        // Academic Calendar Import (AI Ingestion & Validation Workflow)
+        Route::get('calendar-import', [AcademicCalendarImportController::class, 'index'])->name('calendar.import');
+        Route::post('calendar-import/upload', [AcademicCalendarImportController::class, 'upload'])->name('calendar.import.upload');
+        Route::post('calendar-import/approve/{event}', [AcademicCalendarImportController::class, 'approveEvent'])->name('calendar.import.approve');
+        Route::post('calendar-import/bulk-approve', [AcademicCalendarImportController::class, 'bulkApprove'])->name('calendar.import.bulk-approve');
+        Route::post('calendar-import/reject/{event}', [AcademicCalendarImportController::class, 'rejectEvent'])->name('calendar.import.reject');
+        Route::delete('calendar-import/event/{event}', [AcademicCalendarImportController::class, 'deleteEvent'])->name('calendar.import.delete-event');
+        Route::put('calendar-import/event/{event}', [AcademicCalendarImportController::class, 'updateEvent'])->name('calendar.import.update-event');
+        Route::put('calendar-import/rule/{rule}', [AcademicCalendarImportController::class, 'updateRule'])->name('calendar.import.update-rule');
+        Route::post('calendar-import/batch/{batch}/rollback', [AcademicCalendarImportController::class, 'rollbackBatch'])->name('calendar.import.rollback');
 
         // Semester Schedule Generator System
         Route::get('generator', [SemesterScheduleController::class, 'generator'])->name('generator');
@@ -116,6 +128,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
     Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+    Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
     // Accomplishments
     Route::get('/accomplishments', [AccomplishmentController::class, 'index'])->name('accomplishments.index');
     Route::post('/accomplishments', [AccomplishmentController::class, 'store'])->name('accomplishments.store');

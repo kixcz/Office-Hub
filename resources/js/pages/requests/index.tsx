@@ -5,6 +5,7 @@ import { ClipboardList, Plus, Search, Hammer, Package, Monitor, FileQuestion, Us
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { useState } from 'react';
 
 interface User {
@@ -35,6 +36,20 @@ export default function RequestsIndex({ requests }: Props) {
 
     const [isCreating, setIsCreating] = useState(false);
     const [updatingId, setUpdatingId] = useState<number | null>(null);
+    const [deletingRequest, setDeletingRequest] = useState<OfficeRequest | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const confirmDeleteRequest = () => {
+        if (!deletingRequest) return;
+        setIsDeleting(true);
+        router.delete(`/requests/${deletingRequest.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsDeleting(false);
+                setDeletingRequest(null);
+            },
+        });
+    };
 
     const { data: createData, setData: setCreateData, post, processing: createProcessing, reset: resetCreate } = useForm({
         title: '',
@@ -254,11 +269,7 @@ export default function RequestsIndex({ requests }: Props) {
                                                         <DropdownMenuItem onClick={() => startUpdate(request)}>
                                                             <Edit className="mr-2 h-4 w-4" /> Update Status
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => {
-                                                            if (confirm('Are you sure you want to delete this request?')) {
-                                                                router.delete(`/requests/${request.id}`);
-                                                            }
-                                                        }}>
+                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer" onClick={() => setDeletingRequest(request)}>
                                                             <Trash className="mr-2 h-4 w-4" /> Delete
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
@@ -271,6 +282,18 @@ export default function RequestsIndex({ requests }: Props) {
                         ))
                     )}
                 </div>
+
+                {/* Delete Request Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={!!deletingRequest}
+                    onOpenChange={(open) => !open && setDeletingRequest(null)}
+                    title="Delete Office Request"
+                    description="Are you sure you want to delete this office request? It will be removed from your tracking queue."
+                    itemName={deletingRequest ? `${deletingRequest.title} (${deletingRequest.type})` : undefined}
+                    confirmLabel="Delete Request"
+                    isDeleting={isDeleting}
+                    onConfirm={confirmDeleteRequest}
+                />
             </div>
         </AppLayout>
     );

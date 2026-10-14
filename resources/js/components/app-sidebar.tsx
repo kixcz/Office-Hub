@@ -39,6 +39,7 @@ const navGroups: NavGroup[] = [
                 icon: Calendar,
                 items: [
                     { title: 'Overview', url: '/schedule/generator' },
+                    { title: 'Academic Calendar Import', url: '/schedule/calendar-import' },
                     { title: 'Academic Periods', url: '/administration/academic-periods' },
                     { title: 'Programs & Curriculum', url: '/programs' },
                     { title: 'Sections & Offerings', url: '/schedule/sections' },

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, useForm, Link, router } from '@inertiajs/react';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { 
     Tv, 
     Eye, 
@@ -169,10 +170,22 @@ export default function DisplaySettingsIndex({ settings, system_status }: Props)
         } as any);
     };
 
+    const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
+
     const handleReset = () => {
-        if (confirm('Are you sure you want to reset all TV display settings to default values?')) {
-            router.post('/tv-config/settings/reset');
-        }
+        setIsResetConfirmOpen(true);
+    };
+
+    const confirmReset = () => {
+        setIsResetting(true);
+        router.post('/tv-config/settings/reset', {}, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsResetting(false);
+                setIsResetConfirmOpen(false);
+            },
+        });
     };
 
     const status = system_status || {
@@ -877,6 +890,17 @@ export default function DisplaySettingsIndex({ settings, system_status }: Props)
                         </button>
                     </div>
                 </form>
+
+                {/* Reset Settings Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={isResetConfirmOpen}
+                    onOpenChange={setIsResetConfirmOpen}
+                    title="Reset All TV Display Settings"
+                    description="Are you sure you want to restore all TV display configurations to factory defaults? Custom slide timers, screen orientation, and styling overrides will be lost."
+                    confirmLabel="Reset All Settings"
+                    isDeleting={isResetting}
+                    onConfirm={confirmReset}
+                />
             </div>
         </AppLayout>
     );

@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Calendar as CalendarIcon,
     ChevronLeft,
@@ -18,7 +18,9 @@ import {
     Trash2,
     CalendarCheck,
     AlertCircle,
+    CalendarRange,
 } from 'lucide-react';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import React, { useState, useMemo } from 'react';
 import {
     Dialog,
@@ -324,11 +326,25 @@ export default function ConsolidatedCalendarIndex({
         });
     };
 
+    // Delete Event State
+    const [deletingEvent, setDeletingEvent] = useState<CalendarEvent | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     // Handle Delete Event
-    const handleDeleteEvent = (id: string) => {
-        if (confirm('Are you sure you want to delete this event from the calendar?')) {
-            router.delete(`/schedule/calendar/${id}`);
-        }
+    const handleDeleteEvent = (event: CalendarEvent) => {
+        setDeletingEvent(event);
+    };
+
+    const confirmDeleteEvent = () => {
+        if (!deletingEvent) return;
+        setIsDeleting(true);
+        router.delete(`/schedule/calendar/${deletingEvent.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsDeleting(false);
+                setDeletingEvent(null);
+            },
+        });
     };
 
     return (
@@ -354,16 +370,26 @@ export default function ConsolidatedCalendarIndex({
                         </div>
                     </div>
 
-                    <Button
-                        onClick={() => {
-                            setNewEventForm((prev) => ({ ...prev, date: selectedDateStr }));
-                            setIsAddModalOpen(true);
-                        }}
-                        className="bg-amber-500 hover:bg-amber-600 text-white font-bold h-10 px-5 rounded-xl shadow-xs gap-2 transition-all cursor-pointer self-start sm:self-auto"
-                    >
-                        <Plus className="w-4 h-4 stroke-[3]" />
-                        <span>Add Event</span>
-                    </Button>
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                        <Link
+                            href="/schedule/calendar-import"
+                            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer shadow-2xs"
+                        >
+                            <CalendarRange className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                            <span>AI Calendar Import</span>
+                        </Link>
+
+                        <Button
+                            onClick={() => {
+                                setNewEventForm((prev) => ({ ...prev, date: selectedDateStr }));
+                                setIsAddModalOpen(true);
+                            }}
+                            className="bg-amber-500 hover:bg-amber-600 text-white font-bold h-10 px-5 rounded-xl shadow-xs gap-2 transition-all cursor-pointer"
+                        >
+                            <Plus className="w-4 h-4 stroke-[3]" />
+                            <span>Add Event</span>
+                        </Button>
+                    </div>
                 </div>
 
                 {/* ========================================================================= */}
@@ -755,8 +781,8 @@ export default function ConsolidatedCalendarIndex({
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-40 rounded-xl">
                                                     <DropdownMenuItem
-                                                        onClick={() => handleDeleteEvent(ev.id)}
-                                                        className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                                        onClick={() => handleDeleteEvent(ev)}
+                                                        className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5 mr-2" />
                                                         Delete Event
@@ -995,6 +1021,18 @@ export default function ConsolidatedCalendarIndex({
                     </form>
                 </DialogContent>
             </Dialog>
+
+            {/* Delete Event Confirmation Modal */}
+            <DeleteConfirmDialog
+                open={!!deletingEvent}
+                onOpenChange={(open) => !open && setDeletingEvent(null)}
+                title="Delete Calendar Event"
+                description="Are you sure you want to delete this event from the consolidated calendar? This will remove it from all views and schedules."
+                itemName={deletingEvent ? `${deletingEvent.title} (${deletingEvent.date})` : undefined}
+                confirmLabel="Delete Event"
+                isDeleting={isDeleting}
+                onConfirm={confirmDeleteEvent}
+            />
         </AppLayout>
     );
 }

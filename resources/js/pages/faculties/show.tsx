@@ -16,6 +16,8 @@ import {
     FileSpreadsheet,
     FileText,
     GraduationCap,
+    Link,
+    ExternalLink,
     History,
     Mail,
     MapPin,
@@ -414,11 +416,10 @@ export default function FacultyProfileShow({
                                         {faculty.last_name?.[0]}
                                     </div>
                                 )}
-                                <span className={`absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                                    faculty.status === 'Active'
-                                        ? 'bg-emerald-500 text-white border-emerald-400'
-                                        : 'bg-slate-500 text-white border-slate-400'
-                                }`}>
+                                <span className={`absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-xs ${faculty.status === 'Active'
+                                    ? 'bg-emerald-500 text-white border-emerald-400'
+                                    : 'bg-slate-500 text-white border-slate-400'
+                                    }`}>
                                     {faculty.status || 'Active'}
                                 </span>
                             </div>
@@ -503,9 +504,8 @@ export default function FacultyProfileShow({
                             </div>
                             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                                 <div
-                                    className={`h-full rounded-full transition-all duration-500 ${
-                                        kpis.compliance_rate >= 80 ? 'bg-emerald-500' : kpis.compliance_rate >= 50 ? 'bg-amber-400' : 'bg-rose-500'
-                                    }`}
+                                    className={`h-full rounded-full transition-all duration-500 ${kpis.compliance_rate >= 80 ? 'bg-emerald-500' : kpis.compliance_rate >= 50 ? 'bg-amber-400' : 'bg-rose-500'
+                                        }`}
                                     style={{ width: `${kpis.compliance_rate}%` }}
                                 />
                             </div>
@@ -589,11 +589,10 @@ export default function FacultyProfileShow({
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setActiveTab(tab.id as TabType)}
-                                className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold tracking-tight rounded-t-xl transition-all cursor-pointer border-b-2 whitespace-nowrap ${
-                                    isActive
-                                        ? 'border-amber-500 text-foreground bg-card'
-                                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
-                                }`}
+                                className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold tracking-tight rounded-t-xl transition-all cursor-pointer border-b-2 whitespace-nowrap ${isActive
+                                    ? 'border-amber-500 text-foreground bg-card'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                                    }`}
                             >
                                 <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-500' : 'text-muted-foreground'}`} />
                                 <span>{tab.label}</span>
@@ -1185,13 +1184,12 @@ export default function FacultyProfileShow({
                                                             <div className="text-muted-foreground font-mono">{rec.room_number || 'Main Building'}</div>
                                                         </td>
                                                         <td className="px-6 py-3.5 text-center">
-                                                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                                                rec.status === 'present'
-                                                                    ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                                                                    : rec.status === 'late'
+                                                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${rec.status === 'present'
+                                                                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                                                : rec.status === 'late'
                                                                     ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
                                                                     : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                                                            }`}>
+                                                                }`}>
                                                                 {rec.status}
                                                                 {rec.late_minutes > 0 && ` (${rec.late_minutes}m)`}
                                                             </span>

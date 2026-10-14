@@ -2,6 +2,7 @@ import React, { useState, useMemo, FormEventHandler } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, router } from '@inertiajs/react';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { 
     GraduationCap, 
     BookOpen, 
@@ -155,14 +156,21 @@ export default function ProgramsIndex({
         });
     };
 
+    const [isBulkDeletingOpen, setIsBulkDeletingOpen] = useState(false);
+
     const handleBulkDelete = () => {
         if (selectedIds.length === 0) return;
-        if (confirm(`Are you sure you want to delete ${selectedIds.length} selected program(s)?`)) {
-            selectedIds.forEach((id) => {
-                router.delete(`/programs/${id}`, { preserveScroll: true });
-            });
-            setSelectedIds([]);
-        }
+        setIsBulkDeletingOpen(true);
+    };
+
+    const confirmBulkDelete = () => {
+        setIsDeleting(true);
+        selectedIds.forEach((id) => {
+            router.delete(`/programs/${id}`, { preserveScroll: true });
+        });
+        setSelectedIds([]);
+        setIsDeleting(false);
+        setIsBulkDeletingOpen(false);
     };
 
     // Filter list client-side
@@ -820,51 +828,28 @@ export default function ProgramsIndex({
                 </DialogContent>
             </Dialog>
 
-            {/* Modal: Delete Program Confirmation */}
-            <Dialog open={!!deletingProgram} onOpenChange={(open) => !open && setDeletingProgram(null)}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-red-600 flex items-center gap-2">
-                            <Trash2 className="w-5 h-5 text-red-600" />
-                            Delete Academic Program
-                        </DialogTitle>
-                    </DialogHeader>
-                    {deletingProgram && (
-                        <div className="flex flex-col gap-4 mt-2">
-                            <p className="text-sm text-slate-600 dark:text-slate-300">
-                                Are you sure you want to permanently delete{' '}
-                                <span className="font-bold text-slate-900 dark:text-slate-100">
-                                    {deletingProgram.code} ({deletingProgram.name})
-                                </span>
-                                ? This action will remove the program from the system.
-                            </p>
+            {/* Modal: Delete Single Program Confirmation */}
+            <DeleteConfirmDialog
+                open={!!deletingProgram}
+                onOpenChange={(open) => !open && setDeletingProgram(null)}
+                title="Delete Academic Program"
+                description="Are you sure you want to permanently delete this academic program? Any faculty members or schedules associated with this program will be unlinked."
+                itemName={deletingProgram ? `${deletingProgram.code} (${deletingProgram.name})` : undefined}
+                confirmLabel="Delete Program"
+                isDeleting={isDeleting}
+                onConfirm={confirmDelete}
+            />
 
-                            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl p-3 text-xs text-red-700 dark:text-red-300">
-                                Note: Any faculty members or schedules associated with this program will be unlinked.
-                            </div>
-
-                            <DialogFooter className="mt-2 gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setDeletingProgram(null)}
-                                    className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={isDeleting}
-                                    onClick={confirmDelete}
-                                    className="px-4 py-2 text-xs font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                    <span>{isDeleting ? 'Deleting...' : 'Confirm Delete'}</span>
-                                </button>
-                            </DialogFooter>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+            {/* Modal: Bulk Delete Programs Confirmation */}
+            <DeleteConfirmDialog
+                open={isBulkDeletingOpen}
+                onOpenChange={setIsBulkDeletingOpen}
+                title="Delete Selected Programs"
+                description={`Are you sure you want to permanently delete ${selectedIds.length} selected academic program(s)? This action cannot be undone.`}
+                confirmLabel={`Delete ${selectedIds.length} Programs`}
+                isDeleting={isDeleting}
+                onConfirm={confirmBulkDelete}
+            />
         </AppLayout>
     );
 }

@@ -99,4 +99,9 @@ class Faculty extends Model
     {
         return $this->hasMany(FacultyAttendanceSummary::class);
     }
+
+    public function tasks()
+    {
+        return $this->belongsToMany(Task::class, 'faculty_task')->withTimestamps();
+    }
 }

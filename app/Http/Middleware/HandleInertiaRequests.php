@@ -49,6 +49,10 @@ class HandleInertiaRequests extends Middleware
             'currentAcademicPeriod' => function () {
                 return AcademicPeriod::current();
             },
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
         ]);
     }
 }

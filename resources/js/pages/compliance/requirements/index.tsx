@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, useForm, router } from '@inertiajs/react';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -185,10 +186,23 @@ export default function RequirementsIndex({
         });
     };
 
+    const [deletingReq, setDeletingReq] = useState<Requirement | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const handleDelete = (req: Requirement) => {
-        if (confirm(`Are you sure you want to delete the requirement "${req.title}"? This will also remove its associated submissions.`)) {
-            router.delete(`/compliance/requirements/${req.id}`);
-        }
+        setDeletingReq(req);
+    };
+
+    const confirmDeleteReq = () => {
+        if (!deletingReq) return;
+        setIsDeleting(true);
+        router.delete(`/compliance/requirements/${deletingReq.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsDeleting(false);
+                setDeletingReq(null);
+            },
+        });
     };
 
     // Calculate deadline status & pills
@@ -1178,6 +1192,18 @@ export default function RequirementsIndex({
                         )}
                     </DialogContent>
                 </Dialog>
+
+                {/* Delete Requirement Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={!!deletingReq}
+                    onOpenChange={(open) => !open && setDeletingReq(null)}
+                    title="Delete Compliance Requirement"
+                    description="Are you sure you want to permanently delete this requirement? All associated faculty submissions and progress entries will be permanently removed."
+                    itemName={deletingReq ? deletingReq.title : undefined}
+                    confirmLabel="Delete Requirement"
+                    isDeleting={isDeleting}
+                    onConfirm={confirmDeleteReq}
+                />
             </div>
         </AppLayout>
     );

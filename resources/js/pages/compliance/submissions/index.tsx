@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -334,10 +335,23 @@ export default function SubmissionsIndex({
         );
     };
 
+    const [revertingSub, setRevertingSub] = useState<Submission | null>(null);
+    const [isReverting, setIsReverting] = useState(false);
+
     const handleRevertToPending = (sub: Submission) => {
-        if (confirm(`Are you sure you want to revert the submission for ${sub.faculty?.first_name} ${sub.faculty?.last_name} back to pending?`)) {
-            router.delete(`/compliance/submissions/${sub.id}`);
-        }
+        setRevertingSub(sub);
+    };
+
+    const confirmRevertSub = () => {
+        if (!revertingSub) return;
+        setIsReverting(true);
+        router.delete(`/compliance/submissions/${revertingSub.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsReverting(false);
+                setRevertingSub(null);
+            },
+        });
     };
 
     // Deadline urgency helper
@@ -1162,6 +1176,18 @@ export default function SubmissionsIndex({
                         </form>
                     </DialogContent>
                 </Dialog>
+
+                {/* Revert / Delete Submission Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={!!revertingSub}
+                    onOpenChange={(open) => !open && setRevertingSub(null)}
+                    title="Revert Submission to Pending"
+                    description="Are you sure you want to revert this uploaded submission? The submitted document and verification status will be cleared and the faculty member will need to resubmit."
+                    itemName={revertingSub ? `${revertingSub.requirement?.title} — ${revertingSub.faculty?.first_name} ${revertingSub.faculty?.last_name}` : undefined}
+                    confirmLabel="Revert Submission"
+                    isDeleting={isReverting}
+                    onConfirm={confirmRevertSub}
+                />
             </div>
         </AppLayout>
     );

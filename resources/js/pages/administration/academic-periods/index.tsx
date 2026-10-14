@@ -14,6 +14,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
+import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -129,6 +130,7 @@ export default function AcademicPeriodsIndex({
     const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
     const [duplicateSource, setDuplicateSource] = useState<AcademicPeriodItem | null>(null);
     const [deletingPeriod, setDeletingPeriod] = useState<AcademicPeriodItem | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Form for Create / Edit
     const { data, setData, post, put, processing, reset, errors } = useForm({
@@ -1328,46 +1330,24 @@ export default function AcademicPeriodsIndex({
                 </Dialog>
 
                 {/* MODAL: DELETE CONFIRMATION */}
-                <Dialog open={!!deletingPeriod} onOpenChange={(open) => !open && setDeletingPeriod(null)}>
-                    <DialogContent className="sm:max-w-md rounded-2xl p-6">
-                        <DialogHeader>
-                            <DialogTitle className="text-base font-bold text-rose-600 flex items-center gap-2">
-                                <Trash2 className="w-5 h-5 text-rose-600" />
-                                Delete Academic Period
-                            </DialogTitle>
-                        </DialogHeader>
-                        {deletingPeriod && (
-                            <div className="space-y-3 text-xs mt-2">
-                                <p className="text-slate-600">
-                                    Are you sure you want to delete{' '}
-                                    <span className="font-bold text-slate-900">
-                                        {deletingPeriod.academic_year} — {deletingPeriod.semester}
-                                    </span>
-                                    ? This action cannot be undone.
-                                </p>
-                                <DialogFooter className="pt-2 gap-2">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setDeletingPeriod(null)}
-                                        className="text-xs rounded-xl"
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        onClick={() => {
-                                            router.delete(`/administration/academic-periods/${deletingPeriod.id}`, {
-                                                onSuccess: () => setDeletingPeriod(null),
-                                            });
-                                        }}
-                                        className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl cursor-pointer"
-                                    >
-                                        Confirm Delete
-                                    </Button>
-                                </DialogFooter>
-                            </div>
-                        )}
-                    </DialogContent>
-                </Dialog>
+                <DeleteConfirmDialog
+                    open={!!deletingPeriod}
+                    onOpenChange={(open) => !open && setDeletingPeriod(null)}
+                    title="Delete Academic Period"
+                    description="Are you sure you want to delete this academic period? This action cannot be undone and will permanently remove all period parameters."
+                    itemName={deletingPeriod ? `${deletingPeriod.academic_year} — ${deletingPeriod.semester}` : undefined}
+                    confirmLabel="Delete Period"
+                    isDeleting={isDeleting}
+                    onConfirm={() => {
+                        if (!deletingPeriod) return;
+                        setIsDeleting(true);
+                        router.delete(`/administration/academic-periods/${deletingPeriod.id}`, {
+                            preserveScroll: true,
+                            onSuccess: () => setDeletingPeriod(null),
+                            onFinish: () => setIsDeleting(false),
+                        });
+                    }}
+                />
             </div>
         </AppLayout>
     );

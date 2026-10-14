@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, useForm, router } from '@inertiajs/react';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { 
     PlaySquare, 
     CheckCircle2, 
@@ -214,10 +215,23 @@ export default function PlaylistIndex({
         });
     };
 
+    const [deletingSlide, setDeletingSlide] = useState<Slide | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const handleDelete = (slide: Slide) => {
-        if (confirm(`Are you sure you want to delete "${slide.title}"?`)) {
-            router.delete(`/tv-config/playlist/${slide.id}`, { preserveScroll: true });
-        }
+        setDeletingSlide(slide);
+    };
+
+    const confirmDeleteSlide = () => {
+        if (!deletingSlide) return;
+        setIsDeleting(true);
+        router.delete(`/tv-config/playlist/${deletingSlide.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsDeleting(false);
+                setDeletingSlide(null);
+            },
+        });
     };
 
     const toggleSlideStatus = (slide: Slide) => {
@@ -915,6 +929,18 @@ export default function PlaylistIndex({
                     </form>
                 </DialogContent>
             </Dialog>
+
+            {/* Delete Slide Confirmation Modal */}
+            <DeleteConfirmDialog
+                open={!!deletingSlide}
+                onOpenChange={(open) => !open && setDeletingSlide(null)}
+                title="Delete TV Slide"
+                description="Are you sure you want to permanently delete this TV slide? It will be immediately removed from the active digital display rotation."
+                itemName={deletingSlide ? deletingSlide.title : undefined}
+                confirmLabel="Delete Slide"
+                isDeleting={isDeleting}
+                onConfirm={confirmDeleteSlide}
+            />
         </AppLayout>
     );
 }

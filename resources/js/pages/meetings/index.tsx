@@ -5,6 +5,7 @@ import { Calendar, Plus, Trash2, MapPin, Users, Tv, MoreVertical, Edit } from 'l
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { useState } from 'react';
 
 interface User {
@@ -54,10 +55,23 @@ export default function MeetingsIndex({ meetings }: Props) {
         });
     };
 
-    const deleteMeeting = (id: number) => {
-        if (confirm('Are you sure you want to delete this meeting?')) {
-            router.delete(`/meetings/${id}`);
-        }
+    const [deletingMeeting, setDeletingMeeting] = useState<Meeting | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const deleteMeeting = (meeting: Meeting) => {
+        setDeletingMeeting(meeting);
+    };
+
+    const confirmDeleteMeeting = () => {
+        if (!deletingMeeting) return;
+        setIsDeleting(true);
+        router.delete(`/meetings/${deletingMeeting.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsDeleting(false);
+                setDeletingMeeting(null);
+            },
+        });
     };
 
     const formatDateTime = (dateString: string) => {
@@ -152,8 +166,8 @@ export default function MeetingsIndex({ meetings }: Props) {
                                         </p>
                                     </div>
                                     <button 
-                                        onClick={() => deleteMeeting(meeting.id)}
-                                        className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-muted"
+                                        onClick={() => deleteMeeting(meeting)}
+                                        className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-muted cursor-pointer"
                                         title="Delete Meeting"
                                     >
                                         <Trash2 className="w-4 h-4" />
@@ -186,6 +200,18 @@ export default function MeetingsIndex({ meetings }: Props) {
                         ))
                     )}
                 </div>
+
+                {/* Delete Meeting Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={!!deletingMeeting}
+                    onOpenChange={(open) => !open && setDeletingMeeting(null)}
+                    title="Delete Meeting"
+                    description="Are you sure you want to permanently delete this scheduled meeting? Attendees will no longer see it on their schedules."
+                    itemName={deletingMeeting ? `${deletingMeeting.title} (${deletingMeeting.location || 'Online'})` : undefined}
+                    confirmLabel="Delete Meeting"
+                    isDeleting={isDeleting}
+                    onConfirm={confirmDeleteMeeting}
+                />
             </div>
         </AppLayout>
     );

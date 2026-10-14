@@ -5,6 +5,7 @@ import { Send, Plus, Search, FileSignature, CheckCircle2, Clock, MapPin, Hash, M
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { useState } from 'react';
 
 interface User {
@@ -35,6 +36,20 @@ export default function DocumentRoutingIndex({ documents }: Props) {
 
     const [isCreating, setIsCreating] = useState(false);
     const [updatingId, setUpdatingId] = useState<number | null>(null);
+    const [deletingDoc, setDeletingDoc] = useState<DocumentRoute | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const confirmDeleteDoc = () => {
+        if (!deletingDoc) return;
+        setIsDeleting(true);
+        router.delete(`/documents/${deletingDoc.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsDeleting(false);
+                setDeletingDoc(null);
+            },
+        });
+    };
 
     const { data: createData, setData: setCreateData, post, processing: createProcessing, reset: resetCreate } = useForm({
         title: '',
@@ -251,11 +266,7 @@ export default function DocumentRoutingIndex({ documents }: Props) {
                                                                 <DropdownMenuItem onClick={() => startUpdate(doc)}>
                                                                     <Edit className="mr-2 h-4 w-4" /> Update Status
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => {
-                                                                    if (confirm('Are you sure you want to delete this document?')) {
-                                                                        router.delete(`/documents/${doc.id}`);
-                                                                    }
-                                                                }}>
+                                                                <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer" onClick={() => setDeletingDoc(doc)}>
                                                                     <Trash className="mr-2 h-4 w-4" /> Delete
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
@@ -270,6 +281,18 @@ export default function DocumentRoutingIndex({ documents }: Props) {
                         </div>
                     )}
                 </div>
+
+                {/* Delete Document Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={!!deletingDoc}
+                    onOpenChange={(open) => !open && setDeletingDoc(null)}
+                    title="Delete Routed Document"
+                    description="Are you sure you want to delete this routed document? The tracking timeline and routing history will be removed."
+                    itemName={deletingDoc ? `${deletingDoc.tracking_number} — ${deletingDoc.title}` : undefined}
+                    confirmLabel="Delete Document"
+                    isDeleting={isDeleting}
+                    onConfirm={confirmDeleteDoc}
+                />
             </div>
         </AppLayout>
     );

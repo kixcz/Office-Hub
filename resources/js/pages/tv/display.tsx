@@ -1434,16 +1434,21 @@ function SlideFive({ data, isDark = false }: any) {
             </div>
 
             {/* Scrollable Bento Grid of Rooms */}
-            <div className="h-full min-h-0 flex-1 overflow-y-auto tv-scrollbar overscroll-contain pr-1">
-                <div className="grid grid-cols-4 gap-3.5 pb-2">
+            <div className="h-full min-h-0 flex-1 overflow-y-auto tv-scrollbar overscroll-contain p-1.5 pr-2">
+                <div className="grid grid-cols-4 gap-4 pb-4">
                     {rooms.map((room: any) => {
                         const tone = ROOM_TONE[room.status] ?? 'blue';
                         const isOccupied = room.status === 'In Use';
                         return (
                             <div
                                 key={room.id}
-                                className={`flex min-h-[175px] flex-col justify-between rounded-2xl p-4 border transition-all ${isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
-                                    } ${isOccupied ? 'ring-2 ring-amber-400/80' : ''}`}
+                                className={`flex min-h-[175px] flex-col justify-between rounded-2xl p-4 transition-all border ${
+                                    isOccupied
+                                        ? 'border-amber-400 bg-amber-500/[0.04] shadow-[0_0_0_1px_rgba(251,191,36,0.5),0_4px_16px_rgba(245,158,11,0.12)]'
+                                        : isDark
+                                            ? 'bg-[#131b2e] border-white/10'
+                                            : 'bg-white border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                                }`}
                             >
                                 <div className="flex items-start justify-between gap-2.5">
                                     <div className="min-w-0">

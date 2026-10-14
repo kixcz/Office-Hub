@@ -41,4 +41,8 @@ return [
         'timezone' => env('ROOM_SCHEDULE_TIMEZONE', 'Asia/Manila'),
     ],
 
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+    ],
+
 ];
