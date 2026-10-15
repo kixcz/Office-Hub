@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\FacultyFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Hash;
 
 class Faculty extends Model
 {
@@ -36,6 +37,58 @@ class Faculty extends Model
         'title_name',
         'employee_id',
     ];
+
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (Faculty $faculty): void {
+            $faculty->syncUserAccount();
+        });
+    }
+
+    /**
+     * Automatically ensure a User account exists for this faculty member if they have an email.
+     */
+    public function syncUserAccount(): ?User
+    {
+        $email = trim($this->email ?? '');
+        if (empty($email)) {
+            return null;
+        }
+
+        $fullName = trim("{$this->first_name} {$this->last_name}");
+        $user = User::where('email', $email)->first();
+
+        if (! $user) {
+            $user = User::create([
+                'name' => $fullName ?: 'Faculty Member',
+                'email' => $email,
+                'password' => Hash::make('password'),
+            ]);
+        } else {
+            // Update user name if blank or changed
+            if ($fullName && $user->name !== $fullName) {
+                $user->name = $fullName;
+                $user->save();
+            }
+        }
+
+        // Assign Faculty Member role
+        $facultyRole = Role::firstOrCreate(['name' => 'Faculty Member']);
+        if ($facultyRole && ! $user->roles()->where('role_id', $facultyRole->id)->exists()) {
+            $user->roles()->attach($facultyRole->id);
+        }
+
+        // Link faculty to user without triggering recursion
+        if ($this->user_id !== $user->id) {
+            $this->newQuery()->where('id', $this->id)->update(['user_id' => $user->id]);
+            $this->user_id = $user->id;
+        }
+
+        return $user;
+    }
 
     public function getFullNameAttribute(): string
     {

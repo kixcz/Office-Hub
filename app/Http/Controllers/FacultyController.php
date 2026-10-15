@@ -32,6 +32,8 @@ class FacultyController extends Controller
         // 1. Metric Counters from actual records
         $totalCount = $faculties->count();
         $activeCount = $faculties->where('status', 'Active')->count();
+        $onLeaveCount = $faculties->whereIn('status', ['On Leave', 'Sabbatical'])->count();
+        $studyLeaveCount = $faculties->where('status', 'Study Leave')->count();
         $fullTimeCount = $faculties->filter(fn ($f) => stripos($f->employment_type ?? '', 'Full') !== false)->count();
         $partTimeCount = $faculties->filter(fn ($f) => stripos($f->employment_type ?? '', 'Part') !== false)->count();
 
@@ -155,6 +157,8 @@ class FacultyController extends Controller
             'stats' => [
                 'total_faculty' => $totalCount,
                 'active_faculty' => $activeCount,
+                'on_leave' => $onLeaveCount,
+                'study_leave' => $studyLeaveCount,
                 'full_time' => $fullTimeCount,
                 'part_time' => $partTimeCount,
                 'needs_attention' => $needsAttentionCount,

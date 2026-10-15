@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\Faculty;
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -41,6 +43,17 @@ class LoginRequest extends FormRequest
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
+
+        $email = trim((string) $this->string('email'));
+
+        // If user doesn't exist yet but a faculty profile exists with this email, auto-create the account
+        $user = User::where('email', $email)->first();
+        if (! $user) {
+            $faculty = Faculty::where('email', $email)->first();
+            if ($faculty) {
+                $faculty->syncUserAccount();
+            }
+        }
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());

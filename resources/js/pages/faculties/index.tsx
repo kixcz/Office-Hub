@@ -122,6 +122,8 @@ interface Props {
     stats?: {
         total_faculty: number;
         active_faculty: number;
+        on_leave?: number;
+        study_leave?: number;
         full_time: number;
         part_time: number;
         needs_attention: number;
@@ -145,6 +147,8 @@ export default function FacultiesIndex({
     stats = {
         total_faculty: faculties.length,
         active_faculty: faculties.filter((f) => f.status === 'Active').length,
+        on_leave: faculties.filter((f) => f.status === 'On Leave' || f.status === 'Sabbatical').length,
+        study_leave: faculties.filter((f) => f.status === 'Study Leave').length,
         full_time: faculties.filter((f) => (f.employment_type || '').toLowerCase().includes('full')).length,
         part_time: faculties.filter((f) => (f.employment_type || '').toLowerCase().includes('part')).length,
         needs_attention: 0,
@@ -200,6 +204,24 @@ export default function FacultiesIndex({
     const attentionFacultyIds = useMemo(() => {
         return new Set(needsAttention.map((item) => item.id));
     }, [needsAttention]);
+
+    // Calculate individual faculty profile completion percentage (0 - 100)
+    const getFacultyCompletion = (faculty: Faculty): number => {
+        const fields = [
+            faculty.first_name,
+            faculty.last_name,
+            faculty.faculty_id || faculty.employee_id,
+            faculty.academic_rank,
+            faculty.program_id,
+            faculty.specialization,
+            faculty.highest_qualification,
+            faculty.email,
+            faculty.phone,
+            faculty.photo_url || faculty.profile_picture,
+        ];
+        const filled = fields.filter((f) => f !== null && f !== undefined && String(f).trim() !== '').length;
+        return Math.round((filled / fields.length) * 100);
+    };
 
     const openAddDialog = () => {
         setEditingFaculty(null);
@@ -434,9 +456,9 @@ export default function FacultiesIndex({
 
                     <button
                         onClick={openAddDialog}
-                        className="inline-flex items-center justify-center rounded-xl text-xs font-semibold transition-all bg-slate-900 text-white hover:bg-slate-800 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 h-10 px-5 py-2 shadow-xs cursor-pointer"
+                        className="inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all bg-amber-500 hover:bg-amber-600 text-slate-950 h-10 px-5 py-2 shadow-xs cursor-pointer active:scale-98"
                     >
-                        <Plus className="w-4 h-4 mr-1.5" />
+                        <Plus className="w-4 h-4 mr-1.5 stroke-[2.5]" />
                         Add Faculty
                     </button>
                 </div>
@@ -467,8 +489,16 @@ export default function FacultiesIndex({
                                 <div className="min-w-0">
                                     <p className="text-[11px] font-medium text-muted-foreground truncate">Active Faculty</p>
                                     <h3 className="text-xl font-bold text-foreground mt-0.5">{stats.active_faculty}</h3>
-                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium truncate mt-0.5">
-                                        {stats.total_faculty > 0 ? Math.round((stats.active_faculty / stats.total_faculty) * 100) : 0}% of total
+                                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                        {((stats.study_leave ?? 0) > 0 || (stats.on_leave ?? 0) > 0) ? (
+                                            <span className="text-blue-600 dark:text-blue-400 font-medium">
+                                                +{((stats.study_leave ?? 0) + (stats.on_leave ?? 0))} on leave / study leave
+                                            </span>
+                                        ) : (
+                                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                                {stats.total_faculty > 0 ? Math.round((stats.active_faculty / stats.total_faculty) * 100) : 0}% active
+                                            </span>
+                                        )}
                                     </p>
                                 </div>
                             </div>
@@ -548,7 +578,7 @@ export default function FacultiesIndex({
                                     </select>
                                 </div>
 
-                                {/* Employment Status */}
+                                {/* Employment & Faculty Status */}
                                 <div className="md:col-span-2">
                                     <select
                                         value={employmentStatusFilter}
@@ -556,9 +586,18 @@ export default function FacultiesIndex({
                                         className="flex h-9 w-full rounded-xl border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
                                         <option value="all">All Statuses</option>
-                                        <option value="Full-time">Full-time</option>
-                                        <option value="Part-time">Part-time</option>
-                                        <option value="Active">Active</option>
+                                        <optgroup label="Faculty Status">
+                                            <option value="Active">Active</option>
+                                            <option value="Study Leave">Study Leave</option>
+                                            <option value="On Leave">On Leave</option>
+                                            <option value="Sabbatical">Sabbatical</option>
+                                            <option value="Inactive">Inactive</option>
+                                        </optgroup>
+                                        <optgroup label="Employment Type">
+                                            <option value="Full-time">Full-time</option>
+                                            <option value="Part-time">Part-time</option>
+                                            <option value="Guest Lecturer">Guest Lecturer</option>
+                                        </optgroup>
                                     </select>
                                 </div>
 
@@ -686,20 +725,66 @@ export default function FacultiesIndex({
                                                         onClick={() => router.visit(`/faculties/${faculty.id}`)}
                                                         className="hover:bg-slate-50/80 dark:hover:bg-muted/30 transition-colors cursor-pointer group"
                                                     >
-                                                        {/* Faculty Name & Photo */}
+                                                        {/* Faculty Name & Photo with Profile Completion Indicator Ring */}
                                                         <td className="px-5 py-3.5">
                                                             <div className="flex items-center gap-3">
-                                                                {faculty.photo_url ? (
-                                                                    <img
-                                                                        src={faculty.photo_url}
-                                                                        alt={`${faculty.first_name} ${faculty.last_name}`}
-                                                                        className="w-10 h-10 rounded-full object-cover border border-border shrink-0 shadow-2xs group-hover:border-primary transition-colors"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-muted text-slate-700 dark:text-foreground font-semibold text-xs flex items-center justify-center shrink-0 border border-border group-hover:border-primary transition-colors">
-                                                                        {initials}
-                                                                    </div>
-                                                                )}
+                                                                {(() => {
+                                                                    const completionPct = getFacultyCompletion(faculty);
+                                                                    const strokeColor =
+                                                                        completionPct >= 80
+                                                                            ? '#eab308' // primary amber/yellow
+                                                                            : completionPct >= 50
+                                                                            ? '#f59e0b' // amber
+                                                                            : '#fbbf24'; // light amber/yellow
+                                                                    return (
+                                                                        <div
+                                                                            className="relative w-11 h-11 shrink-0 flex items-center justify-center"
+                                                                            title={`Profile Completion: ${completionPct}%`}
+                                                                        >
+                                                                            {/* Circular SVG Donut Progress Ring */}
+                                                                            <svg className="w-11 h-11 -rotate-90 pointer-events-none absolute inset-0" viewBox="0 0 44 44">
+                                                                                <circle
+                                                                                    cx="22"
+                                                                                    cy="22"
+                                                                                    r="19"
+                                                                                    fill="none"
+                                                                                    stroke="currentColor"
+                                                                                    strokeWidth="2.5"
+                                                                                    className="text-amber-500/15 dark:text-amber-500/20"
+                                                                                />
+                                                                                <circle
+                                                                                    cx="22"
+                                                                                    cy="22"
+                                                                                    r="19"
+                                                                                    fill="none"
+                                                                                    stroke={strokeColor}
+                                                                                    strokeWidth="2.5"
+                                                                                    strokeDasharray={`${(completionPct / 100) * 119.38} 119.38`}
+                                                                                    strokeLinecap="round"
+                                                                                    className="transition-all duration-700 ease-out"
+                                                                                />
+                                                                            </svg>
+
+                                                                            {/* Avatar circle inside donut */}
+                                                                            {faculty.photo_url ? (
+                                                                                <img
+                                                                                    src={faculty.photo_url}
+                                                                                    alt={`${faculty.first_name} ${faculty.last_name}`}
+                                                                                    className="w-8 h-8 rounded-full object-cover shrink-0"
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-bold text-[11px] flex items-center justify-center shrink-0">
+                                                                                    {initials}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Small percentage badge on bottom-right of donut */}
+                                                                            <span className="absolute -bottom-1 -right-1 text-[8px] font-black font-mono leading-none bg-amber-500 text-slate-950 px-1 py-0.5 rounded-full border border-background shadow-2xs">
+                                                                                {completionPct}%
+                                                                            </span>
+                                                                        </div>
+                                                                    );
+                                                                })()}
 
                                                                 <div className="min-w-0">
                                                                     <div className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
@@ -761,12 +846,48 @@ export default function FacultiesIndex({
 
                                                         {/* Employment Status */}
                                                         <td className="px-4 py-3.5">
-                                                            <div className="flex flex-col items-start gap-0.5">
-                                                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                    {faculty.status || 'Active'}
-                                                                </span>
-                                                                <span className="text-[10px] text-muted-foreground">
+                                                            <div className="flex flex-col items-start gap-1">
+                                                                {(() => {
+                                                                    const currentStatus = faculty.status || 'Active';
+                                                                    const isStudyLeave = currentStatus === 'Study Leave';
+                                                                    const isOnLeave = currentStatus === 'On Leave' || currentStatus === 'Sabbatical';
+                                                                    const isInactive = currentStatus === 'Inactive';
+
+                                                                    if (isStudyLeave) {
+                                                                        return (
+                                                                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                                                                Study Leave
+                                                                            </span>
+                                                                        );
+                                                                    }
+
+                                                                    if (isOnLeave) {
+                                                                        return (
+                                                                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                                                                {currentStatus}
+                                                                            </span>
+                                                                        );
+                                                                    }
+
+                                                                    if (isInactive) {
+                                                                        return (
+                                                                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                                                                Inactive
+                                                                            </span>
+                                                                        );
+                                                                    }
+
+                                                                    return (
+                                                                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                            Active
+                                                                        </span>
+                                                                    );
+                                                                })()}
+                                                                <span className="text-[10px] text-muted-foreground font-medium pl-0.5">
                                                                     {faculty.employment_type || 'Full-time'}
                                                                 </span>
                                                             </div>
@@ -796,18 +917,10 @@ export default function FacultiesIndex({
                                                                 className="flex items-center justify-end gap-1.5"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             >
-                                                                <button
-                                                                    onClick={() => router.visit(`/faculties/${faculty.id}`)}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
-                                                                >
-                                                                    <User className="w-3.5 h-3.5 text-muted-foreground" />
-                                                                    <span>View Profile</span>
-                                                                </button>
-
                                                                 <DropdownMenu>
                                                                     <DropdownMenuTrigger asChild>
                                                                         <button
-                                                                            className="p-1.5 hover:bg-muted rounded-md transition-colors text-muted-foreground"
+                                                                            className="p-1.5 hover:bg-amber-500/10 hover:text-amber-600 rounded-md transition-colors text-muted-foreground"
                                                                             title="Actions"
                                                                         >
                                                                             <MoreVertical className="h-4 w-4" />
@@ -918,7 +1031,7 @@ export default function FacultiesIndex({
                             {needsAttention.length > 5 && (
                                 <button
                                     onClick={() => setAttentionStatusFilter('needs_attention')}
-                                    className="w-full mt-3 py-2 text-center text-xs font-semibold text-primary hover:bg-primary/5 rounded-xl border border-transparent hover:border-primary/20 transition-all flex items-center justify-center gap-1"
+                                    className="w-full mt-3 py-2 text-center text-xs font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-xl border border-transparent hover:border-amber-500/20 transition-all flex items-center justify-center gap-1"
                                 >
                                     <span>View All ({needsAttention.length})</span>
                                     <ChevronRight className="w-3.5 h-3.5" />
@@ -930,7 +1043,7 @@ export default function FacultiesIndex({
                         <div className="bg-white dark:bg-card p-5 rounded-2xl border border-border shadow-xs">
                             <div className="flex items-center justify-between pb-3 border-b border-border/60">
                                 <div className="flex items-center gap-2">
-                                    <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                    <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
                                         <Clock className="w-4 h-4" />
                                     </span>
                                     <h2 className="text-xs font-bold text-foreground">Profile Completion</h2>
@@ -942,14 +1055,14 @@ export default function FacultiesIndex({
                                 <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
                                     <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                                         <path
-                                            className="text-muted/30"
+                                            className="text-amber-500/15 dark:text-amber-500/20"
                                             strokeWidth="3.5"
                                             stroke="currentColor"
                                             fill="none"
                                             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                         />
                                         <path
-                                            className="text-emerald-500 transition-all duration-1000 ease-out"
+                                            className="text-amber-500 transition-all duration-1000 ease-out"
                                             strokeDasharray={`${profileCompletion.completion_rate}, 100`}
                                             strokeWidth="3.5"
                                             strokeLinecap="round"
@@ -1008,7 +1121,7 @@ export default function FacultiesIndex({
                                     </span>
                                     <h2 className="text-xs font-bold text-foreground">Recent Updates</h2>
                                 </div>
-                                <span className="text-[11px] text-primary font-semibold hover:underline cursor-pointer">
+                                <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold hover:underline cursor-pointer">
                                     Audit Trail
                                 </span>
                             </div>
@@ -1250,6 +1363,23 @@ export default function FacultiesIndex({
 
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-foreground">
+                                        Faculty Status
+                                    </label>
+                                    <select
+                                        value={status}
+                                        onChange={(e) => setStatus(e.target.value)}
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        <option value="Active">Active</option>
+                                        <option value="Study Leave">Study Leave</option>
+                                        <option value="On Leave">On Leave</option>
+                                        <option value="Sabbatical">Sabbatical</option>
+                                        <option value="Inactive">Inactive</option>
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-foreground">
                                         Highest Qualification
                                     </label>
                                     <input
@@ -1275,9 +1405,14 @@ export default function FacultiesIndex({
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-foreground">
-                                        Institutional Email
-                                    </label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-semibold text-foreground">
+                                            Institutional Email
+                                        </label>
+                                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                            Auto-creates login account
+                                        </span>
+                                    </div>
                                     <input
                                         type="email"
                                         value={email}
@@ -1285,6 +1420,9 @@ export default function FacultiesIndex({
                                         className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         placeholder="e.g. maria.santos@cids.edu.ph"
                                     />
+                                    <p className="text-[10px] text-muted-foreground">
+                                        An account with default password <span className="font-mono font-semibold text-foreground">password</span> is automatically provisioned for faculty portal access.
+                                    </p>
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -1312,7 +1450,7 @@ export default function FacultiesIndex({
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="inline-flex items-center justify-center rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 disabled:opacity-50"
+                                    className="inline-flex items-center justify-center rounded-md text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-600 h-9 px-4 py-2 disabled:opacity-50 transition-colors shadow-2xs"
                                 >
                                     {isSubmitting ? 'Saving...' : editingFaculty ? 'Update Faculty' : 'Save Faculty'}
                                 </button>

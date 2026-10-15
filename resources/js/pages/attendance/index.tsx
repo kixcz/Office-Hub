@@ -291,6 +291,22 @@ export default function FacultyAttendanceIndex({
                 </span>
             );
         }
+        if (norm === 'study leave' || norm === 'study_leave') {
+            return (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    Study Leave
+                </span>
+            );
+        }
+        if (norm === 'on leave' || norm === 'on_leave') {
+            return (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    On Leave
+                </span>
+            );
+        }
         return (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
@@ -618,6 +634,8 @@ export default function FacultyAttendanceIndex({
                                     <option value="present">Present</option>
                                     <option value="late">Late</option>
                                     <option value="absent">Absent</option>
+                                    <option value="study leave">Study Leave</option>
+                                    <option value="on leave">On Leave</option>
                                 </select>
 
                                 <button

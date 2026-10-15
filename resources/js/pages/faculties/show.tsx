@@ -415,10 +415,15 @@ export default function FacultyProfileShow({
                                         {faculty.last_name?.[0]}
                                     </div>
                                 )}
-                                <span className={`absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-xs ${faculty.status === 'Active'
-                                    ? 'bg-emerald-500 text-white border-emerald-400'
-                                    : 'bg-slate-500 text-white border-slate-400'
-                                    }`}>
+                                <span className={`absolute -bottom-1 -right-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-xs ${
+                                    faculty.status === 'Study Leave'
+                                        ? 'bg-blue-600 text-white border-blue-400'
+                                        : faculty.status === 'On Leave' || faculty.status === 'Sabbatical'
+                                        ? 'bg-amber-600 text-white border-amber-400'
+                                        : faculty.status === 'Inactive'
+                                        ? 'bg-slate-600 text-white border-slate-400'
+                                        : 'bg-emerald-600 text-white border-emerald-400'
+                                }`}>
                                     {faculty.status || 'Active'}
                                 </span>
                             </div>
@@ -1718,7 +1723,7 @@ export default function FacultyProfileShow({
                                 </select>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold">Employment Status</label>
+                                <label className="text-xs font-semibold">Employment Type</label>
                                 <select
                                     value={editForm.employment_type}
                                     onChange={(e) => setEditForm({ ...editForm, employment_type: e.target.value })}
@@ -1727,6 +1732,21 @@ export default function FacultyProfileShow({
                                     <option value="Full-time">Full-time Faculty</option>
                                     <option value="Part-time">Part-time Faculty</option>
                                     <option value="Contractual">Contractual</option>
+                                    <option value="Guest Lecturer">Guest Lecturer</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold">Faculty Status</label>
+                                <select
+                                    value={editForm.status}
+                                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                                    className="w-full h-8 px-2.5 rounded-md border border-input bg-background text-xs"
+                                >
+                                    <option value="Active">Active</option>
+                                    <option value="Study Leave">Study Leave</option>
+                                    <option value="On Leave">On Leave</option>
+                                    <option value="Sabbatical">Sabbatical</option>
+                                    <option value="Inactive">Inactive</option>
                                 </select>
                             </div>
                         </div>
@@ -1758,7 +1778,10 @@ export default function FacultyProfileShow({
                         {/* Email & Phone */}
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold">Institutional Email</label>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-semibold">Institutional Email</label>
+                                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Auto-creates login</span>
+                                </div>
                                 <input
                                     type="email"
                                     value={editForm.email}
@@ -1766,6 +1789,9 @@ export default function FacultyProfileShow({
                                     placeholder="e.g. msantos@cids.edu"
                                     className="w-full h-8 px-2.5 rounded-md border border-input bg-background text-xs"
                                 />
+                                <p className="text-[10px] text-muted-foreground">
+                                    Default password: <span className="font-mono font-semibold text-foreground">password</span>
+                                </p>
                             </div>
                             <div className="space-y-1">
                                 <label className="text-xs font-semibold">Contact Phone</label>

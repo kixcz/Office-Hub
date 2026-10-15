@@ -60,6 +60,7 @@ interface FacultyPerformanceItem {
     name: string;
     first_name: string;
     last_name: string;
+    photo_url?: string | null;
     academic_rank: string;
     program_id: number;
     program: string;
@@ -661,9 +662,17 @@ export default function FacultyPerformanceIndex({
                                                         </td>
                                                         <td className="py-3 px-3.5">
                                                             <div className="flex items-center gap-2.5">
-                                                                <div className={cn("w-7.5 h-7.5 rounded-full flex items-center justify-center font-black text-[10px] shrink-0 shadow-2xs", getAvatarColor(perf.name))}>
-                                                                    {getInitials(perf.name)}
-                                                                </div>
+                                                                {perf.photo_url ? (
+                                                                    <img
+                                                                        src={perf.photo_url}
+                                                                        alt={perf.name}
+                                                                        className="w-7.5 h-7.5 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 shadow-2xs"
+                                                                    />
+                                                                ) : (
+                                                                    <div className={cn("w-7.5 h-7.5 rounded-full flex items-center justify-center font-black text-[10px] shrink-0 shadow-2xs", getAvatarColor(perf.name))}>
+                                                                        {getInitials(perf.name)}
+                                                                    </div>
+                                                                )}
                                                                 <div className="flex flex-col min-w-0">
                                                                     <Link
                                                                         href={`/faculties/${perf.id}`}
@@ -804,9 +813,17 @@ export default function FacultyPerformanceIndex({
                                     >
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="flex items-center gap-2.5 min-w-0">
-                                                <div className={cn("w-9 h-9 rounded-full flex items-center justify-center font-black text-xs shrink-0 shadow-2xs", getAvatarColor(perf.name))}>
-                                                    {getInitials(perf.name)}
-                                                </div>
+                                                {perf.photo_url ? (
+                                                    <img
+                                                        src={perf.photo_url}
+                                                        alt={perf.name}
+                                                        className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 shadow-2xs"
+                                                    />
+                                                ) : (
+                                                    <div className={cn("w-9 h-9 rounded-full flex items-center justify-center font-black text-xs shrink-0 shadow-2xs", getAvatarColor(perf.name))}>
+                                                        {getInitials(perf.name)}
+                                                    </div>
+                                                )}
                                                 <div className="min-w-0">
                                                     <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">
                                                         {perf.name}

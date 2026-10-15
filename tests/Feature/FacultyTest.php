@@ -6,6 +6,7 @@ use App\Models\Program;
 use App\Models\RoomSchedule;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 test('authenticated user can view faculty list with photo_url', function () {
@@ -299,4 +300,78 @@ test('editing faculty name updates display without modifying spreadsheet instruc
 
     // Real-time facility monitoring reflects the updated title/name
     expect($facility->instructor)->toBe('Prof. Dr. Maria Clara Santos-Roxas');
+});
+
+test('saving faculty member with email automatically creates a user account with default password', function () {
+    $admin = User::factory()->create();
+    $program = Program::first() ?? Program::create(['code' => 'BSIT', 'name' => 'Information Technology']);
+
+    $response = $this->actingAs($admin)
+        ->post('/faculties', [
+            'first_name' => 'Grace',
+            'last_name' => 'Hopper',
+            'email' => 'ghopper@cids.edu',
+            'program_id' => $program->id,
+            'academic_rank' => 'Professor I',
+            'employment_type' => 'Full-time',
+            'status' => 'Active',
+        ]);
+
+    $response->assertRedirect();
+
+    $faculty = Faculty::where('email', 'ghopper@cids.edu')->first();
+    expect($faculty)->not->toBeNull()
+        ->and($faculty->user_id)->not->toBeNull();
+
+    $user = User::where('email', 'ghopper@cids.edu')->first();
+    expect($user)->not->toBeNull()
+        ->and($user->name)->toBe('Grace Hopper')
+        ->and($user->hasRole('Faculty Member'))->toBeTrue()
+        ->and(Hash::check('password', $user->password))->toBeTrue();
+
+    // Verify the newly created faculty can log in with default password
+    $this->post('/logout');
+
+    $loginResponse = $this->post('/login', [
+        'email' => 'ghopper@cids.edu',
+        'password' => 'password',
+    ]);
+
+    $loginResponse->assertRedirect(route('faculty.dashboard', absolute: false));
+    $this->assertAuthenticatedAs($user);
+});
+
+test('updating an existing faculty member with an email creates their login account', function () {
+    $admin = User::factory()->create();
+    $program = Program::first() ?? Program::create(['code' => 'BSIT', 'name' => 'Information Technology']);
+
+    $faculty = Faculty::create([
+        'first_name' => 'Linus',
+        'last_name' => 'Torvalds',
+        'program_id' => $program->id,
+        'email' => null,
+    ]);
+
+    expect($faculty->user_id)->toBeNull();
+
+    $this->actingAs($admin)
+        ->put("/faculties/{$faculty->id}", [
+            'first_name' => 'Linus',
+            'last_name' => 'Torvalds',
+            'program_id' => $program->id,
+            'email' => 'linus@cids.edu',
+            'academic_rank' => 'Professor I',
+            'employment_type' => 'Full-time',
+            'status' => 'Active',
+        ])
+        ->assertRedirect();
+
+    $faculty->refresh();
+    expect($faculty->user_id)->not->toBeNull()
+        ->and($faculty->email)->toBe('linus@cids.edu');
+
+    $user = User::where('email', 'linus@cids.edu')->first();
+    expect($user)->not->toBeNull()
+        ->and($user->hasRole('Faculty Member'))->toBeTrue()
+        ->and(Hash::check('password', $user->password))->toBeTrue();
 });

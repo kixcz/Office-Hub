@@ -43,7 +43,7 @@ const adminNavGroups: NavGroup[] = [
         title: 'MAIN',
         items: [
             { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid },
-            { title: 'Faculty Portal', url: '/faculty/dashboard', icon: UserCircle },
+            // { title: 'Faculty Portal', url: '/faculty/dashboard', icon: UserCircle },
             { title: 'Announcements', url: '/announcements', icon: Megaphone },
             { title: 'Academic Periods', url: '/administration/academic-periods', icon: Calendar },
         ],
@@ -150,11 +150,11 @@ const facultyNavGroups: NavGroup[] = [
 ];
 
 const footerNavItems: NavItem[] = [
-    {
-        title: 'TV Display',
-        url: '/tv-display',
-        icon: Monitor,
-    },
+    // {
+    //     title: 'TV Display',
+    //     url: '/tv-display',
+    //     icon: Monitor,
+    // },
 ];
 
 export function AppSidebar() {

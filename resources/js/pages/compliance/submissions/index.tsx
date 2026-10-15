@@ -792,10 +792,18 @@ export default function SubmissionsIndex({
                                                         </td>
                                                         <td className="py-4 px-6">
                                                             <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
-                                                                    {sub.faculty?.first_name?.[0]}
-                                                                    {sub.faculty?.last_name?.[0]}
-                                                                </div>
+                                                                {sub.faculty?.photo_url ? (
+                                                                    <img
+                                                                        src={sub.faculty.photo_url}
+                                                                        alt={`${sub.faculty?.first_name} ${sub.faculty?.last_name}`}
+                                                                        className="w-8 h-8 rounded-full object-cover border border-border shrink-0 shadow-2xs"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0 border border-primary/20">
+                                                                        {sub.faculty?.first_name?.[0]}
+                                                                        {sub.faculty?.last_name?.[0]}
+                                                                    </div>
+                                                                )}
                                                                 <div className="flex flex-col">
                                                                     <span className="font-bold text-foreground">
                                                                         {sub.faculty?.first_name} {sub.faculty?.last_name}
@@ -878,10 +886,18 @@ export default function SubmissionsIndex({
                                                 <tr key={sub.id} className="hover:bg-muted/30 transition-colors">
                                                     <td className="py-4 px-6">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 font-bold text-xs flex items-center justify-center shrink-0">
-                                                                {sub.faculty?.first_name?.[0]}
-                                                                {sub.faculty?.last_name?.[0]}
-                                                            </div>
+                                                            {sub.faculty?.photo_url ? (
+                                                                <img
+                                                                    src={sub.faculty.photo_url}
+                                                                    alt={`${sub.faculty?.first_name} ${sub.faculty?.last_name}`}
+                                                                    className="w-8 h-8 rounded-full object-cover border border-border shrink-0 shadow-2xs"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-500/20">
+                                                                    {sub.faculty?.first_name?.[0]}
+                                                                    {sub.faculty?.last_name?.[0]}
+                                                                </div>
+                                                            )}
                                                             <div className="flex flex-col">
                                                                 <span className="font-bold text-foreground">
                                                                     {sub.faculty?.first_name} {sub.faculty?.last_name}
@@ -1036,6 +1052,18 @@ export default function SubmissionsIndex({
                                                 >
                                                     <div className="flex items-center gap-2.5">
                                                         <Checkbox checked={isChecked} onCheckedChange={() => toggleSelectOne(sub.id)} />
+                                                        {sub.faculty?.photo_url ? (
+                                                            <img
+                                                                src={sub.faculty.photo_url}
+                                                                alt={`${sub.faculty?.first_name} ${sub.faculty?.last_name}`}
+                                                                className="w-5 h-5 rounded-full object-cover border border-border shrink-0"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-5 h-5 rounded-full bg-primary/10 text-primary font-bold text-[9px] flex items-center justify-center shrink-0">
+                                                                {sub.faculty?.first_name?.[0]}
+                                                                {sub.faculty?.last_name?.[0]}
+                                                            </div>
+                                                        )}
                                                         <span className="text-xs font-bold text-foreground">
                                                             {sub.faculty?.first_name} {sub.faculty?.last_name}
                                                         </span>

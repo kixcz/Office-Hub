@@ -48,6 +48,7 @@ interface PendingOutputItem {
     faculty_name: string;
     faculty_initials: string;
     faculty_avatar_color: string;
+    photo_url?: string | null;
     missing_output: string;
     program: string;
     deadline: string;
@@ -225,6 +226,7 @@ export default function PendingOutputsIndex({ pendingSubmissions }: { pendingSub
                     faculty_name: name,
                     faculty_initials: initials,
                     faculty_avatar_color: DEFAULT_PENDING_SUBMISSIONS[idx % DEFAULT_PENDING_SUBMISSIONS.length]?.faculty_avatar_color || 'bg-amber-100 text-amber-800 border-amber-200',
+                    photo_url: sub.faculty?.photo_url || null,
                     missing_output: output,
                     program: prog,
                     deadline: dueDate,
@@ -771,12 +773,20 @@ export default function PendingOutputsIndex({ pendingSubmissions }: { pendingSub
                                                     {/* Faculty Member with Avatar Badge */}
                                                     <td className="py-3.5 px-3">
                                                         <div className="flex items-center gap-2.5">
-                                                            <div className={cn(
-                                                                "w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[10px] shrink-0 border",
-                                                                item.faculty_avatar_color
-                                                            )}>
-                                                                {item.faculty_initials}
-                                                            </div>
+                                                            {item.photo_url ? (
+                                                                <img
+                                                                    src={item.photo_url}
+                                                                    alt={item.faculty_name}
+                                                                    className="w-7 h-7 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0 shadow-2xs"
+                                                                />
+                                                            ) : (
+                                                                <div className={cn(
+                                                                    "w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[10px] shrink-0 border",
+                                                                    item.faculty_avatar_color
+                                                                )}>
+                                                                    {item.faculty_initials}
+                                                                </div>
+                                                            )}
                                                             <span className="font-semibold text-slate-900 text-xs truncate max-w-[160px]">
                                                                 {item.faculty_name}
                                                             </span>

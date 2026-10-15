@@ -75,6 +75,7 @@ class FacultyPerformanceController extends Controller
                     'name' => $faculty->first_name.' '.$faculty->last_name,
                     'first_name' => $faculty->first_name,
                     'last_name' => $faculty->last_name,
+                    'photo_url' => $faculty->photo_url,
                     'academic_rank' => $faculty->academic_rank ?? 'Instructor',
                     'program_id' => $faculty->program_id,
                     'program' => $faculty->program ? $faculty->program->code : 'N/A',
