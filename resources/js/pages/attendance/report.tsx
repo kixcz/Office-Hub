@@ -1,9 +1,17 @@
 import React, { useState, useMemo, useRef } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     Calendar,
     Users,
@@ -32,6 +40,7 @@ import {
     XCircle,
     SlidersHorizontal,
     Table,
+    Pencil,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -132,8 +141,32 @@ export default function GenerateReportPage({
     // 2. Reporting Period Tab: 'week' | 'month' | 'custom'
     const [periodTab, setPeriodTab] = useState<'week' | 'month' | 'custom'>('week');
     const [selectedPeriod, setSelectedPeriod] = useState<string>(
-        weekly_periods[0] || 'August 10 – 14, 2026 (Week 2)'
+        weekly_periods[0] || 'August Week 5 (8/31/2026)'
     );
+
+    // Auto-sync selectedPeriod when switching period tabs
+    const handlePeriodTabChange = (newTab: 'week' | 'month' | 'custom') => {
+        setPeriodTab(newTab);
+        if (newTab === 'month') {
+            if (!monthly_periods.includes(selectedPeriod)) {
+                setSelectedPeriod(monthly_periods[0] || 'August 2026');
+            }
+        } else if (newTab === 'week') {
+            if (!weekly_periods.includes(selectedPeriod)) {
+                setSelectedPeriod(weekly_periods[0] || 'August Week 5 (8/31/2026)');
+            }
+        }
+    };
+
+    // Auto-sync period tab when report format changes
+    const handleReportFormatChange = (format: 'weekly' | 'monthly' | 'individual' | 'consolidated') => {
+        setReportFormat(format);
+        if (format === 'monthly' || format === 'consolidated') {
+            handlePeriodTabChange('month');
+        } else if (format === 'weekly') {
+            handlePeriodTabChange('week');
+        }
+    };
 
     // 3. Filters
     const [selectedProgram, setSelectedProgram] = useState<string>('all');
@@ -181,6 +214,59 @@ export default function GenerateReportPage({
         },
     ]);
 
+    // 6. Inline / Modal Faculty Name Editing state
+    const [customFacultyNames, setCustomFacultyNames] = useState<Record<string, string>>({});
+    const [editingFaculty, setEditingFaculty] = useState<{
+        id?: number | null;
+        faculty_id?: number | null;
+        oldName: string;
+        currentName: string;
+    } | null>(null);
+    const [isSavingName, setIsSavingName] = useState<boolean>(false);
+
+    // Save edited faculty name both in local state and to database
+    const handleSaveFacultyName = () => {
+        if (!editingFaculty) return;
+        const trimmedNewName = editingFaculty.currentName.trim();
+        if (!trimmedNewName) {
+            alert('Faculty name cannot be empty.');
+            return;
+        }
+
+        const oldName = editingFaculty.oldName;
+        // Update local state immediately for instant preview feedback
+        setCustomFacultyNames(prev => ({
+            ...prev,
+            [oldName]: trimmedNewName,
+            ...(editingFaculty.faculty_id ? { [`fid_${editingFaculty.faculty_id}`]: trimmedNewName } : {}),
+        }));
+
+        setIsSavingName(true);
+        router.post(
+            '/faculty-attendance/update-faculty-name',
+            {
+                old_name: oldName,
+                new_name: trimmedNewName,
+                faculty_id: editingFaculty.faculty_id || undefined,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    setIsSavingName(false);
+                    setEditingFaculty(null);
+                    showToast(`Faculty name updated to "${trimmedNewName}".`);
+                },
+                onError: (err) => {
+                    setIsSavingName(false);
+                    console.error('Error updating faculty name:', err);
+                    showToast('Failed to save name update to server, applied locally.');
+                    setEditingFaculty(null);
+                },
+            }
+        );
+    };
+
     // Zoom level and Maximize for live preview
     const [zoomLevel, setZoomLevel] = useState<number>(100);
     const [isMaximized, setIsMaximized] = useState<boolean>(false);
@@ -224,9 +310,63 @@ export default function GenerateReportPage({
 
     // Calculated rows for the preview sheet
     const previewData = useMemo(() => {
-        // Base rows from database summaries if available
-        let rows = summaries.map(s => {
-            const facultyName = s.faculty ? `${s.faculty.first_name} ${s.faculty.last_name}` : s.instructor_name;
+        // Filter summaries according to period and format
+        let matchingSummaries = summaries;
+
+        if (reportFormat === 'individual' && selectedFaculty !== 'all') {
+            // For individual faculty report, filter by the chosen faculty
+            matchingSummaries = summaries.filter(s => {
+                if (s.faculty_id !== null && s.faculty_id !== undefined && String(s.faculty_id) === selectedFaculty) {
+                    return true;
+                }
+                const facultyObj = faculties.find(f => String(f.id) === selectedFaculty);
+                const targetLastName = facultyObj?.last_name?.toLowerCase();
+                const targetFirstName = facultyObj?.first_name?.toLowerCase();
+                const nameLower = (s.instructor_name || '').toLowerCase();
+                return (targetLastName && nameLower.includes(targetLastName)) || (targetFirstName && nameLower.includes(targetFirstName));
+            });
+
+            // If periods exist for this faculty, optionally match selectedPeriod or show their monthly breakdown
+            const periodMatches = matchingSummaries.filter(s => s.period_label?.toLowerCase() === selectedPeriod?.toLowerCase());
+            if (periodMatches.length > 0) {
+                matchingSummaries = periodMatches;
+            }
+        } else {
+            // Filter summaries by selected period label
+            const periodMatches = summaries.filter(s => s.period_label?.toLowerCase() === selectedPeriod?.toLowerCase());
+            if (periodMatches.length > 0) {
+                matchingSummaries = periodMatches;
+            } else {
+                // If no exact match (e.g. week label differences), filter by period_type if available
+                const targetType = periodTab === 'month' ? 'monthly' : 'weekly';
+                const typeMatches = summaries.filter(s => s.period_type === targetType);
+                if (typeMatches.length > 0) {
+                    matchingSummaries = typeMatches;
+                }
+            }
+        }
+
+        // Deduplicate summaries by faculty to guarantee no faculty repeats in the report
+        const seenFacultyKeys = new Set<string>();
+        const uniqueSummaries = matchingSummaries.filter(s => {
+            const key = s.faculty_id ? `fid_${s.faculty_id}` : `name_${s.instructor_name.trim().toLowerCase()}`;
+            if (seenFacultyKeys.has(key)) {
+                return false;
+            }
+            seenFacultyKeys.add(key);
+            return true;
+        });
+
+        // Base rows from matching summaries
+        let rows = uniqueSummaries.map(s => {
+            let facultyName = s.faculty ? `${s.faculty.first_name} ${s.faculty.last_name}` : s.instructor_name;
+            // Check if user customized the faculty name
+            if (s.faculty_id && customFacultyNames[`fid_${s.faculty_id}`]) {
+                facultyName = customFacultyNames[`fid_${s.faculty_id}`];
+            } else if (customFacultyNames[s.instructor_name]) {
+                facultyName = customFacultyNames[s.instructor_name];
+            }
+
             const programCode = s.faculty?.program?.code || 'BSIS';
             const scheduled = s.scheduled_sessions || (s.present_count + s.late_count + s.absent_count) || 3;
             const present = s.present_count ?? 3;
@@ -238,6 +378,7 @@ export default function GenerateReportPage({
             return {
                 id: s.id,
                 faculty_id: s.faculty_id,
+                original_instructor_name: s.instructor_name,
                 instructor_name: facultyName,
                 program: programCode,
                 scheduled,
@@ -252,17 +393,17 @@ export default function GenerateReportPage({
         // If summaries is empty, fallback to representative official faculty dataset
         if (rows.length === 0) {
             rows = [
-                { id: 1, faculty_id: 35, instructor_name: 'Razel Ann Aguilar', program: 'BSIT', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
-                { id: 2, faculty_id: 14, instructor_name: 'Felomino Alba', program: 'BSIT', scheduled: 1, present: 1, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
-                { id: 3, faculty_id: 18, instructor_name: 'Dhominic Arendain', program: 'BSIS', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
-                { id: 4, faculty_id: null, instructor_name: 'Bacalso', program: 'BSIS', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
-                { id: 5, faculty_id: 36, instructor_name: 'Kris Bahaya', program: 'BSIT', scheduled: 3, present: 2, late: 1, absent: 0, lateMinutes: 15, rate: 67 },
-                { id: 6, faculty_id: 9, instructor_name: 'Mardalyn Caniban', program: 'BSIS', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
-                { id: 7, faculty_id: 15, instructor_name: 'Jamaica Estrebello', program: 'BSIT', scheduled: 10, present: 6, late: 4, absent: 0, lateMinutes: 50, rate: 60 },
-                { id: 8, faculty_id: 11, instructor_name: 'Amzel Menoza', program: 'BSIT', scheduled: 54, present: 42, late: 8, absent: 4, lateMinutes: 120, rate: 78 },
-                { id: 9, faculty_id: 1, instructor_name: 'Domingo Origines', program: 'BSIT', scheduled: 12, present: 11, late: 1, absent: 0, lateMinutes: 10, rate: 92 },
-                { id: 10, faculty_id: 2, instructor_name: 'Jean Nikolai Roxas', program: 'BSIT', scheduled: 18, present: 16, late: 2, absent: 0, lateMinutes: 20, rate: 89 },
-                { id: 11, faculty_id: 16, instructor_name: 'Pansacala', program: 'BSIS', scheduled: 21, present: 16, late: 2, absent: 5, lateMinutes: 60, rate: 76 },
+                { id: 1, faculty_id: 35, original_instructor_name: 'Razel Ann Aguilar', instructor_name: 'Razel Ann Aguilar', program: 'BSIT', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
+                { id: 2, faculty_id: 14, original_instructor_name: 'Felomino Alba', instructor_name: 'Felomino Alba', program: 'BSIT', scheduled: 1, present: 1, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
+                { id: 3, faculty_id: 18, original_instructor_name: 'Dhominic Arendain', instructor_name: 'Dhominic Arendain', program: 'BSIS', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
+                { id: 4, faculty_id: null, original_instructor_name: 'Bacalso', instructor_name: 'Bacalso', program: 'BSIS', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
+                { id: 5, faculty_id: 36, original_instructor_name: 'Kris Bahaya', instructor_name: 'Kris Bahaya', program: 'BSIT', scheduled: 3, present: 2, late: 1, absent: 0, lateMinutes: 15, rate: 67 },
+                { id: 6, faculty_id: 9, original_instructor_name: 'Mardalyn Caniban', instructor_name: 'Mardalyn Caniban', program: 'BSIS', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
+                { id: 7, faculty_id: 15, original_instructor_name: 'Jamaica Estrebello', instructor_name: 'Jamaica Estrebello', program: 'BSIT', scheduled: 10, present: 6, late: 4, absent: 0, lateMinutes: 50, rate: 60 },
+                { id: 8, faculty_id: 11, original_instructor_name: 'Amzel Menoza', instructor_name: 'Amzel Menoza', program: 'BSIT', scheduled: 54, present: 42, late: 8, absent: 4, lateMinutes: 120, rate: 78 },
+                { id: 9, faculty_id: 1, original_instructor_name: 'Domingo Origines', instructor_name: 'Domingo Origines', program: 'BSIT', scheduled: 12, present: 11, late: 1, absent: 0, lateMinutes: 10, rate: 92 },
+                { id: 10, faculty_id: 2, original_instructor_name: 'Jean Nikolai Roxas', instructor_name: 'Jean Nikolai Roxas', program: 'BSIT', scheduled: 18, present: 16, late: 2, absent: 0, lateMinutes: 20, rate: 89 },
+                { id: 11, faculty_id: 16, original_instructor_name: 'Pansacala', instructor_name: 'Pansacala', program: 'BSIS', scheduled: 21, present: 16, late: 2, absent: 5, lateMinutes: 60, rate: 76 },
             ];
         }
 
@@ -328,7 +469,7 @@ export default function GenerateReportPage({
                 overallRate,
             },
         };
-    }, [summaries, faculties, selectedProgram, selectedFaculty, selectedStatus, sortBy]);
+    }, [summaries, faculties, customFacultyNames, selectedPeriod, periodTab, reportFormat, selectedProgram, selectedFaculty, selectedStatus, sortBy]);
 
     // State for PDF downloading status
     const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
@@ -524,7 +665,7 @@ export default function GenerateReportPage({
                                     {/* Option 1: Weekly Summary */}
                                     <button
                                          type="button"
-                                         onClick={() => setReportFormat('weekly')}
+                                         onClick={() => handleReportFormatChange('weekly')}
                                          className={cn(
                                              "p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between min-h-[78px]",
                                              reportFormat === 'weekly'
@@ -561,7 +702,7 @@ export default function GenerateReportPage({
                                      {/* Option 2: Monthly Summary */}
                                      <button
                                          type="button"
-                                         onClick={() => setReportFormat('monthly')}
+                                         onClick={() => handleReportFormatChange('monthly')}
                                          className={cn(
                                              "p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between min-h-[78px]",
                                              reportFormat === 'monthly'
@@ -598,7 +739,7 @@ export default function GenerateReportPage({
                                      {/* Option 3: Individual Faculty Report */}
                                      <button
                                          type="button"
-                                         onClick={() => setReportFormat('individual')}
+                                         onClick={() => handleReportFormatChange('individual')}
                                          className={cn(
                                              "p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between min-h-[78px]",
                                              reportFormat === 'individual'
@@ -635,7 +776,7 @@ export default function GenerateReportPage({
                                      {/* Option 4: Consolidated Attendance Report */}
                                      <button
                                          type="button"
-                                         onClick={() => setReportFormat('consolidated')}
+                                         onClick={() => handleReportFormatChange('consolidated')}
                                          className={cn(
                                              "p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between min-h-[78px]",
                                              reportFormat === 'consolidated'
@@ -690,7 +831,7 @@ export default function GenerateReportPage({
                                     <div className="sm:col-span-8 flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border">
                                         <button
                                             type="button"
-                                            onClick={() => setPeriodTab('week')}
+                                            onClick={() => handlePeriodTabChange('week')}
                                             className={cn(
                                                 "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer text-center",
                                                 periodTab === 'week'
@@ -702,7 +843,7 @@ export default function GenerateReportPage({
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setPeriodTab('month')}
+                                            onClick={() => handlePeriodTabChange('month')}
                                             className={cn(
                                                 "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer text-center",
                                                 periodTab === 'month'
@@ -714,7 +855,7 @@ export default function GenerateReportPage({
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setPeriodTab('custom')}
+                                            onClick={() => handlePeriodTabChange('custom')}
                                             className={cn(
                                                 "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer text-center",
                                                 periodTab === 'custom'
@@ -1396,8 +1537,23 @@ export default function GenerateReportPage({
                                                                 <td className="py-1 px-2 text-center border-r border-slate-200 text-slate-500 font-mono">
                                                                     {idx + 1}
                                                                 </td>
-                                                                <td className="py-1 px-3 font-semibold border-r border-slate-200 text-slate-900">
-                                                                    {row.instructor_name}
+                                                                <td className="py-1 px-3 font-semibold border-r border-slate-200 text-slate-900 group/cell">
+                                                                    <div className="flex items-center justify-between gap-1.5">
+                                                                        <span className="truncate">{row.instructor_name}</span>
+                                                                        <button
+                                                                            type="button"
+                                                                            title={`Edit name for ${row.instructor_name}`}
+                                                                            onClick={() => setEditingFaculty({
+                                                                                id: row.id,
+                                                                                faculty_id: row.faculty_id,
+                                                                                oldName: row.original_instructor_name || row.instructor_name,
+                                                                                currentName: row.instructor_name,
+                                                                            })}
+                                                                            className="no-print opacity-0 group-hover/cell:opacity-100 hover:opacity-100 p-1 rounded hover:bg-amber-100 text-slate-400 hover:text-amber-700 transition-all cursor-pointer shrink-0"
+                                                                        >
+                                                                            <Pencil className="w-3 h-3" />
+                                                                        </button>
+                                                                    </div>
                                                                 </td>
                                                                 <td className="py-1 px-2 text-center border-r border-slate-200 font-bold text-slate-800">
                                                                     {row.program}
@@ -1463,6 +1619,90 @@ export default function GenerateReportPage({
                     </div>
                 </div>
             </div>
+
+            {/* 6. EDIT FACULTY NAME DIALOG MODAL */}
+            <Dialog open={!!editingFaculty} onOpenChange={(open) => { if (!open && !isSavingName) setEditingFaculty(null); }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground">
+                            <span className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center">
+                                <Pencil className="w-4 h-4" />
+                            </span>
+                            Edit Faculty Name in Report
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-muted-foreground">
+                            Update this instructor's display name for report generation and synchronize across attendance records.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {editingFaculty && (
+                        <div className="space-y-4 py-2">
+                            <div>
+                                <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                                    Original Name in System / Spreadsheet:
+                                </label>
+                                <div className="px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs font-mono text-muted-foreground">
+                                    {editingFaculty.oldName}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label htmlFor="faculty-new-name" className="text-[11px] font-semibold text-foreground block mb-1">
+                                    Display Name in Report: <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    id="faculty-new-name"
+                                    type="text"
+                                    autoFocus
+                                    value={editingFaculty.currentName}
+                                    onChange={(e) => setEditingFaculty({
+                                        ...editingFaculty,
+                                        currentName: e.target.value,
+                                    })}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleSaveFacultyName();
+                                        }
+                                    }}
+                                    placeholder="e.g. Dr. Juan Dela Cruz"
+                                    className="w-full h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground focus:outline-none focus:border-amber-400 shadow-2xs"
+                                />
+                                <span className="text-[10px] text-muted-foreground mt-1 block">
+                                    Press Enter or click "Save & Apply" to update the live preview and database records.
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    <DialogFooter className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={isSavingName}
+                            onClick={() => setEditingFaculty(null)}
+                            className="h-9 px-3.5 text-xs font-semibold rounded-xl border-border cursor-pointer"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            disabled={isSavingName || !editingFaculty?.currentName?.trim()}
+                            onClick={handleSaveFacultyName}
+                            className="h-9 px-4 text-xs font-bold rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+                        >
+                            {isSavingName ? (
+                                <span>Saving...</span>
+                            ) : (
+                                <>
+                                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                    <span>Save & Apply</span>
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

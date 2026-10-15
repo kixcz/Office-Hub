@@ -134,30 +134,17 @@ export default function ProgramPerformanceIndex({
 
     // Program avatar badge helper
     const renderProgramBadge = (code: string) => {
-        if (code === 'BSIS') {
-            return (
-                <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 font-extrabold text-[11px] flex items-center justify-center shrink-0 border border-amber-300/50">
-                    BSIS
-                </div>
-            );
-        }
-        if (code === 'BSIT') {
-            return (
-                <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-extrabold text-[11px] flex items-center justify-center shrink-0 border border-amber-200">
-                    BSIT
-                </div>
-            );
-        }
-        if (code === 'BLIS') {
-            return (
-                <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-extrabold text-[11px] flex items-center justify-center shrink-0 border border-amber-300">
-                    BLIS
-                </div>
-            );
-        }
+        const badgeStyles: Record<string, string> = {
+            BSIS: 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-300/50',
+            BSIT: 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200',
+            BLIS: 'bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300 border-orange-300',
+            BSCS: 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300',
+        };
+        const style = badgeStyles[code] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200';
+
         return (
-            <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-extrabold text-[11px] flex items-center justify-center shrink-0 border border-slate-200">
-                BSCS
+            <div className={cn("w-9 h-9 rounded-full font-extrabold text-[11px] flex items-center justify-center shrink-0 border", style)}>
+                {code}
             </div>
         );
     };
@@ -212,7 +199,7 @@ export default function ProgramPerformanceIndex({
                                     Total Programs
                                 </span>
                                 <div className="text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
-                                    {kpis?.total_programs || 4}
+                                    {kpis?.total_programs ?? performances.length}
                                 </div>
                                 <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">
                                     Academic programs monitored
@@ -232,7 +219,7 @@ export default function ProgramPerformanceIndex({
                                     Total Faculty
                                 </span>
                                 <div className="text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
-                                    {kpis?.total_faculty || 24}
+                                    {kpis?.total_faculty ?? 0}
                                 </div>
                                 <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">
                                     Across all programs
@@ -252,10 +239,10 @@ export default function ProgramPerformanceIndex({
                                     Compliant Faculty
                                 </span>
                                 <div className="text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
-                                    {kpis?.compliant_faculty || 16}
+                                    {kpis?.compliant_faculty ?? 0}
                                 </div>
                                 <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">
-                                    {kpis?.compliance_rate || 66.7}% compliance rate
+                                    {kpis?.compliance_rate ?? 0}% compliance rate
                                 </span>
                             </div>
                         </div>
@@ -271,7 +258,7 @@ export default function ProgramPerformanceIndex({
                                 />
                                 <path
                                     className="text-emerald-500"
-                                    strokeDasharray="66.7, 100"
+                                    strokeDasharray={`${kpis?.compliance_rate ?? 0}, 100`}
                                     strokeWidth="3.5"
                                     strokeLinecap="round"
                                     stroke="currentColor"
@@ -279,7 +266,9 @@ export default function ProgramPerformanceIndex({
                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                 />
                             </svg>
-                            <span className="absolute text-[9px] font-black text-emerald-600">66.7%</span>
+                            <span className="absolute text-[9px] font-black text-emerald-600">
+                                {kpis?.compliance_rate ?? 0}%
+                            </span>
                         </div>
                     </div>
 
@@ -294,10 +283,10 @@ export default function ProgramPerformanceIndex({
                                     On-Time Submission
                                 </span>
                                 <div className="text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
-                                    {kpis?.on_time_submissions || 18}
+                                    {kpis?.on_time_submissions ?? 0}
                                 </div>
                                 <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">
-                                    {kpis?.on_time_rate || 75.0}% on-time rate
+                                    {kpis?.on_time_rate ?? 0}% on-time rate
                                 </span>
                             </div>
                         </div>
@@ -313,7 +302,7 @@ export default function ProgramPerformanceIndex({
                                 />
                                 <path
                                     className="text-sky-500"
-                                    strokeDasharray="75, 100"
+                                    strokeDasharray={`${kpis?.on_time_rate ?? 0}, 100`}
                                     strokeWidth="3.5"
                                     strokeLinecap="round"
                                     stroke="currentColor"
@@ -321,7 +310,9 @@ export default function ProgramPerformanceIndex({
                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                 />
                             </svg>
-                            <span className="absolute text-[9px] font-black text-sky-600">75.0%</span>
+                            <span className="absolute text-[9px] font-black text-sky-600">
+                                {kpis?.on_time_rate ?? 0}%
+                            </span>
                         </div>
                     </div>
 
@@ -336,10 +327,10 @@ export default function ProgramPerformanceIndex({
                                     With Overdue Outputs
                                 </span>
                                 <div className="text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
-                                    {kpis?.overdue_count || 6}
+                                    {kpis?.overdue_count ?? 0}
                                 </div>
                                 <span className="text-[10px] text-rose-600 font-bold block mt-0.5">
-                                    25.0% need attention
+                                    {kpis?.overdue_rate ?? 0}% need attention
                                 </span>
                             </div>
                         </div>
@@ -355,7 +346,7 @@ export default function ProgramPerformanceIndex({
                                 />
                                 <path
                                     className="text-rose-500"
-                                    strokeDasharray="25, 100"
+                                    strokeDasharray={`${kpis?.overdue_rate ?? 0}, 100`}
                                     strokeWidth="3.5"
                                     strokeLinecap="round"
                                     stroke="currentColor"
@@ -363,7 +354,9 @@ export default function ProgramPerformanceIndex({
                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                 />
                             </svg>
-                            <span className="absolute text-[9px] font-black text-rose-600">25.0%</span>
+                            <span className="absolute text-[9px] font-black text-rose-600">
+                                {kpis?.overdue_rate ?? 0}%
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -379,34 +372,39 @@ export default function ProgramPerformanceIndex({
 
                         {/* Bar chart canvas visualization */}
                         <div className="py-4">
-                            <div className="flex items-end justify-between h-40 pt-4 px-2 border-b border-border">
-                                {/* BSIS (100%) */}
-                                <div className="flex flex-col items-center flex-1 gap-1.5 h-full justify-end">
-                                    <span className="text-[10px] font-bold text-foreground">100%</span>
-                                    <div className="w-12 bg-amber-400 rounded-t-lg transition-all" style={{ height: '90%' }} />
-                                    <span className="text-[11px] font-bold text-muted-foreground mt-1">BSIS</span>
-                                </div>
+                            <div className="flex items-end justify-around h-40 pt-4 px-2 border-b border-border gap-2">
+                                {performances.length === 0 ? (
+                                    <div className="h-full flex items-center justify-center text-xs text-muted-foreground w-full">
+                                        No program data available
+                                    </div>
+                                ) : (
+                                    performances.map((p, idx) => {
+                                        const heightPercent = Math.max(p.compliance_rate > 0 ? (p.compliance_rate * 0.9) : 4, 4);
+                                        const barColors = [
+                                            'bg-amber-400',
+                                            'bg-amber-300 dark:bg-amber-600',
+                                            'bg-sky-400',
+                                            'bg-emerald-400',
+                                            'bg-indigo-400',
+                                        ];
+                                        const colorClass = p.compliance_rate === 0
+                                            ? 'bg-muted'
+                                            : (barColors[idx % barColors.length] || 'bg-amber-400');
 
-                                {/* BSIT (80%) */}
-                                <div className="flex flex-col items-center flex-1 gap-1.5 h-full justify-end">
-                                    <span className="text-[10px] font-bold text-foreground">80%</span>
-                                    <div className="w-12 bg-amber-200 dark:bg-amber-800 rounded-t-lg transition-all" style={{ height: '72%' }} />
-                                    <span className="text-[11px] font-bold text-muted-foreground mt-1">BSIT</span>
-                                </div>
-
-                                {/* BLIS (0%) */}
-                                <div className="flex flex-col items-center flex-1 gap-1.5 h-full justify-end">
-                                    <span className="text-[10px] font-bold text-muted-foreground">0%</span>
-                                    <div className="w-12 bg-muted rounded-t-sm h-1" />
-                                    <span className="text-[11px] font-bold text-muted-foreground mt-1">BLIS</span>
-                                </div>
-
-                                {/* BSCS (0%) */}
-                                <div className="flex flex-col items-center flex-1 gap-1.5 h-full justify-end">
-                                    <span className="text-[10px] font-bold text-muted-foreground">0%</span>
-                                    <div className="w-12 bg-muted rounded-t-sm h-1" />
-                                    <span className="text-[11px] font-bold text-muted-foreground mt-1">BSCS</span>
-                                </div>
+                                        return (
+                                            <div key={p.id} className="flex flex-col items-center flex-1 max-w-[80px] gap-1.5 h-full justify-end">
+                                                <span className="text-[10px] font-bold text-foreground">{p.compliance_rate}%</span>
+                                                <div
+                                                    className={cn("w-full max-w-[48px] rounded-t-lg transition-all", colorClass)}
+                                                    style={{ height: `${heightPercent}%` }}
+                                                />
+                                                <span className="text-[11px] font-bold text-muted-foreground mt-1 truncate max-w-full text-center">
+                                                    {p.code}
+                                                </span>
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
 
                             {/* Y-axis indicator */}
@@ -429,34 +427,39 @@ export default function ProgramPerformanceIndex({
 
                         {/* Bar chart canvas visualization */}
                         <div className="py-4">
-                            <div className="flex items-end justify-between h-40 pt-4 px-2 border-b border-border">
-                                {/* BSIS (91.67%) */}
-                                <div className="flex flex-col items-center flex-1 gap-1.5 h-full justify-end">
-                                    <span className="text-[10px] font-bold text-foreground">91.67%</span>
-                                    <div className="w-12 bg-amber-400 rounded-t-lg transition-all" style={{ height: '84%' }} />
-                                    <span className="text-[11px] font-bold text-muted-foreground mt-1">BSIS</span>
-                                </div>
+                            <div className="flex items-end justify-around h-40 pt-4 px-2 border-b border-border gap-2">
+                                {performances.length === 0 ? (
+                                    <div className="h-full flex items-center justify-center text-xs text-muted-foreground w-full">
+                                        No program data available
+                                    </div>
+                                ) : (
+                                    performances.map((p, idx) => {
+                                        const heightPercent = Math.max(p.on_time_rate > 0 ? (p.on_time_rate * 0.9) : 4, 4);
+                                        const barColors = [
+                                            'bg-amber-400',
+                                            'bg-amber-300 dark:bg-amber-600',
+                                            'bg-sky-400',
+                                            'bg-emerald-400',
+                                            'bg-indigo-400',
+                                        ];
+                                        const colorClass = p.on_time_rate === 0
+                                            ? 'bg-muted'
+                                            : (barColors[idx % barColors.length] || 'bg-amber-400');
 
-                                {/* BSIT (38.1%) */}
-                                <div className="flex flex-col items-center flex-1 gap-1.5 h-full justify-end">
-                                    <span className="text-[10px] font-bold text-foreground">38.1%</span>
-                                    <div className="w-12 bg-amber-200 dark:bg-amber-800 rounded-t-lg transition-all" style={{ height: '35%' }} />
-                                    <span className="text-[11px] font-bold text-muted-foreground mt-1">BSIT</span>
-                                </div>
-
-                                {/* BLIS (0%) */}
-                                <div className="flex flex-col items-center flex-1 gap-1.5 h-full justify-end">
-                                    <span className="text-[10px] font-bold text-muted-foreground">0%</span>
-                                    <div className="w-12 bg-muted rounded-t-sm h-1" />
-                                    <span className="text-[11px] font-bold text-muted-foreground mt-1">BLIS</span>
-                                </div>
-
-                                {/* BSCS (0%) */}
-                                <div className="flex flex-col items-center flex-1 gap-1.5 h-full justify-end">
-                                    <span className="text-[10px] font-bold text-muted-foreground">0%</span>
-                                    <div className="w-12 bg-muted rounded-t-sm h-1" />
-                                    <span className="text-[11px] font-bold text-muted-foreground mt-1">BSCS</span>
-                                </div>
+                                        return (
+                                            <div key={p.id} className="flex flex-col items-center flex-1 max-w-[80px] gap-1.5 h-full justify-end">
+                                                <span className="text-[10px] font-bold text-foreground">{p.on_time_rate}%</span>
+                                                <div
+                                                    className={cn("w-full max-w-[48px] rounded-t-lg transition-all", colorClass)}
+                                                    style={{ height: `${heightPercent}%` }}
+                                                />
+                                                <span className="text-[11px] font-bold text-muted-foreground mt-1 truncate max-w-full text-center">
+                                                    {p.code}
+                                                </span>
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
 
                             {/* Y-axis indicator */}
@@ -478,55 +481,66 @@ export default function ProgramPerformanceIndex({
                         </div>
 
                         <div className="py-4 flex items-center justify-center gap-6">
-                            {/* Donut graphic with 24 total faculty */}
+                            {/* Donut graphic */}
                             <div className="relative w-32 h-32 flex items-center justify-center shrink-0">
                                 <svg className="w-32 h-32 -rotate-90" viewBox="0 0 36 36">
                                     <path
-                                        className="text-amber-200 dark:text-amber-900/60"
-                                        strokeWidth="4"
-                                        strokeDasharray="62.5, 100"
-                                        stroke="currentColor"
-                                        fill="none"
-                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                    />
-                                    <path
-                                        className="text-amber-500"
-                                        strokeDashoffset="-62.5"
-                                        strokeDasharray="37.5, 100"
+                                        className="text-muted/20"
                                         strokeWidth="4"
                                         stroke="currentColor"
                                         fill="none"
                                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                     />
+                                    {(() => {
+                                        let accumulatedPercent = 0;
+                                        const strokeColors = ['#f59e0b', '#fbbf24', '#0284c7', '#10b981', '#8b5cf6'];
+                                        return distribution.map((item, idx) => {
+                                            const strokeDash = `${item.percentage}, 100`;
+                                            const strokeOffset = -accumulatedPercent;
+                                            accumulatedPercent += item.percentage;
+                                            return (
+                                                <path
+                                                    key={item.code}
+                                                    stroke={item.color || strokeColors[idx % strokeColors.length]}
+                                                    strokeDasharray={strokeDash}
+                                                    strokeDashoffset={strokeOffset}
+                                                    strokeWidth="4"
+                                                    fill="none"
+                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                />
+                                            );
+                                        });
+                                    })()}
                                 </svg>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                                    <span className="text-xl font-black text-foreground leading-none">24</span>
+                                    <span className="text-xl font-black text-foreground leading-none">
+                                        {kpis?.total_faculty ?? 0}
+                                    </span>
                                     <span className="text-[10px] text-muted-foreground font-semibold mt-0.5">Total Faculty</span>
                                 </div>
                             </div>
 
-                            {/* Legend matching screenshot */}
+                            {/* Dynamic Legend */}
                             <div className="space-y-2 text-xs">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                                    <span className="font-bold text-foreground">BSIS</span>
-                                    <span className="text-muted-foreground ml-auto pl-2">9 (37.5%)</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-amber-300" />
-                                    <span className="font-bold text-foreground">BSIT</span>
-                                    <span className="text-muted-foreground ml-auto pl-2">15 (62.5%)</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-                                    <span className="font-bold text-muted-foreground">BLIS</span>
-                                    <span className="text-muted-foreground ml-auto pl-2">0 (0%)</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-800" />
-                                    <span className="font-bold text-muted-foreground">BSCS</span>
-                                    <span className="text-muted-foreground ml-auto pl-2">0 (0%)</span>
-                                </div>
+                                {distribution.length === 0 ? (
+                                    <span className="text-muted-foreground">No distribution data</span>
+                                ) : (
+                                    distribution.map((item, idx) => {
+                                        const dotColors = ['bg-amber-500', 'bg-amber-300', 'bg-sky-500', 'bg-emerald-500', 'bg-indigo-500'];
+                                        return (
+                                            <div key={item.code} className="flex items-center gap-2">
+                                                <span
+                                                    className={cn("w-2.5 h-2.5 rounded-full", dotColors[idx % dotColors.length])}
+                                                    style={item.color ? { backgroundColor: item.color } : undefined}
+                                                />
+                                                <span className="font-bold text-foreground">{item.code}</span>
+                                                <span className="text-muted-foreground ml-auto pl-2">
+                                                    {item.count} ({item.percentage}%)
+                                                </span>
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
                         </div>
                     </div>

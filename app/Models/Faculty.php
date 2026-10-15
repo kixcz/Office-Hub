@@ -28,6 +28,8 @@ class Faculty extends Model
         'office_room',
         'employment_date',
         'profile_picture',
+        'bio',
+        'quote',
         'program_id',
     ];
 

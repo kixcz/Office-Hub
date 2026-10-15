@@ -38,25 +38,45 @@ class FacultyAttendanceController extends Controller
         $selectedWeek = $request->query('week', 'August 10 – 14, 2026 (Week 2)');
         $search = $request->query('search', '');
 
-        // Available periods
+        // Available periods ordered chronologically
+        $monthOrder = [
+            'August 2026' => 1,
+            'September 2026' => 2,
+            'October 2026' => 3,
+            'November 2026' => 4,
+            'December 2026' => 5,
+            'January 2027' => 6,
+        ];
+
         $monthlyPeriods = FacultyAttendanceSummary::where('period_type', 'monthly')
             ->pluck('period_label')
             ->unique()
+            ->sortBy(fn ($label) => $monthOrder[$label] ?? 99)
             ->values();
 
         if ($monthlyPeriods->isEmpty()) {
-            $monthlyPeriods = collect(['August 2026', 'September 2026']);
+            $monthlyPeriods = collect(['August 2026', 'September 2026', 'October 2026', 'November 2026', 'December 2026']);
         }
 
-        $weeklyPeriods = FacultyAttendance::pluck('week_label')
+        $weeklyPeriods = FacultyAttendanceSummary::where('period_type', 'weekly')
+            ->pluck('period_label')
+            ->concat(FacultyAttendance::pluck('week_label'))
             ->unique()
+            ->filter(fn ($label) => ! preg_match('/\(\d{5}\)/', $label))
             ->values();
 
         if ($weeklyPeriods->isEmpty()) {
             $weeklyPeriods = collect([
-                'August 10 – 14, 2026 (Week 2)',
-                'August 17 – 21, 2026 (Week 3)',
-                'August 24 – 28, 2026 (Week 4)',
+                'August Week 2 (8/10/2026)',
+                'August Week 3 (8/17/2026)',
+                'August Week 4 (8/24/2026)',
+                'August Week 5 (8/31/2026)',
+                'September Week 1 (9/7/2026)',
+                'September Week 2 (9/14/2026)',
+                'September Week 3 (9/21/2026)',
+                'September Week 4 (9/28/2026)',
+                'October Week 1 (10/5/2026)',
+                'October Week 2 (10/12/2026)',
             ]);
         }
 
@@ -152,38 +172,68 @@ class FacultyAttendanceController extends Controller
     public function report(Request $request): Response
     {
         $programs = Program::orderBy('name')->get();
-        $faculties = Faculty::with('program')->orderBy('last_name')->get();
+
+        // Get unique faculty IDs that exist in the attendance summaries
+        $summaryFacultyIds = FacultyAttendanceSummary::whereNotNull('faculty_id')
+            ->pluck('faculty_id')
+            ->unique()
+            ->all();
+
+        // Only include faculty members who have individual attendance summaries in the spreadsheet
+        $faculties = Faculty::with('program')
+            ->whereIn('id', $summaryFacultyIds)
+            ->orderBy('last_name')
+            ->get();
 
         $selectedProgram = $request->query('program', 'all');
         $selectedFaculty = $request->query('faculty', 'all');
         $selectedPeriod = $request->query('period', 'August 2026');
         $selectedWeek = $request->query('week', 'October 13 – October 19, 2026');
-        $selectedStatus = $request->query('status', 'all');
+        // Chronological order for academic semester months
+        $monthOrder = [
+            'August 2026' => 1,
+            'September 2026' => 2,
+            'October 2026' => 3,
+            'November 2026' => 4,
+            'December 2026' => 5,
+            'January 2027' => 6,
+        ];
 
         $monthlyPeriods = FacultyAttendanceSummary::where('period_type', 'monthly')
             ->pluck('period_label')
             ->unique()
+            ->sortBy(fn ($label) => $monthOrder[$label] ?? 99)
             ->values();
 
         if ($monthlyPeriods->isEmpty()) {
-            $monthlyPeriods = collect(['August 2026', 'September 2026', 'October 2026']);
+            $monthlyPeriods = collect(['August 2026', 'September 2026', 'October 2026', 'November 2026', 'December 2026']);
         }
 
-        $weeklyPeriods = FacultyAttendance::pluck('week_label')
+        // Available weekly periods from summaries or attendance sessions, excluding raw Excel serial dates
+        $weeklyPeriods = FacultyAttendanceSummary::where('period_type', 'weekly')
+            ->pluck('period_label')
+            ->concat(FacultyAttendance::pluck('week_label'))
             ->unique()
+            ->filter(fn ($label) => ! preg_match('/\(\d{5}\)/', $label))
             ->values();
 
         if ($weeklyPeriods->isEmpty()) {
             $weeklyPeriods = collect([
-                'October 13 – October 19, 2026',
-                'October 06 – October 12, 2026',
-                'September 29 – October 05, 2026',
-                'August 10-14, 2026',
+                'August Week 2 (8/10/2026)',
+                'August Week 3 (8/17/2026)',
+                'August Week 4 (8/24/2026)',
+                'August Week 5 (8/31/2026)',
+                'September Week 1 (9/7/2026)',
+                'September Week 2 (9/14/2026)',
+                'September Week 3 (9/21/2026)',
+                'September Week 4 (9/28/2026)',
+                'October Week 1 (10/5/2026)',
+                'October Week 2 (10/12/2026)',
             ]);
         }
 
+        // Return summaries across all periods so frontend can switch periods seamlessly client-side or filtered
         $summaries = FacultyAttendanceSummary::with(['faculty.program'])
-            ->where('period_label', $selectedPeriod)
             ->orderBy('instructor_name')
             ->get();
 
@@ -201,6 +251,7 @@ class FacultyAttendanceController extends Controller
             'weekly_sessions' => $weeklySessions,
             'monthly_periods' => $monthlyPeriods,
             'weekly_periods' => $weeklyPeriods,
+            'selected_period' => $selectedPeriod,
             'last_synced_at' => $lastSync ? Carbon::parse($lastSync)->format('M d, Y h:i A') : 'Oct 13, 2026 06:07 AM',
             'academic_year' => 'AY 2026–2027',
             'semester' => '1st Semester',
@@ -238,5 +289,32 @@ class FacultyAttendanceController extends Controller
             ->update(['spreadsheet_name' => $validated['instructor_name']]);
 
         return redirect()->back()->with('success', 'Faculty profile linked successfully.');
+    }
+
+    public function updateFacultyName(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'old_name' => 'required|string',
+            'new_name' => 'required|string|max:255',
+            'faculty_id' => 'nullable|exists:faculties,id',
+        ]);
+
+        $oldName = trim($validated['old_name']);
+        $newName = trim($validated['new_name']);
+
+        $summaryUpdates = ['instructor_name' => $newName];
+        if (! empty($validated['faculty_id'])) {
+            $summaryUpdates['faculty_id'] = $validated['faculty_id'];
+        }
+
+        FacultyAttendanceSummary::where('instructor_name', $oldName)->update($summaryUpdates);
+        FacultyAttendance::where('instructor_name', $oldName)->update($summaryUpdates);
+
+        if (! empty($validated['faculty_id'])) {
+            Faculty::where('id', $validated['faculty_id'])
+                ->update(['spreadsheet_name' => $newName]);
+        }
+
+        return redirect()->back()->with('success', "Faculty name updated to '{$newName}'.");
     }
 }

@@ -152,6 +152,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/report', [FacultyAttendanceController::class, 'report'])->name('report');
         Route::post('/sync', [FacultyAttendanceController::class, 'sync'])->name('sync');
         Route::post('/link-faculty', [FacultyAttendanceController::class, 'linkFaculty'])->name('link-faculty');
+        Route::post('/update-faculty-name', [FacultyAttendanceController::class, 'updateFacultyName'])->name('update-faculty-name');
     });
 
     // Tasks
@@ -193,12 +194,20 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/submissions', [FacultyPortalController::class, 'submissions'])->name('submissions');
 
         Route::get('/tasks', [FacultyPortalController::class, 'tasks'])->name('tasks');
+        Route::post('/tasks', [FacultyPortalController::class, 'storeTask'])->name('tasks.store');
+        Route::patch('/tasks/{task}', [FacultyPortalController::class, 'updateTask'])->name('tasks.update');
         Route::patch('/tasks/{task}/status', [FacultyPortalController::class, 'updateTaskStatus'])->name('tasks.status');
+        Route::delete('/tasks/{task}', [FacultyPortalController::class, 'deleteTask'])->name('tasks.destroy');
 
         Route::get('/research-extension', [FacultyPortalController::class, 'researchExtension'])->name('research-extension');
+        Route::post('/research-extension/research', [FacultyPortalController::class, 'storeResearch'])->name('research-extension.research.store');
+        Route::delete('/research-extension/research/{research}', [FacultyPortalController::class, 'deleteResearch'])->name('research-extension.research.destroy');
+        Route::post('/research-extension/extension', [FacultyPortalController::class, 'storeExtension'])->name('research-extension.extension.store');
+        Route::delete('/research-extension/extension/{extension}', [FacultyPortalController::class, 'deleteExtension'])->name('research-extension.extension.destroy');
         Route::get('/meetings', [FacultyPortalController::class, 'meetings'])->name('meetings');
         Route::get('/accomplishments', [FacultyPortalController::class, 'accomplishments'])->name('accomplishments');
         Route::post('/accomplishments', [FacultyPortalController::class, 'storeAccomplishment'])->name('accomplishments.store');
+        Route::delete('/accomplishments/{accomplishment}', [FacultyPortalController::class, 'deleteAccomplishment'])->name('accomplishments.destroy');
 
         Route::get('/documents', [FacultyPortalController::class, 'documents'])->name('documents');
         Route::get('/profile', [FacultyPortalController::class, 'profile'])->name('profile');

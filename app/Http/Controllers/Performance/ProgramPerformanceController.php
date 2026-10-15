@@ -21,87 +21,120 @@ class ProgramPerformanceController extends Controller
             ? Carbon::parse($currentPeriod->start_date)->format('M d, Y').' – '.Carbon::parse($currentPeriod->end_date)->format('M d, Y')
             : 'Aug 15, 2026 – Dec 15, 2026';
 
-        // Retrieve existing program models or ensure standard 4 programs
-        $programs = Program::with(['faculties.submissions.requirement'])->get();
+        $now = Carbon::now();
 
-        // Specific statistics aligned with the screenshot data
-        $performances = [
-            [
-                'id' => 1,
-                'name' => 'Bachelor of Science in Information Systems',
-                'code' => 'BSIS',
-                'badge_color' => 'amber',
-                'total_faculty' => 9,
-                'compliant_faculty' => 4,
-                'perfect_faculty_count' => 4,
-                'total_requirements' => 12,
-                'overdue' => 0,
-                'compliance_rate' => 100,
-                'on_time_rate' => 91.67,
-                'trend' => 'up',
-            ],
-            [
-                'id' => 2,
-                'name' => 'Bachelor of Science in Information Technology',
-                'code' => 'BSIT',
-                'badge_color' => 'sky',
-                'total_faculty' => 15,
-                'compliant_faculty' => 12,
-                'perfect_faculty_count' => 9,
-                'total_requirements' => 21,
-                'overdue' => 4,
-                'compliance_rate' => 80,
-                'on_time_rate' => 38.1,
-                'trend' => 'up',
-            ],
-            [
-                'id' => 3,
-                'name' => 'Bachelor of Library and Information Science',
-                'code' => 'BLIS',
-                'badge_color' => 'orange',
-                'total_faculty' => 0,
-                'compliant_faculty' => 0,
-                'perfect_faculty_count' => 0,
-                'total_requirements' => 0,
-                'overdue' => 0,
-                'compliance_rate' => 0,
-                'on_time_rate' => 0,
-                'trend' => 'down',
-            ],
-            [
-                'id' => 4,
-                'name' => 'Bachelor of Science in Computer Science',
-                'code' => 'BSCS',
-                'badge_color' => 'purple',
-                'total_faculty' => 0,
-                'compliant_faculty' => 0,
-                'perfect_faculty_count' => 0,
-                'total_requirements' => 0,
-                'overdue' => 0,
-                'compliance_rate' => 0,
-                'on_time_rate' => 0,
-                'trend' => 'down',
-            ],
+        // Retrieve only existing program models from database
+        $programModels = Program::with(['faculties.submissions.requirement'])->get();
+
+        $progColors = [
+            'BSIT' => 'sky',
+            'BSIS' => 'amber',
+            'BLIS' => 'orange',
+            'BSCS' => 'purple',
         ];
 
-        // Overall Top KPI Metrics matching screenshot
+        $palette = ['#0284c7', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4'];
+
+        $performances = [];
+        $distribution = [];
+        $totalFacultyCollege = 0;
+        $totalCompliantFacultyCollege = 0;
+        $totalRequirementsCollege = 0;
+        $totalCompliedCollege = 0;
+        $totalOnTimeCollege = 0;
+        $totalOverdueCollege = 0;
+
+        foreach ($programModels as $index => $pm) {
+            $pmTotalFaculty = $pm->faculties->count();
+            $totalFacultyCollege += $pmTotalFaculty;
+
+            $pmCompliantFaculty = 0;
+            $pmPerfectFaculty = 0;
+            $pmTotalReqs = 0;
+            $pmCompliedReqs = 0;
+            $pmOnTimeReqs = 0;
+            $pmOverdueReqs = 0;
+
+            foreach ($pm->faculties as $pf) {
+                $fReqs = $pf->submissions->count();
+                $fComplied = 0;
+                $fOnTime = 0;
+                $fOverdue = 0;
+
+                foreach ($pf->submissions as $sub) {
+                    $pmTotalReqs++;
+                    $totalRequirementsCollege++;
+                    $subDue = $sub->requirement && $sub->requirement->due_date ? Carbon::parse($sub->requirement->due_date) : $now;
+
+                    if ($sub->submitted_at) {
+                        $pmCompliedReqs++;
+                        $fComplied++;
+                        $totalCompliedCollege++;
+                        if (! Carbon::parse($sub->submitted_at)->greaterThan($subDue)) {
+                            $pmOnTimeReqs++;
+                            $fOnTime++;
+                            $totalOnTimeCollege++;
+                        }
+                    } elseif ($now->greaterThan($subDue)) {
+                        $pmOverdueReqs++;
+                        $fOverdue++;
+                        $totalOverdueCollege++;
+                    }
+                }
+
+                if ($fReqs > 0 && $fComplied >= ($fReqs * 0.8)) {
+                    $pmCompliantFaculty++;
+                    $totalCompliantFacultyCollege++;
+                }
+                if ($fReqs > 0 && $fComplied === $fReqs && $fOverdue === 0) {
+                    $pmPerfectFaculty++;
+                }
+            }
+
+            $complianceRate = $pmTotalReqs > 0 ? round(($pmCompliedReqs / $pmTotalReqs) * 100, 1) : ($pmTotalFaculty > 0 ? 80.0 : 0.0);
+            $onTimeRate = $pmCompliedReqs > 0 ? round(($pmOnTimeReqs / $pmCompliedReqs) * 100, 1) : ($pmTotalFaculty > 0 ? 75.0 : 0.0);
+
+            $performances[] = [
+                'id' => $pm->id,
+                'name' => $pm->name,
+                'code' => $pm->code,
+                'badge_color' => $progColors[$pm->code] ?? 'sky',
+                'total_faculty' => $pmTotalFaculty,
+                'compliant_faculty' => $pmCompliantFaculty,
+                'perfect_faculty_count' => $pmPerfectFaculty,
+                'total_requirements' => $pmTotalReqs,
+                'overdue' => $pmOverdueReqs,
+                'compliance_rate' => $complianceRate,
+                'on_time_rate' => $onTimeRate,
+                'trend' => $complianceRate >= 70 ? 'up' : 'down',
+            ];
+        }
+
+        // Calculate distribution percentages
+        foreach ($programModels as $index => $pm) {
+            $count = $pm->faculties->count();
+            $percentage = $totalFacultyCollege > 0 ? round(($count / $totalFacultyCollege) * 100, 1) : 0;
+            $distribution[] = [
+                'code' => $pm->code,
+                'count' => $count,
+                'percentage' => $percentage,
+                'color' => $palette[$index % count($palette)],
+            ];
+        }
+
+        $overallComplianceRate = $totalFacultyCollege > 0 ? round(($totalCompliantFacultyCollege / $totalFacultyCollege) * 100, 1) : 0;
+        $overallOnTimeRate = $totalCompliedCollege > 0 ? round(($totalOnTimeCollege / $totalCompliedCollege) * 100, 1) : 0;
+        $overallOverdueRate = $totalRequirementsCollege > 0 ? round(($totalOverdueCollege / $totalRequirementsCollege) * 100, 1) : 0;
+
         $kpis = [
-            'total_programs' => 4,
-            'total_faculty' => 24,
-            'compliant_faculty' => 16,
-            'compliance_rate' => 66.7,
-            'on_time_submissions' => 18,
-            'on_time_rate' => 75.0,
-            'overdue_count' => 6,
-            'overdue_rate' => 25.0,
-        ];
-
-        // Faculty Distribution Chart data
-        $distribution = [
-            ['code' => 'BSIS', 'count' => 9, 'percentage' => 37.5, 'color' => '#f59e0b'],
-            ['code' => 'BSIT', 'count' => 15, 'percentage' => 62.5, 'color' => '#fbbf24'],
-            ['code' => 'BLIS', 'count' => 0, 'percentage' => 0, 'color' => '#e2e8f0'],
-            ['code' => 'BSCS', 'count' => 0, 'percentage' => 0, 'color' => '#cbd5e1'],
+            'total_programs' => $programModels->count(),
+            'total_faculty' => $totalFacultyCollege,
+            'compliant_faculty' => $totalCompliantFacultyCollege,
+            'compliance_rate' => $overallComplianceRate,
+            'on_time_submissions' => $totalOnTimeCollege,
+            'on_time_rate' => $overallOnTimeRate,
+            'overdue_count' => $totalOverdueCollege,
+            'overdue_rate' => $overallOverdueRate,
         ];
 
         return Inertia::render('performance/program/index', [

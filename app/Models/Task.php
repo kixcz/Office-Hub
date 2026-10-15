@@ -11,6 +11,8 @@ class Task extends Model
         'title',
         'description',
         'priority',
+        'task_type',
+        'category',
         'status',
         'progress',
         'comments_count',
