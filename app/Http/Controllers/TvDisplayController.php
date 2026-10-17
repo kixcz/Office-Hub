@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Schedule\CalendarController;
 use App\Models\Activity;
 use App\Models\Announcement;
+use App\Models\CustomContentSlide;
 use App\Models\FacilityMonitoring;
 use App\Models\Faculty;
 use App\Models\Meeting;
@@ -82,70 +83,73 @@ class TvDisplayController extends Controller
             ->latest()
             ->get();
 
-        // Interleave Spotlight Slides into playlist
-        // If a spotlight has fullscreen_takeover and priority >= 3 (critical), it takes over or appears first.
-        // High priority (2) appears every 3-4 slides; normal priority (1) is distributed smoothly in the rotation.
+        // 3. Fetch published and active Custom Content Slides (Manual Slides)
+        $activeCustomSlides = CustomContentSlide::with(['creator'])
+            ->activeAt($now)
+            ->orderByDesc('priority')
+            ->latest()
+            ->get();
+
+        // Check for urgent fullscreen takeover (Spotlight or Custom)
+        $criticalSpotlightTakeover = $activeSpotlights->firstWhere('fullscreen_takeover', true);
+        $criticalCustomTakeover = $activeCustomSlides->firstWhere('fullscreen_takeover', true);
+
         $interleavedSlides = collect();
-        $spotlightIndex = 0;
-        $spotlightCount = $activeSpotlights->count();
 
-        if ($spotlightCount > 0) {
-            // Check for emergency takeover spotlight
-            $criticalTakeover = $activeSpotlights->firstWhere('fullscreen_takeover', true);
+        if ($criticalCustomTakeover && $criticalCustomTakeover->priority >= 3) {
+            $interleavedSlides->push([
+                'id' => 'custom_'.$criticalCustomTakeover->id,
+                'title' => '📋 '.$criticalCustomTakeover->title,
+                'type' => 'Custom: '.$criticalCustomTakeover->title,
+                'is_spotlight' => false,
+                'is_custom' => true,
+                'custom_data' => $criticalCustomTakeover,
+                'order' => 1,
+                'is_active' => true,
+                'duration_seconds' => $criticalCustomTakeover->duration_seconds ?: 20,
+            ]);
+        } elseif ($criticalSpotlightTakeover && $criticalSpotlightTakeover->priority >= 3) {
+            $interleavedSlides->push([
+                'id' => 'spotlight_'.$criticalSpotlightTakeover->id,
+                'title' => '★ Spotlight: '.$criticalSpotlightTakeover->headline,
+                'type' => 'Spotlight: '.$criticalSpotlightTakeover->headline,
+                'is_spotlight' => true,
+                'is_custom' => false,
+                'spotlight_data' => $criticalSpotlightTakeover,
+                'order' => 1,
+                'is_active' => true,
+                'duration_seconds' => $criticalSpotlightTakeover->display_duration ?: 25,
+            ]);
+        } else {
+            // Build blended rotation: Base Slides, interleaved with Spotlights & Custom Slides
+            $spotlightIndex = 0;
+            $spotlightCount = $activeSpotlights->count();
+            $customIndex = 0;
+            $customCount = $activeCustomSlides->count();
 
-            if ($criticalTakeover && $criticalTakeover->priority >= 3) {
-                // Critical takeover slide is the only slide or prominent first slide
+            $slideStep = 0;
+            foreach ($baseSlides as $bSlide) {
                 $interleavedSlides->push([
-                    'id' => 'spotlight_'.$criticalTakeover->id,
-                    'title' => '★ Spotlight: '.$criticalTakeover->headline,
-                    'type' => 'Spotlight: '.$criticalTakeover->headline,
-                    'is_spotlight' => true,
-                    'spotlight_data' => $criticalTakeover,
-                    'order' => 1,
+                    'id' => $bSlide->id,
+                    'title' => $bSlide->title,
+                    'type' => $bSlide->type,
+                    'is_spotlight' => false,
+                    'is_custom' => false,
+                    'order' => $bSlide->order,
                     'is_active' => true,
-                    'duration_seconds' => $criticalTakeover->display_duration ?: 25,
+                    'duration_seconds' => $bSlide->duration_seconds,
                 ]);
-            } else {
-                // Interleave throughout base playlist
-                // e.g. Base slide 1, Base slide 2, Spotlight slide 1, Base slide 3, Base slide 4, Spotlight slide 2...
-                $slideStep = 0;
-                foreach ($baseSlides as $bSlide) {
-                    $interleavedSlides->push([
-                        'id' => $bSlide->id,
-                        'title' => $bSlide->title,
-                        'type' => $bSlide->type,
-                        'is_spotlight' => false,
-                        'order' => $bSlide->order,
-                        'is_active' => true,
-                        'duration_seconds' => $bSlide->duration_seconds,
-                    ]);
-                    $slideStep++;
+                $slideStep++;
 
-                    // Insert a spotlight every 2 or 3 regular slides if spotlights exist
-                    if ($slideStep % 2 === 0 && $spotlightIndex < $spotlightCount) {
-                        $spot = $activeSpotlights[$spotlightIndex];
-                        $interleavedSlides->push([
-                            'id' => 'spotlight_'.$spot->id,
-                            'title' => '★ Spotlight: '.$spot->headline,
-                            'type' => 'Spotlight: '.$spot->headline,
-                            'is_spotlight' => true,
-                            'spotlight_data' => $spot,
-                            'order' => $interleavedSlides->count() + 1,
-                            'is_active' => true,
-                            'duration_seconds' => $spot->display_duration ?: 20,
-                        ]);
-                        $spotlightIndex++;
-                    }
-                }
-
-                // If any remaining spotlights haven't been inserted, append them
-                while ($spotlightIndex < $spotlightCount) {
+                // Interleave Spotlight every 2 slides
+                if ($slideStep % 2 === 0 && $spotlightIndex < $spotlightCount) {
                     $spot = $activeSpotlights[$spotlightIndex];
                     $interleavedSlides->push([
                         'id' => 'spotlight_'.$spot->id,
                         'title' => '★ Spotlight: '.$spot->headline,
                         'type' => 'Spotlight: '.$spot->headline,
                         'is_spotlight' => true,
+                        'is_custom' => false,
                         'spotlight_data' => $spot,
                         'order' => $interleavedSlides->count() + 1,
                         'is_active' => true,
@@ -153,18 +157,57 @@ class TvDisplayController extends Controller
                     ]);
                     $spotlightIndex++;
                 }
+
+                // Interleave Custom manual slide every 3 slides
+                if ($slideStep % 3 === 0 && $customIndex < $customCount) {
+                    $cust = $activeCustomSlides[$customIndex];
+                    $interleavedSlides->push([
+                        'id' => 'custom_'.$cust->id,
+                        'title' => '📋 '.$cust->title,
+                        'type' => 'Custom: '.$cust->title,
+                        'is_spotlight' => false,
+                        'is_custom' => true,
+                        'custom_data' => $cust,
+                        'order' => $interleavedSlides->count() + 1,
+                        'is_active' => true,
+                        'duration_seconds' => $cust->duration_seconds ?: 20,
+                    ]);
+                    $customIndex++;
+                }
             }
-        } else {
-            foreach ($baseSlides as $bSlide) {
+
+            // Append any leftover spotlights
+            while ($spotlightIndex < $spotlightCount) {
+                $spot = $activeSpotlights[$spotlightIndex];
                 $interleavedSlides->push([
-                    'id' => $bSlide->id,
-                    'title' => $bSlide->title,
-                    'type' => $bSlide->type,
-                    'is_spotlight' => false,
-                    'order' => $bSlide->order,
+                    'id' => 'spotlight_'.$spot->id,
+                    'title' => '★ Spotlight: '.$spot->headline,
+                    'type' => 'Spotlight: '.$spot->headline,
+                    'is_spotlight' => true,
+                    'is_custom' => false,
+                    'spotlight_data' => $spot,
+                    'order' => $interleavedSlides->count() + 1,
                     'is_active' => true,
-                    'duration_seconds' => $bSlide->duration_seconds,
+                    'duration_seconds' => $spot->display_duration ?: 20,
                 ]);
+                $spotlightIndex++;
+            }
+
+            // Append any leftover custom manual slides
+            while ($customIndex < $customCount) {
+                $cust = $activeCustomSlides[$customIndex];
+                $interleavedSlides->push([
+                    'id' => 'custom_'.$cust->id,
+                    'title' => '📋 '.$cust->title,
+                    'type' => 'Custom: '.$cust->title,
+                    'is_spotlight' => false,
+                    'is_custom' => true,
+                    'custom_data' => $cust,
+                    'order' => $interleavedSlides->count() + 1,
+                    'is_active' => true,
+                    'duration_seconds' => $cust->duration_seconds ?: 20,
+                ]);
+                $customIndex++;
             }
         }
 

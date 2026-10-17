@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\CustomContentSlide;
 use App\Models\TvDevice;
 use App\Models\TvPublicationLog;
 use App\Models\TvSlide;
@@ -109,5 +110,86 @@ test('tv display endpoint supports per-device route and device codes', function 
         ->component('tv/display')
         ->has('settings')
         ->has('slides')
+    );
+});
+
+test('authenticated user can view custom manual slides index', function () {
+    $response = $this->actingAs($this->user)->get(route('tv-config.custom.index'));
+
+    $response->assertStatus(200);
+    $response->assertInertia(fn ($page) => $page
+        ->component('tv/custom/index')
+        ->has('slides')
+        ->has('stats')
+        ->has('filters')
+    );
+});
+
+test('authenticated user can store and duplicate custom manual slide', function () {
+    $payload = [
+        'title' => 'WEEKLY CLEANING ROSTER',
+        'subtitle' => 'Faculty & Staff Office',
+        'badge' => 'Daily Duties',
+        'layout' => 'title_table',
+        'theme' => 'slate-clean',
+        'header_alignment' => 'left',
+        'duration_seconds' => 20,
+        'playlist' => 'Main Entrance Displays',
+        'priority' => 1,
+        'status' => 'published',
+        'content_blocks' => [
+            [
+                'id' => 'b1',
+                'type' => 'table',
+                'title' => 'Assigned Schedule',
+                'tableData' => [
+                    'columns' => [
+                        ['id' => 'day', 'label' => 'Day'],
+                        ['id' => 'area', 'label' => 'Work Area'],
+                        ['id' => 'person', 'label' => 'Personnel'],
+                    ],
+                    'rows' => [
+                        ['id' => 'r1', 'cells' => ['day' => 'Monday', 'area' => 'Pantry', 'person' => 'Staff A'], 'isHighlighted' => true],
+                    ],
+                ],
+            ],
+        ],
+    ];
+
+    $response = $this->actingAs($this->user)->post(route('tv-config.custom.store'), $payload);
+
+    $response->assertRedirect(route('tv-config.custom.index'));
+    $this->assertDatabaseHas('custom_content_slides', [
+        'title' => 'WEEKLY CLEANING ROSTER',
+        'layout' => 'title_table',
+        'status' => 'published',
+    ]);
+
+    $slide = CustomContentSlide::where('title', 'WEEKLY CLEANING ROSTER')->first();
+    $dupResponse = $this->actingAs($this->user)->post(route('tv-config.custom.duplicate', $slide->id));
+    $dupResponse->assertRedirect();
+    $this->assertDatabaseHas('custom_content_slides', [
+        'title' => 'Copy of WEEKLY CLEANING ROSTER',
+        'status' => 'draft',
+    ]);
+});
+
+test('active custom slides are correctly included in tv display playlist rotation', function () {
+    CustomContentSlide::create([
+        'title' => 'FACULTY MEETING AGENDA',
+        'layout' => 'bulletin',
+        'theme' => 'emerald-accent',
+        'header_alignment' => 'left',
+        'duration_seconds' => 18,
+        'playlist' => 'Main Entrance Displays',
+        'status' => 'published',
+        'created_by' => $this->user->id,
+    ]);
+
+    $response = $this->get('/tv-display');
+    $response->assertStatus(200);
+    $response->assertInertia(fn ($page) => $page
+        ->component('tv/display')
+        ->where('slides', fn ($slides) => collect($slides)->contains(fn ($s) => ($s['custom_data']['title'] ?? null) === 'FACULTY MEETING AGENDA'))
     );
 });

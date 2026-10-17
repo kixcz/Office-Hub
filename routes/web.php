@@ -26,6 +26,7 @@ use App\Http\Controllers\Schedule\CalendarController;
 use App\Http\Controllers\Schedule\MeetingController;
 use App\Http\Controllers\Schedule\SemesterScheduleController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\Tv\CustomSlideController;
 use App\Http\Controllers\Tv\PlaylistController;
 use App\Http\Controllers\Tv\SettingController;
 use App\Http\Controllers\Tv\SlideController;
@@ -139,6 +140,16 @@ Route::middleware(['auth'])->group(function () {
         Route::put('spotlight/{spotlight}', [SpotlightController::class, 'update'])->name('spotlight.update');
         Route::delete('spotlight/{spotlight}', [SpotlightController::class, 'destroy'])->name('spotlight.destroy');
         Route::post('spotlight/{spotlight}/toggle-publish', [SpotlightController::class, 'togglePublish'])->name('spotlight.toggle-publish');
+
+        // Custom Content Slides / Manual Slides
+        Route::get('custom', [CustomSlideController::class, 'index'])->name('custom.index');
+        Route::get('custom/create', [CustomSlideController::class, 'create'])->name('custom.create');
+        Route::post('custom', [CustomSlideController::class, 'store'])->name('custom.store');
+        Route::get('custom/{custom}/edit', [CustomSlideController::class, 'edit'])->name('custom.edit');
+        Route::post('custom/{custom}', [CustomSlideController::class, 'update'])->name('custom.update');
+        Route::delete('custom/{custom}', [CustomSlideController::class, 'destroy'])->name('custom.destroy');
+        Route::post('custom/{custom}/toggle-publish', [CustomSlideController::class, 'togglePublish'])->name('custom.toggle-publish');
+        Route::post('custom/{custom}/duplicate', [CustomSlideController::class, 'duplicate'])->name('custom.duplicate');
 
         Route::get('templates', [TvStudioController::class, 'templates'])->name('templates.index');
         Route::get('widgets', [TvStudioController::class, 'widgets'])->name('widgets.index');

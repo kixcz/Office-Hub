@@ -14,11 +14,18 @@ class SpotlightSlide extends Model
 
     protected $fillable = [
         'type',
+        'subject_type', // individual, multiple, team, program, group_photo
         'faculty_id',
         'honoree_name',
         'honoree_title',
         'program_or_department',
+        'honorees', // json list of honorees
         'photo_path',
+        'group_photo_path',
+        'group_photo_fit',
+        'group_photo_focal',
+        'group_photo_overlay',
+        'supporting_media', // json list of supporting context media
         'headline',
         'message',
         'event_title',
@@ -31,6 +38,7 @@ class SpotlightSlide extends Model
         'text_size',
         'display_duration',
         'transition',
+        'animation_effect',
         'layout_mode',
         'fullscreen_takeover',
         'playlist',
@@ -47,6 +55,8 @@ class SpotlightSlide extends Model
         'is_currently_active',
         'effective_honoree_name',
         'effective_photo_url',
+        'effective_group_photo_url',
+        'effective_honorees_list',
     ];
 
     public function faculty(): BelongsTo
@@ -96,6 +106,22 @@ class SpotlightSlide extends Model
 
     public function getEffectiveHonoreeNameAttribute(): string
     {
+        if ($this->subject_type === 'multiple' && ! empty($this->honorees) && is_array($this->honorees)) {
+            $names = array_filter(array_column($this->honorees, 'name'));
+            if (count($names) > 0) {
+                return implode(', ', $names);
+            }
+        }
+
+        if ($this->subject_type === 'team' || $this->subject_type === 'program' || $this->subject_type === 'group_photo') {
+            if ($this->honoree_name) {
+                return $this->honoree_name;
+            }
+            if ($this->program_or_department) {
+                return $this->program_or_department;
+            }
+        }
+
         if ($this->faculty) {
             return $this->faculty->full_name;
         }
@@ -120,9 +146,57 @@ class SpotlightSlide extends Model
         return null;
     }
 
+    public function getEffectiveGroupPhotoUrlAttribute(): ?string
+    {
+        if ($this->group_photo_path) {
+            if (str_starts_with($this->group_photo_path, 'http://') || str_starts_with($this->group_photo_path, 'https://') || str_starts_with($this->group_photo_path, '/')) {
+                return $this->group_photo_path;
+            }
+
+            return asset('storage/'.$this->group_photo_path);
+        }
+
+        return null;
+    }
+
+    public function getEffectiveHonoreesListAttribute(): array
+    {
+        if (! empty($this->honorees) && is_array($this->honorees)) {
+            return array_map(function ($h) {
+                $photo = $h['photo_url'] ?? null;
+                if ($photo && ! str_starts_with($photo, 'http://') && ! str_starts_with($photo, 'https://') && ! str_starts_with($photo, '/')) {
+                    $photo = asset('storage/'.$photo);
+                }
+
+                return [
+                    'faculty_id' => $h['faculty_id'] ?? null,
+                    'name' => $h['name'] ?? 'Honoree',
+                    'title' => $h['title'] ?? '',
+                    'program' => $h['program'] ?? '',
+                    'photo_url' => $photo,
+                ];
+            }, $this->honorees);
+        }
+
+        if ($this->faculty || $this->honoree_name) {
+            return [[
+                'faculty_id' => $this->faculty_id,
+                'name' => $this->effective_honoree_name,
+                'title' => $this->honoree_title ?: ($this->faculty?->academic_rank ?? 'Faculty Member'),
+                'program' => $this->program_or_department ?: ($this->faculty?->program?->name ?? ''),
+                'photo_url' => $this->effective_photo_url,
+            ]];
+        }
+
+        return [];
+    }
+
     protected function casts(): array
     {
         return [
+            'honorees' => 'array',
+            'supporting_media' => 'array',
+            'group_photo_overlay' => 'boolean',
             'event_date' => 'date',
             'start_at' => 'datetime',
             'end_at' => 'datetime',

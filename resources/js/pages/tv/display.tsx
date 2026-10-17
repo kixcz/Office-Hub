@@ -54,6 +54,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import TvLayout from '@/layouts/tv-layout';
 import { cn } from '@/lib/utils';
 import { SpotlightSlideHero } from '@/components/spotlight-slide-hero';
+import { CustomContentSlideHero } from '@/components/custom-slide-hero';
 
 const FADE_MS = 500;
 
@@ -212,8 +213,11 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
                 {currentSlide.is_spotlight && currentSlide.spotlight_data && (
                     <SpotlightSlideHero slide={currentSlide.spotlight_data} isDark={isDark} />
                 )}
-                {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.one && <SlideOne data={data.slide1} isDark={isDark} />}
-                {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.two && <SlideTwo data={data.slide2} isDark={isDark} />}
+                {currentSlide.is_custom && currentSlide.custom_data && (
+                    <CustomContentSlideHero slide={currentSlide.custom_data} isDark={isDark} />
+                )}
+                {!currentSlide.is_spotlight && !currentSlide.is_custom && currentSlide.type === SLIDE_TYPES.one && <SlideOne data={data.slide1} isDark={isDark} />}
+                {!currentSlide.is_spotlight && !currentSlide.is_custom && currentSlide.type === SLIDE_TYPES.two && <SlideTwo data={data.slide2} isDark={isDark} />}
                 {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.three && <SlideThree data={data.slide3} isDark={isDark} />}
                 {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.four && <SlideFour data={data.slide4} isDark={isDark} />}
                 {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.five && <SlideFive data={data.slide5} isDark={isDark} />}

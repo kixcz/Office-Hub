@@ -78,22 +78,28 @@ class SpotlightController extends Controller
 
         $prefill = [
             'type' => $request->get('type', 'achievement'),
+            'subject_type' => $request->get('subject_type', 'individual'),
             'faculty_id' => $request->get('faculty_id'),
             'honoree_name' => $request->get('honoree_name', ''),
             'honoree_title' => $request->get('honoree_title', ''),
             'program_or_department' => $request->get('program_or_department', ''),
+            'honorees' => $request->get('honorees', []),
+            'group_photo_fit' => $request->get('group_photo_fit', 'cover'),
+            'group_photo_focal' => $request->get('group_photo_focal', 'center'),
+            'group_photo_overlay' => filter_var($request->get('group_photo_overlay', true), FILTER_VALIDATE_BOOLEAN),
             'headline' => $request->get('headline', ''),
             'message' => $request->get('message', ''),
             'event_title' => $request->get('event_title', ''),
             'awarding_organization' => $request->get('awarding_organization', ''),
             'event_date' => $request->get('event_date', ''),
-            'template' => $request->get('template', 'award'),
+            'template' => $request->get('template', 'portrait-left'),
             'background_style' => $request->get('background_style', 'royal-gold'),
             'accent_style' => $request->get('accent_style', 'gold'),
             'headline_alignment' => $request->get('headline_alignment', 'left'),
             'text_size' => $request->get('text_size', 'normal'),
             'display_duration' => (int) $request->get('display_duration', 20),
             'transition' => $request->get('transition', 'zoom-fade'),
+            'animation_effect' => $request->get('animation_effect', 'confetti'),
             'layout_mode' => $request->get('layout_mode', 'hero-split'),
             'fullscreen_takeover' => filter_var($request->get('fullscreen_takeover', false), FILTER_VALIDATE_BOOLEAN),
             'playlist' => $request->get('playlist', 'Main TV Rotation'),
@@ -130,11 +136,21 @@ class SpotlightController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|string|in:award,achievement,birthday,publication,certification,promotion,research,extension,welcome,farewell,custom',
+            'subject_type' => 'nullable|string|in:individual,multiple,team,program,group_photo',
             'faculty_id' => 'nullable|exists:faculties,id',
             'honoree_name' => 'nullable|string|max:255',
             'honoree_title' => 'nullable|string|max:255',
             'program_or_department' => 'nullable|string|max:255',
+            'honorees' => 'nullable',
             'photo' => 'nullable|image|max:10240', // 10MB max
+            'group_photo' => 'nullable|image|max:15360', // 15MB max for group photo
+            'group_photo_fit' => 'nullable|string|in:cover,contain',
+            'group_photo_focal' => 'nullable|string|in:center,top,bottom',
+            'group_photo_overlay' => 'nullable|boolean',
+            'supporting_media_file_1' => 'nullable|image|max:10240',
+            'supporting_media_file_2' => 'nullable|image|max:10240',
+            'supporting_media_caption_1' => 'nullable|string|max:255',
+            'supporting_media_caption_2' => 'nullable|string|max:255',
             'headline' => 'required|string|max:255',
             'message' => 'required|string|max:2000',
             'event_title' => 'nullable|string|max:255',
@@ -147,6 +163,7 @@ class SpotlightController extends Controller
             'text_size' => 'required|string|in:compact,normal,large',
             'display_duration' => 'required|integer|min:5|max:120',
             'transition' => 'required|string|max:100',
+            'animation_effect' => 'nullable|string|in:confetti,balloons,floating_trophies,medals,sparkles,applause,none',
             'layout_mode' => 'required|string|in:hero-split,centered-portrait,banner-card,full-bleed',
             'fullscreen_takeover' => 'boolean',
             'playlist' => 'required|string|max:255',
@@ -167,6 +184,36 @@ class SpotlightController extends Controller
             }
         }
 
+        $groupPhotoPath = null;
+        if ($request->hasFile('group_photo')) {
+            $groupPhotoPath = $request->file('group_photo')->store('spotlight_group_photos', 'public');
+        }
+
+        // Decode honorees if provided as JSON or array
+        $honorees = $request->input('honorees');
+        if (is_string($honorees)) {
+            $honorees = json_decode($honorees, true) ?: [];
+        }
+
+        // Process supporting media
+        $supportingMedia = [];
+        if ($request->hasFile('supporting_media_file_1')) {
+            $p = $request->file('supporting_media_file_1')->store('spotlight_supporting', 'public');
+            $supportingMedia[] = [
+                'path' => $p,
+                'name' => $request->file('supporting_media_file_1')->getClientOriginalName(),
+                'caption' => $request->input('supporting_media_caption_1') ?: 'Event Context',
+            ];
+        }
+        if ($request->hasFile('supporting_media_file_2')) {
+            $p = $request->file('supporting_media_file_2')->store('spotlight_supporting', 'public');
+            $supportingMedia[] = [
+                'path' => $p,
+                'name' => $request->file('supporting_media_file_2')->getClientOriginalName(),
+                'caption' => $request->input('supporting_media_caption_2') ?: 'Supporting Achievement Media',
+            ];
+        }
+
         $evidencePath = null;
         $evidenceName = null;
         if ($request->hasFile('evidence')) {
@@ -177,11 +224,18 @@ class SpotlightController extends Controller
 
         $spotlight = SpotlightSlide::create([
             'type' => $validated['type'],
+            'subject_type' => $validated['subject_type'] ?? 'individual',
             'faculty_id' => $validated['faculty_id'] ?? null,
             'honoree_name' => $validated['honoree_name'] ?? null,
             'honoree_title' => $validated['honoree_title'] ?? null,
             'program_or_department' => $validated['program_or_department'] ?? null,
+            'honorees' => $honorees,
             'photo_path' => $photoPath,
+            'group_photo_path' => $groupPhotoPath,
+            'group_photo_fit' => $validated['group_photo_fit'] ?? 'cover',
+            'group_photo_focal' => $validated['group_photo_focal'] ?? 'center',
+            'group_photo_overlay' => $validated['group_photo_overlay'] ?? true,
+            'supporting_media' => ! empty($supportingMedia) ? $supportingMedia : null,
             'headline' => $validated['headline'],
             'message' => $validated['message'],
             'event_title' => $validated['event_title'] ?? null,
@@ -194,6 +248,7 @@ class SpotlightController extends Controller
             'text_size' => $validated['text_size'],
             'display_duration' => $validated['display_duration'],
             'transition' => $validated['transition'],
+            'animation_effect' => $validated['animation_effect'] ?? 'confetti',
             'layout_mode' => $validated['layout_mode'],
             'fullscreen_takeover' => $validated['fullscreen_takeover'] ?? false,
             'playlist' => $validated['playlist'],
@@ -235,11 +290,21 @@ class SpotlightController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|string|in:award,achievement,birthday,publication,certification,promotion,research,extension,welcome,farewell,custom',
+            'subject_type' => 'required|string|in:individual,multiple,team,program,group_photo',
             'faculty_id' => 'nullable|exists:faculties,id',
             'honoree_name' => 'nullable|string|max:255',
             'honoree_title' => 'nullable|string|max:255',
             'program_or_department' => 'nullable|string|max:255',
+            'honorees' => 'nullable',
             'photo' => 'nullable|image|max:10240',
+            'group_photo' => 'nullable|image|max:15360',
+            'group_photo_fit' => 'nullable|string|in:cover,contain',
+            'group_photo_focal' => 'nullable|string|in:center,top,bottom',
+            'group_photo_overlay' => 'nullable|boolean',
+            'supporting_media_file_1' => 'nullable|image|max:10240',
+            'supporting_media_file_2' => 'nullable|image|max:10240',
+            'supporting_media_caption_1' => 'nullable|string|max:255',
+            'supporting_media_caption_2' => 'nullable|string|max:255',
             'headline' => 'required|string|max:255',
             'message' => 'required|string|max:2000',
             'event_title' => 'nullable|string|max:255',
@@ -252,6 +317,7 @@ class SpotlightController extends Controller
             'text_size' => 'required|string|in:compact,normal,large',
             'display_duration' => 'required|integer|min:5|max:120',
             'transition' => 'required|string|max:100',
+            'animation_effect' => 'required|string|in:confetti,balloons,floating_trophies,medals,sparkles,applause,none',
             'layout_mode' => 'required|string|in:hero-split,centered-portrait,banner-card,full-bleed',
             'fullscreen_takeover' => 'boolean',
             'playlist' => 'required|string|max:255',
@@ -275,6 +341,37 @@ class SpotlightController extends Controller
             }
         }
 
+        $groupPhotoPath = $spotlight->group_photo_path;
+        if ($request->hasFile('group_photo')) {
+            if ($groupPhotoPath && Storage::disk('public')->exists($groupPhotoPath)) {
+                Storage::disk('public')->delete($groupPhotoPath);
+            }
+            $groupPhotoPath = $request->file('group_photo')->store('spotlight_group_photos', 'public');
+        }
+
+        $honorees = $request->input('honorees', $spotlight->honorees);
+        if (is_string($honorees)) {
+            $honorees = json_decode($honorees, true) ?: [];
+        }
+
+        $supportingMedia = $spotlight->supporting_media ?? [];
+        if ($request->hasFile('supporting_media_file_1')) {
+            $p = $request->file('supporting_media_file_1')->store('spotlight_supporting', 'public');
+            $supportingMedia[0] = [
+                'path' => $p,
+                'name' => $request->file('supporting_media_file_1')->getClientOriginalName(),
+                'caption' => $request->input('supporting_media_caption_1') ?: 'Event Context',
+            ];
+        }
+        if ($request->hasFile('supporting_media_file_2')) {
+            $p = $request->file('supporting_media_file_2')->store('spotlight_supporting', 'public');
+            $supportingMedia[1] = [
+                'path' => $p,
+                'name' => $request->file('supporting_media_file_2')->getClientOriginalName(),
+                'caption' => $request->input('supporting_media_caption_2') ?: 'Supporting Media',
+            ];
+        }
+
         $evidencePath = $spotlight->evidence_path;
         $evidenceName = $spotlight->evidence_name;
         if ($request->hasFile('evidence')) {
@@ -288,11 +385,18 @@ class SpotlightController extends Controller
 
         $spotlight->update([
             'type' => $validated['type'],
+            'subject_type' => $validated['subject_type'] ?? ($spotlight->subject_type ?: 'individual'),
             'faculty_id' => $validated['faculty_id'] ?? null,
             'honoree_name' => $validated['honoree_name'] ?? null,
             'honoree_title' => $validated['honoree_title'] ?? null,
             'program_or_department' => $validated['program_or_department'] ?? null,
+            'honorees' => $honorees,
             'photo_path' => $photoPath,
+            'group_photo_path' => $groupPhotoPath,
+            'group_photo_fit' => $validated['group_photo_fit'] ?? 'cover',
+            'group_photo_focal' => $validated['group_photo_focal'] ?? 'center',
+            'group_photo_overlay' => $validated['group_photo_overlay'] ?? true,
+            'supporting_media' => ! empty($supportingMedia) ? array_values($supportingMedia) : null,
             'headline' => $validated['headline'],
             'message' => $validated['message'],
             'event_title' => $validated['event_title'] ?? null,
@@ -305,6 +409,7 @@ class SpotlightController extends Controller
             'text_size' => $validated['text_size'],
             'display_duration' => $validated['display_duration'],
             'transition' => $validated['transition'],
+            'animation_effect' => $validated['animation_effect'] ?? ($spotlight->animation_effect ?: 'confetti'),
             'layout_mode' => $validated['layout_mode'],
             'fullscreen_takeover' => $validated['fullscreen_takeover'] ?? false,
             'playlist' => $validated['playlist'],

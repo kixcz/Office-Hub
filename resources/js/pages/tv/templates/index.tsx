@@ -74,7 +74,8 @@ export default function TvTemplatesPage({ templates }: Props) {
         'Schedule & Meetings',
         'Compliance Monitoring',
         'Performance',
-        'Spotlight'
+        'Spotlight',
+        'Custom'
     ];
 
     const filteredTemplates = templates.filter(
@@ -82,6 +83,17 @@ export default function TvTemplatesPage({ templates }: Props) {
     );
 
     const handleSelectTemplate = (template: Template) => {
+        if (template.category === 'Custom' || template.compatible_slide_type === 'Custom Content') {
+            const layoutKey = template.id.replace('tpl_custom_', '');
+            router.visit(`/tv-config/custom/create?layout=${layoutKey}`);
+            return;
+        }
+
+        if (template.category === 'Spotlight' || template.compatible_slide_type === 'Spotlight') {
+            router.visit('/tv-config/spotlight/create');
+            return;
+        }
+
         setChosenTemplate(template);
         setTitle(template.title);
         setContentType(template.compatible_slide_type || template.category);

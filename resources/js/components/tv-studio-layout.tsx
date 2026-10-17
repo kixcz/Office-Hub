@@ -19,6 +19,7 @@ import {
     CheckCircle2,
     Clock,
     Sparkles,
+    FileText,
     ExternalLink,
     Maximize2
 } from 'lucide-react';
@@ -52,6 +53,7 @@ export const TV_STUDIO_NAV_GROUPS: TvStudioNavGroup[] = [
             { id: 'playlist', title: 'Playlist', url: '/tv-config/playlist', icon: ListVideo },
             { id: 'slides', title: 'Slide Configuration', url: '/tv-config/slides', icon: Sliders },
             { id: 'spotlight', title: 'Spotlight Slides', url: '/tv-config/spotlight', icon: Sparkles, badge: 'New' },
+            { id: 'custom', title: 'Custom Manual Slides', url: '/tv-config/custom', icon: FileText, badge: 'New' },
             { id: 'templates', title: 'Templates', url: '/tv-config/templates', icon: LayoutTemplate },
         ],
     },

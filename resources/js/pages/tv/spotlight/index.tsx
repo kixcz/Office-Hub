@@ -8,6 +8,7 @@ import {
     Search,
     Filter,
     Calendar,
+    AlertTriangle,
     Trophy,
     Award,
     Cake,
@@ -262,7 +263,7 @@ export default function SpotlightIndex({ spotlights, stats, suggested_birthdays 
                                             </div>
                                         </div>
 
-                                        <div className="shrink-0">
+                                        <div className="shrink-0 flex flex-col items-end gap-1.5">
                                             {bday.has_active_slide ? (
                                                 <Link
                                                     href={`/tv-config/spotlight/${bday.existing_slide_id}/edit`}
@@ -271,13 +272,21 @@ export default function SpotlightIndex({ spotlights, stats, suggested_birthdays 
                                                     <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                                                     Slide Ready
                                                 </Link>
-                                            ) : (
+                                            ) : bday.photo_url ? (
                                                 <Link
                                                     href={`/tv-config/spotlight/create?type=birthday&faculty_id=${bday.faculty_id}&headline=HAPPY%20BIRTHDAY%2C%20${encodeURIComponent(bday.title_name || bday.faculty_name)}!&message=${encodeURIComponent('Wishing you a joyful and fulfilling birthday! CIDS celebrates your dedication, wisdom, and excellence.')}&template=birthday&background_style=celebration-spark&start_at=${encodeURIComponent(bday.suggested_start)}&end_at=${encodeURIComponent(bday.suggested_end)}`}
                                                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-xs transition-colors"
                                                 >
                                                     <Plus className="w-3 h-3" />
                                                     Review & Create
+                                                </Link>
+                                            ) : (
+                                                <Link
+                                                    href={`/tv-config/spotlight/create?type=birthday&faculty_id=${bday.faculty_id}&headline=HAPPY%20BIRTHDAY%2C%20${encodeURIComponent(bday.title_name || bday.faculty_name)}!&message=${encodeURIComponent('Wishing you a joyful and fulfilling birthday! CIDS celebrates your dedication, wisdom, and excellence.')}&template=birthday&background_style=celebration-spark&start_at=${encodeURIComponent(bday.suggested_start)}&end_at=${encodeURIComponent(bday.suggested_end)}`}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
+                                                >
+                                                    <AlertTriangle className="w-3 h-3 text-amber-500" />
+                                                    Photo Needed
                                                 </Link>
                                             )}
                                         </div>
@@ -387,7 +396,21 @@ export default function SpotlightIndex({ spotlights, stats, suggested_birthdays 
                                         <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                                             <div>
                                                 <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                                                    <span>{slide.type}</span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span>{slide.type}</span>
+                                                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                                                        <span className="text-amber-600 dark:text-amber-400 font-extrabold">
+                                                            {slide.subject_type === 'group_photo'
+                                                                ? 'Group Photo'
+                                                                : slide.subject_type === 'multiple'
+                                                                    ? `${slide.honorees?.length || 2} Honorees`
+                                                                    : slide.subject_type === 'team'
+                                                                        ? 'Team Recognition'
+                                                                        : slide.subject_type === 'program'
+                                                                            ? 'Program Recognition'
+                                                                            : 'Individual'}
+                                                        </span>
+                                                    </div>
                                                     <span>{slide.display_duration || 20}s duration</span>
                                                 </div>
 
