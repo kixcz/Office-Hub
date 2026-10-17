@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tv;
 
 use App\Http\Controllers\Controller;
+use App\Models\SpotlightSlide;
 use App\Models\TvSlide;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,12 +13,13 @@ class PlaylistController extends Controller
     public function index()
     {
         $slides = TvSlide::orderBy('order')->get();
+        $spotlights = SpotlightSlide::with('faculty')->activeAt()->orderByDesc('priority')->get();
 
         $totalSlides = $slides->count();
         $activeSlides = $slides->where('is_active', true)->count();
         $activePercentage = $totalSlides > 0 ? round(($activeSlides / $totalSlides) * 100) : 100;
 
-        $totalSeconds = $slides->where('is_active', true)->sum('duration_seconds');
+        $totalSeconds = $slides->where('is_active', true)->sum('duration_seconds') + $spotlights->sum('display_duration');
         $minutes = floor($totalSeconds / 60);
         $seconds = $totalSeconds % 60;
         $rotationTime = "{$minutes}m {$seconds}s";
@@ -32,9 +34,11 @@ class PlaylistController extends Controller
 
         return Inertia::render('tv/playlist/index', [
             'slides' => $slides,
+            'spotlights' => $spotlights,
             'stats' => [
                 'total_slides' => $totalSlides,
                 'active_slides' => $activeSlides,
+                'active_spotlights' => $spotlights->count(),
                 'active_percentage' => $activePercentage,
                 'total_rotation_time' => $rotationTime,
                 'last_updated' => $lastUpdatedFormatted,

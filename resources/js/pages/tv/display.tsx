@@ -53,6 +53,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 
 import TvLayout from '@/layouts/tv-layout';
 import { cn } from '@/lib/utils';
+import { SpotlightSlideHero } from '@/components/spotlight-slide-hero';
 
 const FADE_MS = 500;
 
@@ -198,17 +199,20 @@ export default function TvDisplay({ slides, data, current_term }: any) {
                 className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent px-8 pb-3 transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'
                     }`}
             >
-                {currentSlide.type === SLIDE_TYPES.one && <SlideOne data={data.slide1} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.two && <SlideTwo data={data.slide2} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.three && <SlideThree data={data.slide3} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.four && <SlideFour data={data.slide4} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.five && <SlideFive data={data.slide5} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.six && <SlideSix data={data.slide6} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.seven && <SlideSeven data={data.slide7} isDark={isDark} />}
-                {currentSlide.type === SLIDE_TYPES.eight && <SlideEight data={data.slide8} isDark={isDark} />}
-                {(currentSlide.type === SLIDE_TYPES.nine || currentSlide.type.includes('Compliance Tracker')) && <SlideNine data={data.slide9} isDark={isDark} />}
-                {(currentSlide.type === SLIDE_TYPES.ten || currentSlide.type.includes('Tasks & Projects') || currentSlide.type.includes('Tasks and Projects')) && <SlideTen data={data.slide10} isDark={isDark} />}
-                {(currentSlide.type === SLIDE_TYPES.eleven || currentSlide.type.includes('Program Performance')) && <SlideEleven data={data.slide11} isDark={isDark} />}
+                {currentSlide.is_spotlight && currentSlide.spotlight_data && (
+                    <SpotlightSlideHero slide={currentSlide.spotlight_data} isDark={isDark} />
+                )}
+                {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.one && <SlideOne data={data.slide1} isDark={isDark} />}
+                {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.two && <SlideTwo data={data.slide2} isDark={isDark} />}
+                {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.three && <SlideThree data={data.slide3} isDark={isDark} />}
+                {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.four && <SlideFour data={data.slide4} isDark={isDark} />}
+                {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.five && <SlideFive data={data.slide5} isDark={isDark} />}
+                {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.six && <SlideSix data={data.slide6} isDark={isDark} />}
+                {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.seven && <SlideSeven data={data.slide7} isDark={isDark} />}
+                {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.eight && <SlideEight data={data.slide8} isDark={isDark} />}
+                {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.nine || currentSlide.type.includes('Compliance Tracker')) && <SlideNine data={data.slide9} isDark={isDark} />}
+                {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.ten || currentSlide.type.includes('Tasks & Projects') || currentSlide.type.includes('Tasks and Projects')) && <SlideTen data={data.slide10} isDark={isDark} />}
+                {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.eleven || currentSlide.type.includes('Program Performance')) && <SlideEleven data={data.slide11} isDark={isDark} />}
             </div>
 
             {/* Footer - Styled precisely as in reference images */}

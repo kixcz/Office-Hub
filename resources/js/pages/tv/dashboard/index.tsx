@@ -249,6 +249,22 @@ export default function TvStudioDashboardPage({ stats, recent_slides, quick_acti
                             </Link>
 
                             <Link
+                                href="/tv-config/spotlight"
+                                className="group p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent border border-amber-300 dark:border-amber-800/80 hover:border-amber-500 transition-all shadow-2xs"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center group-hover:scale-105 transition-transform font-black">
+                                    <Sparkles className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-3 group-hover:text-amber-600 transition-colors flex items-center gap-1.5">
+                                    <span>Recognition & Celebrations</span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 font-extrabold uppercase">New</span>
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                    Create visual hero Spotlight Slides for faculty achievements, awards, approaching birthdays, research publications, and milestones.
+                                </p>
+                            </Link>
+
+                            <Link
                                 href="/tv-config/templates"
                                 className="group p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 transition-all shadow-2xs"
                             >

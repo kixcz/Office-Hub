@@ -29,6 +29,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\Tv\PlaylistController;
 use App\Http\Controllers\Tv\SettingController;
 use App\Http\Controllers\Tv\SlideController;
+use App\Http\Controllers\Tv\SpotlightController;
 use App\Http\Controllers\Tv\TvStudioController;
 use App\Http\Controllers\TvDisplayController;
 use Illuminate\Support\Facades\Route;
@@ -128,6 +129,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('slides/builder', [SlideController::class, 'builder'])->name('slides.builder');
         Route::get('slides/{slide}/edit', [SlideController::class, 'edit'])->name('slides.edit');
         Route::put('slides/{slide}', [SlideController::class, 'update'])->name('slides.update');
+
+        // Spotlight Slides / Recognition & Celebrations
+        Route::get('spotlight', [SpotlightController::class, 'index'])->name('spotlight.index');
+        Route::get('spotlight/create', [SpotlightController::class, 'create'])->name('spotlight.create');
+        Route::post('spotlight', [SpotlightController::class, 'store'])->name('spotlight.store');
+        Route::get('spotlight/{spotlight}/edit', [SpotlightController::class, 'edit'])->name('spotlight.edit');
+        Route::put('spotlight/{spotlight}', [SpotlightController::class, 'update'])->name('spotlight.update');
+        Route::delete('spotlight/{spotlight}', [SpotlightController::class, 'destroy'])->name('spotlight.destroy');
+        Route::post('spotlight/{spotlight}/toggle-publish', [SpotlightController::class, 'togglePublish'])->name('spotlight.toggle-publish');
 
         Route::get('templates', [TvStudioController::class, 'templates'])->name('templates.index');
         Route::get('widgets', [TvStudioController::class, 'widgets'])->name('widgets.index');

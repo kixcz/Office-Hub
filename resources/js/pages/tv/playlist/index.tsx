@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router, Link } from '@inertiajs/react';
 import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import { 
     PlaySquare, 
@@ -29,7 +29,8 @@ import {
     GraduationCap, 
     ChevronDown, 
     Save,
-    Check
+    Check,
+    Sparkles
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -56,6 +57,7 @@ interface Slide {
 interface Stats {
     total_slides: number;
     active_slides: number;
+    active_spotlights?: number;
     active_percentage: number;
     total_rotation_time: string;
     last_updated: string;
@@ -72,6 +74,7 @@ interface PlaylistSettingsState {
 
 interface Props {
     slides: Slide[];
+    spotlights?: any[];
     stats?: Stats;
     playlist_settings?: PlaylistSettingsState;
 }
@@ -445,6 +448,37 @@ export default function PlaylistIndex({
                         </div>
                     </div>
                 </div>
+
+                {/* 2.5 Active Spotlight Interleaving Notice */}
+                {spotlights && spotlights.length > 0 && (
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent border border-amber-300 dark:border-amber-800/60 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 font-black flex items-center justify-center shrink-0 shadow-xs">
+                                <Sparkles className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <span>{spotlights.length} Active Spotlight Slide{spotlights.length > 1 ? 's' : ''} in TV Rotation</span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-extrabold border border-amber-200">
+                                        Celebrations & Milestones
+                                    </span>
+                                </h3>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Spotlight slides (e.g. {spotlights[0]?.headline}) are interleaved every 2–3 standard slides with extended 20–25s duration.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="shrink-0 flex items-center gap-2">
+                            <Link
+                                href="/tv-config/spotlight"
+                                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs transition-colors"
+                            >
+                                Manage Spotlight Slides
+                            </Link>
+                        </div>
+                    </div>
+                )}
 
                 {/* 3. Main Content Area: Left Playlist Table (2/3) + Right Settings Panel (1/3) */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">

@@ -23,7 +23,8 @@ import {
     Monitor, 
     Maximize,
     ChevronDown,
-    Check
+    Check,
+    Sparkles
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -599,7 +600,7 @@ export default function DisplaySettingsIndex({ settings, system_status }: Props)
                                     </div>
                                     <div>
                                         <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 block">
-                                            Active Slides
+                                            Active System Slides
                                         </span>
                                         <span className="text-sm font-bold text-slate-900 dark:text-white">
                                             {status.active_slides_count} slides
@@ -607,6 +608,27 @@ export default function DisplaySettingsIndex({ settings, system_status }: Props)
                                     </div>
                                 </div>
                                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors" />
+                            </Link>
+
+                            {/* Status Item 3b: Spotlight Slides (Celebrations) */}
+                            <Link 
+                                href="/tv-config/spotlight"
+                                className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 flex items-center justify-between gap-3 hover:bg-amber-100/60 dark:hover:bg-amber-900/40 transition-colors group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 flex items-center justify-center shrink-0 shadow-xs font-black">
+                                        <Sparkles className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">
+                                            Spotlight Slides
+                                        </span>
+                                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                            Recognition & Celebrations
+                                        </span>
+                                    </div>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-amber-600 group-hover:translate-x-0.5 transition-transform" />
                             </Link>
 
                             {/* Status Item 4: Privacy Mode */}

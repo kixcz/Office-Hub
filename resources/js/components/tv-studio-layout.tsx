@@ -47,10 +47,11 @@ export const TV_STUDIO_NAV_GROUPS: TvStudioNavGroup[] = [
         ],
     },
     {
-        title: 'PLAYLIST MANAGEMENT',
+        title: 'PLAYLIST & CONTENT',
         items: [
             { id: 'playlist', title: 'Playlist', url: '/tv-config/playlist', icon: ListVideo },
             { id: 'slides', title: 'Slide Configuration', url: '/tv-config/slides', icon: Sliders },
+            { id: 'spotlight', title: 'Spotlight Slides', url: '/tv-config/spotlight', icon: Sparkles, badge: 'New' },
             { id: 'templates', title: 'Templates', url: '/tv-config/templates', icon: LayoutTemplate },
         ],
     },

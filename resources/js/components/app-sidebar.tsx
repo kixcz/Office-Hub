@@ -82,7 +82,7 @@ const adminNavGroups: NavGroup[] = [
         ],
     },
     {
-        title: 'PERFORMANCE',
+        title: 'PERFORMANCE & RECOGNITION',
         items: [
             { title: 'Faculty Performance', url: '/performance/faculty', icon: Star },
             { title: 'Program Performance', url: '/performance/program', icon: Trophy },
@@ -93,6 +93,7 @@ const adminNavGroups: NavGroup[] = [
         title: 'TV DISPLAY STUDIO',
         items: [
             { title: 'TV Workspace', url: '/tv-config/dashboard', icon: Tv },
+            { title: 'Spotlight Slides', url: '/tv-config/spotlight', icon: Sparkles },
         ],
     },
 ];

@@ -11,6 +11,7 @@ use App\Models\Meeting;
 use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\RoomSchedule;
+use App\Models\SpotlightSlide;
 use App\Models\Submission;
 use App\Models\Task;
 use App\Models\TvSetting;
@@ -33,7 +34,102 @@ class TvDisplayController extends Controller
 
         // 1. Settings & Playlist
         $settings = TvSetting::pluck('value', 'key')->toArray();
-        $slides = TvSlide::where('is_active', true)->orderBy('order')->get();
+        $baseSlides = TvSlide::where('is_active', true)->orderBy('order')->get();
+
+        // 2. Fetch published and active Spotlight Slides (Recognition & Celebrations)
+        $activeSpotlights = SpotlightSlide::with('faculty.program')
+            ->activeAt($now)
+            ->orderByDesc('priority')
+            ->latest()
+            ->get();
+
+        // Interleave Spotlight Slides into playlist
+        // If a spotlight has fullscreen_takeover and priority >= 3 (critical), it takes over or appears first.
+        // High priority (2) appears every 3-4 slides; normal priority (1) is distributed smoothly in the rotation.
+        $interleavedSlides = collect();
+        $spotlightIndex = 0;
+        $spotlightCount = $activeSpotlights->count();
+
+        if ($spotlightCount > 0) {
+            // Check for emergency takeover spotlight
+            $criticalTakeover = $activeSpotlights->firstWhere('fullscreen_takeover', true);
+
+            if ($criticalTakeover && $criticalTakeover->priority >= 3) {
+                // Critical takeover slide is the only slide or prominent first slide
+                $interleavedSlides->push([
+                    'id' => 'spotlight_'.$criticalTakeover->id,
+                    'title' => '★ Spotlight: '.$criticalTakeover->headline,
+                    'type' => 'Spotlight: '.$criticalTakeover->headline,
+                    'is_spotlight' => true,
+                    'spotlight_data' => $criticalTakeover,
+                    'order' => 1,
+                    'is_active' => true,
+                    'duration_seconds' => $criticalTakeover->display_duration ?: 25,
+                ]);
+            } else {
+                // Interleave throughout base playlist
+                // e.g. Base slide 1, Base slide 2, Spotlight slide 1, Base slide 3, Base slide 4, Spotlight slide 2...
+                $slideStep = 0;
+                foreach ($baseSlides as $bSlide) {
+                    $interleavedSlides->push([
+                        'id' => $bSlide->id,
+                        'title' => $bSlide->title,
+                        'type' => $bSlide->type,
+                        'is_spotlight' => false,
+                        'order' => $bSlide->order,
+                        'is_active' => true,
+                        'duration_seconds' => $bSlide->duration_seconds,
+                    ]);
+                    $slideStep++;
+
+                    // Insert a spotlight every 2 or 3 regular slides if spotlights exist
+                    if ($slideStep % 2 === 0 && $spotlightIndex < $spotlightCount) {
+                        $spot = $activeSpotlights[$spotlightIndex];
+                        $interleavedSlides->push([
+                            'id' => 'spotlight_'.$spot->id,
+                            'title' => '★ Spotlight: '.$spot->headline,
+                            'type' => 'Spotlight: '.$spot->headline,
+                            'is_spotlight' => true,
+                            'spotlight_data' => $spot,
+                            'order' => $interleavedSlides->count() + 1,
+                            'is_active' => true,
+                            'duration_seconds' => $spot->display_duration ?: 20,
+                        ]);
+                        $spotlightIndex++;
+                    }
+                }
+
+                // If any remaining spotlights haven't been inserted, append them
+                while ($spotlightIndex < $spotlightCount) {
+                    $spot = $activeSpotlights[$spotlightIndex];
+                    $interleavedSlides->push([
+                        'id' => 'spotlight_'.$spot->id,
+                        'title' => '★ Spotlight: '.$spot->headline,
+                        'type' => 'Spotlight: '.$spot->headline,
+                        'is_spotlight' => true,
+                        'spotlight_data' => $spot,
+                        'order' => $interleavedSlides->count() + 1,
+                        'is_active' => true,
+                        'duration_seconds' => $spot->display_duration ?: 20,
+                    ]);
+                    $spotlightIndex++;
+                }
+            }
+        } else {
+            foreach ($baseSlides as $bSlide) {
+                $interleavedSlides->push([
+                    'id' => $bSlide->id,
+                    'title' => $bSlide->title,
+                    'type' => $bSlide->type,
+                    'is_spotlight' => false,
+                    'order' => $bSlide->order,
+                    'is_active' => true,
+                    'duration_seconds' => $bSlide->duration_seconds,
+                ]);
+            }
+        }
+
+        $slides = $interleavedSlides;
 
         // Data for Slide 1 (Daily Overview)
         $activeAnnouncements = Announcement::with('author')->where('status', 'active')->latest()->get();

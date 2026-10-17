@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import {
     BarChart3,
     GraduationCap,
@@ -18,8 +18,15 @@ import {
     TrendingDown,
     ChevronDown,
     PieChart,
-    Award
+    Award,
+    Sparkles
 } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -732,9 +739,24 @@ export default function ProgramPerformanceIndex({
 
                                         {/* Context Actions */}
                                         <td className="px-3 py-3.5 text-right">
-                                            <button className="text-muted-foreground hover:text-foreground p-1 cursor-pointer">
-                                                <MoreVertical className="w-4 h-4" />
-                                            </button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button className="text-muted-foreground hover:text-foreground p-1 cursor-pointer rounded-lg hover:bg-muted transition-colors">
+                                                        <MoreVertical className="w-4 h-4" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48 font-poppins">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link
+                                                            href={`/tv-config/spotlight/create?type=achievement&honoree_name=${encodeURIComponent(p.name)}&honoree_title=${encodeURIComponent('Academic Program Excellence')}&program_or_department=${encodeURIComponent(p.name)}&headline=${encodeURIComponent(`${p.code} ACHIEVES ${p.compliance_rate}% COMPLIANCE!`)}&message=${encodeURIComponent(`The ${p.name} faculty demonstrated premier excellence with ${p.perfect_faculty_count} faculty reaching 100% compliance.`)}&template=achievement&background_style=emerald-excellence`}
+                                                            className="cursor-pointer text-amber-600 dark:text-amber-400 font-bold"
+                                                        >
+                                                            <Sparkles className="w-3.5 h-3.5 mr-2 text-amber-500" />
+                                                            <span>Create Spotlight Slide</span>
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </td>
                                     </tr>
                                 ))}

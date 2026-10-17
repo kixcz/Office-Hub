@@ -27,6 +27,7 @@ class Faculty extends Model
         'phone',
         'office_room',
         'employment_date',
+        'birth_date',
         'profile_picture',
         'bio',
         'quote',
@@ -174,5 +175,18 @@ class Faculty extends Model
     public function tasks()
     {
         return $this->belongsToMany(Task::class, 'faculty_task')->withTimestamps();
+    }
+
+    public function spotlightSlides()
+    {
+        return $this->hasMany(SpotlightSlide::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'employment_date' => 'date',
+            'birth_date' => 'date',
+        ];
     }
 }

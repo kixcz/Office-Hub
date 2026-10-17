@@ -788,6 +788,15 @@ export default function FacultyPerformanceIndex({
                                                                         </Link>
                                                                     </DropdownMenuItem>
                                                                     <DropdownMenuItem asChild>
+                                                                        <Link
+                                                                            href={`/tv-config/spotlight/create?type=achievement&faculty_id=${perf.id}&headline=CONGRATULATIONS%2C%20${encodeURIComponent(perf.name.toUpperCase())}!&message=${encodeURIComponent(`${perf.name} demonstrated outstanding teaching and academic performance in ${perf.program_name} with ${perf.compliance_rate}% compliance.`)}&template=achievement`}
+                                                                            className="cursor-pointer text-amber-600 dark:text-amber-400 font-bold"
+                                                                        >
+                                                                            <Sparkles className="w-3.5 h-3.5 mr-2 text-amber-500" />
+                                                                            <span>Create Spotlight Slide</span>
+                                                                        </Link>
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem asChild>
                                                                         <Link href={`/performance/faculty/report?faculty=${perf.id}`} className="cursor-pointer">
                                                                             <FileText className="w-3.5 h-3.5 mr-2" />
                                                                             <span>Print Report</span>

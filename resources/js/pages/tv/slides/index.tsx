@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, Link } from '@inertiajs/react';
 import { 
     Tv, 
     Layers, 
@@ -33,7 +33,8 @@ import {
     GraduationCap,
     PhoneCall,
     Info,
-    ChevronDown
+    ChevronDown,
+    Sparkles
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -426,14 +427,23 @@ export default function SlideConfigIndex({
                                     Drag to reorder slides. Click on a slide to configure its content and settings.
                                 </p>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsNewSlideModalOpen(true)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/50 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800 rounded-xl transition-all shadow-2xs cursor-pointer shrink-0"
-                            >
-                                <Plus className="w-3.5 h-3.5" />
-                                <span>Add New Slide</span>
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <Link
+                                    href="/tv-config/spotlight"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/50 dark:text-amber-300 border border-amber-300 dark:border-amber-800 rounded-xl transition-all shadow-2xs shrink-0"
+                                >
+                                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                    <span>Spotlight Slides</span>
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsNewSlideModalOpen(true)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/50 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800 rounded-xl transition-all shadow-2xs cursor-pointer shrink-0"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>Add Slide</span>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Slide Rows List */}
