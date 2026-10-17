@@ -75,12 +75,22 @@ const SLIDE_TYPES = {
 /*  Main TV Display Page                                                       */
 /* -------------------------------------------------------------------------- */
 
-export default function TvDisplay({ slides, data, current_term }: any) {
+export default function TvDisplay({ slides, data, current_term, settings }: any) {
     const activeSlides = useMemo(() => slides.filter((s: any) => s.is_active), [slides]);
     const count = activeSlides.length;
     const [index, setIndex] = useState(0);
     const [fade, setFade] = useState(true);
     const [isPaused, setIsPaused] = useState(false);
+
+    const safeMarginClass = useMemo(() => {
+        const margin = settings?.safe_area_margin;
+        if (margin === 'none') return 'px-0 py-0';
+        if (margin === 'compact') return 'px-4 py-2';
+        if (margin === 'spacious') return 'px-12 py-6';
+        return 'px-8 pb-3'; // normal default
+    }, [settings?.safe_area_margin]);
+
+    const isPublicMode = settings?.audience_mode === 'public' || settings?.default_audience === 'Public';
 
     const togglePause = useCallback(() => {
         setIsPaused((prev) => !prev);
@@ -196,7 +206,7 @@ export default function TvDisplay({ slides, data, current_term }: any) {
 
             {/* Slide Container */}
             <div
-                className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent px-8 pb-3 transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'
+                className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent ${safeMarginClass} transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'
                     }`}
             >
                 {currentSlide.is_spotlight && currentSlide.spotlight_data && (

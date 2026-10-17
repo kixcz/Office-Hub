@@ -4,10 +4,6 @@ import { BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { 
     Tv, 
-    Undo, 
-    Redo, 
-    Maximize2, 
-    Grid, 
     Save, 
     Eye, 
     Send, 
@@ -37,19 +33,21 @@ import {
     Sparkles, 
     Layers, 
     Layout, 
-    FileText, 
-    Activity, 
     Award, 
     GraduationCap,
-    TrendingUp,
-    ListFilter,
-    Table,
-    PieChart,
-    ChevronRight,
-    Play,
-    Settings,
+    Grid,
     CheckSquare,
-    ListTodo
+    ListTodo,
+    ArrowRightLeft,
+    CheckCircle2,
+    CalendarRange,
+    Activity,
+    ShieldAlert,
+    Laptop,
+    DoorOpen,
+    ListFilter,
+    UserCheck,
+    Maximize2
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -58,7 +56,7 @@ import { TvStudioLayout } from '@/components/tv-studio-layout';
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'TV Studio', href: '/tv-config/dashboard' },
-    { title: 'Visual Slide Builder', href: '/tv-config/slides/builder' },
+    { title: 'Slide Composer', href: '/tv-config/slides/builder' },
 ];
 
 interface Slide {
@@ -77,7 +75,20 @@ interface Props {
     slides?: Slide[];
 }
 
-// Custom Switch component
+export type LayoutPresetKey = 
+    | 'balanced_2x2' 
+    | 'hero_sidebar' 
+    | 'three_column' 
+    | 'full_width_list' 
+    | 'dashboard_footer' 
+    | 'media_focus';
+
+interface SlotDefinition {
+    id: string;
+    label: string;
+    occupantWidgetId: string;
+}
+
 function ToggleSwitch({ 
     checked, 
     onChange, 
@@ -95,8 +106,8 @@ function ToggleSwitch({
             aria-checked={checked}
             onClick={() => onChange(!checked)}
             className={cn(
-                "w-11 h-6 flex items-center rounded-full p-0.75 transition-colors duration-200 ease-in-out shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer",
-                checked ? "bg-blue-600 justify-end" : "bg-slate-200 dark:bg-slate-700 justify-start"
+                "w-11 h-6 flex items-center rounded-full p-0.75 transition-colors duration-200 ease-in-out shrink-0 focus:outline-none focus:ring-2 focus:ring-amber-500/30 cursor-pointer",
+                checked ? "bg-amber-500 justify-end" : "bg-slate-200 dark:bg-slate-700 justify-start"
             )}
         >
             <span
@@ -108,56 +119,151 @@ function ToggleSwitch({
     );
 }
 
-export default function VisualSlideBuilder({ slide, slides = [] }: Props) {
-    // Slide Top Bar metadata state
+export default function SlideComposer({ slide, slides = [] }: Props) {
+    // Slide Metadata
     const [slideTitle, setSlideTitle] = useState(slide?.title || 'Slide 1 - Daily Overview');
-    const [slideType, setSlideType] = useState(slide?.type || 'Custom Slide');
+    const [slideType, setSlideType] = useState(slide?.type || 'Daily Overview');
     const [durationSeconds, setDurationSeconds] = useState(slide?.duration_seconds || 15);
-    const [statusDraft, setStatusDraft] = useState(true);
+    const [selectedLayout, setSelectedLayout] = useState<LayoutPresetKey>(
+        (slide?.config?.layout as LayoutPresetKey) || 'balanced_2x2'
+    );
 
-    // Left Library category active tab
-    const [libraryTab, setLibraryTab] = useState<'widgets' | 'layouts' | 'templates'>('widgets');
+    // Left Library tabs
+    const [libraryTab, setLibraryTab] = useState<'widgets' | 'layouts'>('widgets');
     const [widgetSearch, setWidgetSearch] = useState('');
 
-    // Center Canvas Toolbar controls
-    const [zoomLevel, setZoomLevel] = useState('72%');
-    const [aspectRatio, setAspectRatio] = useState('16:9 (1920 × 1080)');
-    const [showGrid, setShowGrid] = useState(true);
-    const [showSafeArea, setShowSafeArea] = useState(false);
+    // Slot assignments state: slotId -> widgetId
+    const [slotOccupants, setSlotOccupants] = useState<Record<string, string>>(() => {
+        return slide?.config?.slots || {
+            slot_1: 'comp_overview',
+            slot_2: 'comp_pending',
+            slot_3: 'comp_overdue',
+            slot_4: 'general_qr',
+            hero: 'faculty_top',
+            sidebar_top: 'sched_meetings',
+            sidebar_bottom: 'general_qr',
+            col_1: 'sched_today',
+            col_2: 'faculty_top',
+            col_3: 'comp_overview',
+            full_main: 'comp_pending',
+            main_left: 'comp_overdue',
+            main_right: 'comp_pending',
+            footer: 'comp_overview',
+            media_slot: 'general_image',
+            content_slot: 'general_text',
+        };
+    });
 
-    // Selected Widget on Canvas
-    const [selectedWidgetId, setSelectedWidgetId] = useState<string>('top_faculty');
+    // Currently Selected Slot on Canvas
+    const [selectedSlotId, setSelectedSlotId] = useState<string>('slot_1');
 
     // Right Properties Tabs
-    const [propertiesTab, setPropertiesTab] = useState<'content' | 'appearance' | 'advanced'>('content');
+    const [propertiesTab, setPropertiesTab] = useState<'data' | 'presentation'>('data');
 
-    // Bottom Canvas Settings Tabs
-    const [bottomTab, setBottomTab] = useState<'display' | 'appearance' | 'advanced'>('display');
-
-    // Right Panel: Top Performing Faculty properties state
-    const [widgetTitle, setWidgetTitle] = useState('Top Performing Faculty');
-    const [dataSource, setDataSource] = useState('Faculty Performance');
+    // Widget specific controlled query configuration
     const [academicPeriod, setAcademicPeriod] = useState('Current Semester (AY 2026-2027, 1st Sem)');
     const [programFilter, setProgramFilter] = useState('All Programs');
     const [rankingMetric, setRankingMetric] = useState('On-Time Submission Rate');
     const [maxEntries, setMaxEntries] = useState(5);
-    const [displayStyle, setDisplayStyle] = useState<'list' | 'bars' | 'compact'>('list');
-    const [showRankNumber, setShowRankNumber] = useState(true);
-    const [showProgram, setShowProgram] = useState(true);
     const [showPercentage, setShowPercentage] = useState(true);
+    const [showProgram, setShowProgram] = useState(true);
 
-    // Bottom Canvas Configuration Form state
+    // QR Code Widget Configuration
+    const [qrDestination, setQrDestination] = useState('Faculty Schedule');
+    const [customQrUrl, setCustomQrUrl] = useState('https://cids.university.edu.ph/schedule');
+    const [qrLabel, setQrLabel] = useState('Scan for Full Faculty Schedule');
+    const [qrSize, setQrSize] = useState('Large (180px - High Visibility)');
+    const [qrContrast, setQrContrast] = useState('High Contrast White on Dark');
+
+    // Bottom Canvas Configuration
     const [transitionEffect, setTransitionEffect] = useState('Fade');
     const [backgroundBehavior, setBackgroundBehavior] = useState('Fit to Screen');
     const [showHeader, setShowHeader] = useState(true);
     const [showDateTime, setShowDateTime] = useState(true);
-    const [showFooterTicker, setShowFooterTicker] = useState(false);
-    const [contentDensity, setContentDensity] = useState('Comfortable');
-    const [maxRecordsBottom, setMaxRecordsBottom] = useState(5);
-    const [overflowBehavior, setOverflowBehavior] = useState('Paginate');
+    const [showFooterTicker, setShowFooterTicker] = useState(true);
 
-    // Save notification
     const [isSavedNotice, setIsSavedNotice] = useState(false);
+
+    // Layout Presets Definition
+    const layoutOptions: { id: LayoutPresetKey; name: string; description: string; slots: string[] }[] = [
+        { id: 'balanced_2x2', name: 'Balanced 2×2', description: 'Equal four-quadrant layout for metrics and overviews', slots: ['slot_1', 'slot_2', 'slot_3', 'slot_4'] },
+        { id: 'hero_sidebar', name: 'Hero + Sidebar', description: 'Wide primary focus zone with complementary right widgets', slots: ['hero', 'sidebar_top', 'sidebar_bottom'] },
+        { id: 'three_column', name: 'Three Column', description: 'Triple vertical lanes for department or weekly comparisons', slots: ['col_1', 'col_2', 'col_3'] },
+        { id: 'full_width_list', name: 'Full Width List', description: 'Expansive horizontal rows for timetable queues and boards', slots: ['full_main'] },
+        { id: 'dashboard_footer', name: 'Dashboard + Footer', description: 'Split upper dashboards with full-span lower ticker strip', slots: ['main_left', 'main_right', 'footer'] },
+        { id: 'media_focus', name: 'Media Focus', description: 'Generous portrait or achievement photo container + text', slots: ['media_slot', 'content_slot'] },
+    ];
+
+    // Widget Library Catalogue
+    const widgetCatalog = [
+        {
+            category: 'General & Interactive',
+            items: [
+                { id: 'general_qr', name: 'QR Code Action Target', icon: QrCode, badge: 'Digital Access' },
+                { id: 'general_text', name: 'Text / Heading Card', icon: Type, badge: 'Presentation' },
+                { id: 'general_image', name: 'Image / Portrait Frame', icon: ImageIcon, badge: 'Media' },
+                { id: 'general_logo', name: 'CIDS College Crest', icon: Award, badge: 'Branding' },
+                { id: 'general_divider', name: 'Visual Divider', icon: Minus, badge: 'Layout' },
+                { id: 'general_clock', name: 'Clock & Academic Term', icon: Clock, badge: 'Time' },
+            ]
+        },
+        {
+            category: 'Announcements',
+            items: [
+                { id: 'ann_latest', name: 'Latest Announcements', icon: Megaphone, badge: 'Feed' },
+                { id: 'ann_featured', name: 'Featured Highlight', icon: Star, badge: 'Spotlight' },
+            ]
+        },
+        {
+            category: 'Compliance Monitoring',
+            items: [
+                { id: 'comp_overview', name: 'Compliance Overview', icon: ShieldCheck, badge: 'Gauge' },
+                { id: 'comp_pending', name: 'Pending Outputs Queue', icon: ListFilter, badge: 'Queue' },
+                { id: 'comp_overdue', name: 'Overdue Outputs Alert', icon: AlertTriangle, badge: 'Alert' },
+                { id: 'comp_review_queue', name: 'Dean Review Queue', icon: ClipboardList, badge: 'Workflow' },
+            ]
+        },
+        {
+            category: 'Schedule & Timetables',
+            items: [
+                { id: 'sched_today', name: "Today's Schedule", icon: Calendar, badge: 'Live' },
+                { id: 'sched_weekly', name: 'Weekly Overview', icon: CalendarRange, badge: 'Timetable' },
+                { id: 'sched_meetings', name: 'Upcoming Meetings', icon: Users, badge: 'Calendar' },
+            ]
+        },
+        {
+            category: 'Faculty & Performance',
+            items: [
+                { id: 'faculty_top', name: 'Top Performing Faculty', icon: Trophy, badge: 'Podium' },
+                { id: 'faculty_sched', name: 'Faculty Schedule', icon: UserCheck, badge: 'Hours' },
+                { id: 'faculty_attendance', name: 'Attendance Summary', icon: Activity, badge: 'Biometric' },
+            ]
+        },
+        {
+            category: 'Program Performance',
+            items: [
+                { id: 'perf_top_program', name: 'Top Program Leaderboard', icon: Building2, badge: 'Ranking' },
+                { id: 'perf_recognition', name: 'Recognition Metrics', icon: BarChart3, badge: 'Honors' },
+            ]
+        },
+        {
+            category: 'Facility & Monitoring',
+            items: [
+                { id: 'fac_classroom_status', name: 'Classroom Status Grid', icon: Building2, badge: 'Rooms' },
+                { id: 'fac_lab_monitoring', name: 'Computer Lab Utilization', icon: Laptop, badge: 'Labs' },
+            ]
+        }
+    ];
+
+    const currentOccupantWidgetId = slotOccupants[selectedSlotId] || 'faculty_top';
+
+    // Assign widget to current slot
+    const handleAssignWidgetToSlot = (widgetId: string) => {
+        setSlotOccupants(prev => ({
+            ...prev,
+            [selectedSlotId]: widgetId,
+        }));
+    };
 
     const handleSaveDraft = () => {
         setIsSavedNotice(true);
@@ -172,889 +278,740 @@ export default function VisualSlideBuilder({ slide, slides = [] }: Props) {
                 duration_seconds: durationSeconds,
                 is_active: true,
                 config: {
-                    widgetTitle,
-                    dataSource,
+                    layout: selectedLayout,
+                    slots: slotOccupants,
                     academicPeriod,
                     programFilter,
                     rankingMetric,
                     maxEntries,
-                    displayStyle,
-                    showRankNumber,
-                    showProgram,
                     showPercentage,
+                    showProgram,
+                    qrDestination,
+                    customQrUrl,
+                    qrLabel,
+                    qrSize,
+                    qrContrast,
                     transitionEffect,
                     backgroundBehavior,
                     showHeader,
                     showDateTime,
                     showFooterTicker,
-                    contentDensity,
-                    maxRecordsBottom,
-                    overflowBehavior,
                 }
             }, {
                 onSuccess: () => {
-                    alert('Slide successfully published to TV Playlist!');
+                    alert('Slide Composer configuration published successfully to the TV rotation!');
                 }
             });
         } else {
-            alert('Slide configuration published successfully!');
+            alert('Slide configuration saved!');
         }
     };
 
-    // Widgets definitions in library matching mockup
-    const widgetCategories = [
-        {
-            title: 'General Content',
-            items: [
-                { id: 'heading', name: 'Text / Heading', icon: Type, bg: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400' },
-                { id: 'image', name: 'Image', icon: ImageIcon, bg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400' },
-                { id: 'video', name: 'Video', icon: Video, bg: 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400' },
-                { id: 'logo', name: 'College Logo', icon: Award, bg: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400' },
-                { id: 'qr', name: 'QR Code', icon: QrCode, bg: 'bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400' },
-                { id: 'divider', name: 'Divider', icon: Minus, bg: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-            ]
-        },
-        {
-            title: 'Announcements',
-            items: [
-                { id: 'latest_ann', name: 'Latest Announcements', icon: Megaphone, bg: 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400' },
-                { id: 'featured_ann', name: 'Featured Announcement', icon: Star, bg: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400' },
-                { id: 'notice_board', name: 'Notice Board', icon: ClipboardList, bg: 'bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400' },
-            ]
-        },
-        {
-            title: 'Compliance',
-            items: [
-                { id: 'comp_overview', name: 'Compliance Overview', icon: ShieldCheck, bg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400' },
-                { id: 'comp_tracker', name: 'Compliance Tracker Matrix', icon: Layers, bg: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400' },
-                { id: 'pending_outputs', name: 'Pending Outputs', icon: ListFilter, bg: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400' },
-                { id: 'overdue_outputs', name: 'Overdue Outputs', icon: AlertTriangle, bg: 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400' },
-            ]
-        },
-        {
-            title: 'Faculty',
-            items: [
-                { id: 'top_faculty', name: 'Top Performing Faculty', icon: Trophy, bg: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400' },
-                { id: 'faculty_schedule', name: 'Faculty Schedule', icon: Calendar, bg: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400' },
-                { id: 'submission_status', name: 'Faculty Submission Status', icon: Users, bg: 'bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400' },
-            ]
-        },
-        {
-            title: 'Programs',
-            items: [
-                { id: 'top_program', name: 'Top Program', icon: Building2, bg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400' },
-                { id: 'prog_compare', name: 'Program Comparison', icon: BarChart3, bg: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400' },
-                { id: 'prog_stats', name: 'Program Statistics', icon: PieChart, bg: 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400' },
-            ]
-        },
-        {
-            title: 'Tasks & Projects',
-            items: [
-                { id: 'task_kanban', name: 'Tasks Kanban Board', icon: ListTodo, bg: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400' },
-                { id: 'task_metrics', name: 'Task Performance Metrics', icon: CheckSquare, bg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400' },
-            ]
-        }
-    ];
-
-    // Sample data for Top Faculty Leaderboard on Canvas
-    const sampleFacultyLeaderboard = [
-        { rank: 1, name: 'Arnel Reyes', program: 'BSIS', percentage: '96.2%', color: 'bg-amber-500' },
-        { rank: 2, name: 'Peter Parker', program: 'BSIT', percentage: '89.1%', color: 'bg-slate-400' },
-        { rank: 3, name: 'Cristina Lopez', program: 'BLIS', percentage: '76.3%', color: 'bg-amber-700' },
-        { rank: 4, name: 'Tony Stark', program: 'BSCS', percentage: '71.8%', color: 'bg-slate-300' },
-        { rank: 5, name: 'Clark Kent', program: 'BSCS', percentage: '68.4%', color: 'bg-slate-300' },
-    ];
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Visual TV Slide Builder - TV Studio Workspace" />
+            <Head title="Slide Composer (Slot-Based Visual Builder) - TV Studio" />
 
             <TvStudioLayout>
                 <div className="flex flex-col gap-5 p-4 sm:p-5 lg:p-6 max-w-full mx-auto w-full transition-colors">
-                
-                {/* 1. Header Toolbar Bar */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                            Create / Edit Slide
-                        </h1>
-                        <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                            Design and configure your slide for the TV display using a drag-and-drop interface.
-                        </p>
+                    
+                    {/* Header Controls Bar */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-0.5">
+                                <Paintbrush className="w-4 h-4" />
+                                <span>Advanced Slot-Based Composer</span>
+                            </div>
+                            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                                Slide Composer
+                            </h1>
+                            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                                Structured dashboard composer: choose an approved layout, assign data widgets to slots, and configure properties without arbitrary canvas distortion.
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-2.5">
+                            <button
+                                type="button"
+                                onClick={handleSaveDraft}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+                            >
+                                <Save className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Save Draft</span>
+                            </button>
+
+                            <Link
+                                href="/tv-config/preview"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+                            >
+                                <Eye className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Preview 16:9</span>
+                            </Link>
+
+                            <button
+                                type="button"
+                                onClick={handlePublish}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-xl shadow-xs transition-all cursor-pointer"
+                            >
+                                <Send className="w-3.5 h-3.5" />
+                                <span>Publish to Playlist</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2.5">
-                        <button
-                            type="button"
-                            onClick={handleSaveDraft}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
-                        >
-                            <Save className="w-3.5 h-3.5 text-slate-500" />
-                            <span>Save as Draft</span>
-                        </button>
+                    {isSavedNotice && (
+                        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Slide configuration draft saved successfully!</span>
+                        </div>
+                    )}
 
-                        <a
-                            href="/tv-display"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs"
-                        >
-                            <Eye className="w-3.5 h-3.5 text-slate-500" />
-                            <span>Preview</span>
-                        </a>
-
-                        <button
-                            type="button"
-                            onClick={handlePublish}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 rounded-xl shadow-xs transition-all cursor-pointer"
-                        >
-                            <Send className="w-3.5 h-3.5" />
-                            <span>Publish to Playlist</span>
-                        </button>
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-800">
-                                    <MoreVertical className="w-4 h-4" />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => router.visit('/tv-config/slides')}>
-                                    Return to Slides List
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.visit('/tv-config/playlist')}>
-                                    View Playlist
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
-
-                {/* 2. Slide Meta Inputs Row */}
-                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
-                        {/* Slide Title */}
+                    {/* Slide Top Metadata Bar */}
+                    <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                                Slide Title
-                            </label>
+                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Slide Title</label>
                             <input
                                 type="text"
                                 value={slideTitle}
                                 onChange={(e) => setSlideTitle(e.target.value)}
-                                className="w-full px-3 py-2 text-xs font-semibold bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-900 dark:text-slate-100"
+                                className="w-full px-3 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
                             />
                         </div>
 
-                        {/* Slide Type */}
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                                Slide Type
-                            </label>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200">
-                                        <span>{slideType}</span>
-                                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start" className="w-56">
-                                    <DropdownMenuItem onClick={() => setSlideType('Custom Slide')}>Custom Slide</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSlideType('Slide 1 - Daily Overview')}>Daily Overview</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSlideType('Slide 2 - Schedule & Meetings')}>Schedule & Meetings</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSlideType('Slide 3 - Compliance Monitoring')}>Compliance Monitoring</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSlideType('Slide 4 - Performance & Recognition')}>Performance & Recognition</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSlideType('Slide 5 - Classroom Monitoring')}>Classroom Monitoring</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSlideType('Slide 6 - Class Monitoring')}>Class Monitoring</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSlideType('Slide 7 - Faculty Schedule')}>Faculty Schedule</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSlideType('Slide 8 - Consolidated Calendar')}>Consolidated Calendar</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSlideType('Slide 9 - Compliance Tracker')}>Compliance Tracker</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSlideType('Slide 10 - Tasks & Projects')}>Tasks & Projects</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSlideType('Slide 11 - Program Performance')}>Program Performance</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Active Layout</label>
+                            <select
+                                value={selectedLayout}
+                                onChange={(e) => setSelectedLayout(e.target.value as LayoutPresetKey)}
+                                className="w-full px-3 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                            >
+                                {layoutOptions.map((opt) => (
+                                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                ))}
+                            </select>
                         </div>
 
-                        {/* Duration */}
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                                Duration (seconds)
-                            </label>
-                            <input
-                                type="number"
-                                min="5"
-                                value={durationSeconds}
-                                onChange={(e) => setDurationSeconds(Number(e.target.value))}
-                                className="w-full px-3 py-2 text-xs font-semibold bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-900 dark:text-slate-100"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Status Badge & Last Edited Info */}
-                    <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                            Draft
-                        </span>
-                        <span className="text-xs text-slate-400 font-medium">
-                            Last edited: Oct 13, 2026 11:32 AM
-                        </span>
-                    </div>
-                </div>
-
-                {/* 3. Three-Panel Visual Workspace Layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                    
-                    {/* LEFT PANEL: Widget Library (3 columns on lg) */}
-                    <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 flex flex-col gap-4">
-                        {/* Library Tabs */}
-                        <div className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                            <button
-                                type="button"
-                                onClick={() => setLibraryTab('widgets')}
-                                className={cn(
-                                    "py-1.5 text-xs font-bold rounded-lg transition-all",
-                                    libraryTab === 'widgets' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs" : "text-slate-500 hover:text-slate-800"
-                                )}
-                            >
-                                Widgets
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setLibraryTab('layouts')}
-                                className={cn(
-                                    "py-1.5 text-xs font-bold rounded-lg transition-all",
-                                    libraryTab === 'layouts' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs" : "text-slate-500 hover:text-slate-800"
-                                )}
-                            >
-                                Layouts
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setLibraryTab('templates')}
-                                className={cn(
-                                    "py-1.5 text-xs font-bold rounded-lg transition-all",
-                                    libraryTab === 'templates' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs" : "text-slate-500 hover:text-slate-800"
-                                )}
-                            >
-                                Templates
-                            </button>
-                        </div>
-
-                        {/* Search Input */}
-                        <div className="relative">
-                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Slide Type</label>
                             <input
                                 type="text"
-                                placeholder="Search widgets..."
-                                value={widgetSearch}
-                                onChange={(e) => setWidgetSearch(e.target.value)}
-                                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800 dark:text-slate-200"
+                                value={slideType}
+                                onChange={(e) => setSlideType(e.target.value)}
+                                className="w-full px-3 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
                             />
                         </div>
 
-                        {/* Categories List */}
-                        <div className="flex flex-col gap-4 max-h-[600px] overflow-y-auto pr-1">
-                            {widgetCategories.map((category) => (
-                                <div key={category.title} className="flex flex-col gap-2">
-                                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-                                        <span>{category.title}</span>
-                                        <ChevronDown className="w-3 h-3 text-slate-400" />
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {category.items.map((item) => {
-                                            const Icon = item.icon;
-                                            return (
-                                                <div
-                                                    key={item.id}
-                                                    draggable
-                                                    onClick={() => setSelectedWidgetId(item.id)}
-                                                    className={cn(
-                                                        "flex flex-col items-center justify-center p-2 rounded-xl border border-slate-100 dark:border-slate-800 text-center transition-all cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-2xs",
-                                                        selectedWidgetId === item.id ? "ring-2 ring-blue-500/20 border-blue-400 bg-blue-50/20" : "bg-slate-50/50 dark:bg-slate-800/40"
-                                                    )}
-                                                >
-                                                    <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center mb-1.5", item.bg)}>
-                                                        <Icon className="w-3.5 h-3.5" />
-                                                    </div>
-                                                    <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight line-clamp-2">
-                                                        {item.name}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Duration (sec)</label>
+                            <input
+                                type="number"
+                                min={5}
+                                max={120}
+                                value={durationSeconds}
+                                onChange={(e) => setDurationSeconds(Number(e.target.value))}
+                                className="w-full px-3 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                            />
                         </div>
                     </div>
 
-                    {/* CENTER PANEL: Interactive Slide Canvas (6 columns on lg) */}
-                    <div className="lg:col-span-6 flex flex-col gap-4">
+                    {/* Three-Panel Composer Layout */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                         
-                        {/* Canvas Top Toolbar Controls */}
-                        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between gap-3 flex-wrap">
-                            {/* Undo / Redo / Zoom */}
-                            <div className="flex items-center gap-1.5">
-                                <button type="button" className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100">
-                                    <Undo className="w-3.5 h-3.5" />
+                        {/* LEFT PANEL: Layout Presets & Widget Catalog (3 cols) */}
+                        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 flex flex-col gap-4">
+                            <div className="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                                <button
+                                    type="button"
+                                    onClick={() => setLibraryTab('widgets')}
+                                    className={cn(
+                                        "py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                                        libraryTab === 'widgets' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs" : "text-slate-500 hover:text-slate-800"
+                                    )}
+                                >
+                                    Widget Library
                                 </button>
-                                <button type="button" className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100">
-                                    <Redo className="w-3.5 h-3.5" />
+                                <button
+                                    type="button"
+                                    onClick={() => setLibraryTab('layouts')}
+                                    className={cn(
+                                        "py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                                        libraryTab === 'layouts' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs" : "text-slate-500 hover:text-slate-800"
+                                    )}
+                                >
+                                    Layout Presets
                                 </button>
-                                <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button className="flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-slate-50 dark:bg-slate-800 rounded-lg text-slate-700 dark:text-slate-300">
-                                            <span>{zoomLevel}</span>
-                                            <ChevronDown className="w-3 h-3 text-slate-400" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start">
-                                        <DropdownMenuItem onClick={() => setZoomLevel('50%')}>50%</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setZoomLevel('72%')}>72%</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setZoomLevel('100%')}>100%</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
                             </div>
 
-                            {/* Aspect Ratio, Grid & Safe Area */}
-                            <div className="flex items-center gap-3">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button className="flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-slate-50 dark:bg-slate-800 rounded-lg text-slate-700 dark:text-slate-300">
-                                            <Tv className="w-3 h-3 text-blue-500 mr-1" />
-                                            <span>{aspectRatio}</span>
-                                            <ChevronDown className="w-3 h-3 text-slate-400" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => setAspectRatio('16:9 (1920 × 1080)')}>16:9 (1920 × 1080)</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setAspectRatio('16:9 (1366 × 768)')}>16:9 (1366 × 768)</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-xs font-semibold text-slate-500">Grid</span>
-                                    <ToggleSwitch checked={showGrid} onChange={setShowGrid} />
-                                </div>
-
-                                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={showSafeArea} 
-                                        onChange={(e) => setShowSafeArea(e.target.checked)}
-                                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/20" 
-                                    />
-                                    <span>Show Safe Area</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Interactive 16:9 Widescreen Canvas */}
-                        <div className="relative aspect-video w-full rounded-2xl bg-slate-900 border-2 border-slate-800 shadow-xl overflow-hidden p-4 flex flex-col justify-between text-white select-none">
-                            
-                            {/* Slide Canvas Header */}
-                            <div className="flex items-center justify-between pb-2 border-b border-white/10 shrink-0">
-                                <div className="flex items-center gap-2">
-                                    <img src="/CIDS_Logo.jpg" alt="CIDS" className="w-6 h-6 object-contain rounded" />
-                                    <div>
-                                        <div className="text-[11px] font-black tracking-wider text-amber-400 leading-tight">CIDS</div>
-                                        <div className="text-[8px] text-slate-300 font-medium">COLLEGE OF INFORMATION AND DIGITAL SCIENCES</div>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-[10px] font-bold text-slate-200">AY 2026-2027, 1st Semester ❯</div>
-                                    <div className="text-[8px] text-slate-400 font-medium">Tuesday, October 13, 2026 11:32 AM</div>
-                                </div>
-                            </div>
-
-                            {/* Bento Grid Layout Canvas Area */}
-                            <div className="grid grid-cols-12 gap-3 flex-1 min-h-0 py-2">
-                                
-                                {/* Widget 1: Welcome Banner (5 cols) */}
-                                <div 
-                                    onClick={() => setSelectedWidgetId('welcome')}
-                                    className={cn(
-                                        "col-span-5 rounded-xl bg-cover bg-center border relative overflow-hidden flex flex-col justify-end p-3 cursor-pointer transition-all",
-                                        selectedWidgetId === 'welcome' ? "ring-2 ring-blue-400 border-blue-400" : "border-white/10"
-                                    )}
-                                    style={{ backgroundImage: 'linear-gradient(rgba(15,23,42,0.6), rgba(15,23,42,0.9)), url(/CIDS_Logo.jpg)' }}
-                                >
-                                    <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Welcome to</span>
-                                    <h3 className="text-sm font-black text-white leading-tight">CIDS OfficeHub</h3>
-                                    <p className="text-[9px] text-slate-300 mt-1">Empowering Education Through Digital Innovation</p>
-                                </div>
-
-                                {/* Widget 2: College-Wide Compliance (7 cols) */}
-                                <div 
-                                    onClick={() => setSelectedWidgetId('comp_overview')}
-                                    className={cn(
-                                        "col-span-7 rounded-xl bg-white/5 border p-2.5 flex items-center justify-between gap-3 cursor-pointer transition-all",
-                                        selectedWidgetId === 'comp_overview' ? "ring-2 ring-blue-400 border-blue-400" : "border-white/10"
-                                    )}
-                                >
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 mb-1">
-                                            <ShieldCheck className="w-3.5 h-3.5" />
-                                            <span>College-Wide Compliance</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-slate-700 flex items-center justify-center">
-                                                <span className="text-[10px] font-black text-white">82.5%</span>
+                            {libraryTab === 'layouts' ? (
+                                <div className="space-y-2">
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                                        Choose Screen Grid
+                                    </span>
+                                    {layoutOptions.map((layout) => (
+                                        <div
+                                            key={layout.id}
+                                            onClick={() => setSelectedLayout(layout.id)}
+                                            className={cn(
+                                                "p-3 rounded-xl border text-left transition-all cursor-pointer",
+                                                selectedLayout === layout.id
+                                                    ? "bg-amber-500/10 border-amber-500 ring-2 ring-amber-500/20"
+                                                    : "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 hover:border-slate-300"
+                                            )}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-xs font-black text-slate-900 dark:text-white">{layout.name}</h4>
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-bold">{layout.slots.length} slots</span>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-2 flex-1 text-[9px]">
-                                                <div className="bg-white/5 p-1 rounded">
-                                                    <span className="text-slate-400 block">On-Time</span>
-                                                    <span className="font-bold text-emerald-400">33</span>
-                                                </div>
-                                                <div className="bg-white/5 p-1 rounded">
-                                                    <span className="text-slate-400 block">Pending</span>
-                                                    <span className="font-bold text-amber-400">8</span>
-                                                </div>
-                                                <div className="bg-white/5 p-1 rounded">
-                                                    <span className="text-slate-400 block">Overdue</span>
-                                                    <span className="font-bold text-rose-400">3</span>
-                                                </div>
-                                            </div>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{layout.description}</p>
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
-
-                                {/* Widget 3: Today's Schedule (6 cols) */}
-                                <div 
-                                    onClick={() => setSelectedWidgetId('schedule')}
-                                    className={cn(
-                                        "col-span-6 rounded-xl bg-white/5 border p-2.5 flex flex-col justify-between cursor-pointer transition-all",
-                                        selectedWidgetId === 'schedule' ? "ring-2 ring-blue-400 border-blue-400" : "border-white/10"
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between text-[10px] font-bold text-amber-400 pb-1.5 border-b border-white/10">
-                                        <div className="flex items-center gap-1">
-                                            <Calendar className="w-3 h-3" />
-                                            <span>Today's Schedule</span>
-                                        </div>
-                                        <span className="text-[8px] text-blue-400 font-semibold">View All ➔</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1.5 mt-1 text-[9px]">
-                                        <div className="flex items-center justify-between bg-white/5 p-1 rounded">
-                                            <div>
-                                                <span className="font-bold text-white block">09:00 AM - Department Heads Sync</span>
-                                                <span className="text-slate-400 text-[8px]">Dean's Office</span>
-                                            </div>
-                                            <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[8px]">Meeting</span>
-                                        </div>
-                                        <div className="flex items-center justify-between bg-white/5 p-1 rounded">
-                                            <div>
-                                                <span className="font-bold text-white block">01:00 PM - Curriculum Review</span>
-                                                <span className="text-slate-400 text-[8px]">Conference Room A</span>
-                                            </div>
-                                            <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[8px]">Meeting</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Widget 4: Top Performing Faculty (6 cols) - Active Selected */}
-                                <div 
-                                    onClick={() => setSelectedWidgetId('top_faculty')}
-                                    className={cn(
-                                        "col-span-6 rounded-xl bg-white/5 border p-2.5 flex flex-col justify-between cursor-pointer transition-all relative",
-                                        selectedWidgetId === 'top_faculty' ? "ring-2 ring-blue-400 border-blue-400 shadow-lg" : "border-white/10"
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between text-[10px] font-bold text-amber-400 pb-1.5 border-b border-white/10">
-                                        <div className="flex items-center gap-1">
-                                            <Trophy className="w-3 h-3 text-amber-400" />
-                                            <span>Top Performing Faculty</span>
-                                        </div>
-                                        <span className="text-[8px] text-slate-400">This Semester ⌄</span>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-900 dark:text-amber-300 font-medium">
+                                        Active Slot: <strong className="text-amber-700 dark:text-amber-400 uppercase font-black">{selectedSlotId}</strong>. Click any widget below to occupy this slot.
                                     </div>
 
-                                    {/* Faculty Leaderboard Rows */}
-                                    <div className="flex flex-col gap-1 mt-1 text-[9px]">
-                                        {sampleFacultyLeaderboard.map((faculty) => (
-                                            <div key={faculty.rank} className="flex items-center justify-between">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-black text-white", faculty.color)}>
-                                                        {faculty.rank}
-                                                    </span>
-                                                    <span className="font-bold text-white">{faculty.name}</span>
-                                                    <span className="text-[8px] text-slate-400">· {faculty.program}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-emerald-400 rounded-full" style={{ width: faculty.percentage }} />
-                                                    </div>
-                                                    <span className="font-bold text-emerald-400 text-[8px]">{faculty.percentage}</span>
+                                    <div className="relative">
+                                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search widgets..."
+                                            value={widgetSearch}
+                                            onChange={(e) => setWidgetSearch(e.target.value)}
+                                            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+                                        {widgetCatalog.map((category) => (
+                                            <div key={category.category} className="space-y-2">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                                    {category.category}
+                                                </span>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {category.items
+                                                        .filter(item => item.name.toLowerCase().includes(widgetSearch.toLowerCase()))
+                                                        .map((item) => {
+                                                            const Icon = item.icon;
+                                                            const isAssigned = slotOccupants[selectedSlotId] === item.id;
+
+                                                            return (
+                                                                <button
+                                                                    key={item.id}
+                                                                    type="button"
+                                                                    onClick={() => handleAssignWidgetToSlot(item.id)}
+                                                                    className={cn(
+                                                                        "p-2 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer h-20",
+                                                                        isAssigned
+                                                                            ? "bg-amber-500 text-slate-950 border-amber-400 shadow-xs"
+                                                                            : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/80 hover:border-amber-400"
+                                                                    )}
+                                                                >
+                                                                    <div className="flex items-center justify-between">
+                                                                        <Icon className={cn("w-4 h-4", isAssigned ? "text-slate-950" : "text-amber-500")} />
+                                                                        <span className={cn(
+                                                                            "text-[8px] px-1 rounded uppercase font-bold",
+                                                                            isAssigned ? "bg-slate-950/20 text-slate-950" : "bg-slate-200 dark:bg-slate-700 text-slate-500"
+                                                                        )}>
+                                                                            {item.badge}
+                                                                        </span>
+                                                                    </div>
+                                                                    <span className={cn(
+                                                                        "text-[10px] font-bold leading-tight line-clamp-2",
+                                                                        isAssigned ? "text-slate-950 font-black" : "text-slate-800 dark:text-slate-200"
+                                                                    )}>
+                                                                        {item.name}
+                                                                    </span>
+                                                                </button>
+                                                            );
+                                                        })}
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
+                            )}
+                        </div>
 
+                        {/* CENTER PANEL: Slot-Based 16:9 Live Canvas (6 cols) */}
+                        <div className="lg:col-span-6 flex flex-col gap-4">
+                            
+                            {/* Canvas Status & Safe Margins */}
+                            <div className="flex items-center justify-between bg-white dark:bg-slate-900 px-4 py-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-xs">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="font-bold text-slate-800 dark:text-slate-200">16:9 TV Slot Canvas (1920 × 1080)</span>
+                                </div>
+                                <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                                    Click any slot to reassign widget
+                                </span>
+                            </div>
+
+                            {/* Live 16:9 Interactive Screen */}
+                            <div className="relative aspect-video w-full rounded-2xl bg-slate-950 border-4 border-slate-800 shadow-2xl p-4 flex flex-col justify-between text-white overflow-hidden select-none">
+                                
+                                {/* Screen Header */}
+                                {showHeader && (
+                                    <div className="flex items-center justify-between pb-2 border-b border-white/10 shrink-0 text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <img src="/CIDS_Logo.jpg" alt="CIDS" className="w-6 h-6 object-contain rounded" />
+                                            <div>
+                                                <div className="text-[11px] font-black text-amber-400 leading-tight">CIDS OfficeHub TV</div>
+                                                <div className="text-[8px] text-slate-400">College of Information and Digital Sciences</div>
+                                            </div>
+                                        </div>
+                                        {showDateTime && (
+                                            <div className="text-right text-[9px] text-slate-400 font-mono">
+                                                AY 2026-2027 · 11:32 AM
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Slot Grid based on selected layout */}
+                                <div className="flex-1 my-2 grid grid-cols-12 gap-3 items-stretch">
+                                    
+                                    {/* 1. Balanced 2x2 Layout */}
+                                    {selectedLayout === 'balanced_2x2' && (
+                                        <>
+                                            {['slot_1', 'slot_2', 'slot_3', 'slot_4'].map((slotId, index) => {
+                                                const widgetKey = slotOccupants[slotId] || 'comp_overview';
+                                                const isSelected = selectedSlotId === slotId;
+
+                                                return (
+                                                    <div
+                                                        key={slotId}
+                                                        onClick={() => setSelectedSlotId(slotId)}
+                                                        className={cn(
+                                                            "col-span-6 rounded-xl p-3 border-2 transition-all cursor-pointer flex flex-col justify-between relative",
+                                                            isSelected
+                                                                ? "bg-amber-500/15 border-amber-400 ring-2 ring-amber-400/30"
+                                                                : "bg-white/5 border-white/15 hover:border-white/30"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[9px] font-black uppercase text-amber-400">
+                                                                Slot {index + 1}: {slotId.replace('_', ' ').toUpperCase()}
+                                                            </span>
+                                                            <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/10 text-slate-300 font-bold">
+                                                                {widgetKey}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Preview of Widget content */}
+                                                        {widgetKey === 'general_qr' ? (
+                                                            <div className="flex items-center justify-between gap-2 my-auto">
+                                                                <div className="space-y-0.5">
+                                                                    <div className="text-[11px] font-bold text-white">{qrLabel}</div>
+                                                                    <div className="text-[8px] text-slate-400">{qrDestination}</div>
+                                                                </div>
+                                                                <div className="w-10 h-10 rounded bg-white p-1 text-slate-950 flex items-center justify-center shrink-0">
+                                                                    <QrCode className="w-8 h-8" />
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="space-y-1.5 my-auto">
+                                                                <div className="text-[11px] font-bold text-white capitalize">{widgetKey.replace('_', ' ')}</div>
+                                                                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                                                                    <div className="w-3/4 h-full bg-emerald-400" />
+                                                                </div>
+                                                                <div className="text-[8px] text-slate-400">82.5% On-Time Completion Rate</div>
+                                                            </div>
+                                                        )}
+
+                                                        <span className="text-[7px] text-slate-500">Click to reconfigure</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </>
+                                    )}
+
+                                    {/* 2. Hero + Sidebar Layout */}
+                                    {selectedLayout === 'hero_sidebar' && (
+                                        <>
+                                            <div
+                                                onClick={() => setSelectedSlotId('hero')}
+                                                className={cn(
+                                                    "col-span-8 rounded-xl p-3 border-2 transition-all cursor-pointer flex flex-col justify-between",
+                                                    selectedSlotId === 'hero' ? "bg-sky-500/15 border-sky-400 ring-2 ring-sky-400/30" : "bg-white/5 border-white/15"
+                                                )}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-black uppercase text-sky-400">Hero Display Slot (70%)</span>
+                                                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/10">{slotOccupants['hero']}</span>
+                                                </div>
+                                                <div className="space-y-1.5 my-auto">
+                                                    <div className="text-sm font-bold text-white">Top Performing Faculty Leaderboard</div>
+                                                    <div className="w-4/5 h-2 bg-emerald-400/60 rounded" />
+                                                    <div className="w-3/5 h-2 bg-emerald-400/40 rounded" />
+                                                </div>
+                                                <span className="text-[8px] text-slate-400">Primary Timetable / Leaderboard Podium</span>
+                                            </div>
+
+                                            <div className="col-span-4 flex flex-col gap-2">
+                                                <div
+                                                    onClick={() => setSelectedSlotId('sidebar_top')}
+                                                    className={cn(
+                                                        "flex-1 rounded-xl p-2.5 border-2 transition-all cursor-pointer flex flex-col justify-between",
+                                                        selectedSlotId === 'sidebar_top' ? "bg-amber-500/15 border-amber-400" : "bg-white/5 border-white/15"
+                                                    )}
+                                                >
+                                                    <span className="text-[9px] font-black uppercase text-amber-400">Sidebar Top</span>
+                                                    <div className="text-[10px] font-bold text-white">Upcoming Meetings</div>
+                                                    <span className="text-[7px] text-slate-400">{slotOccupants['sidebar_top']}</span>
+                                                </div>
+
+                                                <div
+                                                    onClick={() => setSelectedSlotId('sidebar_bottom')}
+                                                    className={cn(
+                                                        "h-20 rounded-xl p-2.5 border-2 transition-all cursor-pointer flex items-center justify-between gap-2",
+                                                        selectedSlotId === 'sidebar_bottom' ? "bg-purple-500/15 border-purple-400" : "bg-white/5 border-white/15"
+                                                    )}
+                                                >
+                                                    <div>
+                                                        <span className="text-[9px] font-black uppercase text-purple-400 block">Sidebar Bottom</span>
+                                                        <span className="text-[9px] text-slate-300">Scan for Agenda</span>
+                                                    </div>
+                                                    <div className="w-9 h-9 rounded bg-white p-0.5 text-slate-950 flex items-center justify-center shrink-0">
+                                                        <QrCode className="w-7 h-7" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* 3. Three Column Layout */}
+                                    {selectedLayout === 'three_column' && (
+                                        <>
+                                            {['col_1', 'col_2', 'col_3'].map((colId, i) => (
+                                                <div
+                                                    key={colId}
+                                                    onClick={() => setSelectedSlotId(colId)}
+                                                    className={cn(
+                                                        "col-span-4 rounded-xl p-3 border-2 transition-all cursor-pointer flex flex-col justify-between",
+                                                        selectedSlotId === colId ? "bg-amber-500/15 border-amber-400" : "bg-white/5 border-white/15"
+                                                    )}
+                                                >
+                                                    <span className="text-[9px] font-black uppercase text-amber-400">Column {i + 1} Slot</span>
+                                                    <div className="my-auto space-y-1">
+                                                        <div className="text-xs font-bold text-white capitalize">{slotOccupants[colId] || 'Schedule'}</div>
+                                                        <div className="w-full h-1.5 bg-white/20 rounded" />
+                                                    </div>
+                                                    <span className="text-[8px] text-slate-400">Lane {i + 1}</span>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
+
+                                    {/* 4. Full Width List */}
+                                    {selectedLayout === 'full_width_list' && (
+                                        <div
+                                            onClick={() => setSelectedSlotId('full_main')}
+                                            className={cn(
+                                                "col-span-12 rounded-xl p-4 border-2 transition-all cursor-pointer flex flex-col justify-between",
+                                                selectedSlotId === 'full_main' ? "bg-amber-500/15 border-amber-400" : "bg-white/5 border-white/15"
+                                            )}
+                                        >
+                                            <span className="text-[10px] font-black uppercase text-amber-400">Full Width Timetable / Queue Slot</span>
+                                            <div className="space-y-2 my-auto">
+                                                <div className="h-6 rounded bg-white/10 flex items-center px-3 text-[10px] font-bold text-white">09:00 AM - CIDS Executive Council Sync (Dean Office)</div>
+                                                <div className="h-6 rounded bg-white/10 flex items-center px-3 text-[10px] font-bold text-white">10:30 AM - BSIT Curriculum TOS/TQ Review (Lab 1)</div>
+                                                <div className="h-6 rounded bg-white/10 flex items-center px-3 text-[10px] font-bold text-white">01:00 PM - Research Paper Colloquium 2026</div>
+                                            </div>
+                                            <span className="text-[8px] text-slate-400">Single expansive view</span>
+                                        </div>
+                                    )}
+
+                                    {/* 5. Dashboard + Footer */}
+                                    {selectedLayout === 'dashboard_footer' && (
+                                        <>
+                                            <div
+                                                onClick={() => setSelectedSlotId('main_left')}
+                                                className={cn(
+                                                    "col-span-6 rounded-xl p-3 border-2 transition-all cursor-pointer flex flex-col justify-between",
+                                                    selectedSlotId === 'main_left' ? "bg-rose-500/15 border-rose-400" : "bg-white/5 border-white/15"
+                                                )}
+                                            >
+                                                <span className="text-[9px] font-black uppercase text-rose-400">Left Main Slot</span>
+                                                <div className="text-xs font-bold text-white">Overdue Outputs Warning</div>
+                                                <span className="text-[7px] text-slate-400">{slotOccupants['main_left']}</span>
+                                            </div>
+                                            <div
+                                                onClick={() => setSelectedSlotId('main_right')}
+                                                className={cn(
+                                                    "col-span-6 rounded-xl p-3 border-2 transition-all cursor-pointer flex flex-col justify-between",
+                                                    selectedSlotId === 'main_right' ? "bg-amber-500/15 border-amber-400" : "bg-white/5 border-white/15"
+                                                )}
+                                            >
+                                                <span className="text-[9px] font-black uppercase text-amber-400">Right Main Slot</span>
+                                                <div className="text-xs font-bold text-white">Pending Submissions</div>
+                                                <span className="text-[7px] text-slate-400">{slotOccupants['main_right']}</span>
+                                            </div>
+                                            <div
+                                                onClick={() => setSelectedSlotId('footer')}
+                                                className={cn(
+                                                    "col-span-12 h-12 rounded-xl p-2 border-2 transition-all cursor-pointer flex items-center justify-between",
+                                                    selectedSlotId === 'footer' ? "bg-emerald-500/15 border-emerald-400" : "bg-white/5 border-white/15"
+                                                )}
+                                            >
+                                                <span className="text-[9px] font-black uppercase text-emerald-400">Full Width Footer Strip</span>
+                                                <span className="text-[10px] font-mono text-white">Overall Compliance: 82.5% Complied</span>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* 6. Media Focus */}
+                                    {selectedLayout === 'media_focus' && (
+                                        <>
+                                            <div
+                                                onClick={() => setSelectedSlotId('media_slot')}
+                                                className={cn(
+                                                    "col-span-5 rounded-xl p-3 border-2 transition-all cursor-pointer flex flex-col items-center justify-center text-center",
+                                                    selectedSlotId === 'media_slot' ? "bg-amber-500/15 border-amber-400" : "bg-white/5 border-white/15"
+                                                )}
+                                            >
+                                                <ImageIcon className="w-8 h-8 text-amber-400 mb-1" />
+                                                <span className="text-[10px] font-black uppercase text-amber-400">Media Focus Container</span>
+                                                <span className="text-[8px] text-slate-400">Portrait Photo / Award Document</span>
+                                            </div>
+                                            <div
+                                                onClick={() => setSelectedSlotId('content_slot')}
+                                                className={cn(
+                                                    "col-span-7 rounded-xl p-3 border-2 transition-all cursor-pointer flex flex-col justify-center space-y-1.5",
+                                                    selectedSlotId === 'content_slot' ? "bg-amber-500/15 border-amber-400" : "bg-white/5 border-white/15"
+                                                )}
+                                            >
+                                                <span className="text-[9px] font-black uppercase text-amber-400">Content & Citations Slot</span>
+                                                <div className="text-sm font-black text-white">CONGRATULATIONS DR. THORNE!</div>
+                                                <div className="text-[9px] text-slate-300">Best Paper Award at 2026 ICT Research Conference</div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Screen Footer */}
+                                {showFooterTicker && (
+                                    <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[9px] text-slate-400 shrink-0">
+                                        <span>Display Safe Area: Enforced (16:9 1080p)</span>
+                                        <span className="font-mono text-amber-400">Slot-Based Slide Composer Engine</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* Bottom Slide Behavior & Display Settings Bar */}
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 flex flex-col gap-4">
-                            {/* Tabs */}
-                            <div className="flex items-center gap-6 border-b border-slate-100 dark:border-slate-800 pb-2">
+                        {/* RIGHT PANEL: Widget Configuration & QR Code Settings (3 cols) */}
+                        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 flex flex-col gap-4">
+                            
+                            <div className="grid grid-cols-2 gap-1 border-b border-slate-100 dark:border-slate-800 pb-2">
                                 <button
                                     type="button"
-                                    onClick={() => setBottomTab('display')}
+                                    onClick={() => setPropertiesTab('data')}
                                     className={cn(
-                                        "flex items-center gap-1.5 text-xs font-bold transition-colors pb-1",
-                                        bottomTab === 'display' ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500"
+                                        "pb-1 text-xs font-bold transition-all text-center cursor-pointer",
+                                        propertiesTab === 'data' ? "text-amber-500 border-b-2 border-amber-500" : "text-slate-400"
                                     )}
                                 >
-                                    <Settings className="w-3.5 h-3.5" />
-                                    <span>Display Settings</span>
+                                    Controlled Data
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setBottomTab('appearance')}
+                                    onClick={() => setPropertiesTab('presentation')}
                                     className={cn(
-                                        "flex items-center gap-1.5 text-xs font-bold transition-colors pb-1",
-                                        bottomTab === 'appearance' ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500"
+                                        "pb-1 text-xs font-bold transition-all text-center cursor-pointer",
+                                        propertiesTab === 'presentation' ? "text-amber-500 border-b-2 border-amber-500" : "text-slate-400"
                                     )}
                                 >
-                                    <Paintbrush className="w-3.5 h-3.5" />
-                                    <span>Appearance</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setBottomTab('advanced')}
-                                    className={cn(
-                                        "flex items-center gap-1.5 text-xs font-bold transition-colors pb-1",
-                                        bottomTab === 'advanced' ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500"
-                                    )}
-                                >
-                                    <Sliders className="w-3.5 h-3.5" />
-                                    <span>Advanced Settings</span>
+                                    Presentation
                                 </button>
                             </div>
 
-                            {/* Display Settings Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-                                {/* Column 1: Slide Behavior */}
-                                <div className="space-y-3">
-                                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Slide Behavior</span>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <div>
-                                            <label className="text-[10px] text-slate-400">Duration (seconds)</label>
-                                            <input 
-                                                type="number" 
-                                                value={durationSeconds} 
-                                                onChange={(e) => setDurationSeconds(Number(e.target.value))}
-                                                className="w-full px-2 py-1 text-xs border rounded-lg bg-slate-50 dark:bg-slate-800" 
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] text-slate-400">Transition</label>
-                                            <select 
-                                                value={transitionEffect} 
-                                                onChange={(e) => setTransitionEffect(e.target.value)}
-                                                className="w-full px-1 py-1 text-xs border rounded-lg bg-slate-50 dark:bg-slate-800"
-                                            >
-                                                <option>Fade</option>
-                                                <option>Slide</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] text-slate-400">Background</label>
-                                            <select 
-                                                value={backgroundBehavior} 
-                                                onChange={(e) => setBackgroundBehavior(e.target.value)}
-                                                className="w-full px-1 py-1 text-xs border rounded-lg bg-slate-50 dark:bg-slate-800"
-                                            >
-                                                <option>Fit to Screen</option>
-                                                <option>Fill Screen</option>
-                                            </select>
-                                        </div>
-                                    </div>
+                            {/* Active Slot Summary */}
+                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
+                                <div className="flex items-center justify-between text-[11px]">
+                                    <span className="text-slate-500">Configuring Slot:</span>
+                                    <span className="font-black text-amber-600 dark:text-amber-400 uppercase">{selectedSlotId}</span>
                                 </div>
-
-                                {/* Column 2: Display Elements */}
-                                <div className="space-y-2">
-                                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Display Elements</span>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] text-slate-500">Show Header (Logo & Title)</span>
-                                        <ToggleSwitch checked={showHeader} onChange={setShowHeader} />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] text-slate-500">Show Date & Time</span>
-                                        <ToggleSwitch checked={showDateTime} onChange={setShowDateTime} />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] text-slate-500">Show Footer Ticker</span>
-                                        <ToggleSwitch checked={showFooterTicker} onChange={setShowFooterTicker} />
-                                    </div>
+                                <div className="flex items-center justify-between text-[11px]">
+                                    <span className="text-slate-500">Occupant Widget:</span>
+                                    <span className="font-bold text-slate-900 dark:text-white capitalize">{currentOccupantWidgetId.replace('_', ' ')}</span>
                                 </div>
+                            </div>
 
-                                {/* Column 3: Content Options */}
-                                <div className="space-y-3">
-                                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Content Options</span>
-                                    <div>
-                                        <label className="text-[10px] text-slate-400">Content Density</label>
-                                        <select 
-                                            value={contentDensity} 
-                                            onChange={(e) => setContentDensity(e.target.value)}
-                                            className="w-full px-2 py-1 text-xs border rounded-lg bg-slate-50 dark:bg-slate-800"
+                            {/* Specific Settings for QR Code Widget */}
+                            {currentOccupantWidgetId === 'general_qr' ? (
+                                <div className="space-y-3.5 text-xs">
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+                                        <QrCode className="w-4 h-4" />
+                                        <span>QR Digital Access Controls</span>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                            System Target Action
+                                        </label>
+                                        <select
+                                            value={qrDestination}
+                                            onChange={(e) => setQrDestination(e.target.value)}
+                                            className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
                                         >
-                                            <option>Comfortable</option>
-                                            <option>Compact</option>
+                                            <option>Faculty Schedule Portal</option>
+                                            <option>Program Curriculum Schedule</option>
+                                            <option>Event Registration Form</option>
+                                            <option>Full Announcement Details</option>
+                                            <option>Survey / Evaluation Form</option>
+                                            <option>Compliance Submission Portal</option>
+                                            <option>Downloadable Document / Syllabi</option>
+                                            <option>Custom Web Destination</option>
                                         </select>
                                     </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                            Stable Target URL
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={customQrUrl}
+                                            onChange={(e) => setCustomQrUrl(e.target.value)}
+                                            className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono"
+                                        />
+                                        <p className="text-[10px] text-slate-400">Routes through stable OfficeHub shortlinks.</p>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                            On-Screen Callout Label
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={qrLabel}
+                                            onChange={(e) => setQrLabel(e.target.value)}
+                                            className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                                        />
+                                    </div>
+
                                     <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="text-[10px] text-slate-400">Max Records</label>
-                                            <input 
-                                                type="number" 
-                                                value={maxRecordsBottom} 
-                                                onChange={(e) => setMaxRecordsBottom(Number(e.target.value))}
-                                                className="w-full px-2 py-1 text-xs border rounded-lg bg-slate-50 dark:bg-slate-800" 
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] text-slate-400">Overflow</label>
-                                            <select 
-                                                value={overflowBehavior} 
-                                                onChange={(e) => setOverflowBehavior(e.target.value)}
-                                                className="w-full px-1 py-1 text-xs border rounded-lg bg-slate-50 dark:bg-slate-800"
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-semibold text-slate-500">QR Size</label>
+                                            <select
+                                                value={qrSize}
+                                                onChange={(e) => setQrSize(e.target.value)}
+                                                className="w-full px-2 py-1 text-[11px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
                                             >
-                                                <option>Paginate</option>
-                                                <option>Scroll</option>
+                                                <option>Medium (140px)</option>
+                                                <option>Large (180px - High Visibility)</option>
+                                                <option>Extra Large (240px)</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-semibold text-slate-500">Visual Contrast</label>
+                                            <select
+                                                value={qrContrast}
+                                                onChange={(e) => setQrContrast(e.target.value)}
+                                                className="w-full px-2 py-1 text-[11px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
+                                            >
+                                                <option>High Contrast White on Dark</option>
+                                                <option>Black on White Frame</option>
+                                                <option>Amber Accent Glow</option>
                                             </select>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* RIGHT PANEL: Widget Properties & Configuration Panel (3 columns on lg) */}
-                    <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 flex flex-col gap-4">
-                        
-                        {/* Properties Tabs */}
-                        <div className="grid grid-cols-3 gap-1 border-b border-slate-100 dark:border-slate-800 pb-2">
-                            <button
-                                type="button"
-                                onClick={() => setPropertiesTab('content')}
-                                className={cn(
-                                    "pb-1 text-xs font-bold transition-all text-center",
-                                    propertiesTab === 'content' ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-400 hover:text-slate-700"
-                                )}
-                            >
-                                Content
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setPropertiesTab('appearance')}
-                                className={cn(
-                                    "pb-1 text-xs font-bold transition-all text-center",
-                                    propertiesTab === 'appearance' ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-400 hover:text-slate-700"
-                                )}
-                            >
-                                Appearance
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setPropertiesTab('advanced')}
-                                className={cn(
-                                    "pb-1 text-xs font-bold transition-all text-center",
-                                    propertiesTab === 'advanced' ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-400 hover:text-slate-700"
-                                )}
-                            >
-                                Advanced
-                            </button>
-                        </div>
-
-                        {/* Selected Widget Header */}
-                        <div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                                Selected Widget
-                            </span>
-                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 mt-1">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                                        <Trophy className="w-4 h-4" />
+                            ) : (
+                                /* Generic / Database Widget Schema Controls */
+                                <div className="space-y-3.5 text-xs">
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                            Academic Period
+                                        </label>
+                                        <select
+                                            value={academicPeriod}
+                                            onChange={(e) => setAcademicPeriod(e.target.value)}
+                                            className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                                        >
+                                            <option>Current Semester (AY 2026-2027, 1st Sem)</option>
+                                            <option>Previous Semester (AY 2025-2026, 2nd Sem)</option>
+                                        </select>
                                     </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                                            {widgetTitle}
-                                        </h4>
-                                        <p className="text-[10px] text-slate-400">Faculty Leaderboard</p>
+
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                            Program Filter
+                                        </label>
+                                        <select
+                                            value={programFilter}
+                                            onChange={(e) => setProgramFilter(e.target.value)}
+                                            className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                                        >
+                                            <option>All Programs (College-Wide)</option>
+                                            <option>BSIT (Information Technology)</option>
+                                            <option>BSCS (Computer Science)</option>
+                                            <option>BSIS (Information Systems)</option>
+                                            <option>BLIS (Library & Info Science)</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                            Ranking Metric
+                                        </label>
+                                        <select
+                                            value={rankingMetric}
+                                            onChange={(e) => setRankingMetric(e.target.value)}
+                                            className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                                        >
+                                            <option>On-Time Submission Rate</option>
+                                            <option>Overall Compliance Rate</option>
+                                            <option>Teaching Performance Rating</option>
+                                            <option>Research Publication Points</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                            Maximum Entries
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            max={20}
+                                            value={maxEntries}
+                                            onChange={(e) => setMaxEntries(Number(e.target.value))}
+                                            className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                                        />
+                                    </div>
+
+                                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] text-slate-600 dark:text-slate-300">Show Percentage Gauge</span>
+                                            <ToggleSwitch checked={showPercentage} onChange={setShowPercentage} />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] text-slate-600 dark:text-slate-300">Show Program Tags</span>
+                                            <ToggleSwitch checked={showProgram} onChange={setShowProgram} />
+                                        </div>
                                     </div>
                                 </div>
-                                <button type="button" className="text-slate-400 hover:text-red-500">
-                                    <Trash2 className="w-3.5 h-3.5" />
+                            )}
+
+                            {/* Slot Navigation Buttons */}
+                            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        // Swap current slot occupant with next slot
+                                        alert(`Slot ${selectedSlotId} is active. Choose another widget from the left catalog to replace it.`);
+                                    }}
+                                    className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                >
+                                    <ArrowRightLeft className="w-3.5 h-3.5 text-amber-500" />
+                                    <span>Swap / Replace Widget</span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* Widget Content Form */}
-                        <div className="flex flex-col gap-3.5 text-xs">
-                            <span className="font-bold text-slate-800 dark:text-slate-200">
-                                Widget Content
-                            </span>
-
-                            {/* Title */}
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-slate-500">Title</label>
-                                <input
-                                    type="text"
-                                    value={widgetTitle}
-                                    onChange={(e) => setWidgetTitle(e.target.value)}
-                                    className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
-                                />
-                            </div>
-
-                            {/* Data Source */}
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-slate-500">Data Source</label>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button className="w-full flex items-center justify-between px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200">
-                                            <span>{dataSource}</span>
-                                            <ChevronDown className="w-3 h-3 text-slate-400" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" className="w-56">
-                                        <DropdownMenuItem onClick={() => setDataSource('Faculty Performance')}>Faculty Performance</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setDataSource('Program Performance')}>Program Performance</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setDataSource('Compliance Tracker')}>Compliance Tracker</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setDataSource('Tasks & Projects')}>Tasks & Projects</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setDataSource('Schedule & Monitoring')}>Schedule & Monitoring</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-
-                            {/* Academic Period */}
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-slate-500">Academic Period</label>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button className="w-full flex items-center justify-between px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200 truncate">
-                                            <span className="truncate">{academicPeriod}</span>
-                                            <ChevronDown className="w-3 h-3 text-slate-400 shrink-0 ml-1" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" className="w-64">
-                                        <DropdownMenuItem onClick={() => setAcademicPeriod('Current Semester (AY 2026-2027, 1st Sem)')}>Current Semester (AY 2026-2027, 1st Sem)</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setAcademicPeriod('Previous Semester (AY 2025-2026, 2nd Sem)')}>Previous Semester (AY 2025-2026, 2nd Sem)</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-
-                            {/* Program */}
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-slate-500">Program</label>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button className="w-full flex items-center justify-between px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200">
-                                            <span>{programFilter}</span>
-                                            <ChevronDown className="w-3 h-3 text-slate-400" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" className="w-48">
-                                        <DropdownMenuItem onClick={() => setProgramFilter('All Programs')}>All Programs</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setProgramFilter('BSIT')}>BSIT</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setProgramFilter('BSCS')}>BSCS</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setProgramFilter('BSIS')}>BSIS</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setProgramFilter('BLIS')}>BLIS</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-
-                            {/* Ranking Metric */}
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-slate-500">Ranking Metric</label>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button className="w-full flex items-center justify-between px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200">
-                                            <span>{rankingMetric}</span>
-                                            <ChevronDown className="w-3 h-3 text-slate-400" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" className="w-56">
-                                        <DropdownMenuItem onClick={() => setRankingMetric('On-Time Submission Rate')}>On-Time Submission Rate</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setRankingMetric('Verified Compliance Percentage')}>Verified Compliance Percentage</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setRankingMetric('Total Completed Outputs')}>Total Completed Outputs</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-
-                            {/* Maximum Entries */}
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-slate-500">Maximum Entries</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="15"
-                                    value={maxEntries}
-                                    onChange={(e) => setMaxEntries(Number(e.target.value))}
-                                    className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100"
-                                />
-                            </div>
-
-                            {/* Display Style Selector */}
-                            <div className="space-y-1.5 pt-1">
-                                <label className="text-[11px] font-semibold text-slate-500">Display Style</label>
-                                <div className="grid grid-cols-3 gap-1.5">
-                                    <button
-                                        type="button"
-                                        onClick={() => setDisplayStyle('list')}
-                                        className={cn(
-                                            "flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all",
-                                            displayStyle === 'list' ? "bg-blue-50 border-blue-500 text-blue-600 font-bold" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600"
-                                        )}
-                                    >
-                                        <ListFilter className="w-3.5 h-3.5 mb-1" />
-                                        <span className="text-[10px]">List</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setDisplayStyle('bars')}
-                                        className={cn(
-                                            "flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all",
-                                            displayStyle === 'bars' ? "bg-blue-50 border-blue-500 text-blue-600 font-bold" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600"
-                                        )}
-                                    >
-                                        <BarChart3 className="w-3.5 h-3.5 mb-1" />
-                                        <span className="text-[10px]">Bars</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setDisplayStyle('compact')}
-                                        className={cn(
-                                            "flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all",
-                                            displayStyle === 'compact' ? "bg-blue-50 border-blue-500 text-blue-600 font-bold" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600"
-                                        )}
-                                    >
-                                        <Layout className="w-3.5 h-3.5 mb-1" />
-                                        <span className="text-[10px]">Compact</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Toggles */}
-                            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[11px] text-slate-600 dark:text-slate-400">Show Rank Number</span>
-                                    <ToggleSwitch checked={showRankNumber} onChange={setShowRankNumber} />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[11px] text-slate-600 dark:text-slate-400">Show Program</span>
-                                    <ToggleSwitch checked={showProgram} onChange={setShowProgram} />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[11px] text-slate-600 dark:text-slate-400">Show Percentage</span>
-                                    <ToggleSwitch checked={showPercentage} onChange={setShowPercentage} />
-                                </div>
-                            </div>
-                        </div>
                     </div>
-                </div>
                 </div>
             </TvStudioLayout>
         </AppLayout>

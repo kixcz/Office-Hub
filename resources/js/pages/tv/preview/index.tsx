@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
@@ -22,7 +22,15 @@ import {
     Building2, 
     Megaphone, 
     Users, 
-    Clock 
+    Clock,
+    Lock,
+    Unlock,
+    WifiOff,
+    Check,
+    Layers,
+    Sliders,
+    Award,
+    QrCode
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -39,27 +47,64 @@ interface Slide {
     order: number;
     duration_seconds: number;
     config?: any;
+    is_spotlight?: boolean;
+}
+
+interface Device {
+    id: number;
+    name: string;
+    device_code: string;
+    audience_mode: string;
+    screen_resolution: string;
 }
 
 interface Props {
     slides: Slide[];
     total_slides: number;
     default_resolution: string;
+    devices?: Device[];
+    settings?: Record<string, string>;
 }
 
-export default function TvPreviewTestingPage({ slides, total_slides, default_resolution }: Props) {
+export default function TvPreviewTestingPage({ slides, total_slides, default_resolution, devices = [], settings = {} }: Props) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [aspectMode, setAspectMode] = useState<'16:9' | '4:3'>('16:9');
+    const [resolution, setResolution] = useState('1920 × 1080 (Full HD 16:9)');
+    const [mode, setMode] = useState<'internal' | 'public'>('internal');
+    const [simulateEmpty, setSimulateEmpty] = useState(false);
+    const [simulateOffline, setSimulateOffline] = useState(false);
+    const [countdown, setCountdown] = useState(15);
 
     const activeSlide = slides[currentIndex] || slides[0];
+    const duration = activeSlide?.duration_seconds || 15;
+
+    // Countdown and automatic rotation simulation
+    useEffect(() => {
+        if (!isPlaying || slides.length === 0) return;
+
+        setCountdown(duration);
+        const timer = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    setCurrentIndex((curr) => (curr + 1) % slides.length);
+                    return duration;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [isPlaying, currentIndex, duration, slides.length]);
 
     const handleNext = () => {
         setCurrentIndex((prev) => (prev + 1) % slides.length);
+        setCountdown(slides[(currentIndex + 1) % slides.length]?.duration_seconds || 15);
     };
 
     const handlePrev = () => {
         setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
+        setCountdown(slides[(currentIndex - 1 + slides.length) % slides.length]?.duration_seconds || 15);
     };
 
     return (
@@ -73,21 +118,35 @@ export default function TvPreviewTestingPage({ slides, total_slides, default_res
                         <div className="space-y-1">
                             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                                 <Eye className="w-4 h-4" />
-                                <span>Quality Assurance</span>
+                                <span>High-Fidelity QA & Simulation</span>
                             </div>
                             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                                High-Fidelity 16:9 TV Preview & Testing
+                                Live TV Display Preview & Testing
                             </h1>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
-                                Verify visual layout proportions, data source connectivity, and readability at authentic 4K/1080p TV resolution.
+                            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-3xl">
+                                Test playlist rotation, slide durations, resolution scaling, and privacy mode sanitation before publishing changes to physical display devices.
                             </p>
                         </div>
 
                         <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsPlaying(!isPlaying)}
+                                className={cn(
+                                    "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer",
+                                    isPlaying
+                                        ? "bg-rose-600 hover:bg-rose-500 text-white"
+                                        : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                                )}
+                            >
+                                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                                <span>{isPlaying ? 'Pause Playlist' : 'Preview Entire Playlist'}</span>
+                            </button>
+
                             <Link
                                 href="/tv-display"
                                 target="_blank"
-                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs sm:text-sm shadow-xs border border-amber-500/30 transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer"
                             >
                                 <ExternalLink className="w-4 h-4" />
                                 <span>Launch Actual Screen</span>
@@ -95,216 +154,245 @@ export default function TvPreviewTestingPage({ slides, total_slides, default_res
                         </div>
                     </div>
 
-                    {/* Simulation Controls Bar */}
+                    {/* Simulation Controls Toolbar */}
                     <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs flex flex-wrap items-center justify-between gap-4">
+                        {/* Playback & Step Controls */}
                         <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={handlePrev}
-                                className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setIsPlaying(!isPlaying)}
-                                className={cn(
-                                    "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors border",
-                                    isPlaying ? "bg-amber-100 border-amber-300 text-amber-900" : "bg-amber-400 hover:bg-amber-500 border-amber-500/40 text-slate-950 shadow-2xs"
-                                )}
-                            >
-                                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                                <span>{isPlaying ? 'Pause Rotation' : 'Auto Play'}</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleNext}
-                                className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                                <button
+                                    type="button"
+                                    onClick={handlePrev}
+                                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                                    title="Previous Slide"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsPlaying(!isPlaying)}
+                                    className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                                >
+                                    {isPlaying ? <Pause className="w-3.5 h-3.5 text-amber-500" /> : <Play className="w-3.5 h-3.5 text-emerald-500" />}
+                                    <span>{isPlaying ? 'Playing' : 'Paused'}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleNext}
+                                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                                    title="Next Slide"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
 
-                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-2">
+                            {/* Duration Countdown Pill */}
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                                <span>{countdown}s remaining</span>
+                            </div>
+
+                            <span className="text-xs text-slate-400 font-medium">
                                 Slide {currentIndex + 1} of {slides.length}
                             </span>
                         </div>
 
-                        <div className="flex items-center gap-4 text-xs font-semibold text-slate-500">
-                            <span className="hidden sm:inline">Simulated TV: <strong>Samsung QLED 75&quot; 4K UHD</strong></span>
-                            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                        {/* Testing Mode Filters */}
+                        <div className="flex flex-wrap items-center gap-3">
+                            {/* Privacy Mode: Internal vs Public */}
+                            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold">
                                 <button
                                     type="button"
-                                    onClick={() => setAspectMode('16:9')}
+                                    onClick={() => setMode('internal')}
                                     className={cn(
-                                        "px-2 py-0.5 rounded text-[11px] font-bold transition-colors",
-                                        aspectMode === '16:9' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs" : "text-slate-500"
+                                        "px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer",
+                                        mode === 'internal'
+                                            ? "bg-amber-500 text-slate-950 shadow-xs"
+                                            : "text-slate-500 hover:text-slate-800"
                                     )}
                                 >
-                                    16:9 Widescreen
+                                    <Lock className="w-3 h-3" />
+                                    <span>Internal Staff</span>
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setAspectMode('4:3')}
+                                    onClick={() => setMode('public')}
                                     className={cn(
-                                        "px-2 py-0.5 rounded text-[11px] font-bold transition-colors",
-                                        aspectMode === '4:3' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs" : "text-slate-500"
+                                        "px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer",
+                                        mode === 'public'
+                                            ? "bg-sky-500 text-white shadow-xs"
+                                            : "text-slate-500 hover:text-slate-800"
                                     )}
                                 >
-                                    4:3 Standard
+                                    <Unlock className="w-3 h-3" />
+                                    <span>Public Mode</span>
                                 </button>
                             </div>
+
+                            {/* Resolution Selector */}
+                            <select
+                                value={resolution}
+                                onChange={(e) => setResolution(e.target.value)}
+                                className="px-3 py-1.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800 border-0 rounded-xl text-slate-800 dark:text-slate-200"
+                            >
+                                <option>1920 × 1080 (Full HD 16:9)</option>
+                                <option>3840 × 2160 (4K UHD TV)</option>
+                                <option>1366 × 768 (Commercial Wall)</option>
+                            </select>
+
+                            {/* Simulation Toggles */}
+                            <button
+                                type="button"
+                                onClick={() => setSimulateEmpty(!simulateEmpty)}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer",
+                                    simulateEmpty
+                                        ? "bg-rose-500 text-white border-rose-600"
+                                        : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+                                )}
+                            >
+                                {simulateEmpty ? 'Empty Data: ON' : 'Empty Data: OFF'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setSimulateOffline(!simulateOffline)}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer",
+                                    simulateOffline
+                                        ? "bg-amber-500 text-slate-950 border-amber-600"
+                                        : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+                                )}
+                            >
+                                {simulateOffline ? 'Offline: SIMULATED' : 'Online State'}
+                            </button>
                         </div>
                     </div>
 
-                    {/* TV Monitor Bezel Container */}
-                    <div className="bg-slate-950 p-4 sm:p-8 rounded-3xl border-4 border-slate-800 shadow-2xl relative overflow-hidden flex flex-col items-center">
-                        {/* Monitor brand badge */}
-                        <div className="w-full flex items-center justify-between pb-3 text-slate-500 text-[10px] font-bold tracking-widest uppercase">
-                            <span>CIDS Smart TV Engine · Live Buffer</span>
-                            <span>HDMI-1 · 3840x2160 @ 60Hz</span>
-                        </div>
+                    {/* 16:9 Television Canvas Container */}
+                    <div className="relative aspect-video w-full rounded-2xl bg-slate-950 border-4 border-slate-800 shadow-2xl overflow-hidden flex flex-col justify-between p-6 text-white select-none">
+                        
+                        {/* Safe Margins Guide Overlay */}
+                        <div className="absolute inset-8 border border-dashed border-amber-400/20 pointer-events-none rounded-xl" />
 
-                        {/* 16:9 Virtual Display Screen */}
-                        <div
-                            className={cn(
-                                "w-full max-w-5xl rounded-xl overflow-hidden bg-slate-900 text-white relative shadow-inner border border-slate-700/60 transition-all flex flex-col justify-between",
-                                aspectMode === '16:9' ? "aspect-video" : "aspect-4/3 max-w-3xl"
-                            )}
-                        >
-                            {/* Slide Content Header Bar */}
-                            <div className="p-4 sm:p-6 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-between z-10">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white text-base shadow-sm">
-                                        CIDS
-                                    </div>
-                                    <div>
-                                        <h3 className="text-base sm:text-xl font-black text-white tracking-tight drop-shadow">
-                                            {activeSlide?.title || 'Slide Title'}
-                                        </h3>
-                                        <span className="text-xs text-blue-400 font-semibold tracking-wider uppercase">
-                                            Official Hallway Bulletin · {activeSlide?.type || 'General'}
+                        {/* Offline Simulator Warning */}
+                        {simulateOffline && (
+                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-1.5 rounded-full bg-rose-600 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-xl animate-pulse">
+                                <WifiOff className="w-3.5 h-3.5" />
+                                <span>Network Disconnected · Running Local Cached Slides</span>
+                            </div>
+                        )}
+
+                        {/* Television Header Chrome */}
+                        <div className="flex items-center justify-between pb-3 border-b border-white/10 z-10 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <img src="/CIDS_Logo.jpg" alt="CIDS" className="w-8 h-8 object-contain rounded" />
+                                <div>
+                                    <div className="text-base font-black tracking-tight text-white flex items-center gap-1.5">
+                                        <span>CIDS</span>
+                                        <span className="text-amber-400">OfficeHub</span>
+                                        <span>TV</span>
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 uppercase font-black tracking-widest ml-1">
+                                            LIVE
                                         </span>
                                     </div>
-                                </div>
-
-                                <div className="text-right">
-                                    <div className="text-lg sm:text-2xl font-black tabular-nums tracking-tight">
-                                        10:45 AM
-                                    </div>
-                                    <div className="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">
-                                        Wednesday, Oct 14
+                                    <div className="text-[9px] text-slate-400 font-medium tracking-wide">
+                                        COLLEGE OF INFORMATION AND DIGITAL SCIENCES
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Middle Body Rendering based on slide type */}
-                            <div className="p-6 sm:p-10 flex-1 flex flex-col justify-center items-center text-center space-y-4">
-                                {activeSlide?.type?.includes('schedule') ? (
-                                    <div className="w-full max-w-2xl bg-slate-800/80 rounded-2xl border border-slate-700 p-6 space-y-4 text-left">
-                                        <div className="flex items-center justify-between text-xs font-bold text-emerald-400 uppercase">
-                                            <span>Current Active Classes</span>
-                                            <span>Room 304 & 305</span>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 flex justify-between">
-                                                <span className="font-bold text-white text-sm">BSIT 3-A · Advanced Database Systems</span>
-                                                <span className="text-blue-400 text-xs font-semibold">10:00 AM - 12:00 PM</span>
-                                            </div>
-                                            <div className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 flex justify-between">
-                                                <span className="font-bold text-white text-sm">BSCS 2-B · Data Structures & Algorithms</span>
-                                                <span className="text-blue-400 text-xs font-semibold">10:30 AM - 01:30 PM</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : activeSlide?.type?.includes('leaderboard') || activeSlide?.type?.includes('faculty') ? (
-                                    <div className="w-full max-w-2xl bg-slate-800/80 rounded-2xl border border-slate-700 p-6 space-y-4">
-                                        <div className="text-amber-400 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5">
-                                            <Trophy className="w-4 h-4" />
-                                            <span>Outstanding Faculty Teaching Evaluations</span>
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-3 pt-2">
-                                            <div className="p-4 bg-slate-900 rounded-xl border border-slate-800">
-                                                <span className="text-xl font-black text-amber-400">96.2%</span>
-                                                <p className="text-xs font-bold text-white mt-1">Prof. Arnel Reyes</p>
-                                                <span className="text-[10px] text-slate-400">BSIS Dept</span>
-                                            </div>
-                                            <div className="p-4 bg-slate-900 rounded-xl border border-slate-800">
-                                                <span className="text-xl font-black text-slate-300">89.1%</span>
-                                                <p className="text-xs font-bold text-white mt-1">Prof. Peter Parker</p>
-                                                <span className="text-[10px] text-slate-400">BSIT Dept</span>
-                                            </div>
-                                            <div className="p-4 bg-slate-900 rounded-xl border border-slate-800">
-                                                <span className="text-xl font-black text-amber-600">76.3%</span>
-                                                <p className="text-xs font-bold text-white mt-1">Prof. Cristina Lopez</p>
-                                                <span className="text-[10px] text-slate-400">BLIS Dept</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="max-w-xl space-y-3">
-                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-bold uppercase tracking-wider">
-                                            <span>Campus Bulletin Announcement</span>
-                                        </div>
-                                        <h2 className="text-2xl sm:text-3xl font-black text-white">
-                                            {activeSlide?.title}
-                                        </h2>
-                                        <p className="text-sm text-slate-300 leading-relaxed font-normal">
-                                            College of Information and Digital Sciences announcement details broadcasted across lobby displays.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Bottom Ticker / Progress Bar */}
-                            <div className="p-4 bg-black/60 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                                <span>Slide {currentIndex + 1} of {slides.length}</span>
-                                <div className="w-1/2 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-blue-500 transition-all duration-300"
-                                        style={{ width: `${((currentIndex + 1) / slides.length) * 100}%` }}
-                                    />
+                            <div className="text-right">
+                                <div className="text-xs font-bold text-slate-200">
+                                    AY 2026-2027, 1st Semester ❯
                                 </div>
-                                <span className="font-semibold text-slate-300">{activeSlide?.duration_seconds || 15}s Duration</span>
+                                <div className="text-[10px] text-slate-400 font-mono">
+                                    Tuesday, October 17, 2026 11:32 AM
+                                </div>
                             </div>
                         </div>
 
-                        {/* Stand Base */}
-                        <div className="w-32 h-3 bg-slate-700 rounded-b-xl mt-3" />
-                    </div>
+                        {/* Interactive Main Canvas Area */}
+                        <div className="flex-1 my-3 flex flex-col justify-center items-center z-10">
+                            {simulateEmpty ? (
+                                <div className="text-center space-y-2 p-8 max-w-md">
+                                    <AlertCircle className="w-12 h-12 text-slate-600 mx-auto" />
+                                    <h3 className="text-lg font-bold text-slate-300">No Current Records Found</h3>
+                                    <p className="text-xs text-slate-500">
+                                        The TV display gracefully handles empty queries with an institutional fallback announcement or QR scan target.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="w-full h-full flex flex-col justify-between">
+                                    {/* Active Slide Rendering Placeholder */}
+                                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex-1 flex flex-col justify-between">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-black uppercase tracking-wider text-amber-400">
+                                                {activeSlide?.title || 'Slide Title'}
+                                            </span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-bold">
+                                                {mode === 'public' ? 'Sanitized Public Mode (No Faculty Personal Names)' : 'Internal Staff Detailed Mode'}
+                                            </span>
+                                        </div>
 
-                    {/* Pre-flight Validation Checklist */}
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-2xs space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                                Pre-flight Display Validation
-                            </h3>
-                            <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> All Checks Passed
-                            </span>
+                                        <div className="grid grid-cols-3 gap-4 my-auto">
+                                            <div className="p-4 rounded-xl bg-slate-900 border border-white/10 space-y-1">
+                                                <span className="text-[10px] text-slate-400 uppercase font-bold">Primary Data Stream</span>
+                                                <h4 className="text-sm font-bold text-white">{activeSlide?.type}</h4>
+                                                <p className="text-[11px] text-slate-400">
+                                                    {mode === 'public'
+                                                        ? 'Faculty names aggregated to program-level metrics only.'
+                                                        : 'Displaying complete faculty names, individual submissions & room allocations.'}
+                                                </p>
+                                            </div>
+
+                                            <div className="p-4 rounded-xl bg-slate-900 border border-white/10 space-y-1">
+                                                <span className="text-[10px] text-slate-400 uppercase font-bold">Compliance Status</span>
+                                                <div className="text-2xl font-black text-emerald-400">82.5%</div>
+                                                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                                    <div className="w-4/5 h-full bg-emerald-500" />
+                                                </div>
+                                            </div>
+
+                                            <div className="p-4 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between gap-3">
+                                                <div>
+                                                    <span className="text-[10px] text-slate-400 uppercase font-bold">Scan for Details</span>
+                                                    <p className="text-[10px] text-slate-300 mt-1">Scan from your seat</p>
+                                                </div>
+                                                <div className="w-12 h-12 rounded bg-white/15 p-1 flex items-center justify-center text-xs font-bold text-amber-400 border border-white/20">
+                                                    <QrCode className="w-8 h-8" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between text-[10px] text-slate-500 pt-2 border-t border-white/10">
+                                            <span>Slide Duration: {duration}s</span>
+                                            <span>Resolution Scale: {resolution.split(' ')[0]}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-start gap-2.5">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                                <div>
-                                    <span className="font-bold text-slate-900 dark:text-white block">16:9 Aspect Ratio</span>
-                                    <span className="text-slate-500 dark:text-slate-400">No distortion or content clipping detected</span>
-                                </div>
+                        {/* Television Footer Chrome */}
+                        <div className="flex items-center justify-between pt-3 border-t border-white/10 z-10 text-xs text-slate-400 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                                <span>Live TV rotation · <strong>CIDS OfficeHub</strong></span>
+                                <span className="text-slate-600">|</span>
+                                <span className="text-slate-300 font-semibold">{activeSlide?.title}</span>
                             </div>
 
-                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-start gap-2.5">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                                <div>
-                                    <span className="font-bold text-slate-900 dark:text-white block">Data Source Connectivity</span>
-                                    <span className="text-slate-500 dark:text-slate-400">Schedule DB and Faculty API synced</span>
-                                </div>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-start gap-2.5">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                                <div>
-                                    <span className="font-bold text-slate-900 dark:text-white block">Readability Distance</span>
-                                    <span className="text-slate-500 dark:text-slate-400">Font sizes meet 10-foot viewing threshold</span>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1">
+                                    {slides.map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className={cn(
+                                                "h-1.5 rounded-full transition-all",
+                                                i === currentIndex ? "w-8 bg-amber-400" : "w-2 bg-white/20"
+                                            )}
+                                        />
+                                    ))}
                                 </div>
                             </div>
                         </div>

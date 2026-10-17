@@ -14,6 +14,7 @@ use App\Models\RoomSchedule;
 use App\Models\SpotlightSlide;
 use App\Models\Submission;
 use App\Models\Task;
+use App\Models\TvDevice;
 use App\Models\TvSetting;
 use App\Models\TvSlide;
 use App\Services\ComplianceService;
@@ -25,15 +26,53 @@ use Inertia\Inertia;
 
 class TvDisplayController extends Controller
 {
-    public function index()
+    public function index($displayId = null)
     {
         ComplianceService::syncPendingSubmissions();
 
         $now = Carbon::now();
         $today = $now->format('Y-m-d');
 
-        // 1. Settings & Playlist
-        $settings = TvSetting::pluck('value', 'key')->toArray();
+        // 1. Device and Settings resolution
+        $device = null;
+        if ($displayId) {
+            $device = TvDevice::where('id', $displayId)->orWhere('device_code', $displayId)->first();
+        }
+        if (! $device) {
+            $device = TvDevice::first();
+        }
+
+        if ($device) {
+            $device->update(['last_ping_at' => $now, 'is_online' => true]);
+        }
+
+        $globalSettings = TvSetting::pluck('value', 'key')->toArray();
+
+        // Overlay device settings on top of global settings
+        $settings = array_merge($globalSettings, [
+            'display_id' => $device ? $device->id : null,
+            'device_code' => $device ? $device->device_code : 'CIDS-MAIN',
+            'display_name' => $device ? $device->name : ($globalSettings['display_name'] ?? 'CIDS Office TV'),
+            'location' => $device ? $device->location : "Dean's Office",
+            'audience_mode' => $device ? $device->audience_mode : ($globalSettings['audience_mode'] ?? 'internal'),
+            'screen_resolution' => $device ? $device->screen_resolution : ($globalSettings['screen_resolution'] ?? '1920x1080'),
+            'safe_area_margin' => $device ? $device->safe_area_margin : ($globalSettings['safe_area_margin'] ?? 'normal'),
+            'refresh_interval' => (string) ($device ? $device->refresh_interval_seconds : ($globalSettings['refresh_interval'] ?? 60)),
+            'slide_duration' => (string) ($device ? $device->default_slide_duration : ($globalSettings['slide_duration'] ?? 15)),
+            'transition_speed' => $device ? $device->transition_type : ($globalSettings['transition_speed'] ?? 'fade'),
+            'fullscreen_mode' => $device ? ($device->fullscreen_mode ? '1' : '0') : ($globalSettings['fullscreen_mode'] ?? '1'),
+            'auto_rotate' => $device ? ($device->auto_rotate ? '1' : '0') : ($globalSettings['auto_rotate'] ?? '1'),
+            'show_header' => $device ? ($device->show_header ? '1' : '0') : ($globalSettings['show_header'] ?? '1'),
+            'show_footer' => $device ? ($device->show_footer ? '1' : '0') : ($globalSettings['show_footer'] ?? '1'),
+            'show_clock' => $device ? ($device->show_clock ? '1' : '0') : ($globalSettings['show_clock'] ?? '1'),
+            'show_slide_title' => $device ? ($device->show_slide_title ? '1' : '0') : ($globalSettings['show_slide_title'] ?? '1'),
+            'show_status_labels' => $device ? ($device->show_status_labels ? '1' : '0') : ($globalSettings['show_status_labels'] ?? '1'),
+            'allow_manual_controls' => $device ? ($device->allow_manual_controls ? '1' : '0') : ($globalSettings['allow_manual_controls'] ?? '1'),
+            'auto_launch_on_refresh' => $device ? ($device->auto_launch_on_refresh ? '1' : '0') : ($globalSettings['auto_launch_on_refresh'] ?? '1'),
+            'fallback_screen' => $device ? $device->fallback_screen : ($globalSettings['fallback_screen'] ?? 'logo_welcome'),
+            'emergency_takeover_enabled' => $device ? ($device->emergency_takeover_enabled ? '1' : '0') : ($globalSettings['emergency_takeover_enabled'] ?? '1'),
+        ]);
+
         $baseSlides = TvSlide::where('is_active', true)->orderBy('order')->get();
 
         // 2. Fetch published and active Spotlight Slides (Recognition & Celebrations)

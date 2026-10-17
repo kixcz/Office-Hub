@@ -41,7 +41,8 @@ Route::get('/', function () {
 
 // TV Access by Code (Guest or Auth allowed)
 Route::post('/tv-display/verify-code', [SettingController::class, 'verifyCode'])->name('tv-display.verify-code');
-Route::get('/tv-display', [TvDisplayController::class, 'index'])->name('tv-display');
+Route::get('/tv-display/{displayId?}', [TvDisplayController::class, 'index'])->name('tv-display');
+Route::get('/tv/display/{displayId?}', [TvDisplayController::class, 'index'])->name('tv.display');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -149,6 +150,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('preview', [TvStudioController::class, 'preview'])->name('preview.index');
         Route::get('history', [TvStudioController::class, 'history'])->name('history.index');
+        Route::post('history/{id}/rollback', [TvStudioController::class, 'rollback'])->name('history.rollback');
     });
 
     // Classroom Monitoring

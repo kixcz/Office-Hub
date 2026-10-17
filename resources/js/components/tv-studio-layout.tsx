@@ -58,7 +58,7 @@ export const TV_STUDIO_NAV_GROUPS: TvStudioNavGroup[] = [
     {
         title: 'SLIDE DESIGN',
         items: [
-            { id: 'builder', title: 'Visual Slide Builder', url: '/tv-config/slides/builder', icon: Paintbrush },
+            { id: 'builder', title: 'Slide Composer', url: '/tv-config/slides/builder', icon: Paintbrush },
             { id: 'widgets', title: 'Widget Library', url: '/tv-config/widgets', icon: Component },
         ],
     },
