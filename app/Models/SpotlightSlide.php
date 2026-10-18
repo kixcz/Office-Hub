@@ -25,6 +25,8 @@ class SpotlightSlide extends Model
         'group_photo_fit',
         'group_photo_focal',
         'group_photo_overlay',
+        'collage_style',
+        'collage_photos',
         'supporting_media', // json list of supporting context media
         'headline',
         'message',
@@ -57,6 +59,7 @@ class SpotlightSlide extends Model
         'effective_photo_url',
         'effective_group_photo_url',
         'effective_honorees_list',
+        'effective_collage_photos',
     ];
 
     public function faculty(): BelongsTo
@@ -191,10 +194,35 @@ class SpotlightSlide extends Model
         return [];
     }
 
+    public function getEffectiveCollagePhotosAttribute(): array
+    {
+        if (! empty($this->collage_photos) && is_array($this->collage_photos)) {
+            return array_map(function ($cp) {
+                $path = $cp['path'] ?? $cp['url'] ?? null;
+                $url = $path;
+                if ($path && ! str_starts_with($path, 'http://') && ! str_starts_with($path, 'https://') && ! str_starts_with($path, '/')) {
+                    $url = asset('storage/'.$path);
+                }
+
+                return [
+                    'id' => $cp['id'] ?? uniqid(),
+                    'path' => $path,
+                    'url' => $url,
+                    'caption' => $cp['caption'] ?? '',
+                    'fit' => $cp['fit'] ?? 'cover',
+                    'is_primary' => ! empty($cp['is_primary']),
+                ];
+            }, $this->collage_photos);
+        }
+
+        return [];
+    }
+
     protected function casts(): array
     {
         return [
             'honorees' => 'array',
+            'collage_photos' => 'array',
             'supporting_media' => 'array',
             'group_photo_overlay' => 'boolean',
             'event_date' => 'date',

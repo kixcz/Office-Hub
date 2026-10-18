@@ -575,7 +575,7 @@ export default function GenerateFacultyPerformanceReport({
                                         className="h-10 px-3 text-xs font-semibold rounded-xl border border-border bg-card text-foreground w-full cursor-pointer"
                                     >
                                         <option value="Dr. Elena P. Villanueva">Dr. Elena P. Villanueva</option>
-                                        <option value="Dr. Ana Reyes">Dr. Ana Reyes</option>
+                                        <option value="Dr. Ramon Santos, PECE">Dr. Ramon Santos, PECE</option>
                                         <option value="College Dean">College Dean</option>
                                     </select>
                                     <input

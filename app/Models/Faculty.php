@@ -182,6 +182,21 @@ class Faculty extends Model
         return $this->hasMany(SpotlightSlide::class);
     }
 
+    public function credits()
+    {
+        return $this->hasMany(FacultyCredit::class);
+    }
+
+    public function facultyCredits()
+    {
+        return $this->hasMany(FacultyCredit::class);
+    }
+
+    public function workloads()
+    {
+        return $this->hasMany(FacultyWorkload::class);
+    }
+
     protected function casts(): array
     {
         return [

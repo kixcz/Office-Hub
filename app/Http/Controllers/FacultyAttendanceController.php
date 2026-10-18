@@ -35,7 +35,7 @@ class FacultyAttendanceController extends Controller
         $selectedInstructor = $request->query('instructor');
         $selectedStatus = $request->query('status');
         $selectedPeriod = $request->query('period', 'August 2026');
-        $selectedWeek = $request->query('week', 'August 10 – 14, 2026 (Week 2)');
+        $selectedWeek = $request->query('week', 'August 10-14, 2026');
         $search = $request->query('search', '');
 
         // Available periods ordered chronologically

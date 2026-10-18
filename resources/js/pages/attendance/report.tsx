@@ -187,32 +187,35 @@ export default function GenerateReportPage({
     });
 
     // 5. Configurable Signatories
-    const [signatoriesList, setSignatoriesList] = useState<SignatoryItem[]>([
-        {
-            id: 'sig-1',
-            label: 'Prepared by',
-            name: 'Juan Dela Cruz',
-            designation: 'Monitoring Coordinator',
-            department: 'Faculty Attendance Unit',
-            showSignatureLine: true,
-        },
-        {
-            id: 'sig-2',
-            label: 'Verified by',
-            name: 'Maria Santos',
-            designation: 'Program Chair',
-            department: 'BS Information Technology',
-            showSignatureLine: true,
-        },
-        {
-            id: 'sig-3',
-            label: 'Noted by',
-            name: 'Dr. Ana Reyes',
-            designation: 'College Dean',
-            department: 'College of Information and Digital Sciences',
-            showSignatureLine: true,
-        },
-    ]);
+    const [signatoriesList, setSignatoriesList] = useState<SignatoryItem[]>(() => {
+        const programChair = faculties.find(f => f.academic_rank?.toLowerCase().includes('chair') || f.academic_rank?.toLowerCase().includes('associate')) || faculties[0];
+        return [
+            {
+                id: 'sig-1',
+                label: 'Prepared by',
+                name: 'Faculty Attendance Coordinator',
+                designation: 'Monitoring Coordinator',
+                department: 'Faculty Attendance Unit',
+                showSignatureLine: true,
+            },
+            {
+                id: 'sig-2',
+                label: 'Verified by',
+                name: programChair ? `${programChair.first_name} ${programChair.last_name}` : 'Program Chairperson',
+                designation: 'Program Chairperson',
+                department: programChair?.program?.name || 'Department Academic Unit',
+                showSignatureLine: true,
+            },
+            {
+                id: 'sig-3',
+                label: 'Noted by',
+                name: 'Dr. Ramon Santos, PECE',
+                designation: 'College Dean',
+                department: 'College of Information and Communications Technology',
+                showSignatureLine: true,
+            },
+        ];
+    });
 
     // 6. Inline / Modal Faculty Name Editing state
     const [customFacultyNames, setCustomFacultyNames] = useState<Record<string, string>>({});

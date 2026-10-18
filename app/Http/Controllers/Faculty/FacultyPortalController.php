@@ -413,6 +413,31 @@ class FacultyPortalController extends Controller
         $faculty = $this->resolveFaculty($request);
         $calendarData = CalendarController::getCalendarData();
 
+        // Include personal events created by this faculty
+        $personalEvents = Activity::where('faculty_id', $faculty?->id)
+            ->get()
+            ->map(function ($a) {
+                return [
+                    'id' => 'personal_'.$a->id,
+                    'raw_id' => $a->id,
+                    'type' => 'personal',
+                    'title' => $a->title,
+                    'date' => Carbon::parse($a->date)->format('Y-m-d'),
+                    'start_time' => Carbon::parse($a->start_time)->format('h:i A'),
+                    'end_time' => Carbon::parse($a->end_time)->format('h:i A'),
+                    'venue' => $a->venue ?: 'Personal',
+                    'status' => $a->status ?: 'Confirmed',
+                    'program' => 'Personal',
+                    'program_id' => null,
+                    'description' => $a->description,
+                    'is_personal' => true,
+                ];
+            });
+
+        // Merge personal events with institutional events
+        $allEvents = $calendarData['events']->concat($personalEvents);
+        $calendarData['events'] = $allEvents;
+
         // Also add faculty's teaching schedule to events
         $fullName = $faculty ? "{$faculty->first_name} {$faculty->last_name}" : '';
         $schedules = RoomSchedule::query()
@@ -430,7 +455,65 @@ class FacultyPortalController extends Controller
             'faculty' => $faculty,
             'calendarData' => $calendarData,
             'schedules' => $schedules,
+            'defaultDate' => '2026-10-12',
         ]);
+    }
+
+    /**
+     * Store a personal calendar event for faculty
+     */
+    public function storePersonalEvent(Request $request): RedirectResponse
+    {
+        $faculty = $this->resolveFaculty($request);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'date' => 'required|date',
+            'start_time' => 'required',
+            'end_time' => 'required',
+            'venue' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'category' => 'nullable|string|max:100',
+        ]);
+
+        $start = Carbon::parse($validated['start_time'])->format('H:i:s');
+        $end = Carbon::parse($validated['end_time'])->format('H:i:s');
+
+        Activity::create([
+            'title' => $validated['title'],
+            'category' => $validated['category'] ?: 'Personal Event',
+            'date' => $validated['date'],
+            'start_time' => $start,
+            'end_time' => $end,
+            'venue' => $validated['venue'] ?: 'Personal / Office',
+            'description' => $validated['description'],
+            'status' => 'Confirmed',
+            'visibility' => 'Private',
+            'program_id' => $faculty?->program_id,
+            'faculty_id' => $faculty?->id,
+        ]);
+
+        return redirect()->back()->with('success', 'Personal event added to your calendar.');
+    }
+
+    /**
+     * Delete a personal calendar event for faculty
+     */
+    public function destroyPersonalEvent(Request $request, int $id): RedirectResponse
+    {
+        $faculty = $this->resolveFaculty($request);
+
+        $event = Activity::where('id', $id)
+            ->where('faculty_id', $faculty?->id)
+            ->first();
+
+        if ($event) {
+            $event->delete();
+
+            return redirect()->back()->with('success', 'Personal event deleted.');
+        }
+
+        return redirect()->back()->with('error', 'Event not found or cannot be deleted.');
     }
 
     /**
@@ -504,26 +587,165 @@ class FacultyPortalController extends Controller
     }
 
     /**
-     * 6. My Attendance
+     * 6. My Attendance (Matches Faculty Attendance Super Admin Module)
      */
     public function attendance(Request $request): Response
     {
         $faculty = $this->resolveFaculty($request);
 
-        $attendances = $faculty ? FacultyAttendance::where(function ($q) use ($faculty) {
-            $q->where('faculty_id', $faculty->id)
-                ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
-        })->orderByDesc('session_date')->paginate(15) : collect();
+        // Filter options: 'weekly' or 'monthly'
+        $viewType = $request->query('view_type', 'weekly'); // 'weekly' or 'monthly'
 
-        $summary = $faculty ? FacultyAttendanceSummary::where(function ($q) use ($faculty) {
-            $q->where('faculty_id', $faculty->id)
-                ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
-        })->first() : null;
+        // Monthly periods available
+        $monthOrder = [
+            'August 2026' => 1,
+            'September 2026' => 2,
+            'October 2026' => 3,
+            'November 2026' => 4,
+            'December 2026' => 5,
+            'January 2027' => 6,
+        ];
+
+        $monthlyPeriods = FacultyAttendanceSummary::where('period_type', 'monthly')
+            ->pluck('period_label')
+            ->unique()
+            ->sortBy(fn ($label) => $monthOrder[$label] ?? 99)
+            ->values();
+
+        if ($monthlyPeriods->isEmpty()) {
+            $monthlyPeriods = collect(['August 2026', 'September 2026', 'October 2026', 'November 2026', 'December 2026']);
+        }
+
+        // Weekly periods available - prioritize this faculty member's recorded weeks first
+        $facultyWeekQuery = FacultyAttendance::query();
+        if ($faculty) {
+            $facultyWeekQuery->where(function ($q) use ($faculty) {
+                $q->where('faculty_id', $faculty->id)
+                    ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
+            });
+        }
+        $facultyWeeks = $facultyWeekQuery->pluck('week_label')->filter()->unique()->values();
+
+        $allWeeklyPeriods = FacultyAttendanceSummary::where('period_type', 'weekly')
+            ->pluck('period_label')
+            ->concat(FacultyAttendance::pluck('week_label'))
+            ->unique()
+            ->filter(fn ($label) => ! empty($label) && ! preg_match('/\(\d{5}\)/', $label))
+            ->values();
+
+        // Merge so the faculty's weeks appear first
+        $weeklyPeriods = $facultyWeeks->concat($allWeeklyPeriods)->unique()->values();
+
+        if ($weeklyPeriods->isEmpty()) {
+            $weeklyPeriods = collect(['August 10-14, 2026', 'August 17-21, 2026', 'August 24-28, 2026']);
+        }
+
+        // Default week to 'all' as requested by the user, or specific week if provided
+        $selectedWeek = $request->query('week', 'all');
+        $selectedMonth = $request->query('month', 'all');
+        $selectedStatus = $request->query('status', 'all');
+
+        // Sessions Query
+        $sessionsQuery = FacultyAttendance::query();
+        if ($faculty) {
+            $sessionsQuery->where(function ($q) use ($faculty) {
+                $q->where('faculty_id', $faculty->id)
+                    ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
+            });
+        }
+
+        if ($viewType === 'weekly' && $selectedWeek && $selectedWeek !== 'all') {
+            $sessionsQuery->where('week_label', $selectedWeek);
+        } elseif ($viewType === 'monthly' && $selectedMonth && $selectedMonth !== 'all') {
+            // If month filtering is active, filter session dates by that month/year
+            try {
+                $carbonMonth = Carbon::parse($selectedMonth);
+                $sessionsQuery->whereYear('session_date', $carbonMonth->year)
+                    ->whereMonth('session_date', $carbonMonth->month);
+            } catch (\Exception) {
+                // If parse fails, attempt substring matching
+                $monthWord = explode(' ', $selectedMonth)[0] ?? '';
+                if ($monthWord) {
+                    $sessionsQuery->where('week_label', 'like', "%{$monthWord}%");
+                }
+            }
+        }
+
+        if ($selectedStatus && $selectedStatus !== 'all') {
+            $sessionsQuery->where('status', strtolower($selectedStatus));
+        }
+
+        $sessions = $sessionsQuery->orderBy('session_date')
+            ->orderBy('time_slot')
+            ->get();
+
+        // Summaries Query (Monthly or Weekly)
+        $summary = null;
+        if ($viewType === 'weekly' && $selectedWeek !== 'all') {
+            $summaryQuery = FacultyAttendanceSummary::query()->where('period_type', 'weekly')->where('period_label', $selectedWeek);
+            if ($faculty) {
+                $summaryQuery->where(function ($q) use ($faculty) {
+                    $q->where('faculty_id', $faculty->id)
+                        ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
+                });
+            }
+            $summary = $summaryQuery->first();
+        } elseif ($viewType === 'monthly' && $selectedMonth !== 'all') {
+            $summaryQuery = FacultyAttendanceSummary::query()->where('period_type', 'monthly')->where('period_label', $selectedMonth);
+            if ($faculty) {
+                $summaryQuery->where(function ($q) use ($faculty) {
+                    $q->where('faculty_id', $faculty->id)
+                        ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
+                });
+            }
+            $summary = $summaryQuery->first();
+        }
+
+        // If no pre-computed summary exists or 'all' is selected, compute dynamically from matched sessions
+        if (! $summary) {
+            $scheduled = $sessions->count();
+            $present = $sessions->filter(fn ($s) => in_array(strtolower($s->status), ['present', 'online']))->count();
+            $late = $sessions->filter(fn ($s) => strtolower($s->status) === 'late')->count();
+            $absent = $sessions->filter(fn ($s) => strtolower($s->status) === 'absent')->count();
+            $lateMinutes = $sessions->sum('late_minutes');
+            $rate = $scheduled > 0 ? round((($present + $late) / $scheduled) * 100, 1) : 100.0;
+
+            $summary = (object) [
+                'scheduled_sessions' => $scheduled,
+                'present_count' => $present,
+                'late_count' => $late,
+                'absent_count' => $absent,
+                'total_late_minutes' => $lateMinutes,
+                'attendance_rate' => $rate,
+            ];
+        }
+
+        // All monthly summaries for the faculty member (for Monthly Matrix view)
+        $monthlySummaries = FacultyAttendanceSummary::query()
+            ->where('period_type', 'monthly')
+            ->when($faculty, function ($q) use ($faculty) {
+                $q->where(function ($sub) use ($faculty) {
+                    $sub->where('faculty_id', $faculty->id)
+                        ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
+                });
+            })
+            ->get();
 
         return Inertia::render('faculty/attendance', [
             'faculty' => $faculty,
-            'attendances' => $attendances,
+            'sessions' => $sessions,
             'summary' => $summary,
+            'monthlySummaries' => $monthlySummaries,
+            'monthlyPeriods' => $monthlyPeriods,
+            'weeklyPeriods' => $weeklyPeriods,
+            'filters' => [
+                'view_type' => $viewType,
+                'month' => $selectedMonth,
+                'week' => $selectedWeek,
+                'status' => $selectedStatus,
+            ],
+            'academic_year' => 'AY 2026–2027',
+            'semester' => '1st Semester',
         ]);
     }
 
@@ -1714,14 +1936,177 @@ class FacultyPortalController extends Controller
     }
 
     /**
-     * 17. Notifications
+     * 18. Faculty Workload View & Official Form PDF Generator
      */
-    public function notifications(Request $request): Response
+    public function workload(Request $request): Response
     {
         $faculty = $this->resolveFaculty($request);
+        $currentPeriod = AcademicPeriod::current() ?? AcademicPeriod::first();
 
-        return Inertia::render('faculty/notifications', [
+        $assignments = RoomSchedule::query()
+            ->where(function ($q) use ($faculty) {
+                if ($faculty) {
+                    $q->where('faculty_id', $faculty->id)
+                        ->orWhere('instructor', 'like', "%{$faculty->last_name}%");
+                }
+            })
+            ->get();
+
+        $teachingUnits = $assignments->count() * 3.0;
+        $teachingHours = $assignments->count() * 3.0;
+
+        $credits = FacultyCredit::where('faculty_id', $faculty ? $faculty->id : 0)
+            ->where('academic_period_id', $currentPeriod ? $currentPeriod->id : null)
+            ->get();
+        $designationCredits = (float) ($credits->filter(fn ($c) => stripos($c->category, 'Designation') !== false || stripos($c->category, 'Head') !== false)->sum('credited_units') ?: ($faculty && $faculty->designation ? 3.0 : 0.0));
+        $researchCredits = (float) $credits->filter(fn ($c) => stripos($c->category, 'Research') !== false)->sum('credited_units');
+        $extensionCredits = (float) $credits->filter(fn ($c) => stripos($c->category, 'Extension') !== false)->sum('credited_units');
+        $administrativeCredits = (float) $credits->filter(fn ($c) => stripos($c->category, 'Admin') !== false || stripos($c->category, 'Coordinator') !== false)->sum('credited_units');
+
+        $totalWorkload = $teachingUnits + $designationCredits + $researchCredits + $extensionCredits + $administrativeCredits;
+
+        $workloadRecord = FacultyWorkload::where('faculty_id', $faculty ? $faculty->id : 0)
+            ->where('academic_period_id', $currentPeriod ? $currentPeriod->id : null)
+            ->first();
+
+        return Inertia::render('faculty/workload', [
             'faculty' => $faculty,
+            'currentPeriod' => $currentPeriod,
+            'assignments' => $assignments,
+            'teachingUnits' => $teachingUnits,
+            'teachingHours' => $teachingHours,
+            'designationCredits' => $designationCredits,
+            'researchCredits' => $researchCredits,
+            'extensionCredits' => $extensionCredits,
+            'administrativeCredits' => $administrativeCredits,
+            'totalWorkload' => $totalWorkload,
+            'isLocked' => $workloadRecord ? $workloadRecord->is_locked : false,
+            'documentVersion' => $workloadRecord ? $workloadRecord->document_version : 'v1.0',
         ]);
+    }
+
+    /**
+     * 19. Faculty Make-Up Classes List & Submission
+     */
+    public function makeUpClasses(Request $request): Response
+    {
+        $faculty = $this->resolveFaculty($request);
+        $currentPeriod = AcademicPeriod::current() ?? AcademicPeriod::first();
+
+        $requests = MakeUpClassRequest::where('faculty_id', $faculty ? $faculty->id : 0)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $myOfferings = RoomSchedule::query()
+            ->where(function ($q) use ($faculty) {
+                if ($faculty) {
+                    $q->where('faculty_id', $faculty->id)
+                        ->orWhere('instructor', 'like', "%{$faculty->last_name}%");
+                }
+            })
+            ->get();
+
+        $rooms = RoomSchedule::select('room_name')->distinct()->whereNotNull('room_name')->pluck('room_name');
+
+        return Inertia::render('faculty/make-up-classes', [
+            'faculty' => $faculty,
+            'currentPeriod' => $currentPeriod,
+            'requests' => $requests,
+            'myOfferings' => $myOfferings,
+            'rooms' => $rooms,
+        ]);
+    }
+
+    /**
+     * Submit a Make-Up Class Request
+     */
+    public function storeMakeUpClass(Request $request): RedirectResponse
+    {
+        $faculty = $this->resolveFaculty($request);
+        if (! $faculty) {
+            return back()->with('error', 'Faculty identity unresolved.');
+        }
+
+        $validated = $request->validate([
+            'room_schedule_id' => 'nullable|exists:room_schedules,id',
+            'course_code' => 'required|string',
+            'course_title' => 'required|string',
+            'section' => 'required|string',
+            'missed_date' => 'required|date',
+            'original_day_of_week' => 'required|string',
+            'original_start_time' => 'required|string',
+            'original_end_time' => 'required|string',
+            'original_room_name' => 'required|string',
+            'required_contact_hours' => 'required|numeric',
+            'absence_reason' => 'required|string',
+            'absence_remarks' => 'nullable|string',
+            'proposed_date' => 'required|date',
+            'proposed_start_time' => 'required|string',
+            'proposed_end_time' => 'required|string',
+            'proposed_room_name' => 'required|string',
+            'modality' => 'nullable|string',
+            'proposed_remarks' => 'nullable|string',
+        ]);
+
+        $refNo = 'MUC-'.date('Y').'-'.strtoupper(substr(uniqid(), -6));
+        $currentPeriod = AcademicPeriod::current() ?? AcademicPeriod::first();
+
+        MakeUpClassRequest::create([
+            'reference_no' => $refNo,
+            'academic_period_id' => $currentPeriod ? $currentPeriod->id : null,
+            'faculty_id' => $faculty->id,
+            'room_schedule_id' => $validated['room_schedule_id'] ?? null,
+            'missed_date' => $validated['missed_date'],
+            'course_code' => $validated['course_code'],
+            'course_title' => $validated['course_title'],
+            'section' => $validated['section'],
+            'original_day_of_week' => $validated['original_day_of_week'],
+            'original_start_time' => $validated['original_start_time'],
+            'original_end_time' => $validated['original_end_time'],
+            'original_room_name' => $validated['original_room_name'],
+            'required_contact_hours' => $validated['required_contact_hours'],
+            'absence_reason' => $validated['absence_reason'],
+            'absence_remarks' => $validated['absence_remarks'] ?? null,
+            'proposed_date' => $validated['proposed_date'],
+            'proposed_start_time' => $validated['proposed_start_time'],
+            'proposed_end_time' => $validated['proposed_end_time'],
+            'proposed_room_name' => $validated['proposed_room_name'],
+            'modality' => $validated['modality'] ?? 'Face-to-Face',
+            'proposed_remarks' => $validated['proposed_remarks'] ?? null,
+            'status' => 'Program Head Review',
+        ]);
+
+        return back()->with('success', "Make-up class request {$refNo} submitted for Program Head review.");
+    }
+
+    /**
+     * Confirm a conducted make-up session
+     */
+    public function confirmMakeUpConducted(Request $request, MakeUpClassRequest $makeUpClassRequest): RedirectResponse
+    {
+        $validated = $request->validate([
+            'actual_start_time' => 'nullable|string',
+            'actual_end_time' => 'nullable|string',
+            'actual_attendance_count' => 'nullable|integer',
+            'completion_remarks' => 'nullable|string',
+            'evidence' => 'nullable|file|max:10240',
+        ]);
+
+        $path = $makeUpClassRequest->evidence_path;
+        if ($request->hasFile('evidence')) {
+            $path = $request->file('evidence')->store('make_up_evidence', 'public');
+        }
+
+        $makeUpClassRequest->update([
+            'status' => 'Completed',
+            'conducted_at' => now(),
+            'actual_start_time' => $validated['actual_start_time'] ?? $makeUpClassRequest->proposed_start_time,
+            'actual_end_time' => $validated['actual_end_time'] ?? $makeUpClassRequest->proposed_end_time,
+            'actual_attendance_count' => $validated['actual_attendance_count'] ?? null,
+            'completion_remarks' => $validated['completion_remarks'] ?? 'Make-up session executed successfully.',
+            'evidence_path' => $path,
+        ]);
+
+        return back()->with('success', 'Make-up class execution confirmed and marked as Completed.');
     }
 }

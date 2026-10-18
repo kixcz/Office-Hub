@@ -126,6 +126,7 @@ const SUBJECT_TYPES = [
     { id: 'team', label: 'Team / Group', icon: Users2, desc: 'Lab, committee, or research unit' },
     { id: 'program', label: 'Program / Department', icon: Building2, desc: 'Entire department or degree program' },
     { id: 'group_photo', label: 'Custom Group Photo', icon: ImageIcon, desc: 'Single wide team banner photo' },
+    { id: 'collage', label: 'Celebration Collage', icon: LayoutTemplate, desc: '2 to 6 event photos with custom collage grid' },
 ];
 
 const BACKGROUND_STYLES = [
@@ -205,6 +206,7 @@ export default function SpotlightCreate({ faculties, programs, prefill }: Props)
         animation_effect: prefill.animation_effect || 'confetti',
         layout_mode: prefill.layout_mode || 'hero-split',
         fullscreen_takeover: prefill.fullscreen_takeover || false,
+        collage_style: (prefill as any).collage_style || '3_grid',
         playlist: prefill.playlist || 'Main TV Rotation',
         priority: prefill.priority || 1,
         start_at: prefill.start_at || '',
@@ -218,6 +220,17 @@ export default function SpotlightCreate({ faculties, programs, prefill }: Props)
     const [supportingPreview1, setSupportingPreview1] = useState<string | null>(null);
     const [supportingPreview2, setSupportingPreview2] = useState<string | null>(null);
 
+    // Dynamic Collage Photos state for celebration collage mode
+    interface LocalCollageItem {
+        id: string;
+        file?: File | null;
+        previewUrl?: string;
+        caption: string;
+        fit: 'cover' | 'contain';
+        is_primary: boolean;
+    }
+    const [collageItems, setCollageItems] = useState<LocalCollageItem[]>([]);
+
     // Selected faculty object for avatar resolution (individual mode)
     const selectedFaculty = useMemo(() => {
         if (!data.faculty_id) return null;
@@ -226,6 +239,15 @@ export default function SpotlightCreate({ faculties, programs, prefill }: Props)
 
     // Compatible templates based on subject type and count
     const compatibleTemplates = useMemo(() => {
+        if (data.subject_type === 'collage') {
+            return [
+                { id: '2_split', label: '2-Photo Split', desc: 'Two equal side-by-side or stacked celebration photos' },
+                { id: '3_grid', label: '3-Photo Grid (Balanced)', desc: 'Three harmonious photos in modern colonnade' },
+                { id: '4_grid', label: '4-Photo Equal Grid', desc: 'Balanced 2x2 grid of celebratory snapshots' },
+                { id: '1_plus_thumbnails', label: '1 Hero + Supporting Thumbnails', desc: '1 prominent large image with smaller accent thumbnails' },
+            ];
+        }
+
         if (data.subject_type === 'individual') {
             return [
                 { id: 'portrait-left', label: 'Portrait Left (Classic)', desc: 'Large hero headshot with right-side typography' },
@@ -402,24 +424,111 @@ export default function SpotlightCreate({ faculties, programs, prefill }: Props)
             text_size: data.text_size,
             animation_effect: data.animation_effect,
             layout_mode: data.layout_mode,
+            effective_collage_photos: collageItems.map((ci) => ({
+                id: ci.id,
+                url: ci.previewUrl,
+                caption: ci.caption,
+                fit: ci.fit,
+                is_primary: ci.is_primary,
+            })),
+            collage_style: data.collage_style,
             display_duration: data.display_duration,
             priority: data.priority,
             status: data.status,
         };
-    }, [data, photoPreview, groupPhotoPreview, supportingPreview1, supportingPreview2, honoreesList, selectedFaculty]);
+    }, [data, photoPreview, groupPhotoPreview, supportingPreview1, supportingPreview2, honoreesList, selectedFaculty, collageItems]);
 
     // Validation safeguards
     const headlineWarn = data.headline.length > 65;
     const messageWarn = data.message.length > 200;
     const allRequiredComplete = Boolean(data.headline.trim() && data.message.trim());
 
+    // Collage item helper functions
+    const handleAddCollageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        const remainingSlots = 6 - collageItems.length;
+        const filesToAdd = Array.from(files).slice(0, remainingSlots);
+
+        const newItems: LocalCollageItem[] = filesToAdd.map((file, idx) => ({
+            id: String(Date.now() + idx),
+            file: file,
+            previewUrl: URL.createObjectURL(file),
+            caption: `Photo ${collageItems.length + idx + 1}`,
+            fit: 'cover',
+            is_primary: collageItems.length === 0 && idx === 0,
+        }));
+
+        setCollageItems((prev) => [...prev, ...newItems]);
+        e.target.value = '';
+    };
+
+    const handleRemoveCollageItem = (idx: number) => {
+        setCollageItems((prev) => {
+            const next = prev.filter((_, i) => i !== idx);
+            if (next.length > 0 && !next.some((item) => item.is_primary)) {
+                next[0].is_primary = true;
+            }
+            return next;
+        });
+    };
+
+    const handleMoveCollageItem = (idx: number, direction: 'up' | 'down') => {
+        setCollageItems((prev) => {
+            const next = [...prev];
+            const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+            if (targetIdx < 0 || targetIdx >= next.length) return prev;
+            const temp = next[idx];
+            next[idx] = next[targetIdx];
+            next[targetIdx] = temp;
+            return next;
+        });
+    };
+
+    const handleSetCollagePrimary = (idx: number) => {
+        setCollageItems((prev) =>
+            prev.map((item, i) => ({
+                ...item,
+                is_primary: i === idx,
+            }))
+        );
+    };
+
+    const handleToggleCollageFit = (idx: number) => {
+        setCollageItems((prev) =>
+            prev.map((item, i) =>
+                i === idx ? { ...item, fit: item.fit === 'cover' ? 'contain' : 'cover' } : item
+            )
+        );
+    };
+
     const handleSubmit = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        // Pack honorees into form
-        const formPayload = {
+        // Pack honorees & collage into form
+        const formPayload: Record<string, any> = {
             ...data,
             honorees: JSON.stringify(honoreesList),
+            collage_style: data.collage_style,
+            collage_photos: JSON.stringify(
+                collageItems.map((item) => ({
+                    id: item.id,
+                    caption: item.caption,
+                    fit: item.fit,
+                    is_primary: item.is_primary,
+                }))
+            ),
         };
+
+        // Attach collage files as collage_file_1 through 6
+        collageItems.forEach((item, idx) => {
+            if (item.file) {
+                formPayload[`collage_file_${idx + 1}`] = item.file;
+                formPayload[`collage_caption_${idx + 1}`] = item.caption;
+                formPayload[`collage_fit_${idx + 1}`] = item.fit;
+                formPayload[`collage_primary_${idx + 1}`] = item.is_primary ? '1' : '0';
+            }
+        });
+
         router.post('/tv-config/spotlight', formPayload as any, {
             forceFormData: true,
         });
@@ -715,6 +824,29 @@ export default function SpotlightCreate({ faculties, programs, prefill }: Props)
                                                 </Button>
                                             </div>
 
+                                            {/* 7+ Honorees Safeguard Warning */}
+                                            {honoreesList.length >= 7 && (
+                                                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs flex items-start gap-2.5">
+                                                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                                    <div className="space-y-1">
+                                                        <div className="font-bold">Large Group Recommendation (7+ Honorees Detected)</div>
+                                                        <div className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+                                                            Rendering {honoreesList.length} individual portraits will shrink images and make names difficult to read from across the room.
+                                                            We recommend switching to <strong>Custom Group Photo</strong> mode with a single banner photo, or splitting this recognition into multiple Spotlight slides.
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => setData('subject_type', 'group_photo')}
+                                                            className="text-[10px] h-6 mt-1 border-amber-500/40 text-amber-600 dark:text-amber-400"
+                                                        >
+                                                            Switch to Custom Group Photo
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {/* Honorees Stack */}
                                             <div className="space-y-2.5">
                                                 {honoreesList.map((honoree, idx) => (
@@ -842,7 +974,171 @@ export default function SpotlightCreate({ faculties, programs, prefill }: Props)
                                             Primary Honoree Visual
                                         </Label>
 
-                                        {data.subject_type === 'individual' ? (
+                                        {data.subject_type === 'collage' ? (
+                                            /* Celebration Collage Multi-Photo Manager */
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                            Collage Photos ({collageItems.length}/6 Uploaded)
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-500">
+                                                            Upload 2 to 6 event photos. Mark a primary visual, reorder, and set fitting.
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <input
+                                                            type="file"
+                                                            id="multi-collage-upload"
+                                                            accept="image/*"
+                                                            multiple
+                                                            onChange={handleAddCollageFile}
+                                                            className="hidden"
+                                                            disabled={collageItems.length >= 6}
+                                                        />
+                                                        <label
+                                                            htmlFor="multi-collage-upload"
+                                                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border ${
+                                                                collageItems.length >= 6
+                                                                    ? 'opacity-40 cursor-not-allowed border-slate-300'
+                                                                    : 'border-amber-500/50 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 hover:bg-amber-100 cursor-pointer'
+                                                            }`}
+                                                        >
+                                                            <Upload className="w-3.5 h-3.5" />
+                                                            <span>Add Photos</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                {/* Collage Style Selector inside Media */}
+                                                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
+                                                    <Label className="text-xs font-semibold mb-2 block">
+                                                        Collage Layout Style
+                                                    </Label>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                        {[
+                                                            { id: '2_split', label: '2-Photo Split', desc: 'Side-by-side' },
+                                                            { id: '3_grid', label: '3-Photo Grid', desc: 'Equal trio' },
+                                                            { id: '4_grid', label: '4-Photo Equal', desc: '2x2 grid' },
+                                                            { id: '1_plus_thumbnails', label: '1 Hero + Accents', desc: 'Large hero + cards' },
+                                                        ].map((cStyle) => (
+                                                            <button
+                                                                key={cStyle.id}
+                                                                type="button"
+                                                                onClick={() => setData('collage_style', cStyle.id)}
+                                                                className={`p-2 rounded-lg border text-left text-xs transition cursor-pointer ${
+                                                                    data.collage_style === cStyle.id
+                                                                        ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
+                                                                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                                                                }`}
+                                                            >
+                                                                <div>{cStyle.label}</div>
+                                                                <div className="text-[10px] text-slate-400 font-normal">{cStyle.desc}</div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Collage Photo Items Stack */}
+                                                <div className="space-y-2.5">
+                                                    {collageItems.map((cPhoto, idx) => (
+                                                        <div
+                                                            key={cPhoto.id}
+                                                            className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${
+                                                                cPhoto.is_primary
+                                                                    ? 'border-amber-500/60 bg-amber-50/30 dark:bg-amber-950/20'
+                                                                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                                <div className="w-14 h-12 rounded-lg bg-slate-900 overflow-hidden shrink-0 border border-slate-300 dark:border-slate-700 flex items-center justify-center">
+                                                                    {cPhoto.previewUrl ? (
+                                                                        <img src={cPhoto.previewUrl} alt={cPhoto.caption} className={`w-full h-full ${cPhoto.fit === 'contain' ? 'object-contain' : 'object-cover'}`} />
+                                                                    ) : (
+                                                                        <ImageIcon className="w-5 h-5 text-slate-500" />
+                                                                    )}
+                                                                </div>
+
+                                                                <div className="min-w-0 flex-1 space-y-1">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={cPhoto.caption}
+                                                                            onChange={(e) => {
+                                                                                const val = e.target.value;
+                                                                                setCollageItems((prev) =>
+                                                                                    prev.map((item, i) => (i === idx ? { ...item, caption: val } : item))
+                                                                                );
+                                                                            }}
+                                                                            placeholder={`Caption for Photo #${idx + 1}`}
+                                                                            className="text-xs font-semibold bg-transparent border-b border-transparent hover:border-slate-300 focus:border-amber-500 focus:outline-hidden w-full"
+                                                                        />
+                                                                        {cPhoto.is_primary && (
+                                                                            <span className="shrink-0 text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950">
+                                                                                Primary
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleToggleCollageFit(idx)}
+                                                                            className="hover:text-amber-600 underline cursor-pointer"
+                                                                        >
+                                                                            Fit: {cPhoto.fit === 'contain' ? 'Contain (Full)' : 'Cover (Fill)'}
+                                                                        </button>
+                                                                        <span>•</span>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleSetCollagePrimary(idx)}
+                                                                            className="hover:text-amber-600 underline cursor-pointer"
+                                                                        >
+                                                                            Set as Primary
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleMoveCollageItem(idx, 'up')}
+                                                                    disabled={idx === 0}
+                                                                    className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 text-slate-600 dark:text-slate-300"
+                                                                    title="Move Up"
+                                                                >
+                                                                    <ArrowUp className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleMoveCollageItem(idx, 'down')}
+                                                                    disabled={idx === collageItems.length - 1}
+                                                                    className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 text-slate-600 dark:text-slate-300"
+                                                                    title="Move Down"
+                                                                >
+                                                                    <ArrowDown className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleRemoveCollageItem(idx)}
+                                                                    className="p-1.5 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/50 text-rose-500"
+                                                                    title="Remove Photo"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    {collageItems.length === 0 && (
+                                                        <div className="text-center py-6 border border-dashed rounded-xl border-slate-200 dark:border-slate-800 text-xs text-slate-400">
+                                                            No collage photos uploaded yet. Click &quot;Add Photos&quot; above to select 2 to 6 event photos.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : data.subject_type === 'individual' ? (
                                             <div>
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 overflow-hidden flex items-center justify-center shrink-0">

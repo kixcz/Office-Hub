@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
+import { BreadcrumbItem } from '@/types';
 import { TvStudioLayout } from '@/components/tv-studio-layout';
 import {
     FileText,
@@ -38,8 +40,9 @@ import {
     CUSTOM_THEMES
 } from '@/components/custom-slide-hero';
 
-const breadcrumbs = [
-    { title: 'TV Workspace', href: '/tv-config/dashboard' },
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'TV Studio', href: '/tv-config/dashboard' },
     { title: 'Custom Manual Slides', href: '/tv-config/custom' },
     { title: 'Create Custom Slide', href: '/tv-config/custom/create' },
 ];
@@ -439,94 +442,95 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
     };
 
     return (
-        <TvStudioLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Custom Content Slide - TV Workspace" />
 
-            <div className="space-y-6 pb-20">
-                {/* Header Back Bar */}
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href="/tv-config/custom"
-                            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </Link>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-indigo-400">
-                                    <FileText className="w-3.5 h-3.5" />
-                                    <span>Manual Content Builder</span>
-                                </span>
+            <TvStudioLayout>
+                <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-20">
+                    {/* Header Back Bar */}
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <Link
+                                href="/tv-config/custom"
+                                className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                            </Link>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                                        <FileText className="w-3.5 h-3.5" />
+                                        <span>Manual Content Builder</span>
+                                    </span>
+                                </div>
+                                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                                    Create Custom Content Slide
+                                </h1>
                             </div>
-                            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                                Create Custom Content Slide
-                            </h1>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => handleSubmit('draft')}
+                                disabled={isSaving}
+                                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors"
+                            >
+                                Save Draft
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleSubmit('published')}
+                                disabled={isSaving}
+                                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"
+                            >
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>Publish to Rotation</span>
+                            </button>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => handleSubmit('draft')}
-                            disabled={isSaving}
-                            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors"
-                        >
-                            Save Draft
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => handleSubmit('published')}
-                            disabled={isSaving}
-                            className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02]"
-                        >
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>Publish to Rotation</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Main Two-Column Workspace: 60% Form & 40% Sticky Preview */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Left Column: Form & Step Tabs (60%) */}
-                    <div className="lg:col-span-7 space-y-6">
-                        {/* Sticky Step Navigation */}
-                        <div className="sticky top-[80px] z-30 rounded-2xl bg-slate-900/95 backdrop-blur-md border border-slate-800 p-1.5 shadow-xl">
-                            <nav className="flex items-center gap-1 overflow-x-auto text-xs font-bold">
-                                {[
-                                    { id: 'type', label: '1. Layout & Header', icon: Layers },
-                                    { id: 'blocks', label: '2. Content Blocks', icon: Table },
-                                    { id: 'media', label: '3. Media & QR', icon: ImageIcon },
-                                    { id: 'design', label: '4. Design & Style', icon: Palette },
-                                    { id: 'display', label: '5. Display & Rotation', icon: Clock },
-                                ].map((tab) => {
-                                    const Icon = tab.icon;
-                                    const isActive = activeTab === tab.id;
-                                    return (
-                                        <button
-                                            key={tab.id}
-                                            type="button"
-                                            onClick={() => setActiveTab(tab.id as any)}
-                                            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl whitespace-nowrap transition-all ${
-                                                isActive
-                                                    ? 'bg-indigo-600 text-white shadow-md'
-                                                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                                            }`}
-                                        >
-                                            <Icon className="w-3.5 h-3.5" />
-                                            <span>{tab.label}</span>
-                                        </button>
-                                    );
-                                })}
-                            </nav>
-                        </div>
+                    {/* Main Two-Column Workspace: 60% Form & 40% Sticky Preview */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Left Column: Form & Step Tabs (60%) */}
+                        <div className="lg:col-span-7 space-y-6">
+                            {/* Sticky Step Navigation */}
+                            <div className="sticky top-[80px] z-30 rounded-2xl bg-slate-900/95 backdrop-blur-md border border-slate-800 p-1.5 shadow-xl">
+                                <nav className="flex items-center gap-1 overflow-x-auto text-xs font-bold">
+                                    {[
+                                        { id: 'type', label: '1. Layout & Header', icon: Layers },
+                                        { id: 'blocks', label: '2. Content Blocks', icon: Table },
+                                        { id: 'media', label: '3. Media & QR', icon: ImageIcon },
+                                        { id: 'design', label: '4. Design & Style', icon: Palette },
+                                        { id: 'display', label: '5. Display & Rotation', icon: Clock },
+                                    ].map((tab) => {
+                                        const Icon = tab.icon;
+                                        const isActive = activeTab === tab.id;
+                                        return (
+                                            <button
+                                                key={tab.id}
+                                                type="button"
+                                                onClick={() => setActiveTab(tab.id as any)}
+                                                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl whitespace-nowrap transition-all ${
+                                                    isActive
+                                                        ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                                                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                                                }`}
+                                            >
+                                                <Icon className="w-3.5 h-3.5" />
+                                                <span>{tab.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </nav>
+                            </div>
 
                         {/* Step 1: Layout & Core Header */}
                         {activeTab === 'type' && (
                             <div className="space-y-6 p-6 rounded-2xl bg-slate-900/70 border border-slate-800 shadow-xl">
                                 <div>
                                     <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                        <Layers className="w-4 h-4 text-indigo-400" />
+                                        <Layers className="w-4 h-4 text-amber-400" />
                                         <span>Predefined Slide Layout</span>
                                     </h3>
                                     <p className="text-xs text-slate-400 mt-0.5">
@@ -544,12 +548,12 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                 onClick={() => setLayout(lo.id as any)}
                                                 className={`cursor-pointer p-4 rounded-xl border text-left transition-all ${
                                                     isSelected
-                                                        ? 'bg-gradient-to-br ' + lo.color + ' ring-2 ring-indigo-500 shadow-lg'
+                                                        ? 'bg-gradient-to-br ' + lo.color + ' ring-2 ring-amber-500 shadow-lg'
                                                         : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700'
                                                 }`}
                                             >
                                                 <div className="flex items-center gap-2.5">
-                                                    <div className={`p-2 rounded-lg ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                                                    <div className={`p-2 rounded-lg ${isSelected ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'}`}>
                                                         <Icon className="w-4 h-4" />
                                                     </div>
                                                     <div className="font-bold text-sm text-white">{lo.name}</div>
@@ -572,7 +576,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                             value={title}
                                             onChange={(e) => setTitle(e.target.value)}
                                             placeholder="e.g. WEEKLY OFFICE CLEANING & DUTY ROSTER"
-                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-white outline-none focus:border-indigo-500"
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-white outline-none focus:border-amber-500"
                                         />
                                         <div className="flex justify-between items-center text-[11px] text-slate-500 mt-1">
                                             <span>Recommended: under 70 characters for TV legibility</span>
@@ -590,7 +594,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                 value={badge}
                                                 onChange={(e) => setBadge(e.target.value)}
                                                 placeholder="e.g. Daily Duty, Room Notice, Cleaning"
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-indigo-500"
+                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-amber-500"
                                             />
                                         </div>
 
@@ -603,7 +607,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                 value={subtitle}
                                                 onChange={(e) => setSubtitle(e.target.value)}
                                                 placeholder="e.g. CIDS Main Office & Workspace"
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-indigo-500"
+                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-amber-500"
                                             />
                                         </div>
                                     </div>
@@ -617,7 +621,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                            <Table className="w-4 h-4 text-indigo-400" />
+                                            <Table className="w-4 h-4 text-amber-400" />
                                             <span>Manual Content Blocks</span>
                                         </h3>
                                         <p className="text-xs text-slate-400 mt-0.5">
@@ -673,7 +677,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                             <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs">
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-bold text-slate-400">#{idx + 1}</span>
-                                                    <span className="font-bold uppercase tracking-wider text-indigo-400">
+                                                    <span className="font-bold uppercase tracking-wider text-amber-400">
                                                         {block.type.replace('_', ' ')}
                                                     </span>
                                                     {layout === 'two_column' && (
@@ -745,7 +749,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                             <button
                                                                 type="button"
                                                                 onClick={() => addTableRow(idx)}
-                                                                className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold"
+                                                                className="px-2 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-black"
                                                             >
                                                                 + Add Row
                                                             </button>
@@ -776,14 +780,14 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                             </thead>
                                                             <tbody className="divide-y divide-slate-800">
                                                                 {block.tableData.rows.map((row, rIdx) => (
-                                                                    <tr key={row.id} className={row.isHighlighted ? 'bg-indigo-950/20' : ''}>
+                                                                    <tr key={row.id} className={row.isHighlighted ? 'bg-amber-950/30' : ''}>
                                                                         {block.tableData!.columns.map((col) => (
                                                                             <td key={col.id} className="p-1.5">
                                                                                 <input
                                                                                     type="text"
                                                                                     value={row.cells[col.id] || ''}
                                                                                     onChange={(e) => updateTableCell(idx, row.id, col.id, e.target.value)}
-                                                                                    className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white w-full outline-none focus:border-indigo-500"
+                                                                                    className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white w-full outline-none focus:border-amber-500"
                                                                                 />
                                                                             </td>
                                                                         ))}
@@ -857,7 +861,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                         }}
                                                         rows={2}
                                                         placeholder="Enter callout advisory message..."
-                                                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-white outline-none focus:border-indigo-500"
+                                                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-white outline-none focus:border-amber-500"
                                                     />
                                                 </div>
                                             )}
@@ -894,7 +898,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                         }}
                                                         rows={3}
                                                         placeholder="One bullet per line..."
-                                                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-white outline-none focus:border-indigo-500 font-mono"
+                                                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-white outline-none focus:border-amber-500 font-mono"
                                                     />
                                                 </div>
                                             )}
@@ -910,7 +914,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                     }}
                                                     rows={3}
                                                     placeholder="Enter descriptive text..."
-                                                    className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-white outline-none focus:border-indigo-500"
+                                                    className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-white outline-none focus:border-amber-500"
                                                 />
                                             )}
                                         </div>
@@ -924,7 +928,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                             <div className="space-y-6 p-6 rounded-2xl bg-slate-900/70 border border-slate-800 shadow-xl">
                                 <div>
                                     <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                        <ImageIcon className="w-4 h-4 text-indigo-400" />
+                                        <ImageIcon className="w-4 h-4 text-amber-400" />
                                         <span>Poster Media & Interactive QR</span>
                                     </h3>
                                     <p className="text-xs text-slate-400 mt-0.5">
@@ -955,7 +959,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                 type="file"
                                                 accept="image/*"
                                                 onChange={handleImageChange}
-                                                className="text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500"
+                                                className="text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400"
                                             />
                                             <div className="flex items-center gap-2 pt-1">
                                                 <span className="text-[11px] text-slate-400">Fit Mode:</span>
@@ -966,7 +970,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                         onClick={() => setPrimaryImageFit(mode)}
                                                         className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                                                             primaryImageFit === mode
-                                                                ? 'bg-indigo-600 text-white'
+                                                                ? 'bg-amber-500 text-slate-950'
                                                                 : 'bg-slate-800 text-slate-400'
                                                         }`}
                                                     >
@@ -991,7 +995,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                 value={qrUrl}
                                                 onChange={(e) => setQrUrl(e.target.value)}
                                                 placeholder="https://forms.institution.edu/duty-report"
-                                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-indigo-500"
+                                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-amber-500"
                                             />
                                         </div>
                                         <div>
@@ -1001,7 +1005,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                 value={qrLabel}
                                                 onChange={(e) => setQrLabel(e.target.value)}
                                                 placeholder="e.g. Scan for complete guidelines"
-                                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-indigo-500"
+                                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-amber-500"
                                             />
                                         </div>
                                     </div>
@@ -1014,7 +1018,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                             <div className="space-y-6 p-6 rounded-2xl bg-slate-900/70 border border-slate-800 shadow-xl">
                                 <div>
                                     <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                        <Palette className="w-4 h-4 text-indigo-400" />
+                                        <Palette className="w-4 h-4 text-amber-400" />
                                         <span>Color Theme & Layout Options</span>
                                     </h3>
                                     <p className="text-xs text-slate-400 mt-0.5">
@@ -1030,7 +1034,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                 key={th.id}
                                                 onClick={() => setTheme(th.id)}
                                                 className={`cursor-pointer p-3.5 rounded-xl border text-left transition-all ${
-                                                    isSelected ? 'ring-2 ring-indigo-500 shadow-lg' : 'hover:border-slate-700'
+                                                    isSelected ? 'ring-2 ring-amber-500 shadow-lg' : 'hover:border-slate-700'
                                                 } ${th.bg}`}
                                             >
                                                 <div className="font-bold text-xs text-white">{th.name}</div>
@@ -1051,7 +1055,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                 onClick={() => setHeaderAlignment('left')}
                                                 className={`px-4 py-2 rounded-xl text-xs font-bold ${
                                                     headerAlignment === 'left'
-                                                        ? 'bg-indigo-600 text-white'
+                                                        ? 'bg-amber-500 text-slate-950 font-black'
                                                         : 'bg-slate-950 border border-slate-800 text-slate-400'
                                                 }`}
                                             >
@@ -1062,7 +1066,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                                 onClick={() => setHeaderAlignment('center')}
                                                 className={`px-4 py-2 rounded-xl text-xs font-bold ${
                                                     headerAlignment === 'center'
-                                                        ? 'bg-indigo-600 text-white'
+                                                        ? 'bg-amber-500 text-slate-950 font-black'
                                                         : 'bg-slate-950 border border-slate-800 text-slate-400'
                                                 }`}
                                             >
@@ -1079,7 +1083,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                             <div className="space-y-6 p-6 rounded-2xl bg-slate-900/70 border border-slate-800 shadow-xl">
                                 <div>
                                     <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                        <Clock className="w-4 h-4 text-indigo-400" />
+                                        <Clock className="w-4 h-4 text-amber-400" />
                                         <span>Display Duration & Expiration Rules</span>
                                     </h3>
                                     <p className="text-xs text-slate-400 mt-0.5">
@@ -1135,7 +1139,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                             type="checkbox"
                                             checked={autoExpire}
                                             onChange={(e) => setAutoExpire(e.target.checked)}
-                                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700"
+                                            className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 bg-slate-900 border-slate-700"
                                         />
                                     </div>
 
@@ -1174,7 +1178,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                             type="checkbox"
                                             checked={fullscreenTakeover}
                                             onChange={(e) => setFullscreenTakeover(e.target.checked)}
-                                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700"
+                                            className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 bg-slate-900 border-slate-700"
                                         />
                                     </div>
                                 </div>
@@ -1230,7 +1234,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                                     type="button"
                                     onClick={() => handleSubmit('published')}
                                     disabled={isSaving}
-                                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02]"
+                                    className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"
                                 >
                                     Publish Slide
                                 </button>
@@ -1246,7 +1250,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                     <div className="relative w-full max-w-6xl flex flex-col gap-4">
                         <div className="flex items-center justify-between text-white">
                             <div className="flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-indigo-400" />
+                                <FileText className="w-5 h-5 text-amber-400" />
                                 <h3 className="font-bold text-lg">{title}</h3>
                             </div>
                             <button
@@ -1262,6 +1266,7 @@ export default function CustomSlideCreate({ devices, initial_layout = 'title_tab
                     </div>
                 </div>
             )}
-        </TvStudioLayout>
+            </TvStudioLayout>
+        </AppLayout>
     );
 }

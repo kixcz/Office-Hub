@@ -141,7 +141,7 @@ export default function FacultyAttendanceIndex({
     const [selectedInstructor, setSelectedInstructor] = useState(filters.instructor || 'all');
     const [selectedStatus, setSelectedStatus] = useState(filters.status || 'all');
     const [selectedPeriod, setSelectedPeriod] = useState(filters.period || (monthly_periods[0] || 'August 2026'));
-    const [selectedWeek, setSelectedWeek] = useState(filters.week || (weekly_periods[0] || 'August 10 – 14, 2026 (Week 2)'));
+    const [selectedWeek, setSelectedWeek] = useState(filters.week || (weekly_periods[0] || 'August 10-14, 2026'));
     const [isSyncing, setIsSyncing] = useState(false);
     const [selectedRows, setSelectedRows] = useState<number[]>([]);
 
@@ -762,31 +762,37 @@ export default function FacultyAttendanceIndex({
                                                             <div className="font-bold text-foreground hover:text-primary">
                                                                 {session.instructor_name}
                                                             </div>
-                                                            <div className="text-[10px] text-muted-foreground uppercase font-semibold">
-                                                                {session.faculty?.program?.code || 'BSIT'}
-                                                            </div>
+                                                            {session.faculty?.program?.code && (
+                                                                <div className="text-[10px] text-muted-foreground uppercase font-semibold">
+                                                                    {session.faculty.program.code}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </td>
 
                                                 {/* Program / Section with colored badge */}
                                                 <td className="px-4 py-3 whitespace-nowrap">
-                                                    <span className={cn(
-                                                        "inline-flex px-2.5 py-0.5 rounded-md text-[11px] font-bold",
-                                                        getProgramBadgeStyle(session.faculty?.program?.code, session.section)
-                                                    )}>
-                                                        {session.section || (session.faculty?.program?.code ? `${session.faculty.program.code} 3A` : 'BSIT 3A')}
-                                                    </span>
+                                                    {(session.section || session.faculty?.program?.code) ? (
+                                                        <span className={cn(
+                                                            "inline-flex px-2.5 py-0.5 rounded-md text-[11px] font-bold",
+                                                            getProgramBadgeStyle(session.faculty?.program?.code, session.section)
+                                                        )}>
+                                                            {session.section || session.faculty?.program?.code}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground text-[11px]">—</span>
+                                                    )}
                                                 </td>
 
                                                 {/* Subject */}
                                                 <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
-                                                    {session.subject || session.course_code || 'Data Structures'}
+                                                    {session.subject || session.course_code || '—'}
                                                 </td>
 
                                                 {/* Room */}
                                                 <td className="px-4 py-3 text-muted-foreground font-medium whitespace-nowrap">
-                                                    {session.room || 'Main Lab'}
+                                                    {session.room || '—'}
                                                 </td>
 
                                                 {/* Status with dot badge */}
@@ -895,7 +901,7 @@ export default function FacultyAttendanceIndex({
                                     {summaries.map(s => (
                                         <tr key={s.id} className="hover:bg-muted/30">
                                             <td className="px-4 py-3 font-bold text-foreground">{s.instructor_name}</td>
-                                            <td className="px-4 py-3 text-muted-foreground">{s.faculty?.program?.code || 'BSIT'}</td>
+                                            <td className="px-4 py-3 text-muted-foreground">{s.faculty?.program?.code || '—'}</td>
                                             <td className="px-4 py-3 text-center tabular-nums">{s.scheduled_sessions}</td>
                                             <td className="px-4 py-3 text-center text-emerald-600 font-bold tabular-nums">{s.present_count}</td>
                                             <td className="px-4 py-3 text-center text-amber-600 font-bold tabular-nums">{s.late_count}</td>

@@ -100,6 +100,15 @@ export const SCHEDULING_NAV_GROUPS: SchedulingNavGroup[] = [
             { id: 'room-lab-schedule', title: 'Room / Laboratory Schedule', url: '/schedule/master-timetable?view=room', icon: Building2 },
         ],
     },
+    {
+        title: 'Post-Publication Adjustments',
+        items: [
+            { id: 'adjustment-windows', title: 'Adjustment Windows', url: '/schedule/adjustments?tab=windows', icon: CalendarDays },
+            { id: 'swap-requests-hub', title: 'Faculty Swaps & Review', url: '/schedule/adjustments?tab=requests', icon: Send },
+            { id: 'adjustment-batches', title: 'Consolidated Batches', url: '/schedule/adjustments?tab=batches', icon: Layers },
+            { id: 're-optimization', title: 'Re-Optimization & Publication', url: '/schedule/adjustments?tab=solver', icon: Cpu },
+        ],
+    },
 ];
 
 function CalendarCheckIcon({ className }: { className?: string }) {

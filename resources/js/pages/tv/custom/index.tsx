@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
+import { BreadcrumbItem } from '@/types';
 import { TvStudioLayout } from '@/components/tv-studio-layout';
 import {
     FileText,
@@ -30,8 +32,9 @@ import {
 } from 'lucide-react';
 import { CustomContentSlideHero, CustomContentSlideData } from '@/components/custom-slide-hero';
 
-const breadcrumbs = [
-    { title: 'TV Workspace', href: '/tv-config/dashboard' },
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'TV Studio', href: '/tv-config/dashboard' },
     { title: 'Custom Manual Slides', href: '/tv-config/custom' },
 ];
 
@@ -148,138 +151,139 @@ export default function CustomSlideIndex({ slides, stats, filters }: Props) {
     };
 
     return (
-        <TvStudioLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Custom Manual Slides - TV Display Studio" />
 
-            <div className="space-y-6 pb-12">
-                {/* Header Banner */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 p-6 md:p-8 shadow-2xl">
-                    <div className="absolute top-0 right-0 -mt-6 -mr-6 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="space-y-2">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-400/20 text-indigo-300 text-xs font-semibold tracking-wide uppercase">
-                                <FileText className="w-3.5 h-3.5" />
-                                <span>Manual Content Escape Hatch</span>
+            <TvStudioLayout>
+                <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-12">
+                    {/* Header Banner */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-slate-800 p-6 md:p-8 shadow-2xl">
+                        <div className="absolute top-0 right-0 -mt-6 -mr-6 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                            <div className="space-y-2">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/20 text-amber-400 text-xs font-semibold tracking-wide uppercase">
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span>Manual Content Module</span>
+                                </div>
+                                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                                    Custom Content Slides <span className="text-amber-400">(Manual Slides)</span>
+                                </h1>
+                                <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+                                    Create flexible, ad hoc TV content for daily rosters, room-use notices, temporary seating, QR guidelines, and office bulletins without waiting for a database model.
+                                </p>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                                Custom Content Slides <span className="text-indigo-400">(Manual Slides)</span>
-                            </h1>
-                            <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
-                                Create flexible, ad hoc TV content for daily rosters, room-use notices, temporary seating, QR guidelines, and office bulletins without waiting for a database model.
-                            </p>
+                            <div className="flex items-center gap-3 shrink-0">
+                                <Link
+                                    href="/tv-config/custom/create"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>Create Custom Slide</span>
+                                </Link>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
+
+                        {/* Quick Stats Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-8 pt-6 border-t border-slate-800/80">
+                            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/60">
+                                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Slides</div>
+                                <div className="text-2xl font-black text-white mt-1">{stats.total}</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-900/40">
+                                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Live on TV</div>
+                                <div className="text-2xl font-black text-emerald-300 mt-1">{stats.active_now}</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-900/40">
+                                <div className="text-[11px] font-bold uppercase tracking-wider text-blue-400">Published</div>
+                                <div className="text-2xl font-black text-blue-300 mt-1">{stats.published}</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-900/50">
+                                <div className="text-[11px] font-bold uppercase tracking-wider text-amber-400">Scheduled</div>
+                                <div className="text-2xl font-black text-amber-300 mt-1">{stats.scheduled}</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-900/40">
+                                <div className="text-[11px] font-bold uppercase tracking-wider text-rose-400">Expired</div>
+                                <div className="text-2xl font-black text-rose-300 mt-1">{stats.expired}</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/60">
+                                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Drafts</div>
+                                <div className="text-2xl font-black text-slate-300 mt-1">{stats.drafts}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Filters & Search Toolbar */}
+                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+                        <div className="flex flex-wrap items-center gap-2">
+                            {/* Status Tabs */}
+                            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-950 border border-slate-800">
+                                {STATUS_OPTIONS.map((st) => {
+                                    const isActive = (filters.status || 'all') === st.id;
+                                    return (
+                                        <button
+                                            key={st.id}
+                                            onClick={() => handleFilterChange('status', st.id)}
+                                            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                                                isActive
+                                                    ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                                                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                                            }`}
+                                        >
+                                            {st.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Layout Selector */}
+                            <select
+                                value={filters.layout || 'all'}
+                                onChange={(e) => handleFilterChange('layout', e.target.value)}
+                                className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 rounded-lg px-3 py-2 outline-none focus:border-amber-500"
+                            >
+                                {LAYOUT_OPTIONS.map((lo) => (
+                                    <option key={lo.id} value={lo.id}>{lo.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Search Form */}
+                        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 min-w-[280px]">
+                            <div className="relative flex-1">
+                                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <input
+                                    type="text"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Search manual notices, rosters, titles..."
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors"
+                            >
+                                Search
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Slides Grid */}
+                    {slides.data.length === 0 ? (
+                        <div className="text-center py-16 px-4 rounded-2xl bg-slate-900/40 border border-dashed border-slate-800">
+                            <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                            <h3 className="text-lg font-bold text-white">No Custom Content Slides Found</h3>
+                            <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 mb-6">
+                                Create your first manual slide for weekly cleaning assignments, room schedules, visitor advisories, or event guidelines.
+                            </p>
                             <Link
                                 href="/tv-config/custom/create"
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md transition-colors"
                             >
-                                <Plus className="w-4 h-4" />
+                                <Plus className="w-3.5 h-3.5" />
                                 <span>Create Custom Slide</span>
                             </Link>
                         </div>
-                    </div>
-
-                    {/* Quick Stats Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-8 pt-6 border-t border-slate-800/80">
-                        <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/60">
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Slides</div>
-                            <div className="text-2xl font-black text-white mt-1">{stats.total}</div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-900/40">
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Live on TV</div>
-                            <div className="text-2xl font-black text-emerald-300 mt-1">{stats.active_now}</div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-900/40">
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-blue-400">Published</div>
-                            <div className="text-2xl font-black text-blue-300 mt-1">{stats.published}</div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-900/40">
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-amber-400">Scheduled</div>
-                            <div className="text-2xl font-black text-amber-300 mt-1">{stats.scheduled}</div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-900/40">
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-rose-400">Expired</div>
-                            <div className="text-2xl font-black text-rose-300 mt-1">{stats.expired}</div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/60">
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Drafts</div>
-                            <div className="text-2xl font-black text-slate-300 mt-1">{stats.drafts}</div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Filters & Search Toolbar */}
-                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                    <div className="flex flex-wrap items-center gap-2">
-                        {/* Status Tabs */}
-                        <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-950 border border-slate-800">
-                            {STATUS_OPTIONS.map((st) => {
-                                const isActive = (filters.status || 'all') === st.id;
-                                return (
-                                    <button
-                                        key={st.id}
-                                        onClick={() => handleFilterChange('status', st.id)}
-                                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                                            isActive
-                                                ? 'bg-indigo-600 text-white shadow-sm'
-                                                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                                        }`}
-                                    >
-                                        {st.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Layout Selector */}
-                        <select
-                            value={filters.layout || 'all'}
-                            onChange={(e) => handleFilterChange('layout', e.target.value)}
-                            className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"
-                        >
-                            {LAYOUT_OPTIONS.map((lo) => (
-                                <option key={lo.id} value={lo.id}>{lo.label}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Search Form */}
-                    <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 min-w-[280px]">
-                        <div className="relative flex-1">
-                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search manual notices, rosters, titles..."
-                                className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500"
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors"
-                        >
-                            Search
-                        </button>
-                    </form>
-                </div>
-
-                {/* Slides Grid */}
-                {slides.data.length === 0 ? (
-                    <div className="text-center py-16 px-4 rounded-2xl bg-slate-900/40 border border-dashed border-slate-800">
-                        <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                        <h3 className="text-lg font-bold text-white">No Custom Content Slides Found</h3>
-                        <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 mb-6">
-                            Create your first manual slide for weekly cleaning assignments, room schedules, visitor advisories, or event guidelines.
-                        </p>
-                        <Link
-                            href="/tv-config/custom/create"
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-colors"
-                        >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Create Custom Slide</span>
-                        </Link>
-                    </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {slides.data.map((slide) => {
@@ -332,7 +336,7 @@ export default function CustomSlideIndex({ slides, stats, filters }: Props) {
                                     <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
                                         <div>
                                             <div className="flex items-start justify-between gap-2">
-                                                <h3 className="font-bold text-white text-base leading-snug line-clamp-1 group-hover:text-indigo-300 transition-colors">
+                                                <h3 className="font-bold text-white text-base leading-snug line-clamp-1 group-hover:text-amber-300 transition-colors">
                                                     {slide.title}
                                                 </h3>
                                             </div>
@@ -397,7 +401,7 @@ export default function CustomSlideIndex({ slides, stats, filters }: Props) {
 
                                             <Link
                                                 href={`/tv-config/custom/${slide.id}/edit`}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 font-bold text-xs border border-indigo-500/20 transition-colors"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold text-xs border border-amber-500/20 transition-colors"
                                             >
                                                 <Edit3 className="w-3.5 h-3.5" />
                                                 <span>Edit Content</span>
@@ -417,7 +421,7 @@ export default function CustomSlideIndex({ slides, stats, filters }: Props) {
                     <div className="relative w-full max-w-6xl flex flex-col gap-4">
                         <div className="flex items-center justify-between text-white">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-400/30">
+                                <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-400/30">
                                     <FileText className="w-5 h-5" />
                                 </div>
                                 <div>
@@ -442,7 +446,7 @@ export default function CustomSlideIndex({ slides, stats, filters }: Props) {
                             <span>Press Esc or click close to exit preview.</span>
                             <Link
                                 href={`/tv-config/custom/${previewSlide.id}/edit`}
-                                className="inline-flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 font-semibold"
+                                className="inline-flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-semibold"
                             >
                                 <Edit3 className="w-3.5 h-3.5" />
                                 <span>Open Full Editor</span>
@@ -482,6 +486,7 @@ export default function CustomSlideIndex({ slides, stats, filters }: Props) {
                     </div>
                 </div>
             )}
-        </TvStudioLayout>
+            </TvStudioLayout>
+        </AppLayout>
     );
 }

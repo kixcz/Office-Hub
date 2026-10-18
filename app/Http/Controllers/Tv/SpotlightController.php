@@ -136,7 +136,7 @@ class SpotlightController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|string|in:award,achievement,birthday,publication,certification,promotion,research,extension,welcome,farewell,custom',
-            'subject_type' => 'nullable|string|in:individual,multiple,team,program,group_photo',
+            'subject_type' => 'nullable|string|in:individual,multiple,team,program,group_photo,collage',
             'faculty_id' => 'nullable|exists:faculties,id',
             'honoree_name' => 'nullable|string|max:255',
             'honoree_title' => 'nullable|string|max:255',
@@ -195,6 +195,36 @@ class SpotlightController extends Controller
             $honorees = json_decode($honorees, true) ?: [];
         }
 
+        // Process collage photos (multiple uploaded files or structured items)
+        $collageStyle = $request->input('collage_style') ?: $validated['collage_style'] ?? null;
+        $collagePhotos = [];
+        $rawCollageJson = $request->input('collage_photos');
+        if (is_string($rawCollageJson)) {
+            $collagePhotos = json_decode($rawCollageJson, true) ?: [];
+        } elseif (is_array($rawCollageJson)) {
+            $collagePhotos = $rawCollageJson;
+        }
+
+        // Handle up to 6 direct file uploads for collage slots
+        for ($i = 1; $i <= 6; $i++) {
+            $fileKey = "collage_file_{$i}";
+            if ($request->hasFile($fileKey)) {
+                $savedPath = $request->file($fileKey)->store('spotlight_collage', 'public');
+                $caption = $request->input("collage_caption_{$i}") ?: "Photo {$i}";
+                $fit = $request->input("collage_fit_{$i}") ?: 'cover';
+                $isPrimary = $request->input("collage_primary_{$i}") === '1' || $i === 1;
+
+                $collagePhotos[] = [
+                    'id' => uniqid(),
+                    'path' => $savedPath,
+                    'url' => asset('storage/'.$savedPath),
+                    'caption' => $caption,
+                    'fit' => $fit,
+                    'is_primary' => $isPrimary,
+                ];
+            }
+        }
+
         // Process supporting media
         $supportingMedia = [];
         if ($request->hasFile('supporting_media_file_1')) {
@@ -235,6 +265,8 @@ class SpotlightController extends Controller
             'group_photo_fit' => $validated['group_photo_fit'] ?? 'cover',
             'group_photo_focal' => $validated['group_photo_focal'] ?? 'center',
             'group_photo_overlay' => $validated['group_photo_overlay'] ?? true,
+            'collage_style' => $collageStyle,
+            'collage_photos' => ! empty($collagePhotos) ? $collagePhotos : null,
             'supporting_media' => ! empty($supportingMedia) ? $supportingMedia : null,
             'headline' => $validated['headline'],
             'message' => $validated['message'],
@@ -290,7 +322,7 @@ class SpotlightController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|string|in:award,achievement,birthday,publication,certification,promotion,research,extension,welcome,farewell,custom',
-            'subject_type' => 'required|string|in:individual,multiple,team,program,group_photo',
+            'subject_type' => 'required|string|in:individual,multiple,team,program,group_photo,collage',
             'faculty_id' => 'nullable|exists:faculties,id',
             'honoree_name' => 'nullable|string|max:255',
             'honoree_title' => 'nullable|string|max:255',
@@ -383,6 +415,35 @@ class SpotlightController extends Controller
             $evidencePath = $evidenceFile->store('spotlight_evidence', 'public');
         }
 
+        // Process collage photos in update
+        $collageStyle = $request->input('collage_style', $spotlight->collage_style);
+        $collagePhotos = $spotlight->collage_photos ?? [];
+        $rawCollageJson = $request->input('collage_photos');
+        if (is_string($rawCollageJson)) {
+            $collagePhotos = json_decode($rawCollageJson, true) ?: $collagePhotos;
+        } elseif (is_array($rawCollageJson)) {
+            $collagePhotos = $rawCollageJson;
+        }
+
+        for ($i = 1; $i <= 6; $i++) {
+            $fileKey = "collage_file_{$i}";
+            if ($request->hasFile($fileKey)) {
+                $savedPath = $request->file($fileKey)->store('spotlight_collage', 'public');
+                $caption = $request->input("collage_caption_{$i}") ?: "Photo {$i}";
+                $fit = $request->input("collage_fit_{$i}") ?: 'cover';
+                $isPrimary = $request->input("collage_primary_{$i}") === '1';
+
+                $collagePhotos[] = [
+                    'id' => uniqid(),
+                    'path' => $savedPath,
+                    'url' => asset('storage/'.$savedPath),
+                    'caption' => $caption,
+                    'fit' => $fit,
+                    'is_primary' => $isPrimary,
+                ];
+            }
+        }
+
         $spotlight->update([
             'type' => $validated['type'],
             'subject_type' => $validated['subject_type'] ?? ($spotlight->subject_type ?: 'individual'),
@@ -396,6 +457,8 @@ class SpotlightController extends Controller
             'group_photo_fit' => $validated['group_photo_fit'] ?? 'cover',
             'group_photo_focal' => $validated['group_photo_focal'] ?? 'center',
             'group_photo_overlay' => $validated['group_photo_overlay'] ?? true,
+            'collage_style' => $collageStyle,
+            'collage_photos' => ! empty($collagePhotos) ? array_values($collagePhotos) : null,
             'supporting_media' => ! empty($supportingMedia) ? array_values($supportingMedia) : null,
             'headline' => $validated['headline'],
             'message' => $validated['message'],

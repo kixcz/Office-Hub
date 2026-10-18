@@ -70,7 +70,7 @@ class CustomSlideController extends Controller
 
     public function create(Request $request)
     {
-        $devices = TvDevice::where('is_active', true)->orderBy('name')->get();
+        $devices = TvDevice::orderBy('name')->get();
 
         return Inertia::render('tv/custom/create', [
             'devices' => $devices,
@@ -156,7 +156,7 @@ class CustomSlideController extends Controller
 
     public function edit(CustomContentSlide $custom)
     {
-        $devices = TvDevice::where('is_active', true)->orderBy('name')->get();
+        $devices = TvDevice::orderBy('name')->get();
 
         return Inertia::render('tv/custom/edit', [
             'slide' => $custom->load(['creator', 'updater']),

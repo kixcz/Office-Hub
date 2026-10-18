@@ -14,6 +14,9 @@ use App\Http\Controllers\Faculty\FacultyPortalController;
 use App\Http\Controllers\FacultyAttendanceController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\OfficeRequestController;
+use App\Http\Controllers\Operations\ExamMonitoringController;
+use App\Http\Controllers\Operations\FacultyWorkloadManagementController;
+use App\Http\Controllers\Operations\MakeUpClassMonitoringController;
 use App\Http\Controllers\Performance\FacultyPerformanceController;
 use App\Http\Controllers\Performance\ProgramPerformanceController;
 use App\Http\Controllers\Performance\RecognitionRuleController;
@@ -103,6 +106,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('conflicts', [SemesterScheduleController::class, 'conflictCenter'])->name('conflicts');
         Route::get('reviews', [SemesterScheduleController::class, 'reviews'])->name('reviews');
         Route::get('master-timetable', [SemesterScheduleController::class, 'masterTimetable'])->name('master-timetable');
+        Route::get('candidates', [SemesterScheduleController::class, 'getCandidates'])->name('candidates');
+        Route::post('candidates/select-draft', [SemesterScheduleController::class, 'selectWorkingDraft'])->name('candidates.select-draft');
+        Route::get('adjustments', [SemesterScheduleController::class, 'adjustmentsHub'])->name('adjustments');
+        Route::post('adjustments/window', [SemesterScheduleController::class, 'toggleAdjustmentWindow'])->name('adjustments.window');
+        Route::post('adjustments/swap-request', [SemesterScheduleController::class, 'submitSwapRequest'])->name('adjustments.swap-request');
+        Route::post('adjustments/swap-consent/{swapRequest}', [SemesterScheduleController::class, 'respondSwapConsent'])->name('adjustments.swap-consent');
+        Route::post('adjustments/consolidate-batch', [SemesterScheduleController::class, 'consolidateBatch'])->name('adjustments.consolidate-batch');
+        Route::post('adjustments/publish-revision', [SemesterScheduleController::class, 'publishRevision'])->name('adjustments.publish-revision');
         Route::get('gemini', [SemesterScheduleController::class, 'geminiAssistant'])->name('gemini');
         Route::post('gemini/ask', [SemesterScheduleController::class, 'askGeminiAssistant'])->name('gemini.ask');
     });
@@ -202,12 +213,41 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{report}', [RoomComplaintReportController::class, 'destroy'])->name('destroy');
     });
 
-    // Faculty Personal Academic & Administrative Workspace (7 Groups, 17 Modules)
+    // Operations -> Exam Monitoring (Faculty, Program Heads, Dean, Super Admin)
+    Route::prefix('operations/exam-monitoring')->name('operations.exam-monitoring.')->group(function () {
+        Route::get('/', [ExamMonitoringController::class, 'index'])->name('index');
+        Route::post('/', [ExamMonitoringController::class, 'store'])->name('store');
+        Route::patch('/{examSchedule}/conducted', [ExamMonitoringController::class, 'markConducted'])->name('conducted');
+        Route::patch('/{examSchedule}/not-conducted', [ExamMonitoringController::class, 'markNotConducted'])->name('not-conducted');
+        Route::patch('/{examSchedule}/reschedule', [ExamMonitoringController::class, 'reschedule'])->name('reschedule');
+        Route::get('/tv-widget-data', [ExamMonitoringController::class, 'tvWidgetData'])->name('tv-widget-data');
+    });
+
+    // Operations -> Faculty Workload Management (Super Admin & Dean)
+    Route::prefix('operations/faculty-workload')->name('operations.faculty-workload.')->group(function () {
+        Route::get('/', [FacultyWorkloadManagementController::class, 'index'])->name('index');
+        Route::post('/{faculty}/lock', [FacultyWorkloadManagementController::class, 'lockWorkload'])->name('lock');
+        Route::post('/{faculty}/unlock', [FacultyWorkloadManagementController::class, 'unlockWorkload'])->name('unlock');
+    });
+
+    // Operations -> Make-Up Class Monitoring (Super Admin, Dean & Program Heads)
+    Route::prefix('operations/make-up-classes')->name('operations.make-up-classes.')->group(function () {
+        Route::get('/', [MakeUpClassMonitoringController::class, 'index'])->name('index');
+        Route::patch('/{makeUpClassRequest}/review', [MakeUpClassMonitoringController::class, 'review'])->name('review');
+    });
+
+    // Faculty Personal Academic & Administrative Workspace (7 Groups, 19 Modules)
     Route::prefix('faculty')->name('faculty.')->group(function () {
         Route::get('/dashboard', [FacultyPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('/calendar', [FacultyPortalController::class, 'calendar'])->name('calendar');
+        Route::post('/calendar/personal', [FacultyPortalController::class, 'storePersonalEvent'])->name('calendar.personal.store');
+        Route::delete('/calendar/personal/{id}', [FacultyPortalController::class, 'destroyPersonalEvent'])->name('calendar.personal.destroy');
         Route::get('/schedule', [FacultyPortalController::class, 'schedule'])->name('schedule');
         Route::get('/loading', [FacultyPortalController::class, 'loading'])->name('loading');
+        Route::get('/workload', [FacultyPortalController::class, 'workload'])->name('workload');
+        Route::get('/make-up-classes', [FacultyPortalController::class, 'makeUpClasses'])->name('make-up-classes');
+        Route::post('/make-up-classes', [FacultyPortalController::class, 'storeMakeUpClass'])->name('make-up-classes.store');
+        Route::patch('/make-up-classes/{makeUpClassRequest}/confirm', [FacultyPortalController::class, 'confirmMakeUpConducted'])->name('make-up-classes.confirm');
         Route::get('/attendance', [FacultyPortalController::class, 'attendance'])->name('attendance');
         Route::get('/availability', [FacultyPortalController::class, 'availability'])->name('availability');
         Route::post('/availability', [FacultyPortalController::class, 'updateAvailability'])->name('availability.update');

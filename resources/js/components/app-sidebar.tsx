@@ -34,7 +34,8 @@ import {
     FolderKanban,
     CalendarDays,
     FileUp,
-    Briefcase
+    Briefcase,
+    RefreshCw
 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
@@ -57,6 +58,9 @@ const adminNavGroups: NavGroup[] = [
             { title: 'Meetings', url: '/schedule/meetings', icon: Projector },
             { title: 'Activities', url: '/schedule/activities', icon: Activity },
             { title: 'Lab Monitoring', url: '/classroom-monitoring', icon: Monitor },
+            { title: 'Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },
+            { title: 'Faculty Workload', url: '/operations/faculty-workload', icon: Briefcase },
+            { title: 'Make-Up Classes', url: '/operations/make-up-classes', icon: RefreshCw },
             { title: 'Faculty Attendance', url: '/faculty-attendance', icon: ClipboardCheck },
             { title: 'Facility Reports', url: '/operations/facility-reports', icon: AlertTriangle },
             { title: 'Tasks & Projects', url: '/tasks', icon: BookCheckIcon },

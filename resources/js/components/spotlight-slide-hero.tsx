@@ -37,10 +37,19 @@ export interface SupportingMediaItem {
     caption?: string;
 }
 
+export interface CollagePhotoItem {
+    id?: string;
+    path?: string;
+    url?: string;
+    caption?: string;
+    fit?: 'cover' | 'contain';
+    is_primary?: boolean;
+}
+
 export interface SpotlightSlideData {
     id: number | string;
     type: string; // award, achievement, birthday, publication, certification, promotion, research, extension, welcome, farewell, custom
-    subject_type?: 'individual' | 'multiple' | 'team' | 'program' | 'group_photo' | string;
+    subject_type?: 'individual' | 'multiple' | 'team' | 'program' | 'group_photo' | 'collage' | string;
     headline: string;
     message: string;
     effective_honoree_name?: string;
@@ -50,6 +59,9 @@ export interface SpotlightSlideData {
     effective_photo_url?: string | null;
     effective_group_photo_url?: string | null;
     effective_honorees_list?: HonoreeItem[];
+    effective_collage_photos?: CollagePhotoItem[];
+    collage_style?: '2_split' | '3_grid' | '4_grid' | '1_plus_thumbnails' | 'hero_supporting' | string | null;
+    collage_photos?: CollagePhotoItem[] | null;
     honorees?: HonoreeItem[] | null;
     photo_path?: string | null;
     group_photo_path?: string | null;
@@ -222,9 +234,19 @@ export function SpotlightSlideHero({ slide, isDark = false, isPreview = false }:
         }
     })() : null;
 
+    // Check collage photos list
+    const collagePhotosList: CollagePhotoItem[] = slide.effective_collage_photos && slide.effective_collage_photos.length > 0
+        ? slide.effective_collage_photos
+        : (slide.collage_photos && slide.collage_photos.length > 0)
+            ? slide.collage_photos
+            : [];
+
+    const isCollage = subjectType === 'collage' || (collagePhotosList.length > 0 && subjectType !== 'individual');
     // Check if wide group photo layout or multiple honorees layout
-    const isGroupPhoto = subjectType === 'group_photo' || (subjectType === 'team' && groupPhotoUrl);
-    const isMultiHonoree = !isGroupPhoto && (subjectType === 'multiple' || honoreesList.length > 1);
+    const isGroupPhoto = !isCollage && (subjectType === 'group_photo' || (subjectType === 'team' && groupPhotoUrl));
+    const isMultiHonoree = !isCollage && !isGroupPhoto && (subjectType === 'multiple' || honoreesList.length > 1);
+
+    const collageStyle = slide.collage_style || '3_grid';
 
     return (
         <div
@@ -249,7 +271,12 @@ export function SpotlightSlideHero({ slide, isDark = false, isPreview = false }:
 
                     {/* Subject Model Tag */}
                     <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/10 text-white/90 border border-white/15">
-                        {isGroupPhoto ? (
+                        {isCollage ? (
+                            <>
+                                <Sparkles className="w-3 h-3 text-fuchsia-300" />
+                                <span>Celebration Collage ({collagePhotosList.length} Photos)</span>
+                            </>
+                        ) : isGroupPhoto ? (
                             <>
                                 <ImageIcon className="w-3 h-3 text-amber-300" />
                                 <span>Group Photo</span>
@@ -292,8 +319,144 @@ export function SpotlightSlideHero({ slide, isDark = false, isPreview = false }:
 
             {/* Central Hero Body - Switches adaptively based on Subject Type and Layout */}
             <div className="relative z-10 flex-1 flex flex-col justify-center min-h-0 py-2">
-                {/* MODE A: Shared Group Photo Layout */}
-                {isGroupPhoto ? (
+                {/* MODE D: Celebration Collage (2 to 6 Event Photos) */}
+                {isCollage ? (
+                    <div className="flex flex-col h-full justify-between gap-2.5">
+                        {/* Top Section: Headline & Commendation */}
+                        <div className="text-center max-w-4xl mx-auto shrink-0">
+                            <h1 className={`${headlineSizeClass} leading-tight text-white drop-shadow-sm mb-1`}>
+                                <span className="bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
+                                    {slide.headline}
+                                </span>
+                            </h1>
+                            <p className={`${messageSizeClass} text-white/90 max-w-2xl mx-auto font-light line-clamp-2`}>
+                                {slide.message}
+                            </p>
+                        </div>
+
+                        {/* Collage Images Container based on collageStyle */}
+                        <div className="flex-1 min-h-0 flex items-center justify-center my-auto w-full max-w-5xl mx-auto">
+                            {collageStyle === '2_split' ? (
+                                <div className="grid grid-cols-2 gap-3 md:gap-5 w-full h-[180px] md:h-[260px]">
+                                    {(collagePhotosList.length > 0 ? collagePhotosList.slice(0, 2) : [null, null]).map((photo, idx) => (
+                                        <div key={idx} className="relative rounded-2xl overflow-hidden border-2 border-white/20 bg-slate-900/80 shadow-2xl group flex items-center justify-center">
+                                            {photo?.url ? (
+                                                <img src={photo.url} alt={photo.caption || `Photo ${idx + 1}`} className={`w-full h-full ${photo.fit === 'contain' ? 'object-contain' : 'object-cover'}`} />
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center text-center p-3 text-white/40">
+                                                    <ImageIcon className="w-8 h-8 mb-1 text-amber-300/40" />
+                                                    <span className="text-[10px] uppercase font-bold tracking-wider">Photo #{idx + 1}</span>
+                                                </div>
+                                            )}
+                                            {photo?.caption && (
+                                                <div className="absolute bottom-2 left-2 right-2 px-2.5 py-1 rounded-lg bg-slate-950/80 backdrop-blur-md text-[10px] text-amber-200 border border-white/10 truncate font-semibold">
+                                                    {photo.caption}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : collageStyle === '3_grid' ? (
+                                <div className="grid grid-cols-3 gap-2.5 md:gap-4 w-full h-[180px] md:h-[260px]">
+                                    {(collagePhotosList.length > 0 ? collagePhotosList.slice(0, 3) : [null, null, null]).map((photo, idx) => (
+                                        <div key={idx} className={`relative rounded-2xl overflow-hidden border-2 border-white/20 bg-slate-900/80 shadow-2xl flex items-center justify-center ${idx === 0 ? 'ring-2 ring-amber-400/50' : ''}`}>
+                                            {photo?.url ? (
+                                                <img src={photo.url} alt={photo.caption || `Photo ${idx + 1}`} className={`w-full h-full ${photo.fit === 'contain' ? 'object-contain' : 'object-cover'}`} />
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center text-center p-3 text-white/40">
+                                                    <ImageIcon className="w-8 h-8 mb-1 text-amber-300/40" />
+                                                    <span className="text-[10px] uppercase font-bold tracking-wider">Photo #{idx + 1}</span>
+                                                </div>
+                                            )}
+                                            {photo?.caption && (
+                                                <div className="absolute bottom-2 left-2 right-2 px-2 py-0.5 rounded-lg bg-slate-950/85 backdrop-blur-md text-[9px] text-amber-200 border border-white/10 truncate font-medium">
+                                                    {photo.caption}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : collageStyle === '4_grid' ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 md:gap-3.5 w-full h-[180px] md:h-[260px]">
+                                    {(collagePhotosList.length > 0 ? collagePhotosList.slice(0, 4) : [null, null, null, null]).map((photo, idx) => (
+                                        <div key={idx} className="relative rounded-2xl overflow-hidden border-2 border-white/20 bg-slate-900/80 shadow-2xl flex items-center justify-center">
+                                            {photo?.url ? (
+                                                <img src={photo.url} alt={photo.caption || `Photo ${idx + 1}`} className={`w-full h-full ${photo.fit === 'contain' ? 'object-contain' : 'object-cover'}`} />
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center text-center p-2 text-white/40">
+                                                    <ImageIcon className="w-6 h-6 mb-1 text-amber-300/40" />
+                                                    <span className="text-[9px] uppercase font-bold tracking-wider">Photo #{idx + 1}</span>
+                                                </div>
+                                            )}
+                                            {photo?.caption && (
+                                                <div className="absolute bottom-1.5 left-1.5 right-1.5 px-2 py-0.5 rounded bg-slate-950/85 text-[9px] text-amber-200 border border-white/10 truncate">
+                                                    {photo.caption}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                /* 1 Large Hero + Supporting Thumbnails */
+                                <div className="flex flex-col sm:flex-row gap-3 w-full h-[190px] md:h-[270px]">
+                                    {/* Primary Hero image */}
+                                    <div className="flex-1 sm:w-2/3 h-full relative rounded-2xl overflow-hidden border-2 border-amber-300/60 bg-slate-900/90 shadow-2xl flex items-center justify-center">
+                                        {(collagePhotosList[0]?.url) ? (
+                                            <img
+                                                src={collagePhotosList[0].url}
+                                                alt={collagePhotosList[0]?.caption || 'Hero celebration photo'}
+                                                className={`w-full h-full ${collagePhotosList[0].fit === 'contain' ? 'object-contain' : 'object-cover'}`}
+                                            />
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center text-center p-4 text-white/50">
+                                                <ImageIcon className="w-10 h-10 mb-1 text-amber-300/60" />
+                                                <span className="text-xs uppercase font-bold tracking-wider text-amber-200">Primary Hero Photo</span>
+                                            </div>
+                                        )}
+                                        <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[9px] uppercase tracking-wider shadow">
+                                            Primary Visual
+                                        </div>
+                                        {collagePhotosList[0]?.caption && (
+                                            <div className="absolute bottom-2 left-2 right-2 px-3 py-1 rounded-lg bg-slate-950/85 backdrop-blur-md text-[10px] text-amber-200 border border-white/10 truncate font-semibold">
+                                                {collagePhotosList[0].caption}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Supporting Thumbnails Strip */}
+                                    <div className="sm:w-1/3 flex sm:flex-col gap-2 h-full overflow-hidden">
+                                        {(collagePhotosList.length > 1 ? collagePhotosList.slice(1, 4) : [null, null]).map((photo, idx) => (
+                                            <div key={idx} className="flex-1 relative rounded-xl overflow-hidden border border-white/20 bg-slate-900/80 shadow flex items-center justify-center">
+                                                {photo?.url ? (
+                                                    <img src={photo.url} alt={photo.caption || `Thumbnail ${idx + 1}`} className={`w-full h-full ${photo.fit === 'contain' ? 'object-contain' : 'object-cover'}`} />
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center text-center p-1 text-white/40">
+                                                        <ImageIcon className="w-4 h-4 text-amber-300/40" />
+                                                        <span className="text-[8px] uppercase tracking-wider font-bold">Photo #{idx + 2}</span>
+                                                    </div>
+                                                )}
+                                                {photo?.caption && (
+                                                    <div className="absolute bottom-1 left-1 right-1 px-1.5 py-0.2 rounded bg-slate-950/85 text-[8px] text-white/90 truncate">
+                                                        {photo.caption}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Bottom Metadata bar */}
+                        {(slide.event_title || slide.awarding_organization || formattedEventDate) && (
+                            <div className="flex items-center justify-center gap-4 text-center pt-2 border-t border-white/10 text-[10px] md:text-xs text-amber-200/90 shrink-0">
+                                {slide.event_title && <span><strong>Concurrence:</strong> {slide.event_title}</span>}
+                                {slide.awarding_organization && <span>• <strong>Organization:</strong> {slide.awarding_organization}</span>}
+                                {formattedEventDate && <span>• <strong>Date:</strong> {formattedEventDate}</span>}
+                            </div>
+                        )}
+                    </div>
+                ) : isGroupPhoto ? (
                     <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 h-full">
                         {/* Group Photo Display */}
                         <div className="w-full md:w-1/2 h-44 sm:h-56 md:h-full relative rounded-2xl overflow-hidden border-2 border-amber-300/40 shadow-2xl bg-slate-950 shrink-0">

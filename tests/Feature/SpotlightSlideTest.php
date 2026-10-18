@@ -208,3 +208,40 @@ test('user can store a team spotlight slide with custom group photo settings', f
         'group_photo_fit' => 'cover',
     ]);
 });
+
+test('user can store a celebration collage spotlight slide with multi-photo layout', function () {
+    $payload = [
+        'type' => 'custom',
+        'subject_type' => 'collage',
+        'headline' => 'COLLEGE RESEARCH EXPO & CELEBRATION MOMENTS',
+        'message' => 'Moments and highlights from the annual innovation summit and academic fellowship.',
+        'collage_style' => '3_grid',
+        'collage_photos' => [
+            ['id' => 'p1', 'caption' => 'Keynote Presentation', 'fit' => 'cover', 'is_primary' => true],
+            ['id' => 'p2', 'caption' => 'Award Conferment', 'fit' => 'contain', 'is_primary' => false],
+            ['id' => 'p3', 'caption' => 'Faculty Fellowship', 'fit' => 'cover', 'is_primary' => false],
+        ],
+        'template' => '3_grid',
+        'background_style' => 'royal-gold',
+        'accent_style' => 'gold',
+        'headline_alignment' => 'center',
+        'text_size' => 'normal',
+        'display_duration' => 25,
+        'transition' => 'zoom-fade',
+        'animation_effect' => 'sparkles',
+        'layout_mode' => 'hero-split',
+        'playlist' => 'Main TV Rotation',
+        'priority' => 2,
+        'status' => 'published',
+    ];
+
+    $response = $this->actingAs($this->user)->post(route('tv-config.spotlight.store'), $payload);
+
+    $response->assertRedirect(route('tv-config.spotlight.index'));
+    $this->assertDatabaseHas('spotlight_slides', [
+        'subject_type' => 'collage',
+        'collage_style' => '3_grid',
+        'headline' => 'COLLEGE RESEARCH EXPO & CELEBRATION MOMENTS',
+        'animation_effect' => 'sparkles',
+    ]);
+});

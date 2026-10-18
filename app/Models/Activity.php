@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Activity extends Model
 {
@@ -17,10 +18,16 @@ class Activity extends Model
         'visibility',
         'status',
         'program_id',
+        'faculty_id',
     ];
 
-    public function program()
+    public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
+    }
+
+    public function faculty(): BelongsTo
+    {
+        return $this->belongsTo(Faculty::class);
     }
 }
