@@ -17,6 +17,7 @@ use App\Http\Controllers\OfficeRequestController;
 use App\Http\Controllers\Operations\ExamMonitoringController;
 use App\Http\Controllers\Operations\FacultyWorkloadManagementController;
 use App\Http\Controllers\Operations\MakeUpClassMonitoringController;
+use App\Http\Controllers\Operations\RoomUtilizationReportController;
 use App\Http\Controllers\Performance\FacultyPerformanceController;
 use App\Http\Controllers\Performance\ProgramPerformanceController;
 use App\Http\Controllers\Performance\RecognitionRuleController;
@@ -236,6 +237,11 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/{makeUpClassRequest}/review', [MakeUpClassMonitoringController::class, 'review'])->name('review');
     });
 
+    // Operations -> Room Utilization Report & Capacity Analytics (Super Admin, Dean & Program Heads)
+    Route::prefix('operations/room-utilization')->name('operations.room-utilization.')->group(function () {
+        Route::get('/', [RoomUtilizationReportController::class, 'index'])->name('index');
+    });
+
     // Faculty Personal Academic & Administrative Workspace (7 Groups, 19 Modules)
     Route::prefix('faculty')->name('faculty.')->group(function () {
         Route::get('/dashboard', [FacultyPortalController::class, 'dashboard'])->name('dashboard');
@@ -248,6 +254,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/make-up-classes', [FacultyPortalController::class, 'makeUpClasses'])->name('make-up-classes');
         Route::post('/make-up-classes', [FacultyPortalController::class, 'storeMakeUpClass'])->name('make-up-classes.store');
         Route::patch('/make-up-classes/{makeUpClassRequest}/confirm', [FacultyPortalController::class, 'confirmMakeUpConducted'])->name('make-up-classes.confirm');
+        Route::get('/exam-schedules', [FacultyPortalController::class, 'examSchedules'])->name('exam-schedules');
+        Route::post('/exam-schedules', [FacultyPortalController::class, 'storeExamSchedule'])->name('exam-schedules.store');
+        Route::delete('/exam-schedules/{examSchedule}', [FacultyPortalController::class, 'destroyExamSchedule'])->name('exam-schedules.destroy');
         Route::get('/attendance', [FacultyPortalController::class, 'attendance'])->name('attendance');
         Route::get('/availability', [FacultyPortalController::class, 'availability'])->name('availability');
         Route::post('/availability', [FacultyPortalController::class, 'updateAvailability'])->name('availability.update');

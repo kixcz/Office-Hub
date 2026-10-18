@@ -6,8 +6,6 @@ import {
     Sparkles,
     Plus,
     Search,
-    Filter,
-    Calendar,
     AlertTriangle,
     Trophy,
     Award,

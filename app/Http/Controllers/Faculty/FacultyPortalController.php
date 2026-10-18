@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Faculty;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Schedule\CalendarController;
+use App\Models\AcademicPeriod;
 use App\Models\Accomplishment;
 use App\Models\Activity;
+use App\Models\ExamSchedule;
 use App\Models\ExtensionEngagement;
 use App\Models\Faculty;
 use App\Models\FacultyAttendance;
@@ -799,6 +801,9 @@ class FacultyPortalController extends Controller
     {
         $faculty = $this->resolveFaculty($request);
 
+        $academicPeriods = AcademicPeriod::orderByDesc('is_current')->orderByDesc('start_date')->get();
+        $currentPeriod = $academicPeriods->firstWhere('is_current', true) ?? $academicPeriods->first();
+
         $requirementsQuery = Requirement::query();
         if ($faculty?->program_id) {
             $requirementsQuery->where(function ($q) use ($faculty) {
@@ -809,20 +814,173 @@ class FacultyPortalController extends Controller
 
         $submissions = $faculty ? Submission::where('faculty_id', $faculty->id)->get()->keyBy('requirement_id') : collect();
 
-        $items = $requirements->map(function ($req) use ($submissions) {
+        $now = Carbon::now();
+
+        $categoryMap = [
+            'TOS' => 'Academic Compliance',
+            'TQ' => 'Academic Compliance',
+            'Syllabus' => 'Course Syllabi',
+            'Workload' => 'Faculty Load',
+            'Rubrics' => 'Rubrics Submission',
+            'Grade' => 'Grading Sheets',
+            'Grades' => 'Grading Sheets',
+            'Research' => 'Research',
+            'Extension' => 'Extension',
+            'SPAR' => 'SPAR',
+            'Graduation' => 'Academic Compliance',
+        ];
+
+        $items = $requirements->map(function ($req) use ($submissions, $now, $categoryMap) {
             $sub = $submissions->get($req->id);
 
+            // Determine category
+            $category = 'Academic Compliance';
+            foreach ($categoryMap as $key => $cat) {
+                if (stripos($req->title, $key) !== false || stripos($req->document_type, $key) !== false || stripos($req->description ?? '', $key) !== false) {
+                    $category = $cat;
+                    break;
+                }
+            }
+
+            $dueDate = $req->due_date ? Carbon::parse($req->due_date) : null;
+            $submittedAt = $sub && $sub->submitted_at ? Carbon::parse($sub->submitted_at) : null;
+            $updatedAt = $sub && $sub->updated_at ? Carbon::parse($sub->updated_at) : ($submittedAt ?? ($req->updated_at ? Carbon::parse($req->updated_at) : null));
+
+            // Status normalization:
+            // "Approved", "Under Review", "Pending", "Returned", "Completed"
+            $status = 'Pending';
+            $progress = 0;
+            if ($sub) {
+                if (in_array($sub->status, ['approved', 'accepted'])) {
+                    $status = 'Approved';
+                    $progress = 100;
+                } elseif (in_array($sub->status, ['revision_requested', 'returned'])) {
+                    $status = 'Returned';
+                    $progress = 40;
+                } elseif (in_array($sub->status, ['submitted', 'under_review'])) {
+                    $status = 'Under Review';
+                    $progress = 80;
+                } elseif ($sub->status === 'completed') {
+                    $status = 'Completed';
+                    $progress = 100;
+                } else {
+                    $status = ucfirst(str_replace('_', ' ', $sub->status));
+                    $progress = 50;
+                }
+            } else {
+                if ($dueDate && $now->greaterThan($dueDate)) {
+                    $status = 'Pending';
+                    $progress = 0;
+                } else {
+                    $status = 'Pending';
+                    $progress = 0;
+                }
+            }
+
+            // Days left calculation
+            $daysLeftText = null;
+            $isUrgent = false;
+            $daysRemaining = null;
+            if ($dueDate) {
+                if ($dueDate->isToday()) {
+                    $daysLeftText = 'Due Today';
+                    $isUrgent = true;
+                    $daysRemaining = 0;
+                } elseif ($now->greaterThan($dueDate)) {
+                    $diff = (int) $now->diffInDays($dueDate);
+                    $daysLeftText = $diff === 0 ? 'Due Today' : "{$diff} days overdue";
+                    $isUrgent = true;
+                    $daysRemaining = -$diff;
+                } else {
+                    $diff = (int) $now->diffInDays($dueDate);
+                    $daysLeftText = $diff === 0 ? 'Due Today' : "{$diff} days left";
+                    if ($diff <= 3) {
+                        $isUrgent = true;
+                    }
+                    $daysRemaining = $diff;
+                }
+            }
+
+            // Submitter/Modifier label
+            $lastUpdatedBy = 'by You';
+            if ($sub && in_array($sub->status, ['approved', 'accepted'])) {
+                $lastUpdatedBy = 'by Dean / Chair';
+            } elseif ($sub && $sub->reviewer_comments) {
+                $lastUpdatedBy = 'by Chairperson';
+            }
+
             return [
-                'requirement' => $req,
-                'submission' => $sub,
-                'status' => $sub ? $sub->status : 'pending',
-                'is_overdue' => Carbon::now()->greaterThan(Carbon::parse($req->due_date)) && (! $sub || ! $sub->submitted_at),
+                'id' => $req->id,
+                'requirement_id' => $req->id,
+                'submission_id' => $sub?->id,
+                'title' => $req->title,
+                'description' => $req->description,
+                'category' => $category,
+                'document_type' => $req->document_type ?? 'Document',
+                'due_date' => $dueDate ? $dueDate->format('M d, Y') : '—',
+                'due_date_raw' => $dueDate ? $dueDate->toISOString() : null,
+                'days_left' => $daysLeftText,
+                'days_remaining' => $daysRemaining,
+                'is_urgent' => $isUrgent,
+                'is_overdue' => $dueDate && $now->greaterThan($dueDate) && (! $sub || ! $sub->submitted_at),
+                'status' => $status,
+                'progress' => $progress,
+                'last_updated' => $updatedAt ? $updatedAt->format('M d, Y') : ($dueDate ? $dueDate->format('M d, Y') : 'Recent'),
+                'last_updated_by' => $lastUpdatedBy,
+                'reviewer_feedback' => $sub?->reviewer_comments,
+                'file_path' => $sub?->file_path,
+                'attachment_name' => $sub?->file_path ? basename($sub->file_path) : null,
+                'academic_year' => $req->academic_year,
+                'semester' => $req->semester,
             ];
         });
+
+        // Summary Metrics
+        $totalCount = $items->count();
+        $approvedCount = $items->filter(fn ($i) => $i['status'] === 'Approved')->count();
+        $underReviewCount = $items->filter(fn ($i) => in_array($i['status'], ['Under Review', 'Pending Review']))->count();
+        $pendingCount = $items->filter(fn ($i) => $i['status'] === 'Pending')->count();
+        $returnedCount = $items->filter(fn ($i) => $i['status'] === 'Returned')->count();
+        $completedCount = $items->filter(fn ($i) => in_array($i['status'], ['Approved', 'Completed']))->count();
+        $urgentCount = $items->filter(fn ($i) => $i['is_urgent'] && $i['status'] !== 'Approved')->count();
+
+        $metrics = [
+            'total' => $totalCount,
+            'approved' => [
+                'count' => $approvedCount,
+                'percentage' => $totalCount > 0 ? round(($approvedCount / $totalCount) * 100) : 0,
+            ],
+            'under_review' => [
+                'count' => $underReviewCount,
+                'percentage' => $totalCount > 0 ? round(($underReviewCount / $totalCount) * 100) : 0,
+            ],
+            'pending' => [
+                'count' => $pendingCount,
+                'percentage' => $totalCount > 0 ? round(($pendingCount / $totalCount) * 100) : 0,
+            ],
+            'returned' => [
+                'count' => $returnedCount,
+            ],
+            'urgent' => [
+                'count' => $urgentCount,
+                'percentage' => $totalCount > 0 ? round(($urgentCount / $totalCount) * 100) : 0,
+            ],
+            'completed' => [
+                'count' => $completedCount,
+            ],
+        ];
+
+        $categories = $items->pluck('category')->unique()->values();
+        $types = $items->pluck('document_type')->unique()->values();
 
         return Inertia::render('faculty/requirements', [
             'faculty' => $faculty,
             'items' => $items,
+            'metrics' => $metrics,
+            'categories' => $categories,
+            'types' => $types,
+            'academic_periods' => $academicPeriods,
+            'current_period' => $currentPeriod,
         ]);
     }
 
@@ -2108,5 +2266,181 @@ class FacultyPortalController extends Controller
         ]);
 
         return back()->with('success', 'Make-up class execution confirmed and marked as Completed.');
+    }
+
+    /**
+     * 20. Faculty My Exam Schedules (Timetable & Cards View)
+     */
+    public function examSchedules(Request $request): Response
+    {
+        $faculty = $this->resolveFaculty($request);
+        $currentPeriod = AcademicPeriod::current() ?? AcademicPeriod::first();
+        $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
+
+        $fullName = $faculty ? "{$faculty->first_name} {$faculty->last_name}" : '';
+        $lastName = $faculty ? $faculty->last_name : '';
+
+        // Retrieve current faculty's assigned course offerings and room schedules
+        $myOfferings = RoomSchedule::query()
+            ->where(function ($q) use ($faculty, $fullName, $lastName) {
+                if ($faculty) {
+                    $q->where('faculty_id', $faculty->id);
+                }
+                if ($fullName) {
+                    $q->orWhere('instructor', 'like', "%{$fullName}%")
+                        ->orWhere('instructor', 'like', "%{$lastName}%");
+                }
+            })
+            ->get();
+
+        // Get distinct list of rooms available in the institution
+        $rooms = RoomSchedule::select('room_name')
+            ->distinct()
+            ->whereNotNull('room_name')
+            ->orderBy('room_name')
+            ->pluck('room_name');
+
+        // Retrieve exam schedules for this faculty
+        $examsQuery = ExamSchedule::with(['faculty', 'program', 'academicPeriod'])
+            ->where(function ($q) use ($faculty) {
+                if ($faculty) {
+                    $q->where('faculty_id', $faculty->id);
+                }
+            })
+            ->orderBy('exam_date')
+            ->orderBy('start_time');
+
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            $examsQuery->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('component_type') && $request->input('component_type') !== 'all') {
+            $examsQuery->where('component_type', $request->input('component_type'));
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $examsQuery->where(function ($q) use ($search) {
+                $q->where('course_code', 'like', "%{$search}%")
+                    ->orWhere('course_title', 'like', "%{$search}%")
+                    ->orWhere('section', 'like', "%{$search}%")
+                    ->orWhere('room_name', 'like', "%{$search}%");
+            });
+        }
+
+        $myExams = $examsQuery->get();
+
+        // Calculate KPI summary
+        $stats = [
+            'total' => $myExams->count(),
+            'lecture_count' => $myExams->where('component_type', 'Lecture')->count(),
+            'lab_count' => $myExams->where('component_type', 'Laboratory')->count(),
+            'scheduled' => $myExams->where('status', 'Scheduled')->count(),
+            'awaiting_confirmation' => $myExams->where('status', 'Awaiting Confirmation')->count(),
+            'conducted' => $myExams->where('status', 'Conducted')->count(),
+        ];
+
+        return Inertia::render('faculty/exam-schedules', [
+            'faculty' => $faculty,
+            'currentPeriod' => $currentPeriod,
+            'academicPeriods' => $academicPeriods,
+            'exams' => $myExams,
+            'myOfferings' => $myOfferings,
+            'rooms' => $rooms,
+            'stats' => $stats,
+            'filters' => $request->only(['status', 'component_type', 'search']),
+        ]);
+    }
+
+    /**
+     * Store new Exam Schedule entry submitted by Faculty
+     */
+    public function storeExamSchedule(Request $request): RedirectResponse
+    {
+        $faculty = $this->resolveFaculty($request);
+        if (! $faculty) {
+            return back()->with('error', 'Faculty account could not be resolved.');
+        }
+
+        $validated = $request->validate([
+            'course_code' => 'required|string',
+            'course_title' => 'required|string',
+            'section' => 'required|string',
+            'year_level' => 'nullable|string',
+            'exam_type' => 'required|string',
+            'component_type' => 'required|string|in:Lecture,Laboratory',
+            'custom_exam_title' => 'nullable|string',
+            'exam_date' => 'required|date',
+            'day_of_week' => 'nullable|string',
+            'start_time' => 'required|string',
+            'end_time' => 'required|string',
+            'room_name' => 'required|string',
+            'modality' => 'nullable|string',
+            'proctor_name' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'room_schedule_id' => 'nullable|exists:room_schedules,id',
+        ]);
+
+        $currentPeriod = AcademicPeriod::current() ?? AcademicPeriod::first();
+        $dayOfWeek = $validated['day_of_week'] ?? Carbon::parse($validated['exam_date'])->format('l');
+
+        // Check room conflict
+        $conflict = ExamSchedule::where('room_name', $validated['room_name'])
+            ->whereDate('exam_date', $validated['exam_date'])
+            ->where('status', '!=', 'Cancelled')
+            ->where(function ($q) use ($validated) {
+                $q->whereBetween('start_time', [$validated['start_time'], $validated['end_time']])
+                    ->orWhereBetween('end_time', [$validated['start_time'], $validated['end_time']]);
+            })
+            ->first();
+
+        if ($conflict) {
+            return back()->withErrors([
+                'room_name' => "Room {$validated['room_name']} is already occupied for {$conflict->course_code} ({$conflict->start_time} - {$conflict->end_time}) on this date.",
+            ]);
+        }
+
+        ExamSchedule::create([
+            'academic_period_id' => $currentPeriod ? $currentPeriod->id : null,
+            'program_id' => $faculty->program_id ?? null,
+            'faculty_id' => $faculty->id,
+            'room_schedule_id' => $validated['room_schedule_id'] ?? null,
+            'course_code' => $validated['course_code'],
+            'course_title' => $validated['course_title'],
+            'section' => $validated['section'],
+            'year_level' => $validated['year_level'] ?? null,
+            'exam_type' => $validated['exam_type'],
+            'component_type' => $validated['component_type'],
+            'custom_exam_title' => $validated['custom_exam_title'] ?? null,
+            'exam_date' => $validated['exam_date'],
+            'day_of_week' => $dayOfWeek,
+            'start_time' => $validated['start_time'],
+            'end_time' => $validated['end_time'],
+            'room_name' => $validated['room_name'],
+            'modality' => $validated['modality'] ?? ($validated['component_type'] === 'Laboratory' ? 'Laboratory Hands-on' : 'Face-to-Face'),
+            'proctor_name' => $validated['proctor_name'] ?? ($faculty->title_name ?? $faculty->full_name),
+            'is_confirmed' => true,
+            'notes' => $validated['notes'] ?? null,
+            'status' => 'Scheduled',
+        ]);
+
+        return back()->with('success', "{$validated['component_type']} Examination schedule for {$validated['course_code']} ({$validated['section']}) successfully added.");
+    }
+
+    /**
+     * Delete an exam schedule created by faculty
+     */
+    public function destroyExamSchedule(Request $request, ExamSchedule $examSchedule): RedirectResponse
+    {
+        $faculty = $this->resolveFaculty($request);
+
+        if ($examSchedule->faculty_id !== $faculty?->id && ! auth()->user()->isSuperAdmin()) {
+            return back()->with('error', 'Unauthorized to remove this examination schedule.');
+        }
+
+        $course = $examSchedule->course_code;
+        $examSchedule->delete();
+
+        return back()->with('success', "Exam schedule for {$course} was removed.");
     }
 }

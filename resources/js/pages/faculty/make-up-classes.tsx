@@ -17,6 +17,9 @@ import {
     UserCheck,
     Layers,
     Send,
+    Download,
+    Printer,
+    FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -95,6 +98,11 @@ export default function FacultyMakeUpClassesPage({
     const [actualAttendanceCount, setActualAttendanceCount] = useState<string>('35');
     const [completionRemarks, setCompletionRemarks] = useState('');
     const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+
+    // Official FM-DSSC-CAP-008 Form Modal State
+    const [printModalOpen, setPrintModalOpen] = useState(false);
+    const [printableRequest, setPrintableRequest] = useState<MakeUpRequest | null>(null);
+    const [isExportingPdf, setIsExportingPdf] = useState(false);
 
     // Selected offering helper
     const activeOffering = selectedOfferingIndex !== '' ? myOfferings[parseInt(selectedOfferingIndex, 10)] : null;
@@ -319,22 +327,38 @@ export default function FacultyMakeUpClassesPage({
                                             </td>
 
                                             <td className="py-3 px-4 text-right">
-                                                {req.status === 'Approved' && (
+                                                <div className="flex items-center justify-end gap-1.5">
                                                     <Button
                                                         size="sm"
-                                                        variant="default"
-                                                        className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white gap-1"
-                                                        onClick={() => handleOpenConfirm(req)}
+                                                        variant="outline"
+                                                        className="h-8 text-xs font-semibold gap-1 hover:bg-muted"
+                                                        onClick={() => {
+                                                            setPrintableRequest(req);
+                                                            setPrintModalOpen(true);
+                                                        }}
+                                                        title="Generate Official Form (FM-DSSC-CAP-008)"
                                                     >
-                                                        <UserCheck className="h-3.5 w-3.5" />
-                                                        Confirm Conducted
+                                                        <FileText className="h-3.5 w-3.5 text-amber-600" />
+                                                        <span className="hidden sm:inline">Form</span>
                                                     </Button>
-                                                )}
-                                                {req.status === 'Completed' && (
-                                                    <Badge variant="outline" className="border-teal-500 text-teal-600 bg-teal-50">
-                                                        Conducted ({req.actual_attendance_count} students)
-                                                    </Badge>
-                                                )}
+
+                                                    {req.status === 'Approved' && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="default"
+                                                            className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white gap-1"
+                                                            onClick={() => handleOpenConfirm(req)}
+                                                        >
+                                                            <UserCheck className="h-3.5 w-3.5" />
+                                                            Confirm
+                                                        </Button>
+                                                    )}
+                                                    {req.status === 'Completed' && (
+                                                        <Badge variant="outline" className="border-teal-500 text-teal-600 bg-teal-50 text-[10px]">
+                                                            Conducted ({req.actual_attendance_count})
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -580,6 +604,287 @@ export default function FacultyMakeUpClassesPage({
                         </DialogContent>
                     </Dialog>
                 )}
+
+                {/* Official Institutional FM-DSSC-CAP-008 Make Up Class Form Modal */}
+                <Dialog open={printModalOpen} onOpenChange={setPrintModalOpen}>
+                    <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
+                        <DialogHeader className="pb-3 border-b flex flex-row items-center justify-between">
+                            <div>
+                                <DialogTitle className="text-base font-bold flex items-center gap-2">
+                                    <FileText className="h-5 w-5 text-indigo-600" />
+                                    Make Up Class Form (FM-DSSC-CAP-008)
+                                </DialogTitle>
+                                <DialogDescription className="text-xs text-muted-foreground">
+                                    Official institutional format: Beadle's Copy & Department's Copy
+                                </DialogDescription>
+                            </div>
+                            <div className="flex items-center gap-2 pr-6">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 text-xs font-semibold gap-1.5"
+                                    onClick={() => window.print()}
+                                >
+                                    <Printer className="h-3.5 w-3.5" />
+                                    Print
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    className="h-8 text-xs font-semibold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white"
+                                    disabled={isExportingPdf}
+                                    onClick={async () => {
+                                        const formEl = document.getElementById('official-makeup-form-printable');
+                                        if (!formEl) return;
+                                        try {
+                                            setIsExportingPdf(true);
+                                            const html2canvas = (await import('html2canvas')).default;
+                                            const { jsPDF } = await import('jspdf');
+
+                                            const canvas = await html2canvas(formEl, {
+                                                scale: 2,
+                                                useCORS: true,
+                                                logging: false,
+                                                backgroundColor: '#ffffff',
+                                            });
+                                            const imgData = canvas.toDataURL('image/png');
+                                            const pdf = new jsPDF('p', 'mm', 'a4');
+                                            const pdfWidth = pdf.internal.pageSize.getWidth();
+                                            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+                                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                                            pdf.save(`Make_Up_Class_Form_${printableRequest?.reference_no || 'FM-DSSC-CAP-008'}.pdf`);
+                                        } catch (error) {
+                                            console.error('Failed to export PDF:', error);
+                                            window.print();
+                                        } finally {
+                                            setIsExportingPdf(false);
+                                        }
+                                    }}
+                                >
+                                    <Download className="h-3.5 w-3.5" />
+                                    {isExportingPdf ? 'Exporting...' : 'Save as PDF'}
+                                </Button>
+                            </div>
+                        </DialogHeader>
+
+                        {/* Printable Area */}
+                        <div className="py-2 overflow-x-auto">
+                            <div
+                                id="official-makeup-form-printable"
+                                className="bg-white text-black p-4 sm:p-6 w-[790px] mx-auto shadow-sm border border-neutral-300 font-sans print:shadow-none print:border-none print:p-0 print:w-full"
+                                style={{ minHeight: '1050px' }}
+                            >
+                                <style type="text/css" media="print">{`
+                                    @page { size: portrait; margin: 10mm; }
+                                    body * { visibility: hidden; }
+                                    #official-makeup-form-printable, #official-makeup-form-printable * { visibility: visible; }
+                                    #official-makeup-form-printable {
+                                        position: absolute;
+                                        left: 0;
+                                        top: 0;
+                                        width: 100% !important;
+                                        box-shadow: none !important;
+                                        border: none !important;
+                                        padding: 0 !important;
+                                    }
+                                `}</style>
+
+                                {/* SLIP HELPER RENDERER */}
+                                {[
+                                    { copyLabel: "(Beadle's Copy)", isTop: true },
+                                    { copyLabel: "(Department's Copy)", isTop: false }
+                                ].map((slip, slipIdx) => {
+                                    const semString = currentPeriod?.name || printableRequest?.course_title || 'First Semester, A.Y. 2024-2025';
+                                    const instituteString = faculty?.department?.name ? `Institute of Computing / ${faculty?.department?.name}` : 'Institute of Computing';
+                                    const deptString = faculty?.department?.name || 'Information Technology Department';
+                                    const missingForString = printableRequest ? `${printableRequest.course_code} - ${printableRequest.course_title} (${printableRequest.missed_date} ${printableRequest.original_start_time || ''})` : '';
+                                    const requestedDateString = printableRequest ? `${printableRequest.proposed_date} (${printableRequest.proposed_start_time} - ${printableRequest.proposed_end_time})` : '';
+                                    const courseYearSec = printableRequest ? `${printableRequest.course_code} / ${printableRequest.section}` : '';
+                                    const reasonString = printableRequest ? (printableRequest.absence_remarks ? `${printableRequest.absence_reason} - ${printableRequest.absence_remarks}` : printableRequest.absence_reason) : '';
+                                    const facultyName = faculty ? `${faculty.first_name || ''} ${faculty.last_name || ''}`.trim() : 'Faculty Member';
+
+                                    return (
+                                        <div key={slipIdx} className={slipIdx > 0 ? "mt-5 pt-4 border-t-2 border-dashed border-neutral-400" : ""}>
+                                            {/* HEADER BANNER */}
+                                            <div className="border border-neutral-800">
+                                                <div className="flex flex-row items-stretch">
+                                                    {/* Left Banner: Navy Blue */}
+                                                    <div className="flex-1 bg-[#10355c] text-white px-4 py-2 flex items-center gap-3">
+                                                        <img
+                                                            src="/DSSC.jpg"
+                                                            alt="Davao Del Sur State College"
+                                                            className="h-14 w-14 rounded-full border-2 border-white bg-white object-contain flex-shrink-0"
+                                                        />
+                                                        <div>
+                                                            <div className="text-[10px] tracking-wide uppercase font-light text-blue-100">Republic of the Philippines</div>
+                                                            <div className="text-base sm:text-lg font-black tracking-wider leading-tight">DAVAO DEL SUR STATE COLLEGE</div>
+                                                            <div className="text-[9px] text-blue-200">Brgy. Matti, Digos City, Davao del Sur, Philippines 8002</div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Right ISO Document Code Number Box */}
+                                                    <div className="w-56 border-l border-neutral-800 flex flex-col text-center text-[10px] bg-white">
+                                                        <div className="bg-[#10355c] text-white font-bold text-[9px] py-0.5 tracking-wider uppercase border-b border-neutral-800">
+                                                            DOCUMENT CODE NUMBER
+                                                        </div>
+                                                        <div className="py-1 px-1 font-extrabold text-sm tracking-tight text-neutral-900 border-b border-neutral-800">
+                                                            FM-DSSC-CAP-008
+                                                        </div>
+                                                        <div className="grid grid-cols-4 text-[8px] bg-neutral-100 border-b border-neutral-800 font-semibold text-neutral-700">
+                                                            <div className="border-r border-neutral-800 py-0.5 uppercase">ISSUE STATUS</div>
+                                                            <div className="border-r border-neutral-800 py-0.5 uppercase">REV. NO.</div>
+                                                            <div className="border-r border-neutral-800 py-0.5 uppercase">EFFECTIVE DATE</div>
+                                                            <div className="py-0.5 uppercase">PAGE NO.</div>
+                                                        </div>
+                                                        <div className="grid grid-cols-4 text-[9px] font-bold text-neutral-900">
+                                                            <div className="border-r border-neutral-800 py-0.5">01</div>
+                                                            <div className="border-r border-neutral-800 py-0.5">00</div>
+                                                            <div className="border-r border-neutral-800 py-0.5">11.11.2024</div>
+                                                            <div className="py-0.5">1 of 1</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Header Maroon Accent Stripe */}
+                                                <div className="h-1.5 bg-[#78181f] border-t border-neutral-800" />
+                                            </div>
+
+                                            {/* FORM TITLE */}
+                                            <div className="text-center my-3">
+                                                <h2 className="text-sm font-extrabold tracking-wider uppercase text-neutral-900">
+                                                    MAKE UP CLASS FORM
+                                                </h2>
+                                            </div>
+
+                                            {/* TOP FIELDS: Semester, Institute, Department */}
+                                            <div className="grid grid-cols-12 gap-x-2 gap-y-2 text-[11px] text-neutral-900 items-baseline">
+                                                <div className="col-span-4 flex items-baseline">
+                                                    <span className="font-semibold whitespace-nowrap mr-1">Semester:</span>
+                                                    <span className="flex-1 border-b border-neutral-700 px-1 font-medium truncate">{semString}</span>
+                                                </div>
+                                                <div className="col-span-4 flex items-baseline">
+                                                    <span className="font-semibold whitespace-nowrap mr-1">Institute:</span>
+                                                    <span className="flex-1 border-b border-neutral-700 px-1 font-medium truncate">{instituteString}</span>
+                                                </div>
+                                                <div className="col-span-4 flex items-baseline">
+                                                    <span className="font-semibold whitespace-nowrap mr-1">Department:</span>
+                                                    <span className="flex-1 border-b border-neutral-700 px-1 font-medium truncate">{deptString}</span>
+                                                </div>
+
+                                                {/* Row 2: Make Up Class for & Requested Date */}
+                                                <div className="col-span-6 flex items-baseline mt-1">
+                                                    <span className="font-semibold whitespace-nowrap mr-1">Make Up Class for:</span>
+                                                    <span className="flex-1 border-b border-neutral-700 px-1 font-medium truncate">{missingForString}</span>
+                                                </div>
+                                                <div className="col-span-6 flex items-baseline mt-1">
+                                                    <span className="font-semibold whitespace-nowrap mr-1">Requested Date for Make Up Class:</span>
+                                                    <span className="flex-1 border-b border-neutral-700 px-1 font-medium truncate">{requestedDateString}</span>
+                                                </div>
+
+                                                {/* Row 3: Course/Year/Section */}
+                                                <div className="col-span-12 flex items-baseline mt-1">
+                                                    <span className="font-semibold whitespace-nowrap mr-1">Course/Year/Section:</span>
+                                                    <span className="flex-1 border-b border-neutral-700 px-1 font-medium">{courseYearSec}</span>
+                                                </div>
+
+                                                {/* Row 4: Reason for Missing the Class */}
+                                                <div className="col-span-12 flex items-baseline mt-1">
+                                                    <span className="font-semibold whitespace-nowrap mr-1">Reason for Missing the Class:</span>
+                                                    <span className="flex-1 border-b border-neutral-700 px-1 font-medium">{reasonString}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* SIGNATORIES: Pre Make Up Class */}
+                                            <div className="grid grid-cols-2 gap-8 text-[11px] mt-4 pt-1">
+                                                <div>
+                                                    <div className="font-semibold mb-6">Requested by:</div>
+                                                    <div className="border-b border-neutral-700 text-center font-bold pb-0.5 truncate uppercase">
+                                                        {facultyName}
+                                                    </div>
+                                                    <div className="text-center text-[10px] text-neutral-600 mt-0.5 font-medium">
+                                                        Faculty
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="font-semibold mb-6">Approved:</div>
+                                                    <div className="border-b border-neutral-700 text-center font-bold pb-0.5 min-h-[18px]">
+                                                        {printableRequest?.status === 'Approved' || printableRequest?.status === 'Completed' ? 'APPROVED' : ''}
+                                                    </div>
+                                                    <div className="text-center text-[10px] text-neutral-600 mt-0.5 font-medium">
+                                                        Subject Coor/Dept. Chair/Prog. Head/Dean
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* AFTER THE MAKE UP CLASS SECTION */}
+                                            <div className="mt-3 pt-2 border-t border-dashed border-neutral-400">
+                                                <div className="text-[10px] italic font-semibold text-neutral-700 mb-1">
+                                                    (After the Make Up Class)
+                                                </div>
+                                                <div className="flex items-baseline text-[11px]">
+                                                    <span className="font-semibold whitespace-nowrap mr-1">Remarks:</span>
+                                                    <span className="flex-1 border-b border-neutral-700 px-1 font-medium">
+                                                        {printableRequest?.completion_remarks || ''}
+                                                    </span>
+                                                </div>
+
+                                                {/* Recorded & Verified Signatories */}
+                                                <div className="grid grid-cols-2 gap-8 text-[11px] mt-3">
+                                                    <div className="flex items-baseline">
+                                                        <span className="font-semibold whitespace-nowrap mr-1">Recorded:</span>
+                                                        <div className="flex-1 text-center">
+                                                            <div className="border-b border-neutral-700 pb-0.5 min-h-[16px]">
+                                                                {printableRequest?.actual_attendance_count ? `${printableRequest.actual_attendance_count} students attended` : ''}
+                                                            </div>
+                                                            <div className="text-[10px] text-neutral-600 mt-0.5 font-medium">Class Beadle</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-baseline">
+                                                        <span className="font-semibold whitespace-nowrap mr-1">Verified:</span>
+                                                        <div className="flex-1 text-center">
+                                                            <div className="border-b border-neutral-700 pb-0.5 min-h-[16px]"></div>
+                                                            <div className="text-[10px] text-neutral-600 mt-0.5 font-medium">Subject Coor/Dept. Chair/Prog. Head/Dean</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* COPY LABEL: Beadle's Copy or Department's Copy */}
+                                            <div className="text-[10px] italic font-bold text-neutral-700 mt-2">
+                                                {slip.copyLabel}
+                                            </div>
+
+                                            {/* FOOTER BAR */}
+                                            <div className="mt-2.5 pt-1 border-t-2 border-[#78181f] flex flex-row items-center justify-between text-[9px] text-neutral-700">
+                                                <div className="font-black text-sm text-[#10355c] tracking-widest opacity-60">
+                                                    DSSC
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="flex items-center gap-1 font-semibold text-neutral-800">
+                                                        <span className="inline-block w-3.5 h-3.5 rounded-full bg-[#10355c] text-white text-[8px] text-center leading-3">📞</span>
+                                                        <span>(+63) 939924-0793</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 font-semibold text-neutral-800">
+                                                        <span className="inline-block w-3.5 h-3.5 rounded-full bg-[#10355c] text-white text-[8px] text-center leading-3">@</span>
+                                                        <span>op@dssc.edu.ph</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 font-semibold text-neutral-800">
+                                                        <span className="inline-block w-3.5 h-3.5 rounded-full bg-[#10355c] text-white text-[8px] text-center leading-3">🌐</span>
+                                                        <span>www.dssc.edu.ph</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
         </AppLayout>
     );

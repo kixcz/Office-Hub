@@ -35,7 +35,8 @@ import {
     CalendarDays,
     FileUp,
     Briefcase,
-    RefreshCw
+    RefreshCw,
+    BarChart3
 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
@@ -61,6 +62,7 @@ const adminNavGroups: NavGroup[] = [
             { title: 'Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },
             { title: 'Faculty Workload', url: '/operations/faculty-workload', icon: Briefcase },
             { title: 'Make-Up Classes', url: '/operations/make-up-classes', icon: RefreshCw },
+            { title: 'Room Utilization', url: '/operations/room-utilization', icon: BarChart3 },
             { title: 'Faculty Attendance', url: '/faculty-attendance', icon: ClipboardCheck },
             { title: 'Facility Reports', url: '/operations/facility-reports', icon: AlertTriangle },
             { title: 'Tasks & Projects', url: '/tasks', icon: BookCheckIcon },
@@ -112,7 +114,9 @@ const facultyNavGroups: NavGroup[] = [
             { title: 'My Profile', url: '/faculty/profile', icon: UserCircle },
             { title: 'Teaching Load', url: '/faculty/loading', icon: Briefcase },
             { title: 'Class Schedule', url: '/faculty/schedule', icon: CalendarDays },
+            { title: 'My Exam Schedules', url: '/faculty/exam-schedules', icon: BookOpen },
             { title: 'My Attendance', url: '/faculty/attendance', icon: ClipboardCheck },
+            { title: 'Make-Up Classes', url: '/faculty/make-up-classes', icon: RefreshCw },
             { title: 'Faculty Availability', url: '/faculty/availability', icon: Clock },
             { title: 'My Calendar', url: '/faculty/calendar', icon: Calendar },
         ],

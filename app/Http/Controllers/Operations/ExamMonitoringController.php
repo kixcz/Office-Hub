@@ -8,6 +8,7 @@ use App\Models\ExamSchedule;
 use App\Models\Faculty;
 use App\Models\Program;
 use App\Models\RoomSchedule;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -109,8 +110,10 @@ class ExamMonitoringController extends Controller
             'section' => 'required|string',
             'year_level' => 'nullable|string',
             'exam_type' => 'required|string',
+            'component_type' => 'nullable|string',
             'custom_exam_title' => 'nullable|string',
             'exam_date' => 'required|date',
+            'day_of_week' => 'nullable|string',
             'start_time' => 'required|string',
             'end_time' => 'required|string',
             'room_name' => 'required|string',
@@ -121,6 +124,7 @@ class ExamMonitoringController extends Controller
         ]);
 
         $currentPeriod = AcademicPeriod::current() ?? AcademicPeriod::first();
+        $dayOfWeek = $validated['day_of_week'] ?? Carbon::parse($validated['exam_date'])->format('l');
 
         // Obvious overlap check for room or faculty
         $roomConflict = ExamSchedule::where('room_name', $validated['room_name'])
@@ -148,8 +152,10 @@ class ExamMonitoringController extends Controller
             'section' => $validated['section'],
             'year_level' => $validated['year_level'] ?? null,
             'exam_type' => $validated['exam_type'],
+            'component_type' => $validated['component_type'] ?? 'Lecture',
             'custom_exam_title' => $validated['custom_exam_title'] ?? null,
             'exam_date' => $validated['exam_date'],
+            'day_of_week' => $dayOfWeek,
             'start_time' => $validated['start_time'],
             'end_time' => $validated['end_time'],
             'room_name' => $validated['room_name'],

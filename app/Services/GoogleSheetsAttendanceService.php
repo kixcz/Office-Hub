@@ -137,6 +137,7 @@ class GoogleSheetsAttendanceService
                                 'session_date' => $parsedDate,
                                 'day_of_week' => $offset['day'],
                                 'time_slot' => $timeStr,
+                                'room' => 'CHS',
                                 'week_label' => $currentWeekLabel,
                                 'status' => $cleanStatus,
                                 'late_minutes' => $lateMins,

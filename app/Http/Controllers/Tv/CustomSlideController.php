@@ -45,7 +45,36 @@ class CustomSlideController extends Controller
             });
         }
 
+        if ($request->filled('playlist') && $request->playlist !== 'all') {
+            $query->where('playlist', $request->playlist);
+        }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('start_at', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('end_at', '<=', $request->end_date);
+        }
+
+        if ($request->filled('sort')) {
+            if ($request->sort === 'oldest') {
+                $query->oldest();
+            } elseif ($request->sort === 'duration_asc') {
+                $query->orderBy('duration_seconds', 'asc');
+            } elseif ($request->sort === 'duration_desc') {
+                $query->orderBy('duration_seconds', 'desc');
+            } elseif ($request->sort === 'title') {
+                $query->orderBy('title', 'asc');
+            }
+        }
+
         $slides = $query->paginate(12)->withQueryString();
+
+        $playlists = CustomContentSlide::select('playlist')
+            ->whereNotNull('playlist')
+            ->distinct()
+            ->pluck('playlist');
 
         $stats = [
             'total' => CustomContentSlide::count(),
@@ -64,7 +93,8 @@ class CustomSlideController extends Controller
         return Inertia::render('tv/custom/index', [
             'slides' => $slides,
             'stats' => $stats,
-            'filters' => $request->only(['layout', 'status', 'search']),
+            'playlists' => $playlists,
+            'filters' => $request->only(['layout', 'status', 'playlist', 'start_date', 'end_date', 'sort', 'search']),
         ]);
     }
 

@@ -56,8 +56,10 @@ interface ExamSchedule {
     section: string;
     year_level?: string;
     exam_type: string;
+    component_type?: 'Lecture' | 'Laboratory' | string;
     custom_exam_title?: string;
     exam_date: string;
+    day_of_week?: string;
     start_time: string;
     end_time: string;
     room_name: string;
@@ -585,9 +587,20 @@ export default function ExamMonitoringIndex({
                                                 </td>
 
                                                 <td className="py-3 px-4">
-                                                    <Badge variant="outline" className="font-semibold text-[11px]">
-                                                        {exam.exam_type}
-                                                    </Badge>
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <Badge variant="outline" className="font-semibold text-[11px]">
+                                                            {exam.exam_type}
+                                                        </Badge>
+                                                        {exam.component_type && (
+                                                            <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                                                exam.component_type === 'Laboratory'
+                                                                    ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200'
+                                                                    : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-200'
+                                                            }`}>
+                                                                {exam.component_type}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <span className="block text-[10px] text-muted-foreground mt-0.5">{exam.modality}</span>
                                                 </td>
 
