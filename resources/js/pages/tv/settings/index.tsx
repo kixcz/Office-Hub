@@ -1,26 +1,26 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, useForm, Link, router } from '@inertiajs/react';
 import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
-import { 
-    Tv, 
-    Eye, 
-    Settings, 
-    Play, 
-    LayoutGrid, 
-    Shield, 
-    Activity, 
-    RefreshCw, 
-    Layers, 
-    Clock, 
-    ChevronRight, 
-    RotateCcw, 
-    Save, 
-    Trash2, 
-    Users, 
-    Maximize2, 
-    Monitor, 
+import {
+    Tv,
+    Eye,
+    Settings,
+    Play,
+    LayoutGrid,
+    Shield,
+    Activity,
+    RefreshCw,
+    Layers,
+    Clock,
+    ChevronRight,
+    RotateCcw,
+    Save,
+    Trash2,
+    Users,
+    Maximize2,
+    Monitor,
     Maximize,
     ChevronDown,
     Check,
@@ -109,13 +109,13 @@ interface Props {
     system_status?: SystemStatus;
 }
 
-function ToggleSwitch({ 
-    checked, 
-    onChange, 
-    id 
-}: { 
-    checked: boolean; 
-    onChange: (checked: boolean) => void; 
+function ToggleSwitch({
+    checked,
+    onChange,
+    id
+}: {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
     id?: string;
 }) {
     return (
@@ -181,7 +181,7 @@ export default function TvDisplaySettingsPage({ settings, devices = [], selected
 
     const activeDevice = devices.find(d => d.id === Number(selectedDeviceId)) || selected_device || devices[0];
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (activeDevice?.id && form.data.device_id !== activeDevice.id) {
             form.setData('device_id', activeDevice.id);
         }
@@ -273,10 +273,10 @@ export default function TvDisplaySettingsPage({ settings, devices = [], selected
 
                     <form onSubmit={handleSave} className="space-y-6">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            
+
                             {/* LEFT COLUMN: Hardware, Rotation & Display (2 cols) */}
                             <div className="lg:col-span-2 space-y-6">
-                                
+
                                 {/* 1. Display Hardware & Resolution */}
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs p-5 sm:p-6 space-y-5">
                                     <div className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
@@ -510,7 +510,7 @@ export default function TvDisplaySettingsPage({ settings, devices = [], selected
 
                             {/* RIGHT COLUMN: Audience Mode, Privacy & Actions (1 col) */}
                             <div className="space-y-6">
-                                
+
                                 {/* Audience & Privacy Card */}
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs p-5 space-y-4">
                                     <div className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">

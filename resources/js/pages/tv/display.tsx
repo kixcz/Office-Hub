@@ -5,6 +5,7 @@ import {
     AlertTriangle,
     ArrowDownRight,
     ArrowUpRight,
+    Flame,
     Award,
     BarChart2,
     Calendar,
@@ -237,90 +238,90 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
 
             {/* Footer - Styled precisely as in reference images */}
             {showFooter && (
-            <footer className="z-30 flex shrink-0 items-center justify-between px-8 py-2.5 text-xs text-slate-500 dark:text-slate-400 border-t border-black/[0.04] dark:border-white/[0.05]">
-                <div className="flex items-center gap-2.5">
-                    <span className="relative flex h-2.5 w-2.5">
-                        <span className={`absolute inline-flex h-full w-full rounded-full ${isPaused ? 'bg-amber-400 opacity-60' : 'animate-ping bg-amber-400 opacity-60'}`} />
-                        <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-amber-500'}`} />
-                    </span>
-                    <span>
-                        Live display <strong className="font-semibold text-slate-800 dark:text-slate-200">CIDS OfficeHub</strong>
-                    </span>
-                    {isPaused && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                            <Pause size={9} className="fill-current" />
-                            Paused
+                <footer className="z-30 flex shrink-0 items-center justify-between px-8 py-2.5 text-xs text-slate-500 dark:text-slate-400 border-t border-black/[0.04] dark:border-white/[0.05]">
+                    <div className="flex items-center gap-2.5">
+                        <span className="relative flex h-2.5 w-2.5">
+                            <span className={`absolute inline-flex h-full w-full rounded-full ${isPaused ? 'bg-amber-400 opacity-60' : 'animate-ping bg-amber-400 opacity-60'}`} />
+                            <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-amber-500'}`} />
                         </span>
-                    )}
-                    <span className="text-slate-300 dark:text-slate-600">|</span>
-                    <span className="font-medium text-slate-600 dark:text-slate-300">{currentSlide?.title || currentSlide?.type}</span>
-                </div>
+                        <span>
+                            Live display <strong className="font-semibold text-slate-800 dark:text-slate-200">CIDS OfficeHub</strong>
+                        </span>
+                        {isPaused && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                                <Pause size={9} className="fill-current" />
+                                Paused
+                            </span>
+                        )}
+                        <span className="text-slate-300 dark:text-slate-600">|</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{currentSlide?.title || currentSlide?.type}</span>
+                    </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex gap-1.5" aria-hidden>
-                        {activeSlides.map((_: any, i: number) => (
-                            <div key={i} className={`h-1.5 w-10 overflow-hidden rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}>
-                                {i < safeIndex && <div className="h-full w-full bg-amber-400" />}
-                                {i === safeIndex && (
-                                    <div
-                                        key={`${safeIndex}-${duration}`}
-                                        className="h-full bg-amber-400"
-                                        style={{
-                                            animation: `tv-fill ${duration}ms linear forwards`,
-                                            animationPlayState: isPaused ? 'paused' : 'running',
-                                        }}
-                                    />
+                    <div className="flex items-center gap-4">
+                        <div className="flex gap-1.5" aria-hidden>
+                            {activeSlides.map((_: any, i: number) => (
+                                <div key={i} className={`h-1.5 w-10 overflow-hidden rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}>
+                                    {i < safeIndex && <div className="h-full w-full bg-amber-400" />}
+                                    {i === safeIndex && (
+                                        <div
+                                            key={`${safeIndex}-${duration}`}
+                                            className="h-full bg-amber-400"
+                                            style={{
+                                                animation: `tv-fill ${duration}ms linear forwards`,
+                                                animationPlayState: isPaused ? 'paused' : 'running',
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
+                            {safeIndex + 1} / {count}
+                        </span>
+
+                        {/* Circular slide arrow buttons & Pause/Resume button matching design */}
+                        <div className="flex items-center gap-1.5 ml-1">
+                            <button
+                                type="button"
+                                aria-label="Previous slide"
+                                onClick={() => step(-1)}
+                                className="h-7 w-7 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-white/10 flex items-center justify-center hover:bg-slate-50 text-slate-600 dark:text-slate-300 shadow-2xs cursor-pointer transition-transform active:scale-90"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            <button
+                                type="button"
+                                aria-label={isPaused ? 'Resume auto-advance (Space or P)' : 'Pause auto-advance (Space or P)'}
+                                title={isPaused ? 'Resume auto-advance (Space or P)' : 'Pause auto-advance (Space or P)'}
+                                onClick={togglePause}
+                                className={`h-7 px-2.5 rounded-full flex items-center gap-1 text-[11px] font-bold cursor-pointer shadow-2xs transition-all active:scale-90 border ${isPaused
+                                    ? 'bg-amber-400 text-slate-950 border-amber-300 ring-2 ring-amber-400/40 animate-pulse'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                    }`}
+                            >
+                                {isPaused ? (
+                                    <>
+                                        <Play size={11} className="fill-current text-slate-950" />
+                                        <span>RESUME</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Pause size={11} className="fill-current" />
+                                        <span>PAUSE</span>
+                                    </>
                                 )}
-                            </div>
-                        ))}
+                            </button>
+                            <button
+                                type="button"
+                                aria-label="Next slide"
+                                onClick={() => step(1)}
+                                className="h-7 w-7 rounded-full bg-[#1d4ed8] text-white flex items-center justify-center hover:bg-blue-700 shadow-2xs cursor-pointer transition-transform active:scale-90"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
                     </div>
-                    <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
-                        {safeIndex + 1} / {count}
-                    </span>
-
-                    {/* Circular slide arrow buttons & Pause/Resume button matching design */}
-                    <div className="flex items-center gap-1.5 ml-1">
-                        <button
-                            type="button"
-                            aria-label="Previous slide"
-                            onClick={() => step(-1)}
-                            className="h-7 w-7 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-white/10 flex items-center justify-center hover:bg-slate-50 text-slate-600 dark:text-slate-300 shadow-2xs cursor-pointer transition-transform active:scale-90"
-                        >
-                            <ChevronLeft size={16} />
-                        </button>
-                        <button
-                            type="button"
-                            aria-label={isPaused ? 'Resume auto-advance (Space or P)' : 'Pause auto-advance (Space or P)'}
-                            title={isPaused ? 'Resume auto-advance (Space or P)' : 'Pause auto-advance (Space or P)'}
-                            onClick={togglePause}
-                            className={`h-7 px-2.5 rounded-full flex items-center gap-1 text-[11px] font-bold cursor-pointer shadow-2xs transition-all active:scale-90 border ${isPaused
-                                ? 'bg-amber-400 text-slate-950 border-amber-300 ring-2 ring-amber-400/40 animate-pulse'
-                                : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                }`}
-                        >
-                            {isPaused ? (
-                                <>
-                                    <Play size={11} className="fill-current text-slate-950" />
-                                    <span>RESUME</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Pause size={11} className="fill-current" />
-                                    <span>PAUSE</span>
-                                </>
-                            )}
-                        </button>
-                        <button
-                            type="button"
-                            aria-label="Next slide"
-                            onClick={() => step(1)}
-                            className="h-7 w-7 rounded-full bg-[#1d4ed8] text-white flex items-center justify-center hover:bg-blue-700 shadow-2xs cursor-pointer transition-transform active:scale-90"
-                        >
-                            <ChevronRight size={16} />
-                        </button>
-                    </div>
-                </div>
-            </footer>
+                </footer>
             )}
         </TvLayout>
     );
@@ -330,7 +331,7 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
 /*  Design Tokens & Helpers                                                    */
 /* -------------------------------------------------------------------------- */
 
-type Tone = 'blue' | 'amber' | 'rose' | 'emerald' | 'purple' | 'sky';
+type Tone = 'blue' | 'amber' | 'rose' | 'emerald' | 'purple' | 'sky' | 'orange' | 'red' | 'green' | 'slate';
 
 const TONE_BOX: Record<Tone, Record<'light' | 'dark', string>> = {
     blue: {
@@ -341,11 +342,23 @@ const TONE_BOX: Record<Tone, Record<'light' | 'dark', string>> = {
         light: 'bg-amber-50 text-amber-600',
         dark: 'bg-amber-500/15 text-amber-400',
     },
+    orange: {
+        light: 'bg-orange-50 text-orange-600',
+        dark: 'bg-orange-500/15 text-orange-400',
+    },
     rose: {
         light: 'bg-rose-50 text-rose-600',
         dark: 'bg-rose-500/15 text-rose-400',
     },
+    red: {
+        light: 'bg-rose-50 text-rose-600',
+        dark: 'bg-rose-500/15 text-rose-400',
+    },
     emerald: {
+        light: 'bg-emerald-50 text-emerald-600',
+        dark: 'bg-emerald-500/15 text-emerald-400',
+    },
+    green: {
         light: 'bg-emerald-50 text-emerald-600',
         dark: 'bg-emerald-500/15 text-emerald-400',
     },
@@ -357,20 +370,29 @@ const TONE_BOX: Record<Tone, Record<'light' | 'dark', string>> = {
         light: 'bg-sky-50 text-sky-600',
         dark: 'bg-sky-500/15 text-sky-400',
     },
+    slate: {
+        light: 'bg-slate-50 text-slate-600',
+        dark: 'bg-slate-500/15 text-slate-400',
+    },
 };
 
 const TONE_TEXT_COLOR: Record<Tone, string> = {
     blue: 'text-blue-500',
     amber: 'text-amber-500',
+    orange: 'text-orange-500',
     rose: 'text-rose-500',
+    red: 'text-rose-500',
     emerald: 'text-emerald-500',
+    green: 'text-emerald-500',
     purple: 'text-purple-500',
     sky: 'text-sky-500',
+    slate: 'text-slate-500',
 };
 
 function MiniBars({ tone = 'blue' }: { tone?: Tone }) {
+    const textColor = (tone && TONE_TEXT_COLOR[tone]) ? TONE_TEXT_COLOR[tone] : TONE_TEXT_COLOR.blue;
     return (
-        <div className={`flex items-end gap-1 h-7 ${TONE_TEXT_COLOR[tone]}`}>
+        <div className={`flex items-end gap-1 h-7 ${textColor}`}>
             <span className="w-1.5 h-3 rounded-full bg-current opacity-40" />
             <span className="w-1.5 h-6 rounded-full bg-current opacity-90" />
             <span className="w-1.5 h-4 rounded-full bg-current opacity-60" />
@@ -417,6 +439,9 @@ function Kpi({
     isDark?: boolean;
     className?: string;
 }) {
+    const toneConfig = (tone && TONE_BOX[tone]) ? TONE_BOX[tone] : TONE_BOX.blue;
+    const boxColorClass = toneConfig[isDark ? 'dark' : 'light'] || TONE_BOX.blue[isDark ? 'dark' : 'light'];
+
     return (
         <div
             className={`rounded-2xl p-4 flex items-center justify-between gap-3 ${accent
@@ -429,7 +454,7 @@ function Kpi({
                 } ${className}`}
         >
             <div className="flex items-center gap-3.5 min-w-0">
-                <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${TONE_BOX[tone][isDark ? 'dark' : 'light']}`}>
+                <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${boxColorClass}`}>
                     <Icon size={22} />
                 </div>
                 <div className="min-w-0">
@@ -3432,9 +3457,9 @@ function SlideEleven({ data, isDark }: { data: any; isDark: boolean }) {
                                                     <span className={cn(
                                                         "px-2 py-0.5 rounded-md text-[10.5px] font-black uppercase tracking-wider",
                                                         p.code === 'BSIS' ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300/40" :
-                                                        p.code === 'BSIT' ? "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-300/40" :
-                                                        p.code === 'BLIS' ? "bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300 border border-orange-300/40" :
-                                                        "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300/40"
+                                                            p.code === 'BSIT' ? "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-300/40" :
+                                                                p.code === 'BLIS' ? "bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300 border border-orange-300/40" :
+                                                                    "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300/40"
                                                     )}>
                                                         {p.code}
                                                     </span>
@@ -3582,9 +3607,9 @@ function SlideEleven({ data, isDark }: { data: any; isDark: boolean }) {
                                         <div className={cn(
                                             "w-7 h-7 rounded-lg flex items-center justify-center font-black text-[10px] shrink-0",
                                             p.code === 'BSIS' ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300" :
-                                            p.code === 'BSIT' ? "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300" :
-                                            p.code === 'BLIS' ? "bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300" :
-                                            "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300"
+                                                p.code === 'BSIT' ? "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300" :
+                                                    p.code === 'BLIS' ? "bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300" :
+                                                        "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300"
                                         )}>
                                             {p.code}
                                         </div>
