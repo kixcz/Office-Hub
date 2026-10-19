@@ -389,7 +389,7 @@ export default function AdjustmentsHub({
                                                         )}
                                                     </div>
 
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
                                                         {req.counterpart_consent === 'Pending' ? (
                                                             <>
                                                                 <Button
@@ -410,9 +410,31 @@ export default function AdjustmentsHub({
                                                                 </Button>
                                                             </>
                                                         ) : (
-                                                            <Badge variant="secondary" className="text-xs">
-                                                                {req.status}
-                                                            </Badge>
+                                                            <div className="flex items-center gap-2">
+                                                                <Badge variant="secondary" className="text-xs">
+                                                                    {req.status}
+                                                                </Badge>
+                                                                {req.counterpart_consent === 'Accepted' && (
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            onClick={() => alert(`Program Head endorsed swap proposal #${req.id} for batch optimization.`)}
+                                                                            className="border-blue-500/30 text-blue-700 hover:bg-blue-50 text-[11px] font-semibold"
+                                                                        >
+                                                                            Endorse Swap
+                                                                        </Button>
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            onClick={() => alert(`Requested revision on swap #${req.id}.`)}
+                                                                            className="text-rose-600 hover:bg-rose-50 text-[11px]"
+                                                                        >
+                                                                            Reject
+                                                                        </Button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>

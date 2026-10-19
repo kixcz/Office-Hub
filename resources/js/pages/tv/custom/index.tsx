@@ -100,24 +100,25 @@ const STATUS_TABS = [
 ];
 
 export default function CustomSlideIndex({ slides, stats, playlists = [], filters = {} }: Props) {
+    const safeFilters = filters && typeof filters === 'object' ? filters : {};
     const [previewSlide, setPreviewSlide] = useState<CustomContentSlideData | null>(null);
     const [deleteSlide, setDeleteSlide] = useState<CustomContentSlideData | null>(null);
     const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
     
     // Filter Inputs
-    const [search, setSearch] = useState(filters.search || '');
-    const [selectedLayout, setSelectedLayout] = useState(filters.layout || 'all');
-    const [selectedPlaylist, setSelectedPlaylist] = useState(filters.playlist || 'all');
-    const [selectedStatus, setSelectedStatus] = useState(filters.status || 'all');
-    const [startDate, setStartDate] = useState(filters.start_date || '');
-    const [endDate, setEndDate] = useState(filters.end_date || '');
-    const [sort, setSort] = useState(filters.sort || 'latest');
+    const [search, setSearch] = useState(safeFilters.search || '');
+    const [selectedLayout, setSelectedLayout] = useState(safeFilters.layout || 'all');
+    const [selectedPlaylist, setSelectedPlaylist] = useState(safeFilters.playlist || 'all');
+    const [selectedStatus, setSelectedStatus] = useState(safeFilters.status || 'all');
+    const [startDate, setStartDate] = useState(safeFilters.start_date || '');
+    const [endDate, setEndDate] = useState(safeFilters.end_date || '');
+    const [sort, setSort] = useState(safeFilters.sort || 'latest');
 
     // Multi-select state
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
     const handleFilterChange = (updates: Record<string, string | undefined>) => {
-        const merged = { ...filters, ...updates };
+        const merged = { ...safeFilters, ...updates };
         // Clean out undefined or 'all' or empty strings
         Object.keys(merged).forEach((k) => {
             if (merged[k] === 'all' || merged[k] === '' || merged[k] === undefined) {
@@ -413,8 +414,8 @@ export default function CustomSlideIndex({ slides, stats, playlists = [], filter
                         <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 border-b border-border">
                             <div className="flex items-center gap-1.5 shrink-0">
                                 {STATUS_TABS.map((tab) => {
-                                    const count = (stats as any)[tab.key] ?? 0;
-                                    const isActive = (filters.status || 'all') === tab.id;
+                                    const count = (stats as any)?.[tab.key] ?? 0;
+                                    const isActive = (safeFilters.status || 'all') === tab.id;
                                     return (
                                         <button
                                             key={tab.id}

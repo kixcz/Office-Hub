@@ -20,12 +20,26 @@ use Inertia\Response;
 
 class FacultyController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         ComplianceService::syncPendingSubmissions();
 
-        $faculties = Faculty::with(['program', 'submissions'])->latest()->get();
-        $programs = Program::all();
+        $user = $request->user();
+        $isSuperAdmin = $user?->hasRole('System Administrator') ?? false;
+        $isDean = $user?->hasRole('Dean') ?? false;
+        $isProgramHead = $user?->hasRole('Program Head') || ($user?->hasRole('Program Chair') ?? false);
+        $userProgramId = $user?->faculty?->program_id;
+
+        $facultyQuery = Faculty::with(['program', 'submissions'])->latest();
+        if ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId) {
+            $facultyQuery->where('program_id', $userProgramId);
+        }
+        $faculties = $facultyQuery->get();
+
+        $programs = ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId)
+            ? Program::where('id', $userProgramId)->get()
+            : Program::all();
+
         $totalRequirements = Requirement::count();
         $now = Carbon::now();
 
@@ -173,6 +187,14 @@ class FacultyController extends Controller
                 'total_faculty' => $totalCount,
             ],
             'recentUpdates' => $recentUpdates,
+            'user_permissions' => [
+                'is_super_admin' => $isSuperAdmin,
+                'is_dean' => $isDean,
+                'is_program_head' => $isProgramHead,
+                'can_edit' => $isSuperAdmin || $isDean,
+                'can_delete' => $isSuperAdmin,
+                'program_id' => $userProgramId,
+            ],
         ]);
     }
 
@@ -474,6 +496,26 @@ class FacultyController extends Controller
 
     public function update(Request $request, Faculty $faculty): RedirectResponse
     {
+        $user = $request->user();
+        $isSuperAdmin = $user?->hasRole('System Administrator') ?? false;
+        $isDean = $user?->hasRole('Dean') ?? false;
+        $isProgramHead = $user?->hasRole('Program Head') || ($user?->hasRole('Program Chair') ?? false);
+
+        if ($isProgramHead && ! $isSuperAdmin && ! $isDean) {
+            // Program Heads may only validate / recommend specialization, qualifications, contact info, office room
+            // Core identity and employment status remain Super Admin controlled
+            $validated = $request->validate([
+                'highest_qualification' => 'nullable|string|max:255',
+                'specialization' => 'nullable|string|max:255',
+                'phone' => 'nullable|string|max:255',
+                'office_room' => 'nullable|string|max:255',
+            ]);
+
+            $faculty->update($validated);
+
+            return redirect()->back()->with('success', 'Faculty specialization and program preferences updated successfully.');
+        }
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -525,8 +567,13 @@ class FacultyController extends Controller
         return redirect()->back()->with('success', 'Faculty profile updated successfully.');
     }
 
-    public function destroy(Faculty $faculty): RedirectResponse
+    public function destroy(Request $request, Faculty $faculty): RedirectResponse
     {
+        $user = $request->user();
+        if ($user && ! $user->hasRole('System Administrator') && ($user->hasRole('Program Head') || $user->hasRole('Program Chair') || $user->hasRole('Faculty Member') || $user->hasRole('Dean'))) {
+            return redirect()->back()->withErrors(['unauthorized' => 'Only the Super Administrator may permanently delete faculty institutional records.']);
+        }
+
         if ($faculty->profile_picture && Storage::disk('public')->exists($faculty->profile_picture)) {
             Storage::disk('public')->delete($faculty->profile_picture);
         }

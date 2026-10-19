@@ -527,17 +527,56 @@ export default function ScheduleGeneratorDashboard({
                                             </div>
                                         </div>
 
-                                        {/* Program Head Feedback Indicators */}
-                                        <div className="space-y-1.5 pt-1">
-                                            <span className="text-[11px] font-semibold text-gray-700 block">Department Consultation:</span>
-                                            <div className="flex items-center gap-2 text-[10px] text-gray-600">
-                                                <Badge variant="outline" className="text-[9px] bg-white">BSIT Dept: Preferred</Badge>
-                                                <Badge variant="outline" className="text-[9px] bg-white">BSIS Dept: Acceptable</Badge>
+                                        {/* Program Head Feedback Indicators & Advisory Rating */}
+                                        <div className="space-y-2 pt-1 border-t border-gray-100">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-semibold text-gray-700 block">Department Consultation:</span>
+                                                <div className="flex items-center gap-1.5 text-[10px]">
+                                                    <Badge variant="outline" className="text-[9px] bg-emerald-50 text-emerald-800 border-emerald-200">
+                                                        BSIT: Preferred
+                                                    </Badge>
+                                                    <Badge variant="outline" className="text-[9px] bg-slate-50 text-slate-700">
+                                                        BSIS: Acceptable
+                                                    </Badge>
+                                                </div>
+                                            </div>
+
+                                            {/* Advisory Rating Selector for Program Heads & Dean */}
+                                            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                                                <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
+                                                    <span>Your Department Advisory:</span>
+                                                    <span className="text-amber-600 font-extrabold text-[9px] uppercase tracking-wider">
+                                                        Advisory Only
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => alert(`Marked ${cand.candidate_code} as Preferred by your department.`)}
+                                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-emerald-100/70 text-emerald-800 hover:bg-emerald-200/80 transition-colors text-center cursor-pointer border border-emerald-300/60"
+                                                    >
+                                                        ★ Preferred
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => alert(`Marked ${cand.candidate_code} as Acceptable by your department.`)}
+                                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-center cursor-pointer border border-slate-200"
+                                                    >
+                                                        ✓ Acceptable
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => alert(`Marked ${cand.candidate_code} as Not Recommended by your department.`)}
+                                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-rose-100/70 text-rose-800 hover:bg-rose-200/80 transition-colors text-center cursor-pointer border border-rose-300/60"
+                                                    >
+                                                        ✕ Avoid
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="pt-5 mt-4 border-t border-gray-100 flex flex-col gap-2">
+                                    <div className="pt-4 mt-3 border-t border-gray-100 flex flex-col gap-2">
                                         <Button
                                             onClick={() => handleSelectWorkingDraft(cand.candidate_code)}
                                             disabled={isSelectingDraft}
@@ -546,6 +585,9 @@ export default function ScheduleGeneratorDashboard({
                                             <Check className="mr-1.5 size-3.5" />
                                             {isSelectingDraft ? 'Creating Draft...' : `Select ${cand.candidate_code} as Working Draft v1`}
                                         </Button>
+                                        <span className="text-[10px] text-gray-400 text-center block">
+                                            Super Admin confirms working draft; Program Head & Dean inputs are advisory.
+                                        </span>
                                     </div>
                                 </div>
                             ))}

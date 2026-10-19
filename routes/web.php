@@ -37,6 +37,7 @@ use App\Http\Controllers\Tv\SlideController;
 use App\Http\Controllers\Tv\SpotlightController;
 use App\Http\Controllers\Tv\TvStudioController;
 use App\Http\Controllers\TvDisplayController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -48,6 +49,84 @@ Route::get('/', function () {
 Route::post('/tv-display/verify-code', [SettingController::class, 'verifyCode'])->name('tv-display.verify-code');
 Route::get('/tv-display/{displayId?}', [TvDisplayController::class, 'index'])->name('tv-display');
 Route::get('/tv/display/{displayId?}', [TvDisplayController::class, 'index'])->name('tv.display');
+
+// One-click maintenance route for Hostinger shared hosting without SSH access
+Route::get('/hostinger-fix-storage', function () {
+    $results = [];
+
+    // 1. Ensure public/storage directory exists
+    $pubStorage = public_path('storage');
+    if (is_link($pubStorage)) {
+        @unlink($pubStorage);
+        $results[] = 'Removed broken symlink at public/storage.';
+    }
+
+    if (! is_dir($pubStorage)) {
+        @mkdir($pubStorage, 0755, true);
+        $results[] = 'Created real directory public/storage.';
+    }
+
+    // 2. Copy files from storage/app/public to public/storage if missing
+    $appPublic = storage_path('app/public');
+    if (is_dir($appPublic)) {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($appPublic, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        $copiedCount = 0;
+        foreach ($files as $item) {
+            $subPath = substr($item->getPathname(), strlen($appPublic) + 1);
+            $target = $pubStorage.DIRECTORY_SEPARATOR.$subPath;
+
+            if ($item->isDir()) {
+                if (! is_dir($target)) {
+                    @mkdir($target, 0755, true);
+                }
+            } else {
+                $targetDir = dirname($target);
+                if (! is_dir($targetDir)) {
+                    @mkdir($targetDir, 0755, true);
+                }
+                if (! file_exists($target)) {
+                    @copy($item->getPathname(), $target);
+                    $copiedCount++;
+                }
+            }
+        }
+        $results[] = "Copied {$copiedCount} files to public/storage.";
+    }
+
+    // 3. Clear cache
+    try {
+        Artisan::call('optimize:clear');
+        $results[] = 'Cleared application and route cache successfully.';
+    } catch (Throwable $e) {
+        $results[] = 'Cache clear note: '.$e->getMessage();
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Hostinger storage directory structure fixed successfully!',
+        'details' => $results,
+    ]);
+});
+
+// Fallback direct storage file server if web server/Apache denies direct access (403)
+Route::get('/storage/{path}', function ($path) {
+    $fullPath = public_path('storage/'.$path);
+    if (! file_exists($fullPath)) {
+        $fullPath = storage_path('app/public/'.$path);
+    }
+
+    if (! file_exists($fullPath) || is_dir($fullPath)) {
+        abort(404);
+    }
+
+    return response()->file($fullPath, [
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->where('path', '.*');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');

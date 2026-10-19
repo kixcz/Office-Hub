@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Faculty;
+use App\Models\Program;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -17,6 +19,7 @@ class RolesAndUsersSeeder extends Seeder
         $roles = [
             'System Administrator',
             'Dean',
+            'Program Head',
             'Program Chair',
             'Office Secretary',
             'Coordinator',
@@ -66,7 +69,7 @@ class RolesAndUsersSeeder extends Seeder
             $dean = User::firstOrCreate(
                 ['email' => 'dean@cids.edu'],
                 [
-                    'name' => 'Dr. Dean Office',
+                    'name' => 'Dr. Eleanor Vance (Dean)',
                     'password' => Hash::make('password'),
                 ]
             );
@@ -74,6 +77,60 @@ class RolesAndUsersSeeder extends Seeder
             if (! $dean->roles()->where('role_id', $deanRole->id)->exists()) {
                 $dean->roles()->attach($deanRole->id);
             }
+
+            // Dual identity: Link to Faculty profile
+            $facRole = Role::firstOrCreate(['name' => 'Faculty Member']);
+            if (! $dean->roles()->where('role_id', $facRole->id)->exists()) {
+                $dean->roles()->attach($facRole->id);
+            }
+            Faculty::firstOrCreate(
+                ['email' => 'dean@cids.edu'],
+                [
+                    'user_id' => $dean->id,
+                    'first_name' => 'Eleanor',
+                    'last_name' => 'Vance',
+                    'academic_rank' => 'University Professor',
+                    'specialization' => 'Information Systems, Strategic Management',
+                    'highest_qualification' => 'Ph.D. in Information Systems',
+                    'status' => 'Active',
+                ]
+            );
+        }
+
+        // Create Program Head User
+        $programHeadRole = Role::where('name', 'Program Head')->first();
+        if ($programHeadRole) {
+            $head = User::firstOrCreate(
+                ['email' => 'programhead@cids.edu'],
+                [
+                    'name' => 'Dr. Evelyn Santos (Program Head - BSIT)',
+                    'password' => Hash::make('password'),
+                ]
+            );
+
+            if (! $head->roles()->where('role_id', $programHeadRole->id)->exists()) {
+                $head->roles()->attach($programHeadRole->id);
+            }
+
+            // Dual identity: Link to Faculty profile with BSIT program
+            $facRole = Role::firstOrCreate(['name' => 'Faculty Member']);
+            if (! $head->roles()->where('role_id', $facRole->id)->exists()) {
+                $head->roles()->attach($facRole->id);
+            }
+            $bsit = Program::where('code', 'BSIT')->first();
+            Faculty::firstOrCreate(
+                ['email' => 'programhead@cids.edu'],
+                [
+                    'user_id' => $head->id,
+                    'first_name' => 'Evelyn',
+                    'last_name' => 'Santos',
+                    'program_id' => $bsit?->id,
+                    'academic_rank' => 'Associate Professor',
+                    'specialization' => 'Information Technology, Software Engineering',
+                    'highest_qualification' => 'Ph.D. in Computer Science',
+                    'status' => 'Active',
+                ]
+            );
         }
     }
 }

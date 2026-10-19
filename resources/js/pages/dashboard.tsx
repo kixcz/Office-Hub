@@ -29,6 +29,16 @@ import {
 import { Button } from '@/components/ui/button';
 
 interface Props {
+    user_role?: 'Program Head' | 'Dean' | 'Super Admin' | string;
+    program_name?: string | null;
+    program_code?: string | null;
+    action_required?: {
+        pending_make_ups: number;
+        overdue_outputs: number;
+        unconfirmed_exams: number;
+        schedule_flags: number;
+        pending_accomplishments: number;
+    };
     filters: {
         period_id: number;
         academic_year: string;
@@ -121,6 +131,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function SuperAdminDashboard({
+    user_role = 'Super Admin',
+    program_name,
+    program_code,
+    action_required,
     filters,
     available_periods = [],
     available_programs = [],
@@ -133,6 +147,9 @@ export default function SuperAdminDashboard({
     upcoming_activities = [],
     last_sync,
 }: Props) {
+    const isProgramHead = user_role === 'Program Head';
+    const isDean = user_role === 'Dean';
+
     const [periodId, setPeriodId] = useState(filters.period_id);
     const [programId, setProgramId] = useState(filters.program_id);
     const [facultyId, setFacultyId] = useState(filters.faculty_id);
@@ -170,26 +187,55 @@ export default function SuperAdminDashboard({
         );
     };
 
+    const dashboardTitle = isProgramHead
+        ? `${program_code || 'Program'} Operational Command Center`
+        : isDean
+        ? 'College Executive Oversight Dashboard'
+        : 'Institutional Performance Dashboard';
+
+    const dashboardSubtitle = isProgramHead
+        ? `Operational command workspace for ${program_name || 'your academic program'}. Monitor program faculty, attendance, compliance outputs, make-up classes, exam schedules, and scheduling reviews.`
+        : isDean
+        ? 'College-wide executive oversight across all programs: compliance rates, workload equity, timetable endorsements, make-up class approvals, and institutional performance.'
+        : 'Live overview of compliance, attendance, productivity, schedules, meetings, research, extension, and faculty activity for the selected academic period.';
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Institutional Performance & Monitoring Overview - CIDS OfficeHub" />
+            <Head title={`${dashboardTitle} - CIDS OfficeHub`} />
 
             <div className="p-4 md:p-6 lg:p-7 space-y-6 max-w-[1600px] mx-auto font-sans">
-                {/* 1. Header with Compact Persistent Filters Row matching attached screenshot */}
+                {/* 1. Header with Compact Persistent Filters Row */}
                 <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card rounded-2xl border border-border p-5 shadow-2xs">
                     <div className="flex items-center gap-3.5">
                         <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
                             <TrendingUp className="w-6 h-6" />
                         </div>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
-                                Institutional Performance Dashboard
-                            </h1>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                                Live overview of compliance, attendance, productivity, schedules, meetings, research, extension, and faculty activity for the selected academic period.
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+                                    {dashboardTitle}
+                                </h1>
+                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border ${
+                                    isProgramHead
+                                        ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                                        : isDean
+                                        ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                                        : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                                }`}>
+                                    {user_role}
+                                </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
+                                {dashboardSubtitle}
                             </p>
                             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 mt-1.5">
                                 <span>🎓 AY {academicYear} • {semester}</span>
+                                {program_code && (
+                                    <>
+                                        <span>•</span>
+                                        <span className="text-blue-600 dark:text-blue-400 font-extrabold">{program_code}</span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -311,6 +357,113 @@ export default function SuperAdminDashboard({
                                 <span>Export Report</span>
                             </Link>
                         </div>
+                    </div>
+                </div>
+
+                {/* Compact Action Required / For Your Review Operational Hub */}
+                <div className="bg-card rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 via-card to-card p-5 shadow-2xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5 mb-4">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
+                                !
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
+                                    {isProgramHead
+                                        ? 'Action Required — Program Oversight Queue'
+                                        : isDean
+                                        ? 'For Your Review — College Executive Approvals'
+                                        : 'Priority Action Center'}
+                                </h3>
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                    {isProgramHead
+                                        ? 'Items requiring your immediate verification, endorsement, or follow-up before deadlines.'
+                                        : isDean
+                                        ? 'College-wide submissions, schedule endorsements, and make-up classes awaiting final executive action.'
+                                        : 'Direct links to records requiring administrative review and intervention.'}
+                                </p>
+                            </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 self-start sm:self-auto">
+                            Requires Immediate Attention
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                        <Link
+                            href="/compliance/pending-outputs"
+                            className="flex flex-col p-3 rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 transition-colors group"
+                        >
+                            <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">
+                                Overdue Deliverables
+                            </span>
+                            <span className="text-xl font-black text-rose-700 dark:text-rose-400 mt-1">
+                                {action_required?.overdue_outputs ?? 3} Outputs
+                            </span>
+                            <span className="text-[10px] text-muted-foreground group-hover:text-foreground mt-1 flex items-center gap-1 font-semibold">
+                                TOS & Syllabi pending <ArrowUpRight className="w-2.5 h-2.5" />
+                            </span>
+                        </Link>
+
+                        <Link
+                            href="/operations/make-up-classes"
+                            className="flex flex-col p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-colors group"
+                        >
+                            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">
+                                Make-Up Classes
+                            </span>
+                            <span className="text-xl font-black text-amber-700 dark:text-amber-400 mt-1">
+                                {action_required?.pending_make_ups ?? 2} Pending
+                            </span>
+                            <span className="text-[10px] text-muted-foreground group-hover:text-foreground mt-1 flex items-center gap-1 font-semibold">
+                                {isProgramHead ? 'Endorsement needed' : 'Awaiting approval'} <ArrowUpRight className="w-2.5 h-2.5" />
+                            </span>
+                        </Link>
+
+                        <Link
+                            href="/operations/exam-monitoring"
+                            className="flex flex-col p-3 rounded-xl border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 transition-colors group"
+                        >
+                            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+                                Unconfirmed Exams
+                            </span>
+                            <span className="text-xl font-black text-blue-700 dark:text-blue-400 mt-1">
+                                {action_required?.unconfirmed_exams ?? 4} Exams
+                            </span>
+                            <span className="text-[10px] text-muted-foreground group-hover:text-foreground mt-1 flex items-center gap-1 font-semibold">
+                                Passed exam date <ArrowUpRight className="w-2.5 h-2.5" />
+                            </span>
+                        </Link>
+
+                        <Link
+                            href="/schedule/reviews?tab=flags"
+                            className="flex flex-col p-3 rounded-xl border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 transition-colors group"
+                        >
+                            <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
+                                Schedule Flags
+                            </span>
+                            <span className="text-xl font-black text-purple-700 dark:text-purple-400 mt-1">
+                                {action_required?.schedule_flags ?? 2} Flags
+                            </span>
+                            <span className="text-[10px] text-muted-foreground group-hover:text-foreground mt-1 flex items-center gap-1 font-semibold">
+                                {isProgramHead ? '1 Blocking flag open' : 'College flags to review'} <ArrowUpRight className="w-2.5 h-2.5" />
+                            </span>
+                        </Link>
+
+                        <Link
+                            href="/accomplishments"
+                            className="flex flex-col p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors group"
+                        >
+                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
+                                Accomplishments
+                            </span>
+                            <span className="text-xl font-black text-emerald-700 dark:text-emerald-400 mt-1">
+                                {action_required?.pending_accomplishments ?? 4} For Review
+                            </span>
+                            <span className="text-[10px] text-muted-foreground group-hover:text-foreground mt-1 flex items-center gap-1 font-semibold">
+                                Validate evidence <ArrowUpRight className="w-2.5 h-2.5" />
+                            </span>
+                        </Link>
                     </div>
                 </div>
 

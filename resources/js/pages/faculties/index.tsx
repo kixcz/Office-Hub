@@ -138,6 +138,14 @@ interface Props {
         total_faculty: number;
     };
     recentUpdates?: RecentUpdateItem[];
+    user_permissions?: {
+        is_super_admin: boolean;
+        is_dean: boolean;
+        is_program_head: boolean;
+        can_edit: boolean;
+        can_delete: boolean;
+        program_id?: number | null;
+    };
 }
 
 export default function FacultiesIndex({
@@ -163,6 +171,14 @@ export default function FacultiesIndex({
         total_faculty: faculties.length,
     },
     recentUpdates = [],
+    user_permissions = {
+        is_super_admin: true,
+        is_dean: false,
+        is_program_head: false,
+        can_edit: true,
+        can_delete: true,
+        program_id: null,
+    },
 }: Props) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingFaculty, setEditingFaculty] = useState<Faculty | null>(null);
@@ -446,21 +462,39 @@ export default function FacultiesIndex({
                                 <Users className="w-6 h-6" />
                             </span>
                             <div>
-                                <h1 className="text-2xl font-bold tracking-tight text-foreground">Faculty Management</h1>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                                        {user_permissions.is_program_head ? 'Program Faculty Directory' : 'Faculty Management'}
+                                    </h1>
+                                    {user_permissions.is_program_head && (
+                                        <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 text-[10px] font-semibold">
+                                            Departmental Scope
+                                        </Badge>
+                                    )}
+                                    {user_permissions.is_dean && (
+                                        <Badge className="bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30 text-[10px] font-semibold">
+                                            College-Wide Directory
+                                        </Badge>
+                                    )}
+                                </div>
                                 <p className="text-xs text-muted-foreground mt-0.5">
-                                    View and manage faculty profiles, teaching workload, requirements, and performance.
+                                    {user_permissions.is_program_head
+                                        ? 'View assigned departmental faculty, workload, specializations, compliance history, and course eligibility.'
+                                        : 'View and manage faculty profiles, teaching workload, requirements, and performance.'}
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <button
-                        onClick={openAddDialog}
-                        className="inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all bg-amber-500 hover:bg-amber-600 text-slate-950 h-10 px-5 py-2 shadow-xs cursor-pointer active:scale-98"
-                    >
-                        <Plus className="w-4 h-4 mr-1.5 stroke-[2.5]" />
-                        Add Faculty
-                    </button>
+                    {user_permissions.can_delete && (
+                        <button
+                            onClick={openAddDialog}
+                            className="inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all bg-amber-500 hover:bg-amber-600 text-slate-950 h-10 px-5 py-2 shadow-xs cursor-pointer active:scale-98"
+                        >
+                            <Plus className="w-4 h-4 mr-1.5 stroke-[2.5]" />
+                            Add Faculty
+                        </button>
+                    )}
                 </div>
 
                 {/* Main 2-Column Content: Left (Cards + Table) | Right (Needs Attention, Profile Completion, Recent Updates) */}
@@ -931,18 +965,24 @@ export default function FacultiesIndex({
                                                                             <User className="h-3.5 w-3.5 mr-2 text-primary" />
                                                                             View Dossier
                                                                         </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => openEditDialog(faculty)}>
-                                                                            <Edit className="h-3.5 w-3.5 mr-2" />
-                                                                            Edit Credentials
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuSeparator />
-                                                                        <DropdownMenuItem
-                                                                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                                                                            onClick={() => setDeletingFaculty(faculty)}
-                                                                        >
-                                                                            <Trash className="h-3.5 w-3.5 mr-2" />
-                                                                            Delete Faculty
-                                                                        </DropdownMenuItem>
+                                                                        {user_permissions.can_edit && (
+                                                                            <DropdownMenuItem onClick={() => openEditDialog(faculty)}>
+                                                                                <Edit className="h-3.5 w-3.5 mr-2" />
+                                                                                Edit Credentials
+                                                                            </DropdownMenuItem>
+                                                                        )}
+                                                                        {user_permissions.can_delete && (
+                                                                            <>
+                                                                                <DropdownMenuSeparator />
+                                                                                <DropdownMenuItem
+                                                                                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                                                                    onClick={() => setDeletingFaculty(faculty)}
+                                                                                >
+                                                                                    <Trash className="h-3.5 w-3.5 mr-2" />
+                                                                                    Delete Faculty
+                                                                                </DropdownMenuItem>
+                                                                            </>
+                                                                        )}
                                                                     </DropdownMenuContent>
                                                                 </DropdownMenu>
                                                             </div>

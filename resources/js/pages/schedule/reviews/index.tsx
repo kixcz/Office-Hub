@@ -290,21 +290,70 @@ export default function ScheduleReviewsIndex({
                     </div>
                 </div>
 
+                {/* Program Head Endorsement Action Card */}
+                {reviewRole === 'program_head' && (
+                    <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <h3 className="text-base font-bold text-blue-950 flex items-center gap-2">
+                                <CheckCircle2 className="size-5 text-blue-600" />
+                                Program Head Formal Timetable Review &amp; Endorsement
+                            </h3>
+                            <p className="text-xs text-blue-800 max-w-2xl leading-relaxed">
+                                Review your department's 1st–4th year sections, faculty allocations, and laboratory requirements. Open blocking issues prevent schedule progression to the Dean.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => alert('Revision requested with remarks sent to Super Admin.')}
+                                className="border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-semibold"
+                            >
+                                Request Revision
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => alert('Endorsed with advisory notes for Dean review.')}
+                                className="border-amber-300 text-amber-800 hover:bg-amber-50 text-xs font-semibold"
+                            >
+                                Endorse with Comment
+                            </Button>
+                            <Button
+                                onClick={() => alert('Program Schedule successfully endorsed! Forwarded to Dean Review.')}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md"
+                            >
+                                Endorse Program Schedule
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Dean Endorsement & Publication Card */}
                 {reviewRole === 'dean' && (
                     <div className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="space-y-1">
                             <h3 className="text-base font-bold text-emerald-950 flex items-center gap-2">
                                 <CheckCircle2 className="size-5 text-emerald-600" />
-                                Official Dean Endorsement &amp; Publication
+                                Official Dean Endorsement
                             </h3>
                             <p className="text-xs text-emerald-800 max-w-2xl leading-relaxed">
-                                Master timetable has 0 blocking hard conflicts, 2 program head endorsements completed, and 89.2% overall room utilization. Endorsing locks Version 1.0 as the single source of truth.
+                                Master timetable has 0 blocking hard conflicts, all Program Head reviews verified, and 89.2% overall room utilization. Dean endorsement is required before Super Admin publishes the final Master Timetable.
                             </p>
                         </div>
-                        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md">
-                            Endorse &amp; Publish Timetable
-                        </Button>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => alert('Returned batch to Program Heads for revision.')}
+                                className="border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-semibold"
+                            >
+                                Request Program Revision
+                            </Button>
+                            <Button
+                                onClick={() => alert('Dean endorsement confirmed! Ready for Super Admin final system publishing.')}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md"
+                            >
+                                Endorse Master Timetable
+                            </Button>
+                        </div>
                     </div>
                 )}
                 </div>

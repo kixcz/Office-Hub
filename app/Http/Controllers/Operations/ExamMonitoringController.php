@@ -21,8 +21,11 @@ class ExamMonitoringController extends Controller
     public function index(Request $request): Response
     {
         $currentPeriod = AcademicPeriod::current() ?? AcademicPeriod::first();
-        $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
-        $user = auth()->user();
+        $user = $request->user();
+        $isSuperAdmin = $user?->hasRole('System Administrator') ?? false;
+        $isDean = $user?->hasRole('Dean') ?? false;
+        $isProgramHead = $user?->hasRole('Program Head') || ($user?->hasRole('Program Chair') ?? false);
+        $userProgramId = $user?->faculty?->program_id;
 
         // Auto-flag passed scheduled exams as Awaiting Confirmation
         ExamSchedule::where('status', 'Scheduled')
@@ -34,11 +37,15 @@ class ExamMonitoringController extends Controller
             ->orderBy('exam_date')
             ->orderBy('start_time');
 
+        if ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId) {
+            $query->where('program_id', $userProgramId);
+        }
+
         // Apply filters
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
-        if ($request->filled('program_id')) {
+        if ($request->filled('program_id') && (! $isProgramHead || $isSuperAdmin || $isDean)) {
             $query->where('program_id', $request->input('program_id'));
         }
         if ($request->filled('exam_type')) {
@@ -60,13 +67,19 @@ class ExamMonitoringController extends Controller
         $allExams = $query->get();
 
         // Operational metrics
+        $examMetricsQuery = ExamSchedule::query();
+        if ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId) {
+            $examMetricsQuery->where('program_id', $userProgramId);
+        }
+
+        // Operational metrics
         $metrics = [
-            'total_exams' => ExamSchedule::count(),
-            'scheduled_today' => ExamSchedule::whereDate('exam_date', now()->toDateString())->count(),
-            'awaiting_confirmation' => ExamSchedule::where('status', 'Awaiting Confirmation')->count(),
-            'conducted' => ExamSchedule::where('status', 'Conducted')->count(),
-            'rescheduled' => ExamSchedule::where('status', 'Rescheduled')->count(),
-            'not_conducted' => ExamSchedule::where('status', 'Not Conducted')->count(),
+            'total_exams' => (clone $examMetricsQuery)->count(),
+            'scheduled_today' => (clone $examMetricsQuery)->whereDate('exam_date', now()->toDateString())->count(),
+            'awaiting_confirmation' => (clone $examMetricsQuery)->where('status', 'Awaiting Confirmation')->count(),
+            'conducted' => (clone $examMetricsQuery)->where('status', 'Conducted')->count(),
+            'rescheduled' => (clone $examMetricsQuery)->where('status', 'Rescheduled')->count(),
+            'not_conducted' => (clone $examMetricsQuery)->where('status', 'Not Conducted')->count(),
         ];
 
         $conductedPercentage = $metrics['total_exams'] > 0
@@ -75,8 +88,18 @@ class ExamMonitoringController extends Controller
         $metrics['conducted_percentage'] = $conductedPercentage;
 
         // Context data for creating new exam schedule
-        $faculties = Faculty::orderBy('last_name')->get();
-        $programs = Program::all();
+        $facultiesQuery = Faculty::orderBy('last_name');
+        if ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId) {
+            $facultiesQuery->where('program_id', $userProgramId);
+        }
+        $faculties = $facultiesQuery->get();
+
+        $programs = ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId)
+            ? Program::where('id', $userProgramId)->get()
+            : Program::all();
+
+        $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
+
         $existingOfferings = RoomSchedule::select('id', 'course_code', 'course_title', 'section', 'room_name', 'faculty_id', 'instructor')
             ->distinct()
             ->get();
@@ -92,6 +115,11 @@ class ExamMonitoringController extends Controller
             'existingOfferings' => $existingOfferings,
             'rooms' => $rooms,
             'filters' => $request->only(['status', 'program_id', 'exam_type', 'faculty_id', 'search']),
+            'user_permissions' => [
+                'is_super_admin' => $isSuperAdmin,
+                'is_dean' => $isDean,
+                'is_program_head' => $isProgramHead,
+            ],
         ]);
     }
 

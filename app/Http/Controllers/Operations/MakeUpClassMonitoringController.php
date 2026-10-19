@@ -22,8 +22,20 @@ class MakeUpClassMonitoringController extends Controller
         $currentPeriod = AcademicPeriod::current() ?? AcademicPeriod::first();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
 
-        $query = MakeUpClassRequest::with(['faculty', 'academicPeriod'])
+        $user = $request->user();
+        $isSuperAdmin = $user?->hasRole('System Administrator') ?? false;
+        $isDean = $user?->hasRole('Dean') ?? false;
+        $isProgramHead = $user?->hasRole('Program Head') || ($user?->hasRole('Program Chair') ?? false);
+        $userProgramId = $user?->faculty?->program_id;
+
+        $query = MakeUpClassRequest::with(['faculty.program', 'academicPeriod'])
             ->orderBy('created_at', 'desc');
+
+        if ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId) {
+            $query->whereHas('faculty', function ($q) use ($userProgramId) {
+                $q->where('program_id', $userProgramId);
+            });
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -43,15 +55,26 @@ class MakeUpClassMonitoringController extends Controller
 
         $requests = $query->get();
 
+        $metricsQuery = MakeUpClassRequest::query();
+        if ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId) {
+            $metricsQuery->whereHas('faculty', function ($q) use ($userProgramId) {
+                $q->where('program_id', $userProgramId);
+            });
+        }
+
         $metrics = [
-            'total_requests' => MakeUpClassRequest::count(),
-            'pending_reviews' => MakeUpClassRequest::whereIn('status', ['Submitted', 'Program Head Review'])->count(),
-            'approved_count' => MakeUpClassRequest::where('status', 'Approved')->count(),
-            'completed_count' => MakeUpClassRequest::where('status', 'Completed')->count(),
-            'overdue_count' => MakeUpClassRequest::where('status', 'Approved')->whereDate('proposed_date', '<', now()->toDateString())->count(),
+            'total_requests' => (clone $metricsQuery)->count(),
+            'pending_reviews' => (clone $metricsQuery)->whereIn('status', ['Submitted', 'Program Head Review'])->count(),
+            'approved_count' => (clone $metricsQuery)->where('status', 'Approved')->count(),
+            'completed_count' => (clone $metricsQuery)->where('status', 'Completed')->count(),
+            'overdue_count' => (clone $metricsQuery)->where('status', 'Approved')->whereDate('proposed_date', '<', now()->toDateString())->count(),
         ];
 
-        $faculties = Faculty::orderBy('last_name')->get();
+        $facultiesQuery = Faculty::orderBy('last_name');
+        if ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId) {
+            $facultiesQuery->where('program_id', $userProgramId);
+        }
+        $faculties = $facultiesQuery->get();
         $rooms = RoomSchedule::select('room_name')->distinct()->whereNotNull('room_name')->pluck('room_name');
 
         return Inertia::render('operations/make-up-classes/index', [
@@ -62,6 +85,11 @@ class MakeUpClassMonitoringController extends Controller
             'faculties' => $faculties,
             'rooms' => $rooms,
             'filters' => $request->only(['status', 'faculty_id', 'search']),
+            'user_permissions' => [
+                'is_super_admin' => $isSuperAdmin,
+                'is_dean' => $isDean,
+                'is_program_head' => $isProgramHead,
+            ],
         ]);
     }
 

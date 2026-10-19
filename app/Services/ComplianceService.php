@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Faculty;
-use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\Submission;
 use Carbon\Carbon;
@@ -16,37 +15,51 @@ class ComplianceService
      */
     public static function syncPendingSubmissions(): void
     {
-        $requirements = Requirement::all();
-        $faculties = Faculty::all();
+        $requirements = Requirement::select(['id', 'program_id'])->get();
+        $faculties = Faculty::select(['id', 'program_id'])->get();
 
         if ($requirements->isEmpty() || $faculties->isEmpty()) {
             return;
         }
 
+        // Fetch all existing pairs as a lookup hash set: "reqId_facultyId" => true
+        $existingSubmissions = Submission::select(['requirement_id', 'faculty_id'])
+            ->get()
+            ->mapWithKeys(fn ($sub) => [$sub->requirement_id.'_'.$sub->faculty_id => true]);
+
         // Group faculties by program_id
         $facultiesByProgram = $faculties->groupBy('program_id');
 
+        $toInsert = [];
+        $now = now();
+
         foreach ($requirements as $requirement) {
-            // If requirement has a specific program_id, only target faculty in that program
-            if ($requirement->program_id) {
-                $targetFaculties = $facultiesByProgram->get($requirement->program_id, collect());
-            } else {
-                $targetFaculties = $faculties;
-            }
+            $targetFaculties = $requirement->program_id
+                ? $facultiesByProgram->get($requirement->program_id, collect())
+                : $faculties;
 
             foreach ($targetFaculties as $faculty) {
-                Submission::firstOrCreate(
-                    [
+                $key = $requirement->id.'_'.$faculty->id;
+                if (! isset($existingSubmissions[$key])) {
+                    $toInsert[] = [
                         'requirement_id' => $requirement->id,
                         'faculty_id' => $faculty->id,
-                    ],
-                    [
                         'status' => 'pending',
                         'submitted_at' => null,
                         'file_path' => null,
                         'reviewer_comments' => null,
-                    ]
-                );
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    $existingSubmissions[$key] = true;
+                }
+            }
+        }
+
+        if (! empty($toInsert)) {
+            // Bulk insert in chunks of 500 records
+            foreach (array_chunk($toInsert, 500) as $chunk) {
+                Submission::insertOrIgnore($chunk);
             }
         }
     }

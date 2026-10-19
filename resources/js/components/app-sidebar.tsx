@@ -3,7 +3,7 @@ import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
 import { type NavGroup, type NavItem, type SharedData } from '@/types';
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     LayoutGrid,
     Calendar,
@@ -37,16 +37,20 @@ import {
     FileUp,
     Briefcase,
     RefreshCw,
-    BarChart3
+    BarChart3,
+    ArrowLeftRight,
+    ShieldAlert,
+    Send,
+    Award
 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
+// Super Admin Navigation Groups (System-wide configuration, master data, TV display studio, system admin)
 const adminNavGroups: NavGroup[] = [
     {
-        title: 'MAIN',
+        title: 'SYSTEM MAIN',
         items: [
             { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid },
-            // { title: 'Faculty Portal', url: '/faculty/dashboard', icon: UserCircle },
             { title: 'Announcements', url: '/announcements', icon: Megaphone },
             { title: 'Academic Periods', url: '/administration/academic-periods', icon: Calendar },
         ],
@@ -55,8 +59,8 @@ const adminNavGroups: NavGroup[] = [
         title: 'OPERATIONS',
         items: [
             { title: 'Programs', url: '/programs', icon: GraduationCap },
-            { title: 'Faculty', url: '/faculties', icon: Users },
-            { title: 'Calendar', url: '/schedule/calendar', icon: Calendar },
+            { title: 'Faculty Directory', url: '/faculties', icon: Users },
+            { title: 'College Calendar', url: '/schedule/calendar', icon: Calendar },
             { title: 'Meetings', url: '/schedule/meetings', icon: Projector },
             { title: 'Activities', url: '/schedule/activities', icon: Activity },
             { title: 'Lab Monitoring', url: '/classroom-monitoring', icon: Monitor },
@@ -71,13 +75,13 @@ const adminNavGroups: NavGroup[] = [
         ],
     },
     {
-        title: 'SCHEDULING',
+        title: 'SCHEDULING & OR-TOOLS',
         items: [
-            {
-                title: 'Schedule Generator',
-                url: '/schedule/generator',
-                icon: Sparkles,
-            },
+            { title: 'Schedule Generator', url: '/schedule/generator', icon: Sparkles },
+            { title: 'Faculty Loading', url: '/schedule/loading', icon: Briefcase },
+            { title: 'Master Timetable', url: '/schedule/master-timetable?view=college', icon: CalendarDays },
+            { title: 'Reviews & Endorsement', url: '/schedule/reviews', icon: FileCheck },
+            { title: 'Swap Requests Hub', url: '/schedule/adjustments', icon: ArrowLeftRight },
         ],
     },
     {
@@ -107,7 +111,100 @@ const adminNavGroups: NavGroup[] = [
     },
 ];
 
-// 7 Organized Groups with 17 Modules as specified for Faculty Account
+// Program Head Navigation Groups (Program Operational Command Center)
+const programHeadNavGroups: NavGroup[] = [
+    {
+        title: 'PROGRAM OPERATIONS',
+        items: [
+            { title: 'Command Dashboard', url: '/dashboard', icon: LayoutGrid },
+            { title: 'Program Faculty', url: '/faculties', icon: Users },
+            { title: 'Faculty Attendance', url: '/faculty-attendance', icon: ClipboardCheck },
+            { title: 'Program Calendar', url: '/schedule/calendar', icon: Calendar },
+            { title: 'Meetings & Activities', url: '/schedule/meetings', icon: Projector },
+            { title: 'Classroom & Lab Mon.', url: '/classroom-monitoring', icon: Monitor },
+            { title: 'Facility Reports', url: '/operations/facility-reports', icon: AlertTriangle },
+        ],
+    },
+    {
+        title: 'PROGRAM SCHEDULING',
+        items: [
+            { title: 'Faculty Loading', url: '/schedule/loading', icon: Briefcase },
+            { title: 'Schedule Candidates', url: '/schedule/generator?tab=candidates', icon: Sparkles },
+            { title: 'Program Head Review', url: '/schedule/reviews?role=program_head', icon: FileCheck },
+            { title: 'Review Flags & Notes', url: '/schedule/reviews?tab=flags', icon: ShieldAlert },
+            { title: 'Program Master Schedule', url: '/schedule/master-timetable?view=program', icon: CalendarDays },
+            { title: 'Swap Requests Review', url: '/schedule/adjustments?tab=requests', icon: ArrowLeftRight },
+        ],
+    },
+    {
+        title: 'ACADEMIC MONITORING',
+        items: [
+            { title: 'Compliance Tracker', url: '/compliance/tracker', icon: CheckSquare },
+            { title: 'Pending Outputs', url: '/compliance/pending-outputs', icon: ClipboardEdit },
+            { title: 'Make-Up Classes', url: '/operations/make-up-classes', icon: RefreshCw },
+            { title: 'Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },
+            { title: 'Lab / Room Utilization', url: '/operations/room-utilization', icon: BarChart3 },
+        ],
+    },
+    {
+        title: 'RESEARCH & EXCELLENCE',
+        items: [
+            { title: 'Faculty Accomplishments', url: '/accomplishments', icon: Award },
+            { title: 'Program Performance', url: '/performance/program', icon: Trophy },
+            { title: 'Recommend Spotlight', url: '/tv-config/spotlight', icon: Sparkles },
+            { title: 'Program Reports', url: '/performance/faculty/report', icon: FileText },
+        ],
+    },
+];
+
+// Dean Navigation Groups (College-Wide Executive Oversight & Approvals)
+const deanNavGroups: NavGroup[] = [
+    {
+        title: 'COLLEGE EXECUTIVE',
+        items: [
+            { title: 'College Executive Dash.', url: '/dashboard', icon: LayoutGrid },
+            { title: 'College Faculty Directory', url: '/faculties', icon: Users },
+            { title: 'College Programs', url: '/programs', icon: GraduationCap },
+            { title: 'College Calendar', url: '/schedule/calendar', icon: Calendar },
+            { title: 'Executive Meetings', url: '/schedule/meetings', icon: Projector },
+            { title: 'Announcements', url: '/announcements', icon: Megaphone },
+        ],
+    },
+    {
+        title: 'COLLEGE SCHEDULING',
+        items: [
+            { title: 'Faculty Loading Oversight', url: '/operations/faculty-workload', icon: Briefcase },
+            { title: 'Candidate Consultation', url: '/schedule/generator?tab=candidates', icon: Sparkles },
+            { title: 'Dean Schedule Review', url: '/schedule/reviews?role=dean', icon: FileCheck },
+            { title: 'Review Flags & AI Summary', url: '/schedule/reviews?tab=flags', icon: ShieldAlert },
+            { title: 'Master College Timetable', url: '/schedule/master-timetable?view=college', icon: CalendarDays },
+            { title: 'Adjustment Batch Approval', url: '/schedule/adjustments?tab=batches', icon: ArrowLeftRight },
+        ],
+    },
+    {
+        title: 'COLLEGE OVERSIGHT',
+        items: [
+            { title: 'College Compliance Overview', url: '/compliance/tracker', icon: CheckSquare },
+            { title: 'Faculty Attendance Monitor', url: '/faculty-attendance', icon: ClipboardCheck },
+            { title: 'Make-Up Class Approvals', url: '/operations/make-up-classes', icon: RefreshCw },
+            { title: 'College Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },
+            { title: 'Room & Lab Utilization', url: '/operations/room-utilization', icon: BarChart3 },
+            { title: 'Facility Issues', url: '/operations/facility-reports', icon: AlertTriangle },
+        ],
+    },
+    {
+        title: 'PERFORMANCE & ACCREDITATION',
+        items: [
+            { title: 'College Performance', url: '/performance/program', icon: Trophy },
+            { title: 'Faculty Performance', url: '/performance/faculty', icon: Star },
+            { title: 'Accomplishment Portfolios', url: '/accomplishments', icon: Award },
+            { title: 'Institutional Spotlights', url: '/tv-config/spotlight', icon: Sparkles },
+            { title: 'College Reports', url: '/performance/faculty/report', icon: FileText },
+        ],
+    },
+];
+
+// Faculty Self-Service Navigation Groups
 const facultyNavGroups: NavGroup[] = [
     {
         title: 'MY WORK',
@@ -161,18 +258,38 @@ const facultyNavGroups: NavGroup[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    // {
-    //     title: 'TV Display',
-    //     url: '/tv-display',
-    //     icon: Monitor,
-    // },
-];
+const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
     const contentRef = useRef<HTMLDivElement>(null);
     const { url, props } = usePage<SharedData>();
-    const isFacultyUser = (props.auth?.user as any)?.is_faculty || (props.auth?.user as any)?.roles?.includes('Faculty Member') || url.startsWith('/faculty/');
+    const user = props.auth?.user as any;
+
+    const roles: string[] = user?.roles || [];
+    const isProgramHead = roles.includes('Program Head');
+    const isDean = roles.includes('Dean');
+    const isSuperAdmin = roles.includes('System Administrator') || roles.includes('Super Admin');
+    const isFaculty = user?.is_faculty || roles.includes('Faculty Member');
+
+    const canSwitchWorkspace = (isProgramHead || isDean || isSuperAdmin) && isFaculty;
+
+    // Workspace mode state: 'management' | 'faculty'
+    const [workspaceMode, setWorkspaceMode] = useState<'management' | 'faculty'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('officehub_workspace_mode');
+            if (saved === 'faculty' || saved === 'management') return saved;
+        }
+        if (url.startsWith('/faculty/')) return 'faculty';
+        return 'management';
+    });
+
+    // Update localStorage when mode changes
+    const toggleWorkspace = (mode: 'management' | 'faculty') => {
+        setWorkspaceMode(mode);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('officehub_workspace_mode', mode);
+        }
+    };
 
     useEffect(() => {
         const el = contentRef.current;
@@ -193,10 +310,75 @@ export function AppSidebar() {
         };
     }, []);
 
-    const groups = isFacultyUser ? facultyNavGroups : adminNavGroups;
+    // Resolve active navigation group
+    let groups: NavGroup[] = adminNavGroups;
+
+    if (canSwitchWorkspace && workspaceMode === 'faculty') {
+        groups = facultyNavGroups;
+    } else if (isProgramHead) {
+        groups = programHeadNavGroups;
+    } else if (isDean) {
+        groups = deanNavGroups;
+    } else if (isFaculty && !isSuperAdmin) {
+        groups = facultyNavGroups;
+    } else {
+        groups = adminNavGroups;
+    }
+
+    const managementTitle = isProgramHead
+        ? 'Program Head Workspace'
+        : isDean
+        ? 'Dean Executive Workspace'
+        : 'Admin Management';
 
     return (
         <Sidebar collapsible="icon" variant="sidebar" className="top-16 h-[calc(100svh-4rem)] border-r border-border/80 bg-sidebar">
+            {/* Seamless Dual-Role Workspace Switcher for Program Heads & Deans */}
+            {canSwitchWorkspace && (
+                <div className="p-3 border-b border-border/60 group-data-[collapsible=icon]:p-1 shrink-0 bg-muted/30">
+                    <div className="flex flex-col gap-1.5 group-data-[collapsible=icon]:items-center">
+                        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-data-[collapsible=icon]:hidden">
+                            <span>Workspace View</span>
+                            <span className="text-amber-500 font-extrabold">
+                                {workspaceMode === 'faculty' ? 'Faculty Portal' : (isProgramHead ? 'Program Head' : 'Dean')}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-background border border-border group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col">
+                            <button
+                                type="button"
+                                onClick={() => toggleWorkspace('management')}
+                                className={`text-[11px] font-bold py-1 px-2 rounded-md transition-all text-center truncate ${
+                                    workspaceMode === 'management'
+                                        ? 'bg-amber-500 text-slate-950 shadow-2xs font-black'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                                title={managementTitle}
+                            >
+                                <span className="group-data-[collapsible=icon]:hidden">
+                                    {isProgramHead ? 'Program Head' : isDean ? 'Dean Oversight' : 'Management'}
+                                </span>
+                                <span className="hidden group-data-[collapsible=icon]:inline text-xs font-bold">
+                                    {isProgramHead ? 'PH' : isDean ? 'DN' : 'MG'}
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => toggleWorkspace('faculty')}
+                                className={`text-[11px] font-bold py-1 px-2 rounded-md transition-all text-center truncate ${
+                                    workspaceMode === 'faculty'
+                                        ? 'bg-amber-500 text-slate-950 shadow-2xs font-black'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                                title="Faculty Self-Service Portal"
+                            >
+                                <span className="group-data-[collapsible=icon]:hidden">Faculty Portal</span>
+                                <span className="hidden group-data-[collapsible=icon]:inline text-xs font-bold">FAC</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <SidebarContent ref={contentRef} className="pt-2 scrollbar-none">
                 <NavMain groups={groups} />
             </SidebarContent>

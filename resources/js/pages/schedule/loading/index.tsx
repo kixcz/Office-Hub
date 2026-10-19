@@ -320,8 +320,30 @@ export default function FacultyLoadingIndex({
                                 )}
                             </div>
 
-                            <div className="pt-3 border-t flex justify-end">
-                                <Button onClick={() => setActiveFacultyDetail(null)} className="text-xs">
+                            {/* Program Head & Dean Workload Review & Endorsement Controls */}
+                            <div className="pt-3 border-t flex flex-col sm:flex-row items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                            alert(`Added workload review comment / flag for ${activeFacultyDetail.name}.`);
+                                        }}
+                                        className="text-amber-700 border-amber-300 hover:bg-amber-50 text-xs font-semibold"
+                                    >
+                                        Flag Match / Reassignment
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => {
+                                            alert(`Workload proposal for ${activeFacultyDetail.name} endorsed by Program Head.`);
+                                        }}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
+                                    >
+                                        Endorse Faculty Load
+                                    </Button>
+                                </div>
+                                <Button onClick={() => setActiveFacultyDetail(null)} variant="ghost" className="text-xs text-gray-500">
                                     Close Window
                                 </Button>
                             </div>
