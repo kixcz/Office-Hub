@@ -20,7 +20,9 @@ use App\Models\ResearchEngagement;
 use App\Models\RoomSchedule;
 use App\Models\Submission;
 use App\Models\Task;
+use App\Services\AI\AccomplishmentExtractorService;
 use App\Services\ComplianceService;
+use App\Services\GoogleDrive\GoogleDriveEvidenceService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -1851,24 +1853,83 @@ class FacultyPortalController extends Controller
     }
 
     /**
-     * Store accomplishment
+     * AI Extraction endpoint: Parse uploaded evidence document and return proposed structured fields
      */
-    public function storeAccomplishment(Request $request): RedirectResponse
+    public function extractAccomplishmentMetadata(Request $request, AccomplishmentExtractorService $extractor)
     {
+        $request->validate([
+            'evidence_file' => 'required|file|max:20480', // up to 20MB
+        ]);
+
+        $file = $request->file('evidence_file');
+        $extracted = $extractor->extractMetadata($file);
+
+        return response()->json([
+            'success' => true,
+            'extracted' => $extracted,
+        ]);
+    }
+
+    /**
+     * Store accomplishment with faculty confirmation and automatic Google Drive evidence organization
+     */
+    public function storeAccomplishment(
+        Request $request,
+        GoogleDriveEvidenceService $driveService
+    ): RedirectResponse {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'subtitle' => 'nullable|string|max:255',
             'category' => 'required|string|max:100',
+            'functional_area' => 'nullable|string|max:100',
+            'scope' => 'nullable|string|max:50',
+            'role' => 'nullable|string|max:100',
+            'issuing_organization' => 'nullable|string|max:255',
+            'event_title' => 'nullable|string|max:255',
+            'venue' => 'nullable|string|max:255',
+            'duration' => 'nullable|string|max:100',
+            'credential_number' => 'nullable|string|max:255',
+            'expiration_date' => 'nullable|date',
             'date_achieved' => 'required|date',
             'points' => 'nullable|integer|min:1|max:100',
             'academic_year' => 'nullable|string|max:50',
             'description' => 'nullable|string',
-            'proof_file' => 'nullable|file|max:10240',
+            'faculty_confirmed' => 'nullable|boolean',
+            'ai_extracted_data' => 'nullable|array',
+            'proof_file' => 'nullable|file|max:20480',
         ]);
 
-        $filePath = null;
+        $user = $request->user();
+        $faculty = $this->resolveFaculty($request);
+        $academicYear = $validated['academic_year'] ?? '2026-2027';
+        $functionalArea = $validated['functional_area'] ?? $validated['category'];
+        $scope = $validated['scope'] ?? 'Institutional';
+
+        $localFilePath = null;
+        $driveRecord = null;
+
         if ($request->hasFile('proof_file')) {
-            $filePath = $request->file('proof_file')->store('accomplishments', 'public');
+            $uploadedFile = $request->file('proof_file');
+            $localFilePath = $uploadedFile->store('accomplishments', 'public');
+
+            // Build hierarchical Google Drive organizational folder path:
+            // Faculty Evidence → Faculty Name (ID) → Academic Year → Functional Area → Scope
+            $facultyName = $faculty ? "{$faculty->first_name} {$faculty->last_name}" : $user->name;
+            $employeeId = $faculty?->faculty_id ?? $faculty?->employee_id ?? "UID-{$user->id}";
+
+            $folderPath = $driveService->buildFolderPath(
+                $facultyName,
+                $employeeId,
+                $academicYear,
+                $functionalArea,
+                $scope
+            );
+
+            $driveRecord = $driveService->uploadEvidence($uploadedFile, $folderPath, [
+                'functional_area' => $functionalArea,
+                'scope' => $scope,
+                'academic_year' => $academicYear,
+            ]);
         }
 
         // Category points guideline fallback
@@ -1878,22 +1939,45 @@ class FacultyPortalController extends Controller
             'Service Accomplishment' => 8,
             'Certification' => 5,
             'Professional Development' => 7,
+            'Instruction' => 8,
+            'Research' => 15,
+            'Extension' => 8,
+            'Award/Recognition' => 15,
         ];
 
         Accomplishment::create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'title' => $validated['title'],
             'subtitle' => $validated['subtitle'] ?? null,
             'category' => $validated['category'],
+            'functional_area' => $functionalArea,
+            'scope' => $scope,
+            'role' => $validated['role'] ?? 'Participant',
+            'issuing_organization' => $validated['issuing_organization'] ?? null,
+            'event_title' => $validated['event_title'] ?? null,
+            'venue' => $validated['venue'] ?? null,
+            'duration' => $validated['duration'] ?? null,
+            'credential_number' => $validated['credential_number'] ?? null,
+            'expiration_date' => $validated['expiration_date'] ?? null,
             'date_achieved' => $validated['date_achieved'],
             'points' => $validated['points'] ?? ($defaultPoints[$validated['category']] ?? 5),
             'status' => 'for_verification',
-            'academic_year' => $validated['academic_year'] ?? '2026-2027',
+            'academic_year' => $academicYear,
             'description' => $validated['description'] ?? null,
-            'proof_file_path' => $filePath,
+            'faculty_confirmed' => $validated['faculty_confirmed'] ?? true,
+            'ai_extracted_data' => $validated['ai_extracted_data'] ?? null,
+            'proof_file_path' => $localFilePath,
+            'google_drive_file_id' => $driveRecord['file_id'] ?? null,
+            'google_drive_folder_id' => $driveRecord['folder_id'] ?? null,
+            'google_drive_path' => $driveRecord['folder_path'] ?? null,
+            'google_drive_web_link' => $driveRecord['web_link'] ?? null,
+            'file_checksum' => $driveRecord['checksum'] ?? null,
+            'file_size_bytes' => $driveRecord['file_size'] ?? null,
+            'file_mime_type' => $driveRecord['mime_type'] ?? null,
+            'version' => 1,
         ]);
 
-        return back()->with('success', 'Accomplishment recorded successfully.');
+        return back()->with('success', 'Accomplishment confirmed and institutional evidence archived to Google Drive successfully.');
     }
 
     /**

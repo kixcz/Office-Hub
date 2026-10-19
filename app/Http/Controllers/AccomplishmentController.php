@@ -11,17 +11,32 @@ class AccomplishmentController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $isSuperAdmin = $user?->hasRole('System Administrator') ?? false;
+        $isDean = $user?->hasRole('Dean') ?? false;
+        $isProgramHead = $user?->hasRole('Program Head') || ($user?->hasRole('Program Chair') ?? false);
+        $userProgramId = $user?->faculty?->program_id;
 
-        // If user is admin/dean, maybe they can see all. For MVP, we'll just show the user's accomplishments or all if admin.
-        // Let's assume anyone can see all for now to act like a directory, but faculty mostly see theirs.
-        // Actually, let's just show everyone's to keep it simple, or maybe group by user.
-        $accomplishments = Accomplishment::with('user')
-            ->orderBy('date_achieved', 'desc')
-            ->get();
+        $query = Accomplishment::with(['user.faculty.program'])
+            ->orderBy('date_achieved', 'desc');
+
+        // Scoping for Program Head
+        if ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId) {
+            $query->whereHas('user.faculty', function ($q) use ($userProgramId) {
+                $q->where('program_id', $userProgramId);
+            });
+        }
+
+        $accomplishments = $query->get();
 
         return Inertia::render('accomplishments/index', [
             'accomplishments' => $accomplishments,
-            'is_admin' => $user->hasRole('admin'), // hypothetical check
+            'is_admin' => $isSuperAdmin || $isDean,
+            'user_permissions' => [
+                'is_super_admin' => $isSuperAdmin,
+                'is_dean' => $isDean,
+                'is_program_head' => $isProgramHead,
+                'can_verify' => $isSuperAdmin || $isDean || $isProgramHead,
+            ],
         ]);
     }
 
@@ -29,7 +44,7 @@ class AccomplishmentController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'category' => 'required|in:certification,research,seminar,award,other',
+            'category' => 'required|string|max:100',
             'date_achieved' => 'required|date',
             'description' => 'nullable|string',
             'proof_file' => 'nullable|file|max:10240', // max 10MB
@@ -45,5 +60,42 @@ class AccomplishmentController extends Controller
         Accomplishment::create($validated);
 
         return back()->with('success', 'Accomplishment added successfully.');
+    }
+
+    /**
+     * Institutional Verification Action for Program Head, Dean, or Super Admin
+     */
+    public function verify(Request $request, Accomplishment $accomplishment)
+    {
+        $user = $request->user();
+        $roleName = $user->hasRole('Dean') ? 'College Dean' : ($user->hasRole('Program Head') ? 'Program Head' : 'Academic Affairs Office');
+
+        $accomplishment->update([
+            'status' => 'verified',
+            'verified_by' => "{$user->name} ({$roleName})",
+            'verified_at' => now(),
+            'return_reason' => null,
+        ]);
+
+        return back()->with('success', "Accomplishment '{$accomplishment->title}' verified for official institutional evidence.");
+    }
+
+    /**
+     * Return accomplishment with audit explanation (e.g. incorrect scope, wrong category, insufficient evidence)
+     */
+    public function returnAccomplishment(Request $request, Accomplishment $accomplishment)
+    {
+        $validated = $request->validate([
+            'return_reason' => 'required|string|max:1000',
+        ]);
+
+        $accomplishment->update([
+            'status' => 'returned',
+            'return_reason' => $validated['return_reason'],
+            'verified_by' => null,
+            'verified_at' => null,
+        ]);
+
+        return back()->with('success', "Accomplishment '{$accomplishment->title}' returned with reviewer feedback.");
     }
 }

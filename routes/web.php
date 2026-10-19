@@ -277,6 +277,8 @@ Route::middleware(['auth'])->group(function () {
     // Accomplishments
     Route::get('/accomplishments', [AccomplishmentController::class, 'index'])->name('accomplishments.index');
     Route::post('/accomplishments', [AccomplishmentController::class, 'store'])->name('accomplishments.store');
+    Route::post('/accomplishments/{accomplishment}/verify', [AccomplishmentController::class, 'verify'])->name('accomplishments.verify');
+    Route::post('/accomplishments/{accomplishment}/return', [AccomplishmentController::class, 'returnAccomplishment'])->name('accomplishments.return');
     // Document Routing
     Route::get('/documents', [DocumentRouteController::class, 'index'])->name('documents.index');
     Route::post('/documents', [DocumentRouteController::class, 'store'])->name('documents.store');
@@ -357,6 +359,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/research-extension/extension/{extension}', [FacultyPortalController::class, 'deleteExtension'])->name('research-extension.extension.destroy');
         Route::get('/meetings', [FacultyPortalController::class, 'meetings'])->name('meetings');
         Route::get('/accomplishments', [FacultyPortalController::class, 'accomplishments'])->name('accomplishments');
+        Route::post('/accomplishments/extract-metadata', [FacultyPortalController::class, 'extractAccomplishmentMetadata'])->name('accomplishments.extract');
         Route::post('/accomplishments', [FacultyPortalController::class, 'storeAccomplishment'])->name('accomplishments.store');
         Route::delete('/accomplishments/{accomplishment}', [FacultyPortalController::class, 'deleteAccomplishment'])->name('accomplishments.destroy');
 

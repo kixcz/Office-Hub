@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndUsersSeeder::class,
             DummyDataSeeder::class,
+            AcademicPeriodSeeder::class,
+            SemesterSchedulingSeeder::class,
         ]);
     }
 }

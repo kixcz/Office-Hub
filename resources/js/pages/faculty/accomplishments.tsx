@@ -24,6 +24,15 @@ import {
     ChevronRight,
     FileText,
     ExternalLink,
+    Cloud,
+    FolderTree,
+    ShieldCheck,
+    Check,
+    Loader2,
+    Layers,
+    MapPin,
+    Building2,
+    FileCheck2,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -35,14 +44,31 @@ interface Accomplishment {
     title: string;
     subtitle?: string | null;
     category: 'Research Award' | 'Publication' | 'Service Accomplishment' | 'Certification' | 'Professional Development' | string;
+    functional_area?: string | null;
+    scope?: string | null;
+    role?: string | null;
+    issuing_organization?: string | null;
+    event_title?: string | null;
+    venue?: string | null;
+    duration?: string | null;
+    credential_number?: string | null;
+    expiration_date?: string | null;
     date_achieved: string;
     points: number;
     status: 'verified' | 'for_verification' | 'returned' | string;
     verified_by?: string | null;
     verified_at?: string | null;
+    return_reason?: string | null;
     academic_year?: string;
     description?: string | null;
     proof_file_path?: string | null;
+    google_drive_file_id?: string | null;
+    google_drive_folder_id?: string | null;
+    google_drive_path?: string | null;
+    google_drive_web_link?: string | null;
+    file_checksum?: string | null;
+    version?: number;
+    faculty_confirmed?: boolean;
 }
 
 interface Props {
@@ -104,17 +130,83 @@ export default function FacultyAccomplishmentsPage({ faculty, accomplishments = 
     const [viewingAccomplishment, setViewingAccomplishment] = useState<Accomplishment | null>(null);
     const [deletingAccomplishment, setDeletingAccomplishment] = useState<Accomplishment | null>(null);
 
+    // AI Document Parsing State
+    const [isExtracting, setIsExtracting] = useState(false);
+    const [aiSuggested, setAiSuggested] = useState<any | null>(null);
+
     // Form Hook
     const createForm = useForm({
         title: '',
         subtitle: '',
         category: 'Research Award',
+        functional_area: 'Research',
+        scope: 'National',
+        role: 'Participant',
+        issuing_organization: '',
+        event_title: '',
+        venue: '',
+        duration: '',
+        credential_number: '',
+        expiration_date: '',
         date_achieved: new Date().toISOString().split('T')[0],
         points: 10,
         academic_year: '2026-2027',
         description: '',
         proof_file: null as File | null,
+        faculty_confirmed: true,
+        ai_extracted_data: null as any | null,
     });
+
+    const handleFileSelectedForExtraction = async (file: File) => {
+        createForm.setData('proof_file', file);
+        setIsExtracting(true);
+        setAiSuggested(null);
+
+        const formData = new FormData();
+        formData.append('evidence_file', file);
+
+        try {
+            const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+            const res = await fetch('/faculty/accomplishments/extract-metadata', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: formData,
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.extracted) {
+                    setAiSuggested(data.extracted);
+                    // Pre-fill form fields for faculty review & confirmation
+                    createForm.setData((prev) => ({
+                        ...prev,
+                        title: data.extracted.title || prev.title,
+                        functional_area: data.extracted.functional_area || prev.functional_area,
+                        scope: data.extracted.scope || prev.scope,
+                        role: data.extracted.role || prev.role,
+                        issuing_organization: data.extracted.issuing_organization || prev.issuing_organization,
+                        event_title: data.extracted.event_title || prev.event_title,
+                        venue: data.extracted.venue || prev.venue,
+                        duration: data.extracted.duration || prev.duration,
+                        credential_number: data.extracted.credential_number || prev.credential_number,
+                        expiration_date: data.extracted.expiration_date || prev.expiration_date,
+                        date_achieved: data.extracted.date_achieved || prev.date_achieved,
+                        points: data.extracted.recommended_points || prev.points,
+                        description: data.extracted.description || prev.description,
+                        ai_extracted_data: data.extracted,
+                        faculty_confirmed: false, // requires explicit faculty confirmation!
+                    }));
+                }
+            }
+        } catch (e) {
+            console.error('AI extraction error:', e);
+        } finally {
+            setIsExtracting(false);
+        }
+    };
 
     // KPI Metrics
     const kpiMetrics = useMemo(() => {
@@ -560,6 +652,32 @@ export default function FacultyAccomplishmentsPage({ faculty, accomplishments = 
                                                             {item.subtitle}
                                                         </div>
                                                     )}
+                                                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                                        {item.functional_area && (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
+                                                                {item.functional_area}
+                                                            </span>
+                                                        )}
+                                                        {item.scope && (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                                                {item.scope}
+                                                            </span>
+                                                        )}
+                                                        {item.role && (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                                                {item.role}
+                                                            </span>
+                                                        )}
+                                                        {item.google_drive_file_id && (
+                                                            <span
+                                                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                                                                title={`Archived to Google Drive: ${item.google_drive_path || 'Faculty Evidence'}`}
+                                                            >
+                                                                <Cloud className="w-2.5 h-2.5 text-emerald-600" />
+                                                                <span>Drive Archived</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
 
                                                 {/* Category Pill with Icon */}
@@ -699,8 +817,58 @@ export default function FacultyAccomplishmentsPage({ faculty, accomplishments = 
                         </DialogDescription>
                     </DialogHeader>
 
-                    <form onSubmit={handleCreateSubmit} className="space-y-4 pt-2">
-                        {/* Title */}
+                    <form onSubmit={handleCreateSubmit} className="space-y-4 pt-2 max-h-[75vh] overflow-y-auto px-1">
+                        {/* 1. Evidence Upload with OCR/AI Parsing Trigger */}
+                        <div className="p-3.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40">
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="text-xs font-black text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                                    <Cloud className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                    <span>Upload Evidence to Google Drive with AI Parsing</span>
+                                </label>
+                                {isExtracting && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 animate-pulse">
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        Extracting metadata...
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mb-2.5">
+                                Upload certificate, award, or publication proof. Gemini AI will automatically parse the document and suggest structured classifications for your confirmation.
+                            </p>
+                            <div className="flex items-center gap-2 border border-dashed border-amber-300 dark:border-amber-700/60 rounded-xl p-3 bg-white dark:bg-card">
+                                <Paperclip className="w-4 h-4 text-amber-600 shrink-0" />
+                                <input
+                                    type="file"
+                                    accept=".pdf,.png,.jpg,.jpeg,.docx"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleFileSelectedForExtraction(file);
+                                    }}
+                                    className="text-xs text-muted-foreground file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-slate-950 cursor-pointer"
+                                />
+                            </div>
+
+                            {/* Live Google Drive Destination Preview */}
+                            <div className="mt-2.5 pt-2 border-t border-amber-200/50 dark:border-amber-800/30 flex items-center gap-2 text-[10px] font-mono text-amber-800 dark:text-amber-300">
+                                <FolderTree className="w-3.5 h-3.5 shrink-0" />
+                                <span>Drive Path: Faculty Evidence/{createForm.data.academic_year}/{createForm.data.functional_area || 'Area'}/{createForm.data.scope || 'Scope'}</span>
+                            </div>
+                        </div>
+
+                        {/* AI Confirmation Notice */}
+                        {aiSuggested && (
+                            <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 text-xs space-y-1">
+                                <div className="flex items-center gap-1.5 font-bold text-purple-700 dark:text-purple-300">
+                                    <Sparkles className="w-4 h-4" />
+                                    <span>AI Suggested Classifications Extracted</span>
+                                </div>
+                                <p className="text-[11px] text-purple-600/90 dark:text-purple-400">
+                                    Please review, adjust, and confirm the suggested metadata below before institutional archiving.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Accomplishment Title */}
                         <div>
                             <label className="text-xs font-bold text-foreground block mb-1">
                                 Accomplishment Title <span className="text-rose-500">*</span>
@@ -708,53 +876,149 @@ export default function FacultyAccomplishmentsPage({ faculty, accomplishments = 
                             <input
                                 type="text"
                                 required
-                                placeholder="e.g. Best Paper Award or Microsoft Azure Certified"
+                                placeholder="e.g. Best Paper Award or AWS Certified Solutions Architect"
                                 value={createForm.data.title}
                                 onChange={(e) => createForm.setData('title', e.target.value)}
                                 className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                             />
                         </div>
 
-                        {/* Subtitle / Venue / Issuer */}
-                        <div>
-                            <label className="text-xs font-bold text-foreground block mb-1">
-                                Subtitle / Journal / Conference / Issuing Body
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="e.g. National Conference on Computing Education (NCCE 2026)"
-                                value={createForm.data.subtitle}
-                                onChange={(e) => createForm.setData('subtitle', e.target.value)}
-                                className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-                            />
-                        </div>
-
-                        {/* Category & Points */}
+                        {/* Functional Area & Scope */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="text-xs font-bold text-foreground block mb-1">
-                                    Category <span className="text-rose-500">*</span>
+                                    Functional Area <span className="text-rose-500">*</span>
                                 </label>
                                 <select
-                                    value={createForm.data.category}
+                                    value={createForm.data.functional_area}
                                     onChange={(e) => {
-                                        const cat = e.target.value;
-                                        createForm.setData('category', cat);
-                                        // Set recommended default points
-                                        if (cat === 'Research Award') createForm.setData('points', 15);
-                                        else if (cat === 'Publication') createForm.setData('points', 10);
-                                        else if (cat === 'Service Accomplishment') createForm.setData('points', 8);
-                                        else if (cat === 'Professional Development') createForm.setData('points', 7);
-                                        else if (cat === 'Certification') createForm.setData('points', 5);
+                                        const area = e.target.value;
+                                        createForm.setData((prev) => ({
+                                            ...prev,
+                                            functional_area: area,
+                                            category: area === 'Research' ? 'Publication' : (area === 'Award/Recognition' ? 'Research Award' : area),
+                                        }));
                                     }}
                                     className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-bold cursor-pointer"
                                 >
-                                    <option value="Research Award">Research Award</option>
-                                    <option value="Publication">Publication</option>
-                                    <option value="Service Accomplishment">Service Accomplishment</option>
-                                    <option value="Certification">Certification</option>
+                                    <option value="Instruction">Instruction</option>
+                                    <option value="Research">Research</option>
+                                    <option value="Extension">Extension</option>
                                     <option value="Professional Development">Professional Development</option>
+                                    <option value="Award/Recognition">Award / Recognition</option>
+                                    <option value="Certification">Certification</option>
+                                    <option value="Administration">Administration</option>
                                 </select>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-foreground block mb-1">
+                                    Scope <span className="text-rose-500">*</span>
+                                </label>
+                                <select
+                                    value={createForm.data.scope}
+                                    onChange={(e) => createForm.setData('scope', e.target.value)}
+                                    className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-bold cursor-pointer"
+                                >
+                                    <option value="Institutional">Institutional</option>
+                                    <option value="Local">Local</option>
+                                    <option value="Regional">Regional</option>
+                                    <option value="National">National</option>
+                                    <option value="International">International</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Role & Issuing Organization */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-xs font-bold text-foreground block mb-1">
+                                    Faculty Role <span className="text-rose-500">*</span>
+                                </label>
+                                <select
+                                    value={createForm.data.role}
+                                    onChange={(e) => createForm.setData('role', e.target.value)}
+                                    className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-bold cursor-pointer"
+                                >
+                                    <option value="Participant">Participant</option>
+                                    <option value="Presenter">Presenter</option>
+                                    <option value="Resource Speaker">Resource Speaker</option>
+                                    <option value="Organizer">Organizer</option>
+                                    <option value="Awardee">Awardee</option>
+                                    <option value="Researcher">Researcher / Author</option>
+                                    <option value="Project Leader">Project Leader</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-foreground block mb-1">
+                                    Issuing Organization / Host Body
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. CHED, IEEE, Microsoft, DOST"
+                                    value={createForm.data.issuing_organization}
+                                    onChange={(e) => createForm.setData('issuing_organization', e.target.value)}
+                                    className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Event Title & Venue */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-xs font-bold text-foreground block mb-1">
+                                    Event / Activity Title
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. 2026 National Computing Congress"
+                                    value={createForm.data.event_title}
+                                    onChange={(e) => createForm.setData('event_title', e.target.value)}
+                                    className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-foreground block mb-1">
+                                    Venue / Platform
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Manila, Philippines or Online Zoom"
+                                    value={createForm.data.venue}
+                                    onChange={(e) => createForm.setData('venue', e.target.value)}
+                                    className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Date Achieved, Duration & Points */}
+                        <div className="grid grid-cols-3 gap-3">
+                            <div>
+                                <label className="text-xs font-bold text-foreground block mb-1">
+                                    Date Achieved <span className="text-rose-500">*</span>
+                                </label>
+                                <input
+                                    type="date"
+                                    required
+                                    value={createForm.data.date_achieved}
+                                    onChange={(e) => createForm.setData('date_achieved', e.target.value)}
+                                    className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-foreground block mb-1">
+                                    Duration / Hours
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. 40 hours"
+                                    value={createForm.data.duration}
+                                    onChange={(e) => createForm.setData('duration', e.target.value)}
+                                    className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                                />
                             </div>
 
                             <div>
@@ -772,65 +1036,60 @@ export default function FacultyAccomplishmentsPage({ faculty, accomplishments = 
                             </div>
                         </div>
 
-                        {/* Date Achieved & Academic Year */}
+                        {/* Credential Number & Expiration */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="text-xs font-bold text-foreground block mb-1">
-                                    Date Achieved <span className="text-rose-500">*</span>
+                                    Credential / Certificate No.
                                 </label>
                                 <input
-                                    type="date"
-                                    required
-                                    value={createForm.data.date_achieved}
-                                    onChange={(e) => createForm.setData('date_achieved', e.target.value)}
+                                    type="text"
+                                    placeholder="e.g. CERT-2026-90812 or DOI/ISBN"
+                                    value={createForm.data.credential_number}
+                                    onChange={(e) => createForm.setData('credential_number', e.target.value)}
                                     className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                                 />
                             </div>
 
                             <div>
                                 <label className="text-xs font-bold text-foreground block mb-1">
-                                    Academic Year
+                                    Expiration Date (Optional)
                                 </label>
-                                <select
-                                    value={createForm.data.academic_year}
-                                    onChange={(e) => createForm.setData('academic_year', e.target.value)}
-                                    className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-bold cursor-pointer"
-                                >
-                                    <option value="2026-2027">AY 2026-2027</option>
-                                    <option value="2025-2026">AY 2025-2026</option>
-                                    <option value="2024-2025">AY 2024-2025</option>
-                                </select>
+                                <input
+                                    type="date"
+                                    value={createForm.data.expiration_date}
+                                    onChange={(e) => createForm.setData('expiration_date', e.target.value)}
+                                    className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                                />
                             </div>
                         </div>
 
                         {/* Description */}
                         <div>
                             <label className="text-xs font-bold text-foreground block mb-1">
-                                Summary / Citation Details
+                                Standardized Description / Citation Summary
                             </label>
                             <textarea
                                 rows={2}
-                                placeholder="Abstract summary, certificate serial, or co-authors..."
+                                placeholder="Abstract summary, citation details, or institutional significance..."
                                 value={createForm.data.description}
                                 onChange={(e) => createForm.setData('description', e.target.value)}
                                 className="w-full px-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                             />
                         </div>
 
-                        {/* Proof Document Upload */}
-                        <div>
-                            <label className="text-xs font-bold text-foreground block mb-1">
-                                Supporting Document / Certificate (PDF, PNG, JPG)
+                        {/* Faculty Confirmation Checkbox */}
+                        <div className="p-3 rounded-xl border border-border bg-muted/30 flex items-start gap-2.5">
+                            <input
+                                type="checkbox"
+                                id="faculty_confirmed_cb"
+                                checked={createForm.data.faculty_confirmed}
+                                onChange={(e) => createForm.setData('faculty_confirmed', e.target.checked)}
+                                className="mt-0.5 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                            />
+                            <label htmlFor="faculty_confirmed_cb" className="text-xs text-foreground cursor-pointer font-medium leading-relaxed">
+                                <strong>I confirm that the above details and classifications are accurate.</strong> I take academic responsibility for verifying that this accomplishment meets institutional and accreditation guidelines.
                             </label>
-                            <div className="flex items-center gap-2 border border-dashed border-border rounded-xl p-3 bg-muted/20">
-                                <Paperclip className="w-4 h-4 text-muted-foreground shrink-0" />
-                                <input
-                                    type="file"
-                                    accept=".pdf,.png,.jpg,.jpeg,.docx"
-                                    onChange={(e) => createForm.setData('proof_file', e.target.files?.[0] || null)}
-                                    className="text-xs text-muted-foreground file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white dark:file:bg-slate-100 dark:file:text-slate-900 cursor-pointer"
-                                />
-                            </div>
                         </div>
 
                         <DialogFooter className="pt-2">
@@ -921,19 +1180,118 @@ export default function FacultyAccomplishmentsPage({ faculty, accomplishments = 
                                 </div>
                             )}
 
-                            {viewingAccomplishment.proof_file_path && (
-                                <div className="pt-1">
-                                    <a
-                                        href={`/storage/${viewingAccomplishment.proof_file_path}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="w-full py-2 px-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground font-bold flex items-center justify-center gap-2 border border-border transition-colors"
-                                    >
-                                        <ExternalLink className="w-3.5 h-3.5" />
-                                        <span>View Uploaded Proof File</span>
-                                    </a>
+                            {/* Functional Area, Scope & Role */}
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                                <div className="p-2.5 rounded-xl border border-border bg-card">
+                                    <span className="text-[10px] font-bold text-muted-foreground block">Area</span>
+                                    <span className="font-bold text-foreground mt-0.5 block truncate">
+                                        {viewingAccomplishment.functional_area || 'Instruction'}
+                                    </span>
+                                </div>
+                                <div className="p-2.5 rounded-xl border border-border bg-card">
+                                    <span className="text-[10px] font-bold text-muted-foreground block">Scope</span>
+                                    <span className="font-bold text-foreground mt-0.5 block truncate">
+                                        {viewingAccomplishment.scope || 'Institutional'}
+                                    </span>
+                                </div>
+                                <div className="p-2.5 rounded-xl border border-border bg-card">
+                                    <span className="text-[10px] font-bold text-muted-foreground block">Role</span>
+                                    <span className="font-bold text-foreground mt-0.5 block truncate">
+                                        {viewingAccomplishment.role || 'Participant'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Issuer & Venue if available */}
+                            {(viewingAccomplishment.issuing_organization || viewingAccomplishment.venue) && (
+                                <div className="p-3 rounded-xl border border-border bg-card space-y-1">
+                                    {viewingAccomplishment.issuing_organization && (
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-muted-foreground">Issuing Org:</span>
+                                            <span className="font-semibold text-foreground text-right">{viewingAccomplishment.issuing_organization}</span>
+                                        </div>
+                                    )}
+                                    {viewingAccomplishment.venue && (
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-muted-foreground">Venue:</span>
+                                            <span className="font-semibold text-foreground text-right">{viewingAccomplishment.venue}</span>
+                                        </div>
+                                    )}
+                                    {viewingAccomplishment.credential_number && (
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-muted-foreground">Credential #:</span>
+                                            <span className="font-mono font-bold text-foreground text-right">{viewingAccomplishment.credential_number}</span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
+
+                            {/* Return Feedback if returned */}
+                            {viewingAccomplishment.status === 'returned' && viewingAccomplishment.return_reason && (
+                                <div className="p-3.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50/70 dark:bg-rose-950/30 text-rose-800 dark:text-rose-200 space-y-1">
+                                    <div className="flex items-center gap-1.5 font-bold text-xs">
+                                        <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                                        <span>Reviewer Return Feedback:</span>
+                                    </div>
+                                    <p className="text-xs font-medium pl-5 leading-relaxed">
+                                        {viewingAccomplishment.return_reason}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Google Drive Institutional Evidence Archiving Box */}
+                            <div className="p-3.5 rounded-xl border border-sky-200/80 dark:border-sky-800/60 bg-sky-50/40 dark:bg-sky-950/20 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Cloud className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                                        <span className="font-extrabold text-foreground text-xs">Institutional Shared Drive Evidence</span>
+                                    </div>
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300">
+                                        <ShieldCheck className="w-3 h-3" />
+                                        v{viewingAccomplishment.version || 1} Audited
+                                    </span>
+                                </div>
+
+                                {viewingAccomplishment.google_drive_path && (
+                                    <div className="text-[11px] font-mono text-muted-foreground bg-background/80 p-2 rounded-lg border border-border/60 break-all flex items-start gap-1.5">
+                                        <FolderTree className="w-3.5 h-3.5 text-sky-500 shrink-0 mt-0.5" />
+                                        <span>{viewingAccomplishment.google_drive_path}</span>
+                                    </div>
+                                )}
+
+                                {viewingAccomplishment.file_checksum && (
+                                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
+                                        <span>SHA-256 Checksum:</span>
+                                        <span className="font-mono text-foreground">{viewingAccomplishment.file_checksum.substring(0, 16)}...</span>
+                                    </div>
+                                )}
+
+                                <div className="flex items-center gap-2 pt-1">
+                                    {viewingAccomplishment.google_drive_web_link ? (
+                                        <a
+                                            href={viewingAccomplishment.google_drive_web_link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex-1 py-1.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                            <span>Open in Google Drive</span>
+                                        </a>
+                                    ) : null}
+
+                                    {viewingAccomplishment.proof_file_path && (
+                                        <a
+                                            href={`/storage/${viewingAccomplishment.proof_file_path}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex-1 py-1.5 px-3 rounded-lg bg-card hover:bg-muted text-foreground font-bold text-xs flex items-center justify-center gap-1.5 border border-border transition-colors shadow-2xs"
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                            <span>Local Cached Copy</span>
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 
