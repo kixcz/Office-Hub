@@ -34,7 +34,9 @@ class CalendarController extends Controller
      */
     public static function getCalendarData(): array
     {
-        self::ensureBaselineEvents();
+        if (Meeting::count() === 0 && Activity::count() === 0) {
+            self::ensureBaselineEvents();
+        }
 
         $meetings = Meeting::with('program')->get()->map(function ($m) {
             $programs = $m->programs;
@@ -196,11 +198,17 @@ class CalendarController extends Controller
     public function destroy(string $id): RedirectResponse
     {
         if (str_starts_with($id, 'm_')) {
-            Meeting::destroy((int) substr($id, 2));
+            Meeting::where('id', (int) substr($id, 2))->delete();
         } elseif (str_starts_with($id, 'a_')) {
-            Activity::destroy((int) substr($id, 2));
+            Activity::where('id', (int) substr($id, 2))->delete();
         } elseif (str_starts_with($id, 'r_')) {
-            Requirement::destroy((int) substr($id, 2));
+            Requirement::where('id', (int) substr($id, 2))->delete();
+        } elseif (is_numeric($id)) {
+            // Fallback for numeric IDs
+            $numId = (int) $id;
+            Meeting::where('id', $numId)->delete();
+            Activity::where('id', $numId)->delete();
+            Requirement::where('id', $numId)->delete();
         }
 
         return redirect()->back()->with('success', 'Event deleted from calendar.');

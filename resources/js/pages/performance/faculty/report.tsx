@@ -525,65 +525,72 @@ export default function GenerateFacultyPerformanceReport({
                                     <label className="text-[11px] font-semibold text-muted-foreground block">
                                         Prepared by
                                     </label>
-                                    <select
-                                        value={signatories.preparedName}
-                                        onChange={(e) => setSignatories({ ...signatories, preparedName: e.target.value })}
-                                        className="h-10 px-3 text-xs font-semibold rounded-xl border border-border bg-card text-foreground w-full cursor-pointer"
-                                    >
-                                        <option value="Dr. Maria Cristina D. Reyes">Dr. Maria Cristina D. Reyes</option>
-                                        <option value="Juan Dela Cruz">Juan Dela Cruz</option>
-                                        <option value="Mark Bryan C. Pansacala">Mark Bryan C. Pansacala</option>
-                                    </select>
-                                    <input
-                                        type="text"
-                                        value={signatories.preparedTitle}
-                                        onChange={(e) => setSignatories({ ...signatories, preparedTitle: e.target.value })}
-                                        className="h-8 px-2.5 text-[11px] rounded-lg border border-border bg-muted/40 text-muted-foreground w-full"
-                                    />
-                                </div>
+                                        <select
+                                            value={signatories.preparedName}
+                                            onChange={(e) => setSignatories({ ...signatories, preparedName: e.target.value })}
+                                            className="h-10 px-3 text-xs font-semibold rounded-xl border border-border bg-card text-foreground w-full cursor-pointer"
+                                        >
+                                            {faculties.map((f) => (
+                                                <option key={f.id} value={f.name}>{f.name}</option>
+                                            ))}
+                                            {faculties.length === 0 && (
+                                                <option value="CIDS Program Chair">CIDS Program Chair</option>
+                                            )}
+                                        </select>
+                                        <input
+                                            type="text"
+                                            value={signatories.preparedTitle}
+                                            onChange={(e) => setSignatories({ ...signatories, preparedTitle: e.target.value })}
+                                            className="h-8 px-2.5 text-[11px] rounded-lg border border-border bg-muted/40 text-muted-foreground w-full"
+                                        />
+                                    </div>
 
-                                {/* Verified by */}
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] font-semibold text-muted-foreground block">
-                                        Verified by
-                                    </label>
-                                    <select
-                                        value={signatories.verifiedName}
-                                        onChange={(e) => setSignatories({ ...signatories, verifiedName: e.target.value })}
-                                        className="h-10 px-3 text-xs font-semibold rounded-xl border border-border bg-card text-foreground w-full cursor-pointer"
-                                    >
-                                        <option value="Prof. Antonio L. Santos">Prof. Antonio L. Santos</option>
-                                        <option value="Maria Santos">Maria Santos</option>
-                                        <option value="Arnel Reyes">Arnel Reyes</option>
-                                    </select>
-                                    <input
-                                        type="text"
-                                        value={signatories.verifiedTitle}
-                                        onChange={(e) => setSignatories({ ...signatories, verifiedTitle: e.target.value })}
-                                        className="h-8 px-2.5 text-[11px] rounded-lg border border-border bg-muted/40 text-muted-foreground w-full"
-                                    />
-                                </div>
+                                    {/* Verified by */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] font-semibold text-muted-foreground block">
+                                            Verified by
+                                        </label>
+                                        <select
+                                            value={signatories.verifiedName}
+                                            onChange={(e) => setSignatories({ ...signatories, verifiedName: e.target.value })}
+                                            className="h-10 px-3 text-xs font-semibold rounded-xl border border-border bg-card text-foreground w-full cursor-pointer"
+                                        >
+                                            {faculties.map((f) => (
+                                                <option key={f.id} value={f.name}>{f.name}</option>
+                                            ))}
+                                            {faculties.length === 0 && (
+                                                <option value="Academic Coordinator">Academic Coordinator</option>
+                                            )}
+                                        </select>
+                                        <input
+                                            type="text"
+                                            value={signatories.verifiedTitle}
+                                            onChange={(e) => setSignatories({ ...signatories, verifiedTitle: e.target.value })}
+                                            className="h-8 px-2.5 text-[11px] rounded-lg border border-border bg-muted/40 text-muted-foreground w-full"
+                                        />
+                                    </div>
 
-                                {/* Noted by */}
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] font-semibold text-muted-foreground block">
-                                        Noted by
-                                    </label>
-                                    <select
-                                        value={signatories.notedName}
-                                        onChange={(e) => setSignatories({ ...signatories, notedName: e.target.value })}
-                                        className="h-10 px-3 text-xs font-semibold rounded-xl border border-border bg-card text-foreground w-full cursor-pointer"
-                                    >
-                                        <option value="Dr. Elena P. Villanueva">Dr. Elena P. Villanueva</option>
-                                        <option value="Dr. Ramon Santos, PECE">Dr. Ramon Santos, PECE</option>
-                                        <option value="College Dean">College Dean</option>
-                                    </select>
-                                    <input
-                                        type="text"
-                                        value={signatories.notedTitle}
-                                        onChange={(e) => setSignatories({ ...signatories, notedTitle: e.target.value })}
-                                        className="h-8 px-2.5 text-[11px] rounded-lg border border-border bg-muted/40 text-muted-foreground w-full"
-                                    />
+                                    {/* Noted by */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] font-semibold text-muted-foreground block">
+                                            Noted by
+                                        </label>
+                                        <select
+                                            value={signatories.notedName}
+                                            onChange={(e) => setSignatories({ ...signatories, notedName: e.target.value })}
+                                            className="h-10 px-3 text-xs font-semibold rounded-xl border border-border bg-card text-foreground w-full cursor-pointer"
+                                        >
+                                            {faculties.map((f) => (
+                                                <option key={f.id} value={f.name}>{f.name}</option>
+                                            ))}
+                                            <option value="College Dean">College Dean</option>
+                                        </select>
+                                        <input
+                                            type="text"
+                                            value={signatories.notedTitle}
+                                            onChange={(e) => setSignatories({ ...signatories, notedTitle: e.target.value })}
+                                            className="h-8 px-2.5 text-[11px] rounded-lg border border-border bg-muted/40 text-muted-foreground w-full"
+                                        />
                                 </div>
                             </div>
                         </div>

@@ -269,10 +269,10 @@ export default function TvPreviewTestingPage({ slides, total_slides, default_res
                     </div>
 
                     {/* 16:9 Television Canvas Container */}
-                    <div className="relative aspect-video w-full rounded-2xl bg-slate-950 border-4 border-slate-800 shadow-2xl overflow-hidden flex flex-col justify-between p-6 text-white select-none">
+                    <div className="relative aspect-video w-full rounded-2xl bg-slate-950 border-4 border-slate-800 shadow-2xl overflow-hidden flex flex-col justify-between text-white select-none">
                         
                         {/* Safe Margins Guide Overlay */}
-                        <div className="absolute inset-8 border border-dashed border-amber-400/20 pointer-events-none rounded-xl" />
+                        <div className="absolute inset-8 border border-dashed border-amber-400/20 pointer-events-none rounded-xl z-20" />
 
                         {/* Offline Simulator Warning */}
                         {simulateOffline && (
@@ -282,120 +282,14 @@ export default function TvPreviewTestingPage({ slides, total_slides, default_res
                             </div>
                         )}
 
-                        {/* Television Header Chrome */}
-                        <div className="flex items-center justify-between pb-3 border-b border-white/10 z-10 shrink-0">
-                            <div className="flex items-center gap-3">
-                                <img src="/CIDS_Logo.jpg" alt="CIDS" className="w-8 h-8 object-contain rounded" />
-                                <div>
-                                    <div className="text-base font-black tracking-tight text-white flex items-center gap-1.5">
-                                        <span>CIDS</span>
-                                        <span className="text-amber-400">OfficeHub</span>
-                                        <span>TV</span>
-                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 uppercase font-black tracking-widest ml-1">
-                                            LIVE
-                                        </span>
-                                    </div>
-                                    <div className="text-[9px] text-slate-400 font-medium tracking-wide">
-                                        COLLEGE OF INFORMATION AND DIGITAL SCIENCES
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="text-right">
-                                <div className="text-xs font-bold text-slate-200">
-                                    AY 2026-2027, 1st Semester ❯
-                                </div>
-                                <div className="text-[10px] text-slate-400 font-mono">
-                                    Tuesday, October 17, 2026 11:32 AM
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Interactive Main Canvas Area */}
-                        <div className="flex-1 my-3 flex flex-col justify-center items-center z-10">
-                            {simulateEmpty ? (
-                                <div className="text-center space-y-2 p-8 max-w-md">
-                                    <AlertCircle className="w-12 h-12 text-slate-600 mx-auto" />
-                                    <h3 className="text-lg font-bold text-slate-300">No Current Records Found</h3>
-                                    <p className="text-xs text-slate-500">
-                                        The TV display gracefully handles empty queries with an institutional fallback announcement or QR scan target.
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="w-full h-full flex flex-col justify-between">
-                                    {/* Active Slide Rendering Placeholder */}
-                                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex-1 flex flex-col justify-between">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-black uppercase tracking-wider text-amber-400">
-                                                {activeSlide?.title || 'Slide Title'}
-                                            </span>
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-bold">
-                                                {mode === 'public' ? 'Sanitized Public Mode (No Faculty Personal Names)' : 'Internal Staff Detailed Mode'}
-                                            </span>
-                                        </div>
-
-                                        <div className="grid grid-cols-3 gap-4 my-auto">
-                                            <div className="p-4 rounded-xl bg-slate-900 border border-white/10 space-y-1">
-                                                <span className="text-[10px] text-slate-400 uppercase font-bold">Primary Data Stream</span>
-                                                <h4 className="text-sm font-bold text-white">{activeSlide?.type}</h4>
-                                                <p className="text-[11px] text-slate-400">
-                                                    {mode === 'public'
-                                                        ? 'Faculty names aggregated to program-level metrics only.'
-                                                        : 'Displaying complete faculty names, individual submissions & room allocations.'}
-                                                </p>
-                                            </div>
-
-                                            <div className="p-4 rounded-xl bg-slate-900 border border-white/10 space-y-1">
-                                                <span className="text-[10px] text-slate-400 uppercase font-bold">Compliance Status</span>
-                                                <div className="text-2xl font-black text-emerald-400">82.5%</div>
-                                                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                                    <div className="w-4/5 h-full bg-emerald-500" />
-                                                </div>
-                                            </div>
-
-                                            <div className="p-4 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between gap-3">
-                                                <div>
-                                                    <span className="text-[10px] text-slate-400 uppercase font-bold">Scan for Details</span>
-                                                    <p className="text-[10px] text-slate-300 mt-1">Scan from your seat</p>
-                                                </div>
-                                                <div className="w-12 h-12 rounded bg-white/15 p-1 flex items-center justify-center text-xs font-bold text-amber-400 border border-white/20">
-                                                    <QrCode className="w-8 h-8" />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-between text-[10px] text-slate-500 pt-2 border-t border-white/10">
-                                            <span>Slide Duration: {duration}s</span>
-                                            <span>Resolution Scale: {resolution.split(' ')[0]}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Television Footer Chrome */}
-                        <div className="flex items-center justify-between pt-3 border-t border-white/10 z-10 text-xs text-slate-400 shrink-0">
-                            <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                                <span>Live TV rotation · <strong>CIDS OfficeHub</strong></span>
-                                <span className="text-slate-600">|</span>
-                                <span className="text-slate-300 font-semibold">{activeSlide?.title}</span>
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1">
-                                    {slides.map((_, i) => (
-                                        <div
-                                            key={i}
-                                            className={cn(
-                                                "h-1.5 rounded-full transition-all",
-                                                i === currentIndex ? "w-8 bg-amber-400" : "w-2 bg-white/20"
-                                            )}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+                        {/* Real TV Display Embedded Iframe for 100% Fidelity Consistency */}
+                        <iframe
+                            key={`${simulateEmpty}-${simulateOffline}-${resolution}`}
+                            src={`/tv-display?preview=1${mode === 'public' ? '&mode=public' : ''}`}
+                            title="TV Display Live Output Preview"
+                            className="w-full h-full border-0 absolute inset-0 z-10"
+                            allow="fullscreen"
+                        />
                     </div>
                 </div>
             </TvStudioLayout>

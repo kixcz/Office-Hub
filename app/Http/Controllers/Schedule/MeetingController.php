@@ -68,6 +68,6 @@ class MeetingController extends Controller
     {
         $meeting->delete();
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Meeting deleted successfully.');
     }
 }

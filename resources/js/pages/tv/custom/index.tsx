@@ -99,7 +99,7 @@ const STATUS_TABS = [
     { id: 'draft', label: 'Drafts', key: 'drafts' },
 ];
 
-export default function CustomSlideIndex({ slides, stats, playlists = [], filters }: Props) {
+export default function CustomSlideIndex({ slides, stats, playlists = [], filters = {} }: Props) {
     const [previewSlide, setPreviewSlide] = useState<CustomContentSlideData | null>(null);
     const [deleteSlide, setDeleteSlide] = useState<CustomContentSlideData | null>(null);
     const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');

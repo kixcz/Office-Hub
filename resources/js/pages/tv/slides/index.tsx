@@ -173,12 +173,14 @@ export default function SlideConfigIndex({
     const [showMetricsCounters, setShowMetricsCounters] = useState<boolean>(selectedSlide?.config?.show_metrics !== false);
     const [autoHideEmpty, setAutoHideEmpty] = useState<boolean>(selectedSlide?.config?.auto_hide !== false);
 
+    const [isSlideActive, setIsSlideActive] = useState<boolean>(selectedSlide?.is_active ?? true);
     const [isSaving, setIsSaving] = useState(false);
     const [isSavedNotice, setIsSavedNotice] = useState(false);
 
     // Sync form when slide selection changes
     useEffect(() => {
         if (!selectedSlide) return;
+        setIsSlideActive(selectedSlide.is_active ?? true);
         setDurationSeconds(selectedSlide.duration_seconds || 15);
         setMaxRecords(selectedSlide.config?.max_records || 5);
         setSortOrder(selectedSlide.config?.sort_order || 'Latest First');
@@ -188,6 +190,20 @@ export default function SlideConfigIndex({
         setShowMetricsCounters(selectedSlide.config?.show_metrics !== false);
         setAutoHideEmpty(selectedSlide.config?.auto_hide !== false);
     }, [selectedSlideId]);
+
+    const handleToggleSlideActive = (slideId: number, currentActive: boolean) => {
+        const nextActive = !currentActive;
+        // Optimistically update list
+        setSlidesList(prev => prev.map(s => s.id === slideId ? { ...s, is_active: nextActive } : s));
+        if (selectedSlideId === slideId) {
+            setIsSlideActive(nextActive);
+        }
+        router.put(`/tv-config/slides/${slideId}`, {
+            is_active: nextActive,
+        }, {
+            preserveScroll: true,
+        });
+    };
 
     const handleSaveConfiguration = () => {
         if (!selectedSlide) return;
@@ -206,12 +222,15 @@ export default function SlideConfigIndex({
 
         router.put(`/tv-config/slides/${selectedSlide.id}`, {
             duration_seconds: durationSeconds,
+            is_active: isSlideActive,
             config: configPayload,
         }, {
             preserveScroll: true,
             onSuccess: () => {
                 setIsSaving(false);
                 setIsSavedNotice(true);
+                // Also update local list
+                setSlidesList(prev => prev.map(s => s.id === selectedSlide.id ? { ...s, is_active: isSlideActive, duration_seconds: durationSeconds } : s));
                 setTimeout(() => setIsSavedNotice(false), 3000);
             },
             onError: () => setIsSaving(false)
@@ -495,16 +514,24 @@ export default function SlideConfigIndex({
                                                 <span>{slide.duration_seconds}s</span>
                                             </span>
 
-                                            {/* Active / Inactive Badge */}
-                                            <span className={cn(
-                                                "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border",
-                                                slide.is_active
-                                                    ? "text-emerald-700 bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/60"
-                                                    : "text-red-700 bg-red-50 border-red-200/60 dark:bg-red-950/60 dark:text-red-300 dark:border-red-800/60"
-                                            )}>
-                                                <span className={cn("w-1 h-1 rounded-full", slide.is_active ? "bg-emerald-500" : "bg-red-500")} />
+                                            {/* Active / Inactive Interactive Switch */}
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleToggleSlideActive(slide.id, slide.is_active);
+                                                }}
+                                                title={slide.is_active ? 'Click to deactivate / hide from TV rotation' : 'Click to activate / show on TV display'}
+                                                className={cn(
+                                                    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95",
+                                                    slide.is_active
+                                                        ? "text-emerald-700 bg-emerald-50 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700 hover:bg-emerald-100"
+                                                        : "text-red-700 bg-red-50 border-red-300 dark:bg-red-950/60 dark:text-red-300 dark:border-red-700 hover:bg-red-100"
+                                                )}
+                                            >
+                                                <span className={cn("w-1.5 h-1.5 rounded-full", slide.is_active ? "bg-emerald-500 animate-pulse" : "bg-red-500")} />
                                                 <span>{slide.is_active ? 'Active' : 'Inactive'}</span>
-                                            </span>
+                                            </button>
 
                                             {/* Preview Button */}
                                             <a
@@ -592,15 +619,24 @@ export default function SlideConfigIndex({
                                     <h3 className="text-base font-black text-slate-900 dark:text-white truncate">
                                         {selectedSlide?.title || 'Slide 1 - Daily Overview'}
                                     </h3>
-                                    <span className={cn(
-                                        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border shrink-0",
-                                        selectedSlide?.is_active
-                                            ? "text-emerald-700 bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                            : "text-red-700 bg-red-50 border-red-200/60 dark:bg-red-950/60 dark:text-red-300"
-                                    )}>
-                                        <span className={cn("w-1.5 h-1.5 rounded-full", selectedSlide?.is_active ? "bg-emerald-500" : "bg-red-500")} />
-                                        <span>{selectedSlide?.is_active ? 'Active' : 'Inactive'}</span>
-                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (selectedSlide) {
+                                                handleToggleSlideActive(selectedSlide.id, isSlideActive);
+                                            }
+                                        }}
+                                        title={isSlideActive ? 'Click to deactivate / hide from TV rotation' : 'Click to activate / show on TV display'}
+                                        className={cn(
+                                            "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 shrink-0",
+                                            isSlideActive
+                                                ? "text-emerald-700 bg-emerald-50 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700 hover:bg-emerald-100"
+                                                : "text-red-700 bg-red-50 border-red-300 dark:bg-red-950/60 dark:text-red-300 dark:border-red-700 hover:bg-red-100"
+                                        )}
+                                    >
+                                        <span className={cn("w-2 h-2 rounded-full", isSlideActive ? "bg-emerald-500 animate-pulse" : "bg-red-500")} />
+                                        <span>{isSlideActive ? 'Active in Rotation' : 'Inactive / Hidden'}</span>
+                                    </button>
                                 </div>
                                 <p className="text-xs font-medium text-slate-400 mt-0.5">
                                     Type: {getSlideCleanTitle(selectedSlide?.type || '', 1)} | Duration: {durationSeconds} seconds

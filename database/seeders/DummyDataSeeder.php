@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Jobs\SyncFacilityMonitoring;
 use App\Models\Activity;
 use App\Models\Announcement;
-use App\Models\FacilityMonitoring;
 use App\Models\Faculty;
 use App\Models\Meeting;
 use App\Models\Program;
@@ -19,6 +18,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class DummyDataSeeder extends Seeder
 {
@@ -303,182 +303,9 @@ class DummyDataSeeder extends Seeder
             TvSetting::updateOrCreate(['key' => $setting['key']], $setting);
         }
 
-        // 9. Facility Monitoring Fake Data
-        $facilities = [
-            [
-                'room_name' => 'CLR 1',
-                'room_type' => 'Computer Lab',
-                'current_class' => 'IT 311 - Advanced Database Systems',
-                'program' => 'BSIT',
-                'instructor' => 'Arnel Reyes',
-                'start_time' => '08:00',
-                'end_time' => '11:00',
-                'status' => 'In Use',
-                'remarks' => 'Lab session in progress',
-                'next_schedule' => 'IT 212 - Object Oriented Programming (11:00 AM)',
-            ],
-            [
-                'room_name' => 'CLR 2',
-                'room_type' => 'Computer Lab',
-                'current_class' => 'CS 221 - Data Structures & Algorithms',
-                'program' => 'BSCS',
-                'instructor' => 'Cristina Lopez',
-                'start_time' => '09:00',
-                'end_time' => '12:00',
-                'status' => 'In Use',
-                'remarks' => 'Practical programming exam',
-                'next_schedule' => 'IS 101 - Intro to Computing (01:00 PM)',
-            ],
-            [
-                'room_name' => 'CLR 3',
-                'room_type' => 'Computer Lab',
-                'current_class' => null,
-                'program' => null,
-                'instructor' => null,
-                'start_time' => null,
-                'end_time' => null,
-                'status' => 'Available',
-                'remarks' => 'Open for faculty consultation or prep',
-                'next_schedule' => 'IT 415 - Systems Integration (01:30 PM)',
-            ],
-            [
-                'room_name' => 'CLR 4 (Mac Lab)',
-                'room_type' => 'Macintosh Lab',
-                'current_class' => 'IT 324 - Mobile Application Development',
-                'program' => 'BSIT',
-                'instructor' => 'Peter Parker',
-                'start_time' => '10:00',
-                'end_time' => '13:00',
-                'status' => 'In Use',
-                'remarks' => 'iOS Swift workshop',
-                'next_schedule' => 'CS 320 - Web Systems and Technologies (02:00 PM)',
-            ],
-            [
-                'room_name' => 'CLR 5 (Network Lab)',
-                'room_type' => 'Specialized Lab',
-                'current_class' => 'IT 223 - Networking 2 (Cisco CCNA)',
-                'program' => 'BSIT',
-                'instructor' => 'Tony Stark',
-                'start_time' => '08:30',
-                'end_time' => '11:30',
-                'status' => 'In Use',
-                'remarks' => 'Router and Switch configuration rack testing',
-                'next_schedule' => 'Maintenance check scheduled at 01:00 PM',
-            ],
-            [
-                'room_name' => 'Multimedia Studio',
-                'room_type' => 'Studio',
-                'current_class' => null,
-                'program' => null,
-                'instructor' => null,
-                'start_time' => null,
-                'end_time' => null,
-                'status' => 'Maintenance',
-                'remarks' => 'Projector bulb replacement & audio recalibration',
-                'next_schedule' => 'Available tomorrow 08:00 AM',
-            ],
-        ];
-
-        foreach ($facilities as $fac) {
-            FacilityMonitoring::updateOrCreate(
-                ['room_name' => $fac['room_name']],
-                $fac
-            );
-        }
-
-        // 10. Room Schedules Fake Data (across all weekdays)
+        // 9. Facility Monitoring & Room Schedules derived from real faculty and rooms
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         $scheduleTemplates = [
-            [
-                'room_name' => 'CLR 1',
-                'start_time' => '08:00:00',
-                'end_time' => '11:00:00',
-                'course_code' => 'IT 311',
-                'course_title' => 'Advanced Database Systems',
-                'instructor' => 'Arnel Reyes',
-                'section' => 'BSIT 3-A',
-            ],
-            [
-                'room_name' => 'CLR 1',
-                'start_time' => '11:00:00',
-                'end_time' => '14:00:00',
-                'course_code' => 'IT 212',
-                'course_title' => 'Object Oriented Programming',
-                'instructor' => 'Maria Santos',
-                'section' => 'BSIT 2-B',
-            ],
-            [
-                'room_name' => 'CLR 1',
-                'start_time' => '14:00:00',
-                'end_time' => '17:00:00',
-                'course_code' => 'IT 415',
-                'course_title' => 'Systems Integration & Architecture',
-                'instructor' => 'Juan Dela Cruz',
-                'section' => 'BSIT 4-A',
-            ],
-            [
-                'room_name' => 'CLR 2',
-                'start_time' => '09:00:00',
-                'end_time' => '12:00:00',
-                'course_code' => 'CS 221',
-                'course_title' => 'Data Structures and Algorithms',
-                'instructor' => 'Cristina Lopez',
-                'section' => 'BSCS 2-A',
-            ],
-            [
-                'room_name' => 'CLR 2',
-                'start_time' => '13:00:00',
-                'end_time' => '16:00:00',
-                'course_code' => 'IS 101',
-                'course_title' => 'Introduction to Computing',
-                'instructor' => 'Clark Kent',
-                'section' => 'BSIS 1-A',
-            ],
-            [
-                'room_name' => 'CLR 4 (Mac Lab)',
-                'start_time' => '10:00:00',
-                'end_time' => '13:00:00',
-                'course_code' => 'IT 324',
-                'course_title' => 'Mobile Application Development',
-                'instructor' => 'Peter Parker',
-                'section' => 'BSIT 3-B',
-            ],
-            [
-                'room_name' => 'CLR 4 (Mac Lab)',
-                'start_time' => '14:00:00',
-                'end_time' => '17:00:00',
-                'course_code' => 'CS 320',
-                'course_title' => 'Web Systems and Technologies',
-                'instructor' => 'Diana Prince',
-                'section' => 'BSCS 3-A',
-            ],
-            [
-                'room_name' => 'CLR 5 (Network Lab)',
-                'start_time' => '08:30:00',
-                'end_time' => '11:30:00',
-                'course_code' => 'IT 223',
-                'course_title' => 'Computer Networks & Security',
-                'instructor' => 'Tony Stark',
-                'section' => 'BSIT 2-A',
-            ],
-            [
-                'room_name' => 'CLR 5 (Network Lab)',
-                'start_time' => '13:00:00',
-                'end_time' => '16:00:00',
-                'course_code' => 'IT 412',
-                'course_title' => 'Cybersecurity & Ethical Hacking',
-                'instructor' => 'Bruce Wayne',
-                'section' => 'BSIT 4-B',
-            ],
-            [
-                'room_name' => 'Room 301',
-                'start_time' => '08:00:00',
-                'end_time' => '09:30:00',
-                'course_code' => 'IT 301',
-                'course_title' => 'Object-Oriented Programming',
-                'instructor' => 'Jerick Erie Vicente',
-                'section' => 'BSIT 3A',
-            ],
             [
                 'room_name' => 'Room 302',
                 'start_time' => '10:00:00',
@@ -498,6 +325,13 @@ class DummyDataSeeder extends Seeder
                 'section' => 'BSIT 3A',
             ],
         ];
+
+        // Trigger live synchronization from spreadsheet if available
+        try {
+            (new SyncFacilityMonitoring)->handle();
+        } catch (\Throwable $e) {
+            Log::warning('Could not sync spreadsheet during seeding: '.$e->getMessage());
+        }
 
         $faculties = Faculty::all();
 

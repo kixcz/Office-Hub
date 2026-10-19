@@ -261,25 +261,50 @@ export function SpotlightSlideHero({ slide, isDark = false, isPreview = false }:
             <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Top Bar: Spotlight Pill + Subject Count Badge + College Branding */}
+            {/* Top Bar: Reference Layout - DSSC & CIDS Branding (Left) | Category Pill & DateTime (Right) */}
             <div className="relative z-10 flex items-center justify-between gap-4 border-b border-white/10 pb-3 mb-2 shrink-0">
-                <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] md:text-xs font-black tracking-wider uppercase border backdrop-blur-md shadow-xs ${badge.badgeClass}`}>
-                        <BadgeIcon className="w-3.5 h-3.5 animate-bounce shrink-0" />
+                {/* Left: Dual Institutional Emblems and Text */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <img
+                            src="/DSSC.jpg"
+                            alt="DSSC Emblem"
+                            className="w-9 h-9 md:w-11 md:h-11 rounded-full object-cover border border-white/20 shadow-sm bg-white"
+                        />
+                        <img
+                            src="/CIDS_Logo.jpg"
+                            alt="CIDS Logo"
+                            className="w-9 h-9 md:w-11 md:h-11 rounded-full object-cover border border-white/20 shadow-sm bg-white"
+                        />
+                    </div>
+                    <div className="flex flex-col justify-center">
+                        <span className="text-[10px] md:text-xs font-black tracking-wider uppercase text-amber-300 drop-shadow-sm leading-tight">
+                            Davao del Sur State College
+                        </span>
+                        <span className="text-[9px] md:text-[11px] font-bold tracking-wider uppercase text-white/90 drop-shadow-sm leading-tight">
+                            College of Information and Digital Sciences
+                        </span>
+                    </div>
+                </div>
+
+                {/* Right: Category Badge Pill & Current Time/Date */}
+                <div className="flex items-center gap-2.5">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] md:text-xs font-black tracking-wider uppercase border backdrop-blur-md shadow-xs ${badge.badgeClass}`}>
+                        <BadgeIcon className="w-3.5 h-3.5 shrink-0" />
                         <span>{badge.label}</span>
                     </span>
 
                     {/* Subject Model Tag */}
-                    <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/10 text-white/90 border border-white/15">
+                    <span className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/10 text-white/90 border border-white/15">
                         {isCollage ? (
                             <>
                                 <Sparkles className="w-3 h-3 text-fuchsia-300" />
-                                <span>Celebration Collage ({collagePhotosList.length} Photos)</span>
+                                <span>Collage ({collagePhotosList.length})</span>
                             </>
                         ) : isGroupPhoto ? (
                             <>
                                 <ImageIcon className="w-3 h-3 text-amber-300" />
-                                <span>Group Photo</span>
+                                <span>Group</span>
                             </>
                         ) : isMultiHonoree ? (
                             <>
@@ -297,23 +322,9 @@ export function SpotlightSlideHero({ slide, isDark = false, isPreview = false }:
                     {slide.priority && slide.priority > 1 && (
                         <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
                             <Sparkles className="w-3 h-3 text-rose-400" />
-                            Featured Takeover
+                            Featured
                         </span>
                     )}
-                </div>
-
-                <div className="flex items-center gap-2 text-right">
-                    <div className="hidden sm:block">
-                        <div className="text-[11px] font-black tracking-wider uppercase opacity-90">
-                            Office of the Dean & Faculty Affairs
-                        </div>
-                        <div className="text-[9px] font-medium opacity-60 tracking-wider uppercase">
-                            College of Information and Communications Studies
-                        </div>
-                    </div>
-                    <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-black text-xs text-amber-300 shadow-xs">
-                        CIDS
-                    </div>
                 </div>
             </div>
 

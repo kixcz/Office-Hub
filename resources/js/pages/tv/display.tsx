@@ -182,6 +182,10 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
         );
     }
 
+    const showHeader = settings?.show_header !== '0';
+    const showFooter = settings?.show_footer !== '0';
+    const showClock = settings?.show_clock !== '0';
+
     return (
         <TvLayout
             currentTerm={current_term}
@@ -191,6 +195,8 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
             onToggleDark={toggleDark}
             isPaused={isPaused}
             onTogglePause={togglePause}
+            showHeader={showHeader}
+            showClock={showClock}
         >
             <Head title="TV Display" />
             <style>{'@keyframes tv-fill{from{width:0}to{width:100%}}'}</style>
@@ -230,6 +236,7 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
             </div>
 
             {/* Footer - Styled precisely as in reference images */}
+            {showFooter && (
             <footer className="z-30 flex shrink-0 items-center justify-between px-8 py-2.5 text-xs text-slate-500 dark:text-slate-400 border-t border-black/[0.04] dark:border-white/[0.05]">
                 <div className="flex items-center gap-2.5">
                     <span className="relative flex h-2.5 w-2.5">
@@ -314,6 +321,7 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
                     </div>
                 </div>
             </footer>
+            )}
         </TvLayout>
     );
 }

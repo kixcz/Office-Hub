@@ -15,7 +15,9 @@ class AnnouncementController extends Controller
      */
     public function index(Request $request)
     {
-        self::ensureBaselineAnnouncements();
+        if (Announcement::count() === 0) {
+            self::ensureBaselineAnnouncements();
+        }
 
         $query = Announcement::with('author')->latest('publish_at');
 

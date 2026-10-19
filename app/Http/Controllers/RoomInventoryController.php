@@ -21,29 +21,60 @@ class RoomInventoryController extends Controller
     {
         $currentPeriod = AcademicPeriod::current();
 
-        // Ensure baseline rooms are seeded if database is empty
-        if (Room::count() === 0) {
-            $rawRooms = RoomSchedule::select('room_name')
-                ->distinct()
-                ->whereNotNull('room_name')
-                ->where('room_name', '!=', '')
-                ->pluck('room_name');
+        // Ensure comprehensive baseline rooms and laboratories are populated
+        $allExpectedRooms = [
+            'CLR 1' => ['building' => 'CIDS Main', 'floor' => '2nd Floor', 'type' => 'Laboratory', 'capacity' => 40, 'equipment_details' => '40 Desktop PCs, 2 Split AC, 1 Projector, 1 Whiteboard'],
+            'CLR 2' => ['building' => 'CIDS Main', 'floor' => '2nd Floor', 'type' => 'Laboratory', 'capacity' => 40, 'equipment_details' => '40 Desktop PCs, 2 Split AC, 1 Projector, 1 Whiteboard'],
+            'CLR 3' => ['building' => 'CIDS Main', 'floor' => '2nd Floor', 'type' => 'Laboratory', 'capacity' => 40, 'equipment_details' => '40 Desktop PCs, 2 Split AC, 1 Projector, 1 Whiteboard'],
+            'CLR 4' => ['building' => 'CIDS Main', 'floor' => '2nd Floor', 'type' => 'Laboratory', 'capacity' => 40, 'equipment_details' => '40 Desktop PCs, 2 Split AC, 1 Projector, 1 Whiteboard'],
+            'CLR 4 (Mac Lab)' => ['building' => 'CIDS Main', 'floor' => '2nd Floor', 'type' => 'Laboratory', 'capacity' => 35, 'equipment_details' => '35 Apple iMacs, 2 Split AC, 1 Interactive Display, Sound System'],
+            'CLR 5' => ['building' => 'CIDS Main', 'floor' => '2nd Floor', 'type' => 'Laboratory', 'capacity' => 40, 'equipment_details' => '40 Desktop PCs, 2 Split AC, 1 Projector, 1 Whiteboard'],
+            'CLR 5 (Network Lab)' => ['building' => 'CIDS Main', 'floor' => '2nd Floor', 'type' => 'Laboratory', 'capacity' => 35, 'equipment_details' => 'Cisco Routers, Switches, Patch Panels, 35 Workstations, 2 Split AC'],
+            'Multimedia Studio' => ['building' => 'CIDS Annex', 'floor' => '3rd Floor', 'type' => 'Laboratory', 'capacity' => 30, 'equipment_details' => 'Green Screen, Professional Audio/Lighting, 4K Cameras, Editing Suite'],
+            'CHS' => ['building' => 'CIDS Main', 'floor' => '1st Floor', 'type' => 'Lecture', 'capacity' => 60, 'equipment_details' => '60 Armchairs, 2 Split AC, 1 Smart TV, 1 Sound System'],
+            'COM 1' => ['building' => 'CIDS Main', 'floor' => '1st Floor', 'type' => 'Laboratory', 'capacity' => 45, 'equipment_details' => '45 Desktop PCs, 2 Split AC, 1 Projector, 1 Whiteboard'],
+            'Room 301' => ['building' => 'CIDS Main', 'floor' => '3rd Floor', 'type' => 'Lecture', 'capacity' => 50, 'equipment_details' => '50 Armchairs, 2 Wall Fans, 1 Projector, 1 Whiteboard'],
+            'Room 302' => ['building' => 'CIDS Main', 'floor' => '3rd Floor', 'type' => 'Lecture', 'capacity' => 50, 'equipment_details' => '50 Armchairs, 2 Wall Fans, 1 Projector, 1 Whiteboard'],
+            'Room 303' => ['building' => 'CIDS Main', 'floor' => '3rd Floor', 'type' => 'Lecture', 'capacity' => 50, 'equipment_details' => '50 Armchairs, 2 Wall Fans, 1 Projector, 1 Whiteboard'],
+            'Room 304' => ['building' => 'CIDS Main', 'floor' => '3rd Floor', 'type' => 'Lecture', 'capacity' => 50, 'equipment_details' => '50 Armchairs, 2 Wall Fans, 1 Projector, 1 Whiteboard'],
+            'Conference Room' => ['building' => 'CIDS Main', 'floor' => '2nd Floor', 'type' => 'Conference', 'capacity' => 25, 'equipment_details' => 'Executive Conference Table, 25 Swivel Chairs, 75-inch Display, Video Conference Bar'],
+            'Dean\'s Office' => ['building' => 'CIDS Main', 'floor' => '2nd Floor', 'type' => 'Office', 'capacity' => 10, 'equipment_details' => 'Executive Desk, Consultation Table, 2 Split AC, Computer Workstation'],
+        ];
 
-            foreach ($rawRooms as $name) {
-                $isLab = str_contains(strtolower($name), 'lab') || str_contains(strtolower($name), 'clr') || str_contains(strtolower($name), 'chs');
-                Room::firstOrCreate(
-                    ['room_name' => $name],
-                    [
-                        'building' => 'CIDS Main',
-                        'floor' => '2nd Floor',
-                        'type' => $isLab ? 'Laboratory' : 'Lecture',
-                        'capacity' => $isLab ? 40 : 50,
-                        'status' => 'Available',
-                        'equipment_details' => $isLab ? '40 Desktop PCs, 2 Split AC units, 1 Projector, 1 Whiteboard' : '50 Armchairs, 2 Split AC units, 1 Smart TV / Projector',
-                        'notes' => 'Synchronized from schedule master data',
-                    ]
-                );
+        // Also fetch any other distinct room names from RoomSchedule
+        $scheduleRooms = RoomSchedule::select('room_name')
+            ->distinct()
+            ->whereNotNull('room_name')
+            ->where('room_name', '!=', '')
+            ->pluck('room_name')
+            ->toArray();
+
+        foreach ($scheduleRooms as $name) {
+            if (! isset($allExpectedRooms[$name])) {
+                $isLab = str_contains(strtolower($name), 'lab') || str_contains(strtolower($name), 'clr') || str_contains(strtolower($name), 'studio');
+                $allExpectedRooms[$name] = [
+                    'building' => 'CIDS Main',
+                    'floor' => '2nd Floor',
+                    'type' => $isLab ? 'Laboratory' : 'Lecture',
+                    'capacity' => $isLab ? 40 : 50,
+                    'equipment_details' => $isLab ? 'Computer Lab Workstations, 2 Split AC, 1 Projector' : 'Standard lecture seating, Projector/Screen',
+                ];
             }
+        }
+
+        foreach ($allExpectedRooms as $name => $meta) {
+            Room::firstOrCreate(
+                ['room_name' => $name],
+                [
+                    'building' => $meta['building'],
+                    'floor' => $meta['floor'],
+                    'type' => $meta['type'],
+                    'capacity' => $meta['capacity'],
+                    'status' => 'Available',
+                    'equipment_details' => $meta['equipment_details'],
+                    'notes' => 'Official CIDS Room & Laboratory Inventory',
+                ]
+            );
         }
 
         $rooms = Room::withCount([
@@ -69,7 +100,13 @@ class RoomInventoryController extends Controller
         });
 
         // Faculty list for complaint attribution if user is logged in
-        $faculties = Faculty::orderBy('name')->get(['id', 'name', 'email']);
+        $faculties = Faculty::orderBy('last_name')->get()->map(function ($f) {
+            return [
+                'id' => $f->id,
+                'name' => $f->full_name,
+                'email' => $f->email ?? '',
+            ];
+        });
 
         // Recent complaints for modal/quick reference
         $recentComplaints = RoomComplaint::latest()->take(10)->get();

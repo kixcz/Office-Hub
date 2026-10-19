@@ -119,13 +119,20 @@ function ToggleSwitch({
     );
 }
 
-export default function SlideComposer({ slide, slides = [] }: Props) {
+export default function SlideComposer({ slide: initialSlide, slides = [] }: Props) {
+    // Current active editing slide
+    const [activeSlideId, setActiveSlideId] = useState<number>(() => {
+        return initialSlide?.id || (slides.length > 0 ? slides[0].id : 1);
+    });
+
+    const activeSlide = slides.find(s => s.id === activeSlideId) || initialSlide || (slides.length > 0 ? slides[0] : null);
+
     // Slide Metadata
-    const [slideTitle, setSlideTitle] = useState(slide?.title || 'Slide 1 - Daily Overview');
-    const [slideType, setSlideType] = useState(slide?.type || 'Daily Overview');
-    const [durationSeconds, setDurationSeconds] = useState(slide?.duration_seconds || 15);
+    const [slideTitle, setSlideTitle] = useState(activeSlide?.title || 'Slide 1 - Daily Overview');
+    const [slideType, setSlideType] = useState(activeSlide?.type || 'Daily Overview');
+    const [durationSeconds, setDurationSeconds] = useState(activeSlide?.duration_seconds || 15);
     const [selectedLayout, setSelectedLayout] = useState<LayoutPresetKey>(
-        (slide?.config?.layout as LayoutPresetKey) || 'balanced_2x2'
+        (activeSlide?.config?.layout as LayoutPresetKey) || 'balanced_2x2'
     );
 
     // Left Library tabs
@@ -134,7 +141,7 @@ export default function SlideComposer({ slide, slides = [] }: Props) {
 
     // Slot assignments state: slotId -> widgetId
     const [slotOccupants, setSlotOccupants] = useState<Record<string, string>>(() => {
-        return slide?.config?.slots || {
+        return activeSlide?.config?.slots || {
             slot_1: 'comp_overview',
             slot_2: 'comp_pending',
             slot_3: 'comp_overdue',
@@ -153,6 +160,22 @@ export default function SlideComposer({ slide, slides = [] }: Props) {
             content_slot: 'general_text',
         };
     });
+
+    // Handle switching slide
+    const handleSwitchSlide = (targetId: number) => {
+        const target = slides.find(s => s.id === targetId);
+        if (!target) return;
+        setActiveSlideId(targetId);
+        setSlideTitle(target.title || '');
+        setSlideType(target.type || '');
+        setDurationSeconds(target.duration_seconds || 15);
+        if (target.config?.layout) {
+            setSelectedLayout(target.config.layout as LayoutPresetKey);
+        }
+        if (target.config?.slots) {
+            setSlotOccupants(target.config.slots);
+        }
+    };
 
     // Currently Selected Slot on Canvas
     const [selectedSlotId, setSelectedSlotId] = useState<string>('slot_1');
@@ -183,6 +206,7 @@ export default function SlideComposer({ slide, slides = [] }: Props) {
     const [showFooterTicker, setShowFooterTicker] = useState(true);
 
     const [isSavedNotice, setIsSavedNotice] = useState(false);
+    const [savedMessage, setSavedMessage] = useState('Configuration saved!');
 
     // Layout Presets Definition
     const layoutOptions: { id: LayoutPresetKey; name: string; description: string; slots: string[] }[] = [
@@ -266,13 +290,15 @@ export default function SlideComposer({ slide, slides = [] }: Props) {
     };
 
     const handleSaveDraft = () => {
+        setSavedMessage('Draft configuration saved locally in builder.');
         setIsSavedNotice(true);
         setTimeout(() => setIsSavedNotice(false), 3000);
     };
 
     const handlePublish = () => {
-        if (slide) {
-            router.put(`/tv-config/slides/${slide.id}`, {
+        const targetSlide = activeSlide;
+        if (targetSlide) {
+            router.put(`/tv-config/slides/${targetSlide.id}`, {
                 title: slideTitle,
                 type: slideType,
                 duration_seconds: durationSeconds,
@@ -298,12 +324,17 @@ export default function SlideComposer({ slide, slides = [] }: Props) {
                     showFooterTicker,
                 }
             }, {
+                preserveScroll: true,
                 onSuccess: () => {
-                    alert('Slide Composer configuration published successfully to the TV rotation!');
+                    setSavedMessage(`"${slideTitle}" published successfully to TV display!`);
+                    setIsSavedNotice(true);
+                    setTimeout(() => setIsSavedNotice(false), 4000);
                 }
             });
         } else {
-            alert('Slide configuration saved!');
+            setSavedMessage('Slide configuration updated!');
+            setIsSavedNotice(true);
+            setTimeout(() => setIsSavedNotice(false), 3000);
         }
     };
 
@@ -361,12 +392,29 @@ export default function SlideComposer({ slide, slides = [] }: Props) {
                     {isSavedNotice && (
                         <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
                             <CheckCircle2 className="w-4 h-4" />
-                            <span>Slide configuration draft saved successfully!</span>
+                            <span>{savedMessage}</span>
                         </div>
                     )}
 
                     {/* Slide Top Metadata Bar */}
-                    <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                    <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                        {slides.length > 0 && (
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Select Slide to Compose</label>
+                                <select
+                                    value={activeSlideId}
+                                    onChange={(e) => handleSwitchSlide(Number(e.target.value))}
+                                    className="w-full px-3 py-2 text-xs font-semibold bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-700 dark:text-amber-400 font-bold"
+                                >
+                                    {slides.map((s) => (
+                                        <option key={s.id} value={s.id} className="text-slate-900 dark:text-white bg-white dark:bg-slate-900">
+                                            #{s.order} - {s.title} ({s.is_active ? 'Active' : 'Hidden'})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
                         <div className="space-y-1">
                             <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Slide Title</label>
                             <input

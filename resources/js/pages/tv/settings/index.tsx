@@ -157,11 +157,12 @@ export default function TvDisplaySettingsPage({ settings, devices = [], selected
             display_mode: settings.display_mode || 'fit',
             repeat_playlist: settings.repeat_playlist === '1',
 
-            show_clock: settings.show_clock === '1',
-            show_footer: settings.show_footer === '1',
-            show_slide_title: settings.show_slide_title === '1',
-            show_status_labels: settings.show_status_labels === '1',
-            enable_empty_state: settings.enable_empty_state === '1',
+            show_header: settings.show_header !== '0',
+            show_clock: settings.show_clock !== '0',
+            show_footer: settings.show_footer !== '0',
+            show_slide_title: settings.show_slide_title !== '0',
+            show_status_labels: settings.show_status_labels !== '0',
+            enable_empty_state: settings.enable_empty_state !== '0',
 
             allow_faculty_names: settings.allow_faculty_names === '1',
             enable_internal_slides: settings.enable_internal_slides === '1',
@@ -178,7 +179,16 @@ export default function TvDisplaySettingsPage({ settings, devices = [], selected
         }
     });
 
+    const activeDevice = devices.find(d => d.id === Number(selectedDeviceId)) || selected_device || devices[0];
+
+    useEffect(() => {
+        if (activeDevice?.id && form.data.device_id !== activeDevice.id) {
+            form.setData('device_id', activeDevice.id);
+        }
+    }, [activeDevice?.id]);
+
     const handleDeviceSwitch = (deviceId: number) => {
+        setSelectedDeviceId(deviceId);
         router.get('/tv-config/settings', { device_id: deviceId }, { preserveState: false });
     };
 
@@ -188,8 +198,6 @@ export default function TvDisplaySettingsPage({ settings, devices = [], selected
             preserveScroll: true,
         });
     };
-
-    const activeDevice = devices.find(d => d.id === Number(selectedDeviceId)) || selected_device || devices[0];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

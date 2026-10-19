@@ -114,6 +114,24 @@ export function TvStudioLayout({ children, defaultCollapsed = false, hideSidebar
         setCollapsedGroups((prev) => ({ ...prev, [title]: !prev[title] }));
     };
 
+    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
+    // Restore scroll position on mount or url change
+    React.useLayoutEffect(() => {
+        if (typeof window !== 'undefined' && scrollContainerRef.current) {
+            const savedScroll = sessionStorage.getItem('tv_studio_mini_sidebar_scroll');
+            if (savedScroll !== null) {
+                scrollContainerRef.current.scrollTop = parseInt(savedScroll, 10) || 0;
+            }
+        }
+    }, [currentUrl]);
+
+    const handleSidebarScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('tv_studio_mini_sidebar_scroll', String(e.currentTarget.scrollTop));
+        }
+    };
+
     if (hideSidebar) {
         return <div className="w-full min-h-[calc(100vh-4rem)] bg-slate-50/50 dark:bg-slate-950">{children}</div>;
     }
@@ -212,7 +230,11 @@ export function TvStudioLayout({ children, defaultCollapsed = false, hideSidebar
                 )}
 
                 {/* Scrollable Navigation Groups */}
-                <div className="flex-1 overflow-y-auto p-2 space-y-4">
+                <div 
+                    ref={scrollContainerRef}
+                    onScroll={handleSidebarScroll}
+                    className="flex-1 overflow-y-auto p-2 space-y-4"
+                >
                     {TV_STUDIO_NAV_GROUPS.map((group) => {
                         const isGroupClosed = collapsedGroups[group.title];
                         const filteredItems = group.items.filter((item) =>

@@ -142,8 +142,8 @@ export default function AnnouncementsIndex({
     }, [announcements?.data, searchTerm, selectedCategory, selectedPriority, selectedStatus]);
 
     // Active KPI metrics
-    const totalAnnouncements = stats?.total ?? announcements?.total ?? 3;
-    const activeCount = stats?.active ?? 3;
+    const totalAnnouncements = stats?.total ?? announcements?.total ?? 0;
+    const activeCount = stats?.active ?? 0;
     const scheduledCount = stats?.scheduled ?? 0;
     const archivedCount = stats?.archived ?? 0;
 
@@ -229,18 +229,18 @@ export default function AnnouncementsIndex({
         }
     };
 
-    const getIconByRow = (idx: number, category?: string) => {
+    const getIconByRow = (_idx: number, category?: string) => {
         const cat = (category || '').toLowerCase();
-        if (cat === 'requirement' || idx === 1) {
+        if (cat === 'requirement') {
             return (
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-2xs">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center shrink-0 shadow-2xs">
                     <FileText className="w-4 h-4" />
                 </div>
             );
         }
-        if (cat === 'enrollment' || idx === 2) {
+        if (cat === 'enrollment') {
             return (
-                <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center shrink-0 shadow-2xs">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-2xs">
                     <FileText className="w-4 h-4" />
                 </div>
             );
@@ -252,28 +252,26 @@ export default function AnnouncementsIndex({
         );
     };
 
-    const getAudience = (announcement: Announcement, idx: number) => {
-        if (announcement.destination === 'office' || idx === 1) {
+    const getAudience = (announcement: Announcement, _idx: number) => {
+        if (announcement.destination === 'office') {
             return {
-                title: 'Graduating Students',
-                subtitle: 'Specific Group',
+                title: 'Internal Office / Faculty',
+                subtitle: 'Restricted Staff',
             };
         }
         return {
-            title: 'All Students',
+            title: 'All Students & Public',
             subtitle: 'College-wide',
         };
     };
 
-    const formatPublishDate = (dateStr?: string, idx?: number) => {
+    const formatPublishDate = (dateStr?: string, _idx?: number) => {
         if (!dateStr) {
-            if (idx === 0) return { date: 'Oct 13, 2026', time: '11:00 AM' };
-            if (idx === 1) return { date: 'Oct 12, 2026', time: '9:00 AM' };
-            return { date: 'Nov 3, 2026', time: '8:00 AM' };
+            return { date: 'Immediate', time: 'Active' };
         }
         const d = new Date(dateStr);
         if (isNaN(d.getTime())) {
-            return { date: 'Oct 13, 2026', time: '11:00 AM' };
+            return { date: 'Immediate', time: 'Active' };
         }
         return {
             date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),

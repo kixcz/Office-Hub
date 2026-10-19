@@ -143,6 +143,7 @@ function BlueToggleSwitch({
 
 export default function PlaylistIndex({ 
     slides: initialSlides,
+    spotlights = [],
     stats = {
         total_slides: 7,
         active_slides: 7,

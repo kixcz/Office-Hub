@@ -82,7 +82,7 @@ export function CelebrationEffects({ type = 'confetti', isPreview = false }: Cel
     }, [isPreview]);
 
     return (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-25 md:opacity-30">
             {/* Confetti Animation */}
             {type === 'confetti' && (
                 <div className="absolute inset-0">
