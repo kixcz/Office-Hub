@@ -12,16 +12,25 @@ class FacultyAttendance extends Model
 
     protected $fillable = [
         'faculty_id',
+        'room_schedule_id',
         'instructor_name',
         'session_date',
         'day_of_week',
         'time_slot',
+        'scheduled_start_time',
+        'scheduled_end_time',
+        'scheduled_duration_minutes',
+        'actual_arrival_time',
+        'delivered_minutes',
         'section',
         'subject',
         'room',
         'week_label',
         'status',
+        'primary_status',
         'late_minutes',
+        'make_up_required',
+        'make_up_request_id',
         'remarks',
         'substitute_faculty',
         'academic_year',
@@ -43,12 +52,25 @@ class FacultyAttendance extends Model
         return [
             'session_date' => 'date',
             'late_minutes' => 'integer',
+            'scheduled_duration_minutes' => 'integer',
+            'delivered_minutes' => 'integer',
+            'make_up_required' => 'boolean',
         ];
     }
 
     public function faculty(): BelongsTo
     {
         return $this->belongsTo(Faculty::class);
+    }
+
+    public function roomSchedule(): BelongsTo
+    {
+        return $this->belongsTo(RoomSchedule::class);
+    }
+
+    public function makeUpRequest(): BelongsTo
+    {
+        return $this->belongsTo(MakeUpClassRequest::class, 'make_up_request_id');
     }
 
     /**

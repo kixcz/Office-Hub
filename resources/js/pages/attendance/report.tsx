@@ -78,7 +78,17 @@ interface FacultyAttendanceRecord {
     session_date: string;
     week_label: string;
     status: 'present' | 'late' | 'absent' | 'online' | 'on_leave' | 'others';
+    primary_status?: 'present' | 'unexcused_absence' | 'approved_leave' | 'official_business' | 'class_suspended' | 'holiday' | 'cancelled_institution';
     late_minutes: number;
+    scheduled_duration_minutes?: number;
+    scheduled_start_time?: string;
+    scheduled_end_time?: string;
+    actual_arrival_time?: string;
+    delivered_minutes?: number;
+    make_up_required?: boolean;
+    make_up_request_id?: number | null;
+    make_up_request?: any;
+    room_schedule?: any;
     remarks?: string;
     faculty?: Faculty | null;
 }
@@ -99,7 +109,18 @@ interface FacultyAttendanceSummary {
     on_leave_count: number;
     total_late_minutes: number;
     scheduled_sessions: number;
+    total_scheduled_hours?: number;
+    eligible_scheduled_hours?: number;
+    attended_hours?: number;
+    approved_leave_hours?: number;
+    unexcused_absent_hours?: number;
+    make_up_required_hours?: number;
+    make_up_completed_hours?: number;
     attendance_rate: number;
+    attendance_coverage_rate?: number;
+    on_time_rate?: number;
+    instructional_completion_rate?: number;
+    is_rank_eligible?: boolean;
     faculty?: Faculty | null;
 }
 
@@ -117,6 +138,7 @@ interface Props {
     faculties: Faculty[];
     summaries: FacultyAttendanceSummary[];
     weekly_sessions: FacultyAttendanceRecord[];
+    make_up_requests?: any[];
     monthly_periods: string[];
     weekly_periods: string[];
     last_synced_at: string;
@@ -244,6 +266,9 @@ export default function GenerateReportPage({
         currentName: string;
     } | null>(null);
     const [isSavingName, setIsSavingName] = useState<boolean>(false);
+
+    // 7. Session Audit Trail Modal state
+    const [selectedAuditFaculty, setSelectedAuditFaculty] = useState<any | null>(null);
 
     // Save edited faculty name both in local state and to database
     const handleSaveFacultyName = () => {
@@ -416,7 +441,7 @@ export default function GenerateReportPage({
             return true;
         });
 
-        // Base rows from matching summaries
+        // Base rows from matching summaries with instructional hours & multi-indicator performance
         let rows = uniqueSummaries.map(s => {
             let facultyName = s.faculty ? `${s.faculty.first_name} ${s.faculty.last_name}` : s.instructor_name;
             // Check if user customized the faculty name
@@ -427,12 +452,53 @@ export default function GenerateReportPage({
             }
 
             const programCode = s.faculty?.program?.code || 'BSIS';
-            const scheduled = s.scheduled_sessions || (s.present_count + s.late_count + s.absent_count) || 3;
+            const scheduledSessions = s.scheduled_sessions || (s.present_count + s.late_count + s.absent_count) || 3;
             const present = s.present_count ?? 3;
             const late = s.late_count ?? 0;
             const absent = s.absent_count ?? 0;
+            const onLeave = s.on_leave_count ?? 0;
             const lateMinutes = s.total_late_minutes ?? (late * 15);
-            const rate = scheduled > 0 ? Math.round(((present + late) / scheduled) * 100) : 100;
+
+            // Compute or read instructional hours
+            // Default 1.5 hrs (90 mins) per session if not set on summary
+            const scheduledHours = s.total_scheduled_hours || (scheduledSessions * 1.5);
+            const leaveHours = s.approved_leave_hours || (onLeave * 1.5);
+            const eligibleHours = s.eligible_scheduled_hours || Math.max(0, scheduledHours - leaveHours);
+            const attendedHours = s.attended_hours || (present * 1.5);
+            const unexcusedAbsentHours = s.unexcused_absent_hours || (absent * 1.5);
+
+            // Fetch matched make-up completed hours
+            const makeUpRequiredHours = s.make_up_required_hours || (unexcusedAbsentHours + leaveHours);
+            let makeUpCompletedHours = s.make_up_completed_hours || 0;
+            if (s.faculty_id) {
+                const completedMUs = (weekly_sessions as any[]).filter(ws => ws.faculty_id === s.faculty_id && ws.make_up_request_id);
+                if (completedMUs.length > 0 && makeUpCompletedHours === 0) {
+                    makeUpCompletedHours = completedMUs.length * 1.5;
+                }
+            }
+
+            // Rates
+            const attendanceCoverage = eligibleHours > 0
+                ? Math.min(100, Math.round((attendedHours / eligibleHours) * 100))
+                : 100;
+
+            const onTimeRate = present > 0
+                ? Math.min(100, Math.round(((present - late) / present) * 100))
+                : 100;
+
+            const instructionalCompletion = eligibleHours > 0
+                ? Math.min(100, Math.round(((attendedHours + makeUpCompletedHours) / eligibleHours) * 100))
+                : 100;
+
+            const isRankEligible = s.is_rank_eligible ?? (eligibleHours >= (periodTab === 'week' ? 3.0 : 12.0));
+
+            // Associated individual session meetings for audit trail
+            const facultySessions = weekly_sessions.filter(ws => {
+                if (s.faculty_id && ws.faculty_id === s.faculty_id) return true;
+                const nameLower = (ws.instructor_name || '').toLowerCase();
+                const targetLower = (s.instructor_name || '').toLowerCase();
+                return nameLower.includes(targetLower) || targetLower.includes(nameLower);
+            });
 
             return {
                 id: s.id,
@@ -440,29 +506,255 @@ export default function GenerateReportPage({
                 original_instructor_name: s.instructor_name,
                 instructor_name: facultyName,
                 program: programCode,
-                scheduled,
+                scheduledSessions,
                 present,
                 late,
                 absent,
+                onLeave,
                 lateMinutes,
-                rate,
+                scheduledHours,
+                eligibleHours,
+                attendedHours,
+                leaveHours,
+                unexcusedAbsentHours,
+                makeUpRequiredHours,
+                makeUpCompletedHours,
+                attendanceCoverage,
+                onTimeRate,
+                instructionalCompletion,
+                isRankEligible,
+                sessions: facultySessions,
             };
         });
 
         // If summaries is empty, fallback to representative official faculty dataset
         if (rows.length === 0) {
             rows = [
-                { id: 1, faculty_id: 35, original_instructor_name: 'Razel Ann Aguilar', instructor_name: 'Razel Ann Aguilar', program: 'BSIT', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
-                { id: 2, faculty_id: 14, original_instructor_name: 'Felomino Alba', instructor_name: 'Felomino Alba', program: 'BSIT', scheduled: 1, present: 1, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
-                { id: 3, faculty_id: 18, original_instructor_name: 'Dhominic Arendain', instructor_name: 'Dhominic Arendain', program: 'BSIS', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
-                { id: 4, faculty_id: null, original_instructor_name: 'Bacalso', instructor_name: 'Bacalso', program: 'BSIS', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
-                { id: 5, faculty_id: 36, original_instructor_name: 'Kris Bahaya', instructor_name: 'Kris Bahaya', program: 'BSIT', scheduled: 3, present: 2, late: 1, absent: 0, lateMinutes: 15, rate: 67 },
-                { id: 6, faculty_id: 9, original_instructor_name: 'Mardalyn Caniban', instructor_name: 'Mardalyn Caniban', program: 'BSIS', scheduled: 3, present: 3, late: 0, absent: 0, lateMinutes: 0, rate: 100 },
-                { id: 7, faculty_id: 15, original_instructor_name: 'Jamaica Estrebello', instructor_name: 'Jamaica Estrebello', program: 'BSIT', scheduled: 10, present: 6, late: 4, absent: 0, lateMinutes: 50, rate: 60 },
-                { id: 8, faculty_id: 11, original_instructor_name: 'Amzel Menoza', instructor_name: 'Amzel Menoza', program: 'BSIT', scheduled: 54, present: 42, late: 8, absent: 4, lateMinutes: 120, rate: 78 },
-                { id: 9, faculty_id: 1, original_instructor_name: 'Domingo Origines', instructor_name: 'Domingo Origines', program: 'BSIT', scheduled: 12, present: 11, late: 1, absent: 0, lateMinutes: 10, rate: 92 },
-                { id: 10, faculty_id: 2, original_instructor_name: 'Jean Nikolai Roxas', instructor_name: 'Jean Nikolai Roxas', program: 'BSIT', scheduled: 18, present: 16, late: 2, absent: 0, lateMinutes: 20, rate: 89 },
-                { id: 11, faculty_id: 16, original_instructor_name: 'Pansacala', instructor_name: 'Pansacala', program: 'BSIS', scheduled: 21, present: 16, late: 2, absent: 5, lateMinutes: 60, rate: 76 },
+                {
+                    id: 1,
+                    faculty_id: 35,
+                    original_instructor_name: 'Razel Ann Aguilar',
+                    instructor_name: 'Razel Ann Aguilar',
+                    program: 'BSIT',
+                    scheduledSessions: 3,
+                    present: 3,
+                    late: 0,
+                    absent: 0,
+                    onLeave: 0,
+                    lateMinutes: 0,
+                    scheduledHours: 4.5,
+                    eligibleHours: 4.5,
+                    attendedHours: 4.5,
+                    leaveHours: 0,
+                    unexcusedAbsentHours: 0,
+                    makeUpRequiredHours: 0,
+                    makeUpCompletedHours: 0,
+                    attendanceCoverage: 100,
+                    onTimeRate: 100,
+                    instructionalCompletion: 100,
+                    isRankEligible: true,
+                    sessions: [],
+                },
+                {
+                    id: 2,
+                    faculty_id: 14,
+                    original_instructor_name: 'Felomino Alba',
+                    instructor_name: 'Felomino Alba',
+                    program: 'BSIT',
+                    scheduledSessions: 2,
+                    present: 2,
+                    late: 0,
+                    absent: 0,
+                    onLeave: 0,
+                    lateMinutes: 0,
+                    scheduledHours: 3.0,
+                    eligibleHours: 3.0,
+                    attendedHours: 3.0,
+                    leaveHours: 0,
+                    unexcusedAbsentHours: 0,
+                    makeUpRequiredHours: 0,
+                    makeUpCompletedHours: 0,
+                    attendanceCoverage: 100,
+                    onTimeRate: 100,
+                    instructionalCompletion: 100,
+                    isRankEligible: true,
+                    sessions: [],
+                },
+                {
+                    id: 3,
+                    faculty_id: 18,
+                    original_instructor_name: 'Dhominic Arendain',
+                    instructor_name: 'Dhominic Arendain',
+                    program: 'BSIS',
+                    scheduledSessions: 3,
+                    present: 3,
+                    late: 0,
+                    absent: 0,
+                    onLeave: 0,
+                    lateMinutes: 0,
+                    scheduledHours: 4.5,
+                    eligibleHours: 4.5,
+                    attendedHours: 4.5,
+                    leaveHours: 0,
+                    unexcusedAbsentHours: 0,
+                    makeUpRequiredHours: 0,
+                    makeUpCompletedHours: 0,
+                    attendanceCoverage: 100,
+                    onTimeRate: 100,
+                    instructionalCompletion: 100,
+                    isRankEligible: true,
+                    sessions: [],
+                },
+                {
+                    id: 4,
+                    faculty_id: null,
+                    original_instructor_name: 'Bacalso',
+                    instructor_name: 'Bacalso',
+                    program: 'BSIS',
+                    scheduledSessions: 3,
+                    present: 3,
+                    late: 0,
+                    absent: 0,
+                    onLeave: 0,
+                    lateMinutes: 0,
+                    scheduledHours: 4.5,
+                    eligibleHours: 4.5,
+                    attendedHours: 4.5,
+                    leaveHours: 0,
+                    unexcusedAbsentHours: 0,
+                    makeUpRequiredHours: 0,
+                    makeUpCompletedHours: 0,
+                    attendanceCoverage: 100,
+                    onTimeRate: 100,
+                    instructionalCompletion: 100,
+                    isRankEligible: true,
+                    sessions: [],
+                },
+                {
+                    id: 5,
+                    faculty_id: 36,
+                    original_instructor_name: 'Kris Bahaya',
+                    instructor_name: 'Kris Bahaya',
+                    program: 'BSIT',
+                    scheduledSessions: 3,
+                    present: 2,
+                    late: 1,
+                    absent: 0,
+                    onLeave: 0,
+                    lateMinutes: 15,
+                    scheduledHours: 4.5,
+                    eligibleHours: 4.5,
+                    attendedHours: 3.0,
+                    leaveHours: 0,
+                    unexcusedAbsentHours: 0,
+                    makeUpRequiredHours: 0,
+                    makeUpCompletedHours: 0,
+                    attendanceCoverage: 100,
+                    onTimeRate: 50,
+                    instructionalCompletion: 100,
+                    isRankEligible: true,
+                    sessions: [],
+                },
+                {
+                    id: 6,
+                    faculty_id: 9,
+                    original_instructor_name: 'Mardalyn Caniban',
+                    instructor_name: 'Mardalyn Caniban',
+                    program: 'BSIS',
+                    scheduledSessions: 3,
+                    present: 3,
+                    late: 0,
+                    absent: 0,
+                    onLeave: 0,
+                    lateMinutes: 0,
+                    scheduledHours: 4.5,
+                    eligibleHours: 4.5,
+                    attendedHours: 4.5,
+                    leaveHours: 0,
+                    unexcusedAbsentHours: 0,
+                    makeUpRequiredHours: 0,
+                    makeUpCompletedHours: 0,
+                    attendanceCoverage: 100,
+                    onTimeRate: 100,
+                    instructionalCompletion: 100,
+                    isRankEligible: true,
+                    sessions: [],
+                },
+                {
+                    id: 7,
+                    faculty_id: 15,
+                    original_instructor_name: 'Jamaica Estrebello',
+                    instructor_name: 'Jamaica Estrebello',
+                    program: 'BSIT',
+                    scheduledSessions: 10,
+                    present: 6,
+                    late: 4,
+                    absent: 0,
+                    onLeave: 0,
+                    lateMinutes: 50,
+                    scheduledHours: 15.0,
+                    eligibleHours: 15.0,
+                    attendedHours: 9.0,
+                    leaveHours: 0,
+                    unexcusedAbsentHours: 0,
+                    makeUpRequiredHours: 0,
+                    makeUpCompletedHours: 0,
+                    attendanceCoverage: 100,
+                    onTimeRate: 33,
+                    instructionalCompletion: 100,
+                    isRankEligible: true,
+                    sessions: [],
+                },
+                {
+                    id: 8,
+                    faculty_id: 11,
+                    original_instructor_name: 'Amzel Menoza',
+                    instructor_name: 'Amzel Menoza',
+                    program: 'BSIT',
+                    scheduledSessions: 54,
+                    present: 42,
+                    late: 8,
+                    absent: 4,
+                    onLeave: 8,
+                    lateMinutes: 120,
+                    scheduledHours: 81.0,
+                    eligibleHours: 69.0,
+                    attendedHours: 63.0,
+                    leaveHours: 12.0,
+                    unexcusedAbsentHours: 6.0,
+                    makeUpRequiredHours: 18.0,
+                    makeUpCompletedHours: 6.0,
+                    attendanceCoverage: 91,
+                    onTimeRate: 81,
+                    instructionalCompletion: 100,
+                    isRankEligible: true,
+                    sessions: [],
+                },
+                {
+                    id: 9,
+                    faculty_id: 1,
+                    original_instructor_name: 'Domingo Origines',
+                    instructor_name: 'Domingo Origines',
+                    program: 'BSIT',
+                    scheduledSessions: 12,
+                    present: 11,
+                    late: 1,
+                    absent: 0,
+                    onLeave: 0,
+                    lateMinutes: 10,
+                    scheduledHours: 18.0,
+                    eligibleHours: 18.0,
+                    attendedHours: 16.5,
+                    leaveHours: 0,
+                    unexcusedAbsentHours: 0,
+                    makeUpRequiredHours: 0,
+                    makeUpCompletedHours: 0,
+                    attendanceCoverage: 100,
+                    onTimeRate: 91,
+                    instructionalCompletion: 100,
+                    isRankEligible: true,
+                    sessions: [],
+                },
             ];
         }
 
@@ -493,7 +785,7 @@ export default function GenerateReportPage({
         }
 
         if (selectedStatus === 'present') {
-            rows = rows.filter(r => r.present > 0 && r.absent === 0);
+            rows = rows.filter(r => r.attendanceCoverage >= 100);
         } else if (selectedStatus === 'late') {
             rows = rows.filter(r => r.late > 0);
         } else if (selectedStatus === 'absent') {
@@ -502,33 +794,51 @@ export default function GenerateReportPage({
 
         // Sort
         if (sortBy === 'rate') {
-            rows.sort((a, b) => b.rate - a.rate);
+            rows.sort((a, b) => b.attendanceCoverage - a.attendanceCoverage);
+        } else if (sortBy === 'completion') {
+            rows.sort((a, b) => b.instructionalCompletion - a.instructionalCompletion);
+        } else if (sortBy === 'hours') {
+            rows.sort((a, b) => b.eligibleHours - a.eligibleHours);
         } else {
             rows.sort((a, b) => a.instructor_name.localeCompare(b.instructor_name));
         }
 
-        // Totals
-        const totalScheduled = rows.reduce((acc, r) => acc + r.scheduled, 0);
-        const totalPresent = rows.reduce((acc, r) => acc + r.present, 0);
-        const totalLate = rows.reduce((acc, r) => acc + r.late, 0);
-        const totalAbsent = rows.reduce((acc, r) => acc + r.absent, 0);
+        // Aggregate Totals across instructional hours & percentages
+        const totalEligibleHours = rows.reduce((acc, r) => acc + r.eligibleHours, 0);
+        const totalAttendedHours = rows.reduce((acc, r) => acc + r.attendedHours, 0);
+        const totalLeaveHours = rows.reduce((acc, r) => acc + r.leaveHours, 0);
+        const totalAbsentHours = rows.reduce((acc, r) => acc + r.unexcusedAbsentHours, 0);
+        const totalLateSessions = rows.reduce((acc, r) => acc + r.late, 0);
         const totalLateMinutes = rows.reduce((acc, r) => acc + r.lateMinutes, 0);
+        const totalMakeUpRequired = rows.reduce((acc, r) => acc + r.makeUpRequiredHours, 0);
+        const totalMakeUpCompleted = rows.reduce((acc, r) => acc + r.makeUpCompletedHours, 0);
         const facultyCount = rows.length;
-        const overallRate = totalScheduled > 0 ? ((totalPresent / totalScheduled) * 100).toFixed(1) : '100.0';
+
+        const overallCoverage = totalEligibleHours > 0
+            ? Math.round((totalAttendedHours / totalEligibleHours) * 100)
+            : 100;
+
+        const overallCompletion = totalEligibleHours > 0
+            ? Math.min(100, Math.round(((totalAttendedHours + totalMakeUpCompleted) / totalEligibleHours) * 100))
+            : 100;
 
         return {
             rows,
             totals: {
                 facultyCount,
-                totalScheduled,
-                totalPresent,
-                totalLate,
-                totalAbsent,
+                totalEligibleHours: Number(totalEligibleHours.toFixed(1)),
+                totalAttendedHours: Number(totalAttendedHours.toFixed(1)),
+                totalLeaveHours: Number(totalLeaveHours.toFixed(1)),
+                totalAbsentHours: Number(totalAbsentHours.toFixed(1)),
+                totalLateSessions,
                 totalLateMinutes,
-                overallRate,
+                totalMakeUpRequired: Number(totalMakeUpRequired.toFixed(1)),
+                totalMakeUpCompleted: Number(totalMakeUpCompleted.toFixed(1)),
+                overallCoverage,
+                overallCompletion,
             },
         };
-    }, [summaries, faculties, customFacultyNames, selectedPeriod, periodTab, reportFormat, selectedProgram, selectedFaculty, selectedStatus, sortBy]);
+    }, [summaries, weekly_sessions, faculties, customFacultyNames, selectedPeriod, periodTab, reportFormat, selectedProgram, selectedFaculty, selectedStatus, sortBy]);
 
     // State for PDF downloading status
     const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
@@ -541,13 +851,131 @@ export default function GenerateReportPage({
         setTimeout(() => setActionNotification(null), 3500);
     };
 
-    // Handle Print Preview
+    // Handle Print Preview via clean isolated print container/iframe
     const handlePrintPreview = () => {
-        window.print();
+        const sheetElement = document.getElementById('pdf-preview-sheet');
+        if (!sheetElement) {
+            window.print();
+            return;
+        }
+
+        // Create an isolated hidden iframe for printing to avoid browser header/footer and eliminate blank first pages
+        let printIframe = document.getElementById('report-print-iframe') as HTMLIFrameElement | null;
+        if (!printIframe) {
+            printIframe = document.createElement('iframe');
+            printIframe.id = 'report-print-iframe';
+            printIframe.style.position = 'fixed';
+            printIframe.style.right = '0';
+            printIframe.style.bottom = '0';
+            printIframe.style.width = '0';
+            printIframe.style.height = '0';
+            printIframe.style.border = 'none';
+            document.body.appendChild(printIframe);
+        }
+
+        const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
+        if (!iframeDoc) {
+            window.print();
+            return;
+        }
+
+        // Collect document styles
+        const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+            .map(el => el.outerHTML)
+            .join('\n');
+
+        // Clone the preview sheet content cleanly without transform, shadows, or outer borders
+        const clonedSheet = sheetElement.cloneNode(true) as HTMLElement;
+        clonedSheet.style.transform = 'none';
+        clonedSheet.style.boxShadow = 'none';
+        clonedSheet.style.border = 'none';
+        clonedSheet.style.margin = '0 auto';
+        clonedSheet.style.padding = '0';
+        clonedSheet.style.width = '100%';
+        clonedSheet.style.maxWidth = '100%';
+        clonedSheet.style.minHeight = 'auto';
+
+        // Remove any interactive UI elements from clone
+        clonedSheet.querySelectorAll('.no-print').forEach(el => el.remove());
+
+        iframeDoc.open();
+        iframeDoc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8" />
+                <title>Faculty Attendance Report</title>
+                ${styles}
+                <style>
+                    @page {
+                        size: A4 portrait;
+                        margin: 0.5in;
+                    }
+                    html, body {
+                        background: #ffffff !important;
+                        color: #000000 !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        font-family: inherit;
+                    }
+                    * {
+                        box-shadow: none !important;
+                        text-shadow: none !important;
+                    }
+                    #pdf-preview-sheet {
+                        border: none !important;
+                        box-shadow: none !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        min-height: auto !important;
+                    }
+                    table {
+                        width: 100% !important;
+                        border-collapse: collapse !important;
+                        page-break-inside: auto !important;
+                    }
+                    tr {
+                        page-break-inside: avoid !important;
+                        page-break-after: auto !important;
+                    }
+                    thead {
+                        display: table-header-group !important;
+                    }
+                    .page-break-inside-avoid {
+                        break-inside: avoid !important;
+                        page-break-inside: avoid !important;
+                    }
+                </style>
+            </head>
+            <body>
+                <div style="width: 100%;">
+                    ${clonedSheet.outerHTML}
+                </div>
+            </body>
+            </html>
+        `);
+        iframeDoc.close();
+
+        // Allow images & fonts inside the iframe to load before printing
+        setTimeout(() => {
+            try {
+                printIframe?.contentWindow?.focus();
+                printIframe?.contentWindow?.print();
+            } catch (e) {
+                console.error('Iframe print error, falling back to window.print():', e);
+                window.print();
+            }
+        }, 350);
     };
 
-    // Handle Direct PDF Generation / Download (Directly saves PDF file, does not open print modal)
-    // Handle Direct PDF Generation / Download with exactly 1.0 inch margins
+    // Handle Direct PDF Generation / Download
     const handleGeneratePdf = async () => {
         const sheetElement = document.getElementById('pdf-preview-sheet');
         if (!sheetElement || isGeneratingPdf) return;
@@ -556,11 +984,13 @@ export default function GenerateReportPage({
 
         const fileName = `CIDS_Faculty_Attendance_Report_${selectedAY.replace(/[\s–—-]+/g, '_')}_${selectedSemester.replace(/[\s–—-]+/g, '_')}.pdf`;
 
-        // Temporarily reset preview transform/scale for clean high-res canvas rendering
+        // Temporarily reset preview transform/scale and ensure no scrollbars during capture
         const originalTransform = sheetElement.style.transform;
         const originalBoxShadow = sheetElement.style.boxShadow;
+        const originalBorder = sheetElement.style.border;
         sheetElement.style.transform = 'none';
         sheetElement.style.boxShadow = 'none';
+        sheetElement.style.border = 'none';
 
         try {
             const html2canvasModule = await import('html2canvas');
@@ -573,87 +1003,44 @@ export default function GenerateReportPage({
                 allowTaint: true,
                 logging: false,
                 backgroundColor: '#ffffff',
-                scrollX: 0,
-                scrollY: 0,
+                windowWidth: 1024,
             });
-
-            // Restore preview styling
-            sheetElement.style.transform = originalTransform;
-            sheetElement.style.boxShadow = originalBoxShadow;
 
             const imgData = canvas.toDataURL('image/jpeg', 0.98);
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
             const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
-            // 1.0 inch margin in mm = 25.4mm
-            const margin = 25.4;
-            const printableWidth = pageWidth - (margin * 2); // 159.2mm
-            const printableHeight = pageHeight - (margin * 2); // 246.2mm
+            const margin = 12.7; // 0.5 in
+            const printableWidth = pageWidth - (margin * 2);
+            const printableHeight = pageHeight - (margin * 2);
 
             const imgWidth = printableWidth;
             const imgHeight = (canvas.height * printableWidth) / canvas.width;
 
-            // Handle multi-page pagination with clean 1.0 margin clipping
             let heightLeft = imgHeight;
-            let sourceY = 0;
+            let position = margin;
 
-            // First page
-            pdf.addImage(
-                imgData,
-                'JPEG',
-                margin,
-                margin - sourceY,
-                imgWidth,
-                imgHeight,
-                undefined,
-                'FAST'
-            );
+            pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight, undefined, 'FAST');
             heightLeft -= printableHeight;
 
-            // Subsequent pages
             while (heightLeft > 0) {
-                sourceY += printableHeight;
+                position = heightLeft - imgHeight + margin;
                 pdf.addPage();
-                pdf.addImage(
-                    imgData,
-                    'JPEG',
-                    margin,
-                    margin - sourceY,
-                    imgWidth,
-                    imgHeight,
-                    undefined,
-                    'FAST'
-                );
+                pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight, undefined, 'FAST');
                 heightLeft -= printableHeight;
             }
 
             pdf.save(fileName);
             showToast('PDF downloaded successfully!');
         } catch (error) {
-            console.error('Direct PDF export error, attempting fallback:', error);
-            // Ensure preview transform is restored if error occurred
+            console.error('PDF export error:', error);
+            showToast('Failed to generate PDF, launching print preview...');
+            handlePrintPreview();
+        } finally {
             sheetElement.style.transform = originalTransform;
             sheetElement.style.boxShadow = originalBoxShadow;
-
-            try {
-                // Fallback attempt: html2pdf bundle if available
-                // @ts-ignore
-                const html2pdfModule = await import('html2pdf.js/dist/html2pdf.bundle.min.js');
-                const html2pdf = html2pdfModule.default || html2pdfModule;
-                await html2pdf().set({
-                    margin: [25.4, 25.4, 25.4, 25.4], // 1.0 inch margins all around
-                    filename: fileName,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                }).from(sheetElement).save();
-                showToast('PDF downloaded successfully!');
-            } catch (fallbackErr) {
-                console.error('Fallback export error:', fallbackErr);
-                alert('Could not generate PDF directly. Please use "Print Preview" and select "Save as PDF" with 1-inch margins.');
-            }
-        } finally {
+            sheetElement.style.border = originalBorder;
             setIsGeneratingPdf(false);
         }
     };
@@ -662,36 +1049,72 @@ export default function GenerateReportPage({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Generate Faculty Attendance Report" />
 
-            {/* Print Stylesheet (Enforces 1.0 inch margin on all sides: header, footer, content) */}
+            {/* Print Stylesheet (Formal document formatting, no scrollbars, proper table headers) */}
             <style>{`
+                @page {
+                    size: A4 portrait;
+                    margin: 0.5in;
+                }
                 @media print {
-                    .no-print, header, nav, aside, [data-sidebar="sidebar"] {
-                        display: none !important;
+                    /* Hide everything outside of the sheet */
+                    body * {
+                        visibility: hidden !important;
                     }
-                    html, body, main {
-                        background: white !important;
-                        color: black !important;
-                        padding: 0 !important;
-                        margin: 0 !important;
+                    /* Make only the preview sheet and its contents visible */
+                    #pdf-preview-sheet, #pdf-preview-sheet * {
+                        visibility: visible !important;
                     }
-                    .print-only-sheet {
-                        display: block !important;
-                        box-shadow: none !important;
-                        border: none !important;
-                        padding: 1in !important; /* Exactly 1.0 inch margins all around */
-                        margin: 0 auto !important;
+                    #pdf-preview-sheet {
+                        position: absolute !important;
+                        left: 0 !important;
+                        top: 0 !important;
                         width: 100% !important;
                         max-width: 100% !important;
+                        min-height: auto !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        border: none !important;
+                        box-shadow: none !important;
                         transform: none !important;
                         box-sizing: border-box !important;
+                    }
+                    .no-print, header, nav, aside, [data-sidebar="sidebar"], .viewer-bar {
+                        display: none !important;
+                    }
+                    html, body {
+                        background: #ffffff !important;
+                        color: #000000 !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                    }
+                    /* Remove all scrollbars, shadows and web backgrounds */
+                    * {
+                        overflow: visible !important;
+                        box-shadow: none !important;
+                        text-shadow: none !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+                    table {
+                        width: 100% !important;
+                        page-break-inside: auto !important;
+                        border-collapse: collapse !important;
+                    }
+                    tr {
+                        page-break-inside: avoid !important;
+                        page-break-after: auto !important;
+                    }
+                    thead {
+                        display: table-header-group !important;
+                    }
+                    tfoot {
+                        display: table-footer-group !important;
                     }
                     .page-break-inside-avoid {
                         break-inside: avoid !important;
                         page-break-inside: avoid !important;
-                    }
-                    @page {
-                        size: A4 portrait;
-                        margin: 1in !important; /* 1.0 inch margin for header/footer clearance */
                     }
                 }
             `}</style>
@@ -1534,7 +1957,7 @@ export default function GenerateReportPage({
                             <div
                                 id="pdf-preview-sheet"
                                 className={cn(
-                                    "print-only-sheet w-full min-h-[1080px] bg-white text-slate-900 border border-slate-300 shadow-xl p-[1in] transition-transform origin-top flex flex-col justify-between box-border",
+                                    "print-only-sheet w-full min-h-[1080px] bg-white text-slate-900 border border-slate-300 shadow-xl p-[0.5in] transition-transform origin-top flex flex-col justify-between box-border",
                                     isMaximized ? "max-w-[1050px]" : "max-w-[850px]"
                                 )}
                                 style={{ transform: `scale(${zoomLevel / 100})` }}
@@ -1583,36 +2006,56 @@ export default function GenerateReportPage({
                                     {keySummaries.attendanceTotals && (
                                         <div className="space-y-1.5">
                                             <div className="flex items-center gap-1.5 text-slate-900 font-bold text-xs uppercase tracking-wider">
-                                                <span>KEY SUMMARIES</span>
+                                                <span>KEY SUMMARIES (INSTRUCTIONAL HOURS & COVERAGE)</span>
                                             </div>
 
                                             <div className="border border-slate-300 rounded overflow-hidden">
-                                                <table className="w-full text-[10px] text-center border-collapse">
+                                                <table className="w-full text-[9.5px] text-center border-collapse">
                                                     <thead>
                                                         <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-900 uppercase">
-                                                            <th className="py-2 px-3 border-r border-slate-300">FACULTY MEMBERS</th>
-                                                            <th className="py-2 px-3 border-r border-slate-300">SCHEDULED SESSIONS</th>
-                                                            <th className="py-2 px-3 border-r border-slate-300">PRESENT SESSIONS</th>
-                                                            <th className="py-2 px-3 border-r border-slate-300">ABSENT SESSIONS</th>
-                                                            <th className="py-2 px-3">LATE SESSIONS</th>
+                                                            <th className="py-2 px-2 border-r border-slate-300">FACULTY</th>
+                                                            <th className="py-2 px-2 border-r border-slate-300">ELIGIBLE HRS</th>
+                                                            <th className="py-2 px-2 border-r border-slate-300">ATTENDED HRS</th>
+                                                            <th className="py-2 px-2 border-r border-slate-300">LEAVE HRS</th>
+                                                            <th className="py-2 px-2 border-r border-slate-300">ABSENT HRS</th>
+                                                            <th className="py-2 px-2 border-r border-slate-300">LATE SESSIONS (MINS)</th>
+                                                            <th className="py-2 px-2 border-r border-slate-300">MAKE-UP (REQ / DONE)</th>
+                                                            <th className="py-2 px-2 border-r border-slate-300">ATTENDANCE COVERAGE</th>
+                                                            <th className="py-2 px-2">INSTR COMPLETION</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-200">
                                                         <tr className="bg-white font-mono">
-                                                            <td className="py-2 px-3 border-r border-slate-300 font-bold text-slate-900 text-xs">
+                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
                                                                 {previewData.totals.facultyCount}
                                                             </td>
-                                                            <td className="py-2 px-3 border-r border-slate-300 font-bold text-slate-900 text-xs">
-                                                                {previewData.totals.totalScheduled}
+                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
+                                                                {previewData.totals.totalEligibleHours}h
                                                             </td>
-                                                            <td className="py-2 px-3 border-r border-slate-300 font-bold text-slate-900 text-xs">
-                                                                {previewData.totals.totalPresent} <span className="text-[9px] font-normal text-slate-600">({previewData.totals.overallRate}%)</span>
+                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
+                                                                {previewData.totals.totalAttendedHours}h
                                                             </td>
-                                                            <td className="py-2 px-3 border-r border-slate-300 font-bold text-slate-900 text-xs">
-                                                                {previewData.totals.totalAbsent} <span className="text-[9px] font-normal text-slate-600">({previewData.totals.totalScheduled > 0 ? ((previewData.totals.totalAbsent / previewData.totals.totalScheduled) * 100).toFixed(1) : 0}%)</span>
+                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
+                                                                {previewData.totals.totalLeaveHours}h
                                                             </td>
-                                                            <td className="py-2 px-3 font-bold text-slate-900 text-xs">
-                                                                {previewData.totals.totalLate} <span className="text-[9px] font-normal text-slate-600">({previewData.totals.totalScheduled > 0 ? ((previewData.totals.totalLate / previewData.totals.totalScheduled) * 100).toFixed(1) : 0}%)</span>
+                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
+                                                                {previewData.totals.totalAbsentHours}h
+                                                            </td>
+                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
+                                                                {previewData.totals.totalLateSessions} <span className="text-[9px] font-normal text-slate-600">({previewData.totals.totalLateMinutes}m)</span>
+                                                            </td>
+                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
+                                                                {previewData.totals.totalMakeUpRequired}h / {previewData.totals.totalMakeUpCompleted}h
+                                                            </td>
+                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
+                                                                <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-900 font-bold border border-slate-300">
+                                                                    {previewData.totals.overallCoverage}%
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-2 px-2 font-bold text-slate-900 text-xs">
+                                                                <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-900 font-bold border border-slate-300">
+                                                                    {previewData.totals.overallCompletion}%
+                                                                </span>
                                                             </td>
                                                         </tr>
                                                     </tbody>
@@ -1623,77 +2066,106 @@ export default function GenerateReportPage({
 
                                     {/* 4. FACULTY ATTENDANCE DETAILS (TABLE - MONOCHROME, NO COLORS) */}
                                     <div className="space-y-1.5 pt-1">
-                                        <div className="flex items-center gap-1.5 text-slate-900 font-bold text-xs uppercase tracking-wider">
-                                            <span>FACULTY ATTENDANCE DETAILS</span>
+                                        <div className="flex items-center justify-between text-slate-900 font-bold text-xs uppercase tracking-wider">
+                                            <span>FACULTY ATTENDANCE & INSTRUCTIONAL COMPLETION DETAILS</span>
+                                            <span className="no-print text-[9px] font-normal normal-case text-slate-500">
+                                                Click any faculty row to inspect session-by-session timetable audit trail
+                                            </span>
                                         </div>
 
-                                        <div className="border border-slate-300 rounded overflow-hidden">
-                                            <table className="w-full text-[10px] text-left border-collapse">
+                                        <div className="border border-slate-300 rounded overflow-x-auto print:overflow-visible print:border-slate-400">
+                                            <table className="w-full text-[9px] text-left border-collapse print:text-[8.5px]">
                                                 <thead>
-                                                    <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-900 uppercase">
-                                                        <th className="py-1.5 px-2 text-center w-8 border-r border-slate-300">#</th>
-                                                        <th className="py-1.5 px-3 border-r border-slate-300">FACULTY NAME</th>
-                                                        <th className="py-1.5 px-2 text-center border-r border-slate-300">PROGRAM</th>
-                                                        <th className="py-1.5 px-2 text-center border-r border-slate-300">SCHEDULED</th>
-                                                        <th className="py-1.5 px-2 text-center border-r border-slate-300">PRESENT</th>
-                                                        <th className="py-1.5 px-2 text-center border-r border-slate-300">LATE</th>
-                                                        <th className="py-1.5 px-2 text-center border-r border-slate-300">ABSENT</th>
-                                                        <th className="py-1.5 px-2 text-center border-r border-slate-300">LATE MINUTES</th>
-                                                        <th className="py-1.5 px-2 text-center">ATTENDANCE RATE</th>
+                                                    <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-900 uppercase print:bg-slate-100">
+                                                        <th className="py-1.5 px-1.5 text-center w-6 border-r border-slate-300">#</th>
+                                                        <th className="py-1.5 px-2 border-r border-slate-300">FACULTY NAME</th>
+                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap">PROG</th>
+                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Eligible Scheduled Hours">ELIGIBLE HRS</th>
+                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Attended Instructional Hours">ATTENDED HRS</th>
+                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Approved Leave Hours">LEAVE HRS</th>
+                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Unexcused Absent Hours">ABSENT HRS</th>
+                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Late Sessions (Total Late Minutes)">LATE (MINS)</th>
+                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Make-Up Hours Required vs Completed">MAKE-UP (REQ/DONE)</th>
+                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Attendance Coverage Rate %">ATTENDANCE COV</th>
+                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="On-Time Arrival Rate %">ON-TIME</th>
+                                                        <th className="py-1.5 px-1.5 text-center whitespace-nowrap" title="Instructional Completion Rate %">INSTR COMPLETION</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-200 font-medium">
                                                     {previewData.rows.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={9} className="py-6 text-center text-slate-500 italic">
+                                                            <td colSpan={12} className="py-6 text-center text-slate-500 italic">
                                                                 No attendance records match the selected faculty or filter criteria.
                                                             </td>
                                                         </tr>
                                                     ) : (
                                                         previewData.rows.map((row, idx) => (
-                                                            <tr key={row.id || idx} className="hover:bg-slate-50">
-                                                                <td className="py-1 px-2 text-center border-r border-slate-200 text-slate-500 font-mono">
+                                                            <tr
+                                                                key={row.id || idx}
+                                                                onClick={() => setSelectedAuditFaculty(row)}
+                                                                className="hover:bg-amber-50/50 cursor-pointer transition-colors"
+                                                                title="Click to view detailed session audit trail"
+                                                            >
+                                                                <td className="py-1 px-1.5 text-center border-r border-slate-200 text-slate-500 font-mono text-[8.5px]">
                                                                     {idx + 1}
                                                                 </td>
-                                                                <td className="py-1 px-3 font-semibold border-r border-slate-200 text-slate-900 group/cell">
-                                                                    <div className="flex items-center justify-between gap-1.5">
-                                                                        <span className="truncate">{row.instructor_name}</span>
+                                                                <td className="py-1 px-2 font-semibold border-r border-slate-200 text-slate-900 group/cell">
+                                                                    <div className="flex items-center justify-between gap-1">
+                                                                        <span className="truncate hover:text-amber-700 underline-offset-2 hover:underline">
+                                                                            {row.instructor_name}
+                                                                        </span>
                                                                         <button
                                                                             type="button"
                                                                             title={`Edit name for ${row.instructor_name}`}
-                                                                            onClick={() => setEditingFaculty({
-                                                                                id: row.id,
-                                                                                faculty_id: row.faculty_id,
-                                                                                oldName: row.original_instructor_name || row.instructor_name,
-                                                                                currentName: row.instructor_name,
-                                                                            })}
-                                                                            className="no-print opacity-0 group-hover/cell:opacity-100 hover:opacity-100 p-1 rounded hover:bg-amber-100 text-slate-400 hover:text-amber-700 transition-all cursor-pointer shrink-0"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setEditingFaculty({
+                                                                                    id: row.id,
+                                                                                    faculty_id: row.faculty_id,
+                                                                                    oldName: row.original_instructor_name || row.instructor_name,
+                                                                                    currentName: row.instructor_name,
+                                                                                });
+                                                                            }}
+                                                                            className="no-print opacity-0 group-hover/cell:opacity-100 hover:opacity-100 p-0.5 rounded hover:bg-amber-100 text-slate-400 hover:text-amber-700 transition-all cursor-pointer shrink-0"
                                                                         >
-                                                                            <Pencil className="w-3 h-3" />
+                                                                            <Pencil className="w-2.5 h-2.5" />
                                                                         </button>
                                                                     </div>
                                                                 </td>
-                                                                <td className="py-1 px-2 text-center border-r border-slate-200 font-bold text-slate-800">
+                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-bold text-slate-800 text-[8.5px]">
                                                                     {row.program}
                                                                 </td>
-                                                                <td className="py-1 px-2 text-center border-r border-slate-200 font-mono text-slate-700">
-                                                                    {row.scheduled}
+                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-800 font-semibold">
+                                                                    {row.eligibleHours.toFixed(1)}h
                                                                 </td>
-                                                                <td className="py-1 px-2 text-center border-r border-slate-200 font-mono font-bold text-slate-900">
-                                                                    {row.present}
+                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono font-bold text-slate-900">
+                                                                    {row.attendedHours.toFixed(1)}h
                                                                 </td>
-                                                                <td className="py-1 px-2 text-center border-r border-slate-200 font-mono font-bold text-slate-900">
-                                                                    {row.late}
+                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-600">
+                                                                    {row.leaveHours > 0 ? `${row.leaveHours.toFixed(1)}h` : '—'}
                                                                 </td>
-                                                                <td className="py-1 px-2 text-center border-r border-slate-200 font-mono font-bold text-slate-900">
-                                                                    {row.absent}
+                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-700">
+                                                                    {row.unexcusedAbsentHours > 0 ? `${row.unexcusedAbsentHours.toFixed(1)}h` : '—'}
                                                                 </td>
-                                                                <td className="py-1 px-2 text-center border-r border-slate-200 font-mono text-slate-700">
-                                                                    {row.lateMinutes}
+                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-700">
+                                                                    {row.late > 0 ? `${row.late} (${row.lateMinutes}m)` : '0 (0m)'}
                                                                 </td>
-                                                                <td className="py-1 px-2 text-center font-bold font-mono text-slate-900">
-                                                                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-900 font-semibold border border-slate-200">
-                                                                        {row.rate}%
+                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-[8.5px] text-slate-700">
+                                                                    {row.makeUpRequiredHours > 0
+                                                                        ? `${row.makeUpRequiredHours.toFixed(1)}h / ${row.makeUpCompletedHours.toFixed(1)}h`
+                                                                        : 'None'}
+                                                                </td>
+                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-bold font-mono text-slate-900">
+                                                                    <span className="px-1 py-0.5 rounded text-[8.5px] bg-slate-100 text-slate-900 font-semibold border border-slate-200 whitespace-nowrap">
+                                                                        {row.attendanceCoverage}%
+                                                                    </span>
+                                                                </td>
+                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-700">
+                                                                    {row.onTimeRate}%
+                                                                </td>
+                                                                <td className="py-1 px-1.5 text-center font-bold font-mono text-slate-900">
+                                                                    <span className="px-1.5 py-0.5 rounded text-[9px] bg-slate-100 text-slate-900 font-bold border border-slate-300 whitespace-nowrap">
+                                                                        {row.instructionalCompletion}%
                                                                     </span>
                                                                 </td>
                                                             </tr>
@@ -1817,6 +2289,224 @@ export default function GenerateReportPage({
                                     <span>Save & Apply</span>
                                 </>
                             )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* 7. DETAILED SESSION TIMETABLE AUDIT TRAIL MODAL */}
+            <Dialog open={!!selectedAuditFaculty} onOpenChange={(open) => { if (!open) setSelectedAuditFaculty(null); }}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center justify-between text-base font-bold text-foreground pr-6">
+                            <div className="flex items-center gap-2">
+                                <span className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-black">
+                                    {selectedAuditFaculty?.instructor_name?.charAt(0) || 'F'}
+                                </span>
+                                <div>
+                                    <span className="block text-sm font-bold text-foreground">
+                                        {selectedAuditFaculty?.instructor_name}
+                                    </span>
+                                    <span className="block text-[11px] font-normal text-muted-foreground">
+                                        {selectedAuditFaculty?.program} Program · Timetable & Attendance Audit Trail
+                                    </span>
+                                </div>
+                            </div>
+                            <span className={cn(
+                                "px-2.5 py-1 rounded-full text-[11px] font-bold border",
+                                selectedAuditFaculty?.isRankEligible
+                                    ? "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800"
+                                    : "bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400"
+                            )}>
+                                {selectedAuditFaculty?.isRankEligible ? 'Eligible for Performance Ranking' : 'Below Minimum Hours Threshold'}
+                            </span>
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-muted-foreground pt-1">
+                            Transparent breakdown of scheduled instructional obligations, delivered minutes, lateness attributes, approved leaves, and make-up classes.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {selectedAuditFaculty && (
+                        <div className="space-y-4 py-2">
+                            {/* KPI Metrics Cards */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                <div className="p-3 rounded-xl border border-border bg-card/60">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
+                                        Eligible Scheduled Hours
+                                    </span>
+                                    <span className="text-lg font-black text-foreground font-mono block mt-0.5">
+                                        {selectedAuditFaculty.eligibleHours.toFixed(1)}h
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground block mt-0.5">
+                                        Total: {selectedAuditFaculty.scheduledHours.toFixed(1)}h (Excl. {selectedAuditFaculty.leaveHours.toFixed(1)}h leave)
+                                    </span>
+                                </div>
+
+                                <div className="p-3 rounded-xl border border-border bg-card/60">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
+                                        Attended Instructional Hours
+                                    </span>
+                                    <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono block mt-0.5">
+                                        {selectedAuditFaculty.attendedHours.toFixed(1)}h
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground block mt-0.5">
+                                        Coverage: <strong className="text-foreground">{selectedAuditFaculty.attendanceCoverage}%</strong>
+                                    </span>
+                                </div>
+
+                                <div className="p-3 rounded-xl border border-border bg-card/60">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
+                                        Punctuality & Late Minutes
+                                    </span>
+                                    <span className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono block mt-0.5">
+                                        {selectedAuditFaculty.onTimeRate}%
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground block mt-0.5">
+                                        {selectedAuditFaculty.late} late session(s) · {selectedAuditFaculty.lateMinutes} min(s)
+                                    </span>
+                                </div>
+
+                                <div className="p-3 rounded-xl border border-border bg-card/60">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
+                                        Instructional Completion
+                                    </span>
+                                    <span className="text-lg font-black text-indigo-600 dark:text-indigo-400 font-mono block mt-0.5">
+                                        {selectedAuditFaculty.instructionalCompletion}%
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground block mt-0.5">
+                                        Make-Up Done: {selectedAuditFaculty.makeUpCompletedHours.toFixed(1)}h / {selectedAuditFaculty.makeUpRequiredHours.toFixed(1)}h req
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Mathematical Formulas Note */}
+                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px] space-y-1 text-slate-700 dark:text-slate-300">
+                                <p className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                                    <Check className="w-3.5 h-3.5 text-amber-500 stroke-[3]" />
+                                    Fairness Calculation Rules Applied:
+                                </p>
+                                <ul className="list-disc pl-5 space-y-0.5 text-[10.5px]">
+                                    <li><strong>Attendance Coverage:</strong> (Attended Eligible Mins ÷ Eligible Scheduled Mins) × 100. Approved leaves are excluded from the denominator.</li>
+                                    <li><strong>Punctuality:</strong> Recorded as an attribute of attendance (arrival time & late minutes), not mixed into attendance rate totals.</li>
+                                    <li><strong>Instructional Completion:</strong> Incorporates completed, verified make-up classes so faculty who deliver missed classes achieve 100% completion.</li>
+                                </ul>
+                            </div>
+
+                            {/* Session-by-Session Timetable Table */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                                        Timetable Sessions ({selectedAuditFaculty.sessions?.length || 0} scheduled meetings)
+                                    </h4>
+                                    <span className="text-[11px] text-muted-foreground">
+                                        Source: Published Master Timetable & Daily Logs
+                                    </span>
+                                </div>
+
+                                <div className="border border-border rounded-xl overflow-hidden">
+                                    <table className="w-full text-xs text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-muted/50 border-b border-border text-[10.5px] font-bold text-foreground uppercase">
+                                                <th className="py-2 px-2.5">DATE / DAY</th>
+                                                <th className="py-2 px-2.5">COURSE & SECTION</th>
+                                                <th className="py-2 px-2.5">ROOM</th>
+                                                <th className="py-2 px-2.5 text-center">SCHEDULED TIME</th>
+                                                <th className="py-2 px-2.5 text-center">DURATION</th>
+                                                <th className="py-2 px-2.5 text-center">ARRIVAL / LATE</th>
+                                                <th className="py-2 px-2.5 text-center">STATUS</th>
+                                                <th className="py-2 px-2.5 text-center">MAKE-UP CLASS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {(!selectedAuditFaculty.sessions || selectedAuditFaculty.sessions.length === 0) ? (
+                                                <tr>
+                                                    <td colSpan={8} className="py-6 text-center text-xs text-muted-foreground italic">
+                                                        No individual session logs recorded for this period. Standard weekly timetable obligations applied.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                selectedAuditFaculty.sessions.map((ses: any, sIdx: number) => {
+                                                    const status = ses.primary_status || (ses.status === 'present' ? 'present' : ses.status === 'late' ? 'late' : 'unexcused_absence');
+                                                    const isLate = status === 'late' || (ses.late_minutes && ses.late_minutes > 0);
+                                                    const durationMins = ses.scheduled_duration_minutes || 90;
+
+                                                    return (
+                                                        <tr key={ses.id || sIdx} className="hover:bg-muted/30">
+                                                            <td className="py-2 px-2.5 font-medium text-foreground whitespace-nowrap">
+                                                                <div>{ses.date || 'Regular'}</div>
+                                                                <div className="text-[10px] text-muted-foreground">{ses.day_of_week || 'Timetable'}</div>
+                                                            </td>
+                                                            <td className="py-2 px-2.5">
+                                                                <div className="font-semibold text-foreground">{ses.course_code || 'IT Class'}</div>
+                                                                <div className="text-[10px] text-muted-foreground">{ses.section || 'Regular'}</div>
+                                                            </td>
+                                                            <td className="py-2 px-2.5 font-mono text-muted-foreground">
+                                                                {ses.room || 'TBA'}
+                                                            </td>
+                                                            <td className="py-2 px-2.5 text-center font-mono text-[11px] whitespace-nowrap">
+                                                                {ses.scheduled_start_time ? `${ses.scheduled_start_time.slice(0, 5)} – ${ses.scheduled_end_time?.slice(0, 5)}` : '09:00 – 10:30'}
+                                                            </td>
+                                                            <td className="py-2 px-2.5 text-center font-mono text-muted-foreground">
+                                                                {durationMins} mins ({(durationMins / 60).toFixed(1)}h)
+                                                            </td>
+                                                            <td className="py-2 px-2.5 text-center font-mono">
+                                                                {isLate ? (
+                                                                    <div>
+                                                                        <span className="text-amber-600 font-bold">{ses.actual_arrival_time ? ses.actual_arrival_time.slice(0, 5) : 'Late'}</span>
+                                                                        <span className="text-[10px] text-amber-700 block">+{ses.late_minutes || 15}m late</span>
+                                                                    </div>
+                                                                ) : status === 'present' ? (
+                                                                    <span className="text-emerald-600 font-semibold">{ses.actual_arrival_time ? ses.actual_arrival_time.slice(0, 5) : 'On Time'}</span>
+                                                                ) : (
+                                                                    <span className="text-muted-foreground">—</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="py-2 px-2.5 text-center">
+                                                                <span className={cn(
+                                                                    "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                                                                    status === 'present' && "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400",
+                                                                    status === 'late' && "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400",
+                                                                    status === 'approved_leave' && "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-400",
+                                                                    status === 'official_business' && "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-400",
+                                                                    status === 'class_suspended' && "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-300",
+                                                                    (status === 'unexcused_absence' || status === 'absent') && "bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-400"
+                                                                )}>
+                                                                    {status.replace(/_/g, ' ')}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-2 px-2.5 text-center text-[10.5px]">
+                                                                {ses.make_up_request_id ? (
+                                                                    <span className="text-emerald-600 font-semibold flex items-center justify-center gap-1">
+                                                                        <Check className="w-3 h-3 stroke-[2.5]" /> Completed
+                                                                    </span>
+                                                                ) : ses.make_up_required ? (
+                                                                    <span className="text-amber-600 font-medium">Pending Make-Up</span>
+                                                                ) : (
+                                                                    <span className="text-muted-foreground">Not Required</span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <DialogFooter className="flex items-center justify-between pt-3 border-t border-border">
+                        <span className="text-[11px] text-muted-foreground">
+                            OfficeHub Faculty Attendance & Instructional Obligation Monitoring System
+                        </span>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setSelectedAuditFaculty(null)}
+                            className="h-9 px-4 text-xs font-semibold rounded-xl border-border cursor-pointer"
+                        >
+                            Close Audit Trail
                         </Button>
                     </DialogFooter>
                 </DialogContent>

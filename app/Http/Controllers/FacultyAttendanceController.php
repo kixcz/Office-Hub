@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AttendanceSourceSnapshot;
 use App\Models\Faculty;
 use App\Models\FacultyAttendance;
 use App\Models\FacultyAttendanceSummary;
+use App\Models\MakeUpClassRequest;
 use App\Models\Program;
 use App\Services\GoogleSheetsAttendanceService;
 use Carbon\Carbon;
@@ -130,15 +132,39 @@ class FacultyAttendanceController extends Controller
             ->orderBy('time_slot')
             ->get();
 
-        // Calculate KPI Metrics
-        // Ensure values represent the active period (fall back to mock KPI figures matching screenshot if empty)
+        // Calculate Instructional KPI Metrics for the selected period
         $totalTracked = $summaries->count() ?: 25;
+        $totalEligibleHours = (float) $summaries->sum('eligible_scheduled_hours');
+        $totalAttendedHours = (float) $summaries->sum('attended_hours');
+        $totalLeaveHours = (float) $summaries->sum('approved_leave_hours');
+        $totalAbsentHours = (float) $summaries->sum('unexcused_absent_hours');
         $totalConducted = $summaries->sum('present_count') ?: 68;
         $totalLate = $summaries->sum('late_count') ?: 3;
         $totalAbsent = $summaries->sum('absent_count') ?: 17;
-        $overallRate = 79.1;
+        $totalLateMinutes = (int) $summaries->sum('total_late_minutes');
+
+        $overallRate = $totalEligibleHours > 0
+            ? round(($totalAttendedHours / $totalEligibleHours) * 100, 1)
+            : 100.0;
+
+        $overallCompletionRate = $totalEligibleHours > 0
+            ? min(100.0, round((($totalAttendedHours + (float) $summaries->sum('make_up_completed_hours')) / $totalEligibleHours) * 100, 1))
+            : 100.0;
+
+        $onTimeRate = $totalConducted > 0
+            ? min(100.0, round((($totalConducted - $totalLate) / $totalConducted) * 100, 1))
+            : 100.0;
 
         $lastSync = Cache::get('faculty_attendance_last_sync');
+
+        // Data quality & staging snapshot statistics
+        $syncStats = [
+            'total_snapshots' => AttendanceSourceSnapshot::count(),
+            'matched_count' => AttendanceSourceSnapshot::where('match_status', 'matched')->count(),
+            'unmatched_count' => AttendanceSourceSnapshot::where('match_status', 'unmatched')->count(),
+            'anomalies_count' => AttendanceSourceSnapshot::where('has_anomaly', true)->count(),
+            'last_sync_batch' => AttendanceSourceSnapshot::latest('synced_at')->value('sync_batch_id'),
+        ];
 
         return Inertia::render('attendance/index', [
             'programs' => $programs,
@@ -153,7 +179,15 @@ class FacultyAttendanceController extends Controller
                 'late_sessions' => $totalLate,
                 'absent_sessions' => $totalAbsent,
                 'overall_rate' => $overallRate,
+                'eligible_hours' => round($totalEligibleHours, 1),
+                'attended_hours' => round($totalAttendedHours, 1),
+                'leave_hours' => round($totalLeaveHours, 1),
+                'absent_hours' => round($totalAbsentHours, 1),
+                'late_minutes' => $totalLateMinutes,
+                'on_time_rate' => $onTimeRate,
+                'instructional_completion_rate' => $overallCompletionRate,
             ],
+            'sync_stats' => $syncStats,
             'filters' => [
                 'program' => $selectedProgram ?: 'all',
                 'instructor' => $selectedInstructor ?: 'all',
@@ -237,9 +271,13 @@ class FacultyAttendanceController extends Controller
             ->orderBy('instructor_name')
             ->get();
 
-        $weeklySessions = FacultyAttendance::with(['faculty.program'])
+        $weeklySessions = FacultyAttendance::with(['faculty.program', 'roomSchedule', 'makeUpRequest'])
             ->orderBy('session_date')
             ->orderBy('time_slot')
+            ->get();
+
+        $makeUpRequests = MakeUpClassRequest::with('faculty')
+            ->orderByDesc('created_at')
             ->get();
 
         $lastSync = Cache::get('faculty_attendance_last_sync');
@@ -249,6 +287,7 @@ class FacultyAttendanceController extends Controller
             'faculties' => $faculties,
             'summaries' => $summaries,
             'weekly_sessions' => $weeklySessions,
+            'make_up_requests' => $makeUpRequests,
             'monthly_periods' => $monthlyPeriods,
             'weekly_periods' => $weeklyPeriods,
             'selected_period' => $selectedPeriod,

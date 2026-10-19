@@ -52,6 +52,7 @@ interface Faculty {
 interface FacultyAttendanceRecord {
     id: number;
     faculty_id?: number | null;
+    room_schedule_id?: number | null;
     instructor_name: string;
     room?: string;
     course_code?: string;
@@ -60,6 +61,14 @@ interface FacultyAttendanceRecord {
     time_slot: string;
     day_of_week?: string;
     session_date: string;
+    scheduled_start_time?: string;
+    scheduled_end_time?: string;
+    scheduled_duration_minutes?: number;
+    actual_arrival_time?: string;
+    delivered_minutes?: number;
+    primary_status?: string;
+    make_up_required?: boolean;
+    make_up_request_id?: number | null;
     week_label: string;
     academic_year: string;
     semester: string;
@@ -86,6 +95,17 @@ interface FacultyAttendanceSummary {
     total_late_minutes: number;
     scheduled_sessions: number;
     attendance_rate: number;
+    total_scheduled_hours?: number;
+    eligible_scheduled_hours?: number;
+    attended_hours?: number;
+    approved_leave_hours?: number;
+    unexcused_absent_hours?: number;
+    make_up_required_hours?: number;
+    make_up_completed_hours?: number;
+    attendance_coverage_rate?: number;
+    on_time_rate?: number;
+    instructional_completion_rate?: number;
+    is_rank_eligible?: boolean;
     faculty?: Faculty | null;
 }
 
@@ -95,6 +115,21 @@ interface KPIs {
     late_sessions: number;
     absent_sessions: number;
     overall_rate: number;
+    eligible_hours?: number;
+    attended_hours?: number;
+    leave_hours?: number;
+    absent_hours?: number;
+    late_minutes?: number;
+    on_time_rate?: number;
+    instructional_completion_rate?: number;
+}
+
+interface SyncStats {
+    total_snapshots: number;
+    matched_count: number;
+    unmatched_count: number;
+    anomalies_count: number;
+    last_sync_batch?: string | null;
 }
 
 interface Props {
@@ -105,6 +140,7 @@ interface Props {
     monthly_periods: string[];
     weekly_periods: string[];
     kpis: KPIs;
+    sync_stats?: SyncStats;
     filters: {
         program: string;
         instructor?: string;
@@ -129,6 +165,7 @@ export default function FacultyAttendanceIndex({
     monthly_periods = [],
     weekly_periods = [],
     kpis,
+    sync_stats,
     filters,
     last_synced_at,
     academic_year = 'AY 2026–2027',
@@ -265,6 +302,35 @@ export default function FacultyAttendanceIndex({
         return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
     };
 
+    const getCoverageBadge = (rate: number) => {
+        if (rate >= 95) {
+            return {
+                label: 'Excellent',
+                style: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800',
+                dot: 'bg-emerald-500',
+            };
+        }
+        if (rate >= 90) {
+            return {
+                label: 'Good',
+                style: 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-400 border-sky-300 dark:border-sky-800',
+                dot: 'bg-sky-500',
+            };
+        }
+        if (rate >= 80) {
+            return {
+                label: 'Needs Monitoring',
+                style: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400 border-amber-300 dark:border-amber-800',
+                dot: 'bg-amber-500',
+            };
+        }
+        return {
+            label: 'Needs Attention',
+            style: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-400 border-rose-300 dark:border-rose-800',
+            dot: 'bg-rose-500',
+        };
+    };
+
     const renderStatusBadge = (status: string, lateMinutes: number = 0) => {
         const norm = status.toLowerCase();
         if (norm === 'present') {
@@ -394,7 +460,7 @@ export default function FacultyAttendanceIndex({
                     </div>
                 </div>
 
-                {/* 3. FIVE KPI METRIC CARDS (Exact match to screenshot) */}
+                {/* 3. FIVE INSTRUCTIONAL KPI METRIC CARDS */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                     {/* Faculty Tracked */}
                     <div className="p-4 rounded-2xl border border-border bg-card shadow-xs flex items-center justify-between">
@@ -410,13 +476,13 @@ export default function FacultyAttendanceIndex({
                                     {kpis.faculty_tracked || 25}
                                 </div>
                                 <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">
-                                    Total faculty members
+                                    Active instructors
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Sessions Conducted */}
+                    {/* Eligible vs Attended Hours */}
                     <div className="p-4 rounded-2xl border border-border bg-card shadow-xs flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
@@ -424,19 +490,51 @@ export default function FacultyAttendanceIndex({
                             </div>
                             <div>
                                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                                    Sessions Conducted
+                                    Teaching Hours
                                 </span>
-                                <div className="text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
-                                    {kpis.sessions_conducted || 68}
+                                <div className="text-xl font-black text-foreground tabular-nums leading-tight mt-0.5">
+                                    {kpis.attended_hours ?? 0}h <span className="text-xs text-muted-foreground font-semibold">/ {kpis.eligible_hours ?? 0}h</span>
                                 </div>
                                 <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">
-                                    Total teaching sessions
+                                    Attended / Eligible
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Late Sessions */}
+                    {/* Attendance Coverage with Administrative Monitoring Badge */}
+                    {(() => {
+                        const covRate = kpis.overall_rate ?? 0;
+                        const badge = getCoverageBadge(covRate);
+                        return (
+                            <div className="p-4 rounded-2xl border border-border bg-card shadow-xs flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-11 h-11 rounded-2xl bg-sky-500/10 text-sky-600 flex items-center justify-center shrink-0">
+                                        <TrendingUp className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                                            Attendance Coverage
+                                        </span>
+                                        <div className="text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
+                                            {covRate}%
+                                        </div>
+                                        <div className="mt-1">
+                                            <span className={cn(
+                                                "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold border",
+                                                badge.style
+                                            )}>
+                                                <span className={cn("w-1 h-1 rounded-full", badge.dot)} />
+                                                {badge.label}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* On-Time Rate & Late Minutes */}
                     <div className="p-4 rounded-2xl border border-border bg-card shadow-xs flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
@@ -444,53 +542,33 @@ export default function FacultyAttendanceIndex({
                             </div>
                             <div>
                                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                                    Late Sessions
+                                    On-Time Rate
                                 </span>
                                 <div className="text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
-                                    {kpis.late_sessions ?? 3}
+                                    {kpis.on_time_rate ?? 95.6}%
                                 </div>
                                 <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">
-                                    Sessions started late
+                                    {kpis.late_minutes ? `${kpis.late_minutes}m total delay` : 'No delays recorded'}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Absent Sessions */}
+                    {/* Instructional Completion Rate */}
                     <div className="p-4 rounded-2xl border border-border bg-card shadow-xs flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
-                                <AlertCircle className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                                    Absent Sessions
-                                </span>
-                                <div className="text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
-                                    {kpis.absent_sessions ?? 17}
-                                </div>
-                                <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">
-                                    Faculty absent sessions
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Attendance Rate */}
-                    <div className="p-4 rounded-2xl border border-border bg-card shadow-xs flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-2xl bg-sky-500/10 text-sky-600 flex items-center justify-center shrink-0">
+                            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center shrink-0">
                                 <span className="text-base font-black">%</span>
                             </div>
                             <div>
                                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                                    Attendance Rate
+                                    Instructional Completion
                                 </span>
                                 <div className="text-2xl font-black text-foreground tabular-nums leading-tight mt-0.5">
-                                    {kpis.overall_rate ? `${kpis.overall_rate}%` : '79.1%'}
+                                    {kpis.instructional_completion_rate ?? kpis.overall_rate ?? 100}%
                                 </div>
                                 <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">
-                                    Overall attendance rate
+                                    Attended + Make-Up
                                 </span>
                             </div>
                         </div>
@@ -701,10 +779,17 @@ export default function FacultyAttendanceIndex({
                                         </th>
                                         <th className="px-4 py-3 font-semibold text-center">
                                             <div className="flex items-center justify-center gap-1 cursor-pointer">
+                                                <span>Duration</span>
+                                                <ArrowUpDown className="w-3 h-3 text-muted-foreground" />
+                                            </div>
+                                        </th>
+                                        <th className="px-4 py-3 font-semibold text-center">
+                                            <div className="flex items-center justify-center gap-1 cursor-pointer">
                                                 <span>Status</span>
                                                 <ArrowUpDown className="w-3 h-3 text-muted-foreground" />
                                             </div>
                                         </th>
+                                        <th className="px-4 py-3 font-semibold text-center">Delivered</th>
                                         <th className="px-4 py-3 font-semibold">Remarks</th>
                                         <th className="px-3 py-3 font-semibold text-right">Actions</th>
                                     </tr>
@@ -713,6 +798,10 @@ export default function FacultyAttendanceIndex({
                                     {filteredWeeklySessions.map((session, idx) => {
                                         const isSelected = selectedRows.includes(session.id);
                                         const initials = getInitials(session.instructor_name);
+                                        const duration = session.scheduled_duration_minutes || 90;
+                                        const delivered = session.delivered_minutes !== undefined 
+                                            ? session.delivered_minutes 
+                                            : (['present', 'late'].includes(session.status.toLowerCase()) ? Math.max(0, duration - (session.late_minutes || 0)) : 0);
 
                                         return (
                                             <tr
@@ -795,14 +884,31 @@ export default function FacultyAttendanceIndex({
                                                     {session.room || '—'}
                                                 </td>
 
+                                                {/* Scheduled Duration (Minutes) */}
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                    <span className="font-mono font-bold text-foreground bg-muted/50 px-2 py-0.5 rounded text-[11px]">
+                                                        {duration}m
+                                                    </span>
+                                                </td>
+
                                                 {/* Status with dot badge */}
                                                 <td className="px-4 py-3 text-center whitespace-nowrap">
                                                     {renderStatusBadge(session.status, session.late_minutes)}
                                                 </td>
 
+                                                {/* Delivered Minutes */}
+                                                <td className="px-4 py-3 text-center whitespace-nowrap font-mono text-[11px]">
+                                                    <span className={cn(
+                                                        "font-bold",
+                                                        delivered >= duration ? "text-emerald-600 dark:text-emerald-400" : (delivered > 0 ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400")
+                                                    )}>
+                                                        {delivered}m
+                                                    </span>
+                                                </td>
+
                                                 {/* Remarks */}
                                                 <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                                                    {session.remarks || (session.status.toLowerCase() === 'late' && session.late_minutes > 0 ? `Started at ${session.late_minutes}m` : '—')}
+                                                    {session.remarks || (session.status.toLowerCase() === 'late' && session.late_minutes > 0 ? `Late by ${session.late_minutes}m` : '—')}
                                                 </td>
 
                                                 {/* Actions */}
@@ -834,12 +940,19 @@ export default function FacultyAttendanceIndex({
                 {/* 6. OVERVIEW TAB */}
                 {activeTab === 'overview' && (
                     <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-4">
-                        <div className="flex items-center justify-between pb-4 border-b border-border">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border gap-2">
                             <div>
-                                <h2 className="text-base font-bold text-foreground">Faculty Attendance Records</h2>
+                                <h2 className="text-base font-bold text-foreground">Faculty Attendance Matrix & Instruction Delivery</h2>
                                 <p className="text-xs text-muted-foreground mt-0.5">
-                                    Consolidated teaching session compliance for {selectedPeriod}
+                                    Official minute-based attendance coverage and instructional completion for {selectedPeriod}
                                 </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-bold text-muted-foreground">Legend:</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400">≥95% Excellent</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-400">90–94.9% Good</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400">80–89.9% Monitor</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-400">&lt;80% Attention</span>
                             </div>
                         </div>
 
@@ -847,25 +960,68 @@ export default function FacultyAttendanceIndex({
                             <table className="w-full text-xs text-left">
                                 <thead className="text-[11px] text-muted-foreground uppercase bg-muted/40 border-b border-border">
                                     <tr>
-                                        <th className="px-4 py-3 font-semibold">Faculty</th>
+                                        <th className="px-4 py-3 font-semibold">Faculty Name</th>
                                         <th className="px-4 py-3 font-semibold text-center">Sessions</th>
-                                        <th className="px-4 py-3 font-semibold text-center">Present</th>
-                                        <th className="px-4 py-3 font-semibold text-center">Late</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Eligible Hours</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Attended</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Leave</th>
                                         <th className="px-4 py-3 font-semibold text-center">Absent</th>
-                                        <th className="px-4 py-3 font-semibold text-center">Rate</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Late (Mins)</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Coverage Rate</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Instructional Completion</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
-                                    {summaries.map(s => (
-                                        <tr key={s.id} className="hover:bg-muted/30">
-                                            <td className="px-4 py-3 font-bold text-foreground">{s.instructor_name}</td>
-                                            <td className="px-4 py-3 text-center tabular-nums">{s.scheduled_sessions}</td>
-                                            <td className="px-4 py-3 text-center text-emerald-600 font-bold tabular-nums">{s.present_count}</td>
-                                            <td className="px-4 py-3 text-center text-amber-600 font-bold tabular-nums">{s.late_count}</td>
-                                            <td className="px-4 py-3 text-center text-rose-600 font-bold tabular-nums">{s.absent_count}</td>
-                                            <td className="px-4 py-3 text-center font-black tabular-nums">{s.attendance_rate}%</td>
-                                        </tr>
-                                    ))}
+                                    {summaries.map(s => {
+                                        const coverage = s.attendance_coverage_rate ?? s.attendance_rate;
+                                        const badge = getCoverageBadge(coverage);
+                                        const completion = s.instructional_completion_rate ?? coverage;
+
+                                        return (
+                                            <tr key={s.id} className="hover:bg-muted/30">
+                                                <td className="px-4 py-3 font-bold text-foreground">
+                                                    <div>{s.instructor_name}</div>
+                                                    {s.faculty?.program?.code && (
+                                                        <div className="text-[10px] text-muted-foreground uppercase font-semibold">
+                                                            {s.faculty.program.code}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-center tabular-nums">{s.scheduled_sessions}</td>
+                                                <td className="px-4 py-3 text-center font-mono tabular-nums">
+                                                    {s.eligible_scheduled_hours ? `${s.eligible_scheduled_hours}h` : `${(s.scheduled_sessions * 1.5).toFixed(1)}h`}
+                                                </td>
+                                                <td className="px-4 py-3 text-center text-emerald-600 font-bold tabular-nums">
+                                                    {s.attended_hours ? `${s.attended_hours}h` : `${(s.present_count * 1.5).toFixed(1)}h`}
+                                                </td>
+                                                <td className="px-4 py-3 text-center text-blue-600 font-medium tabular-nums">
+                                                    {s.approved_leave_hours ? `${s.approved_leave_hours}h` : (s.on_leave_count ? `${(s.on_leave_count * 1.5).toFixed(1)}h` : '—')}
+                                                </td>
+                                                <td className="px-4 py-3 text-center text-rose-600 font-bold tabular-nums">
+                                                    {s.unexcused_absent_hours ? `${s.unexcused_absent_hours}h` : (s.absent_count ? `${(s.absent_count * 1.5).toFixed(1)}h` : '—')}
+                                                </td>
+                                                <td className="px-4 py-3 text-center text-amber-600 font-bold tabular-nums">
+                                                    {s.total_late_minutes ? `${s.total_late_minutes}m` : '—'}
+                                                </td>
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                    <span className={cn(
+                                                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border",
+                                                        badge.style
+                                                    )}>
+                                                        <span className={cn("w-1.5 h-1.5 rounded-full", badge.dot)} />
+                                                        {coverage}% ({badge.label})
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-center font-black tabular-nums whitespace-nowrap">
+                                                    <span className={cn(
+                                                        completion >= 95 ? "text-emerald-600" : (completion >= 85 ? "text-sky-600" : "text-amber-600")
+                                                    )}>
+                                                        {completion}%
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -875,12 +1031,19 @@ export default function FacultyAttendanceIndex({
                 {/* 7. MONTHLY ATTENDANCE TAB */}
                 {activeTab === 'monthly' && (
                     <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-4">
-                        <div className="flex items-center justify-between pb-4 border-b border-border">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border gap-2">
                             <div>
                                 <h2 className="text-base font-bold text-foreground">Monthly Attendance Matrix</h2>
                                 <p className="text-xs text-muted-foreground mt-0.5">
-                                    Detailed monthly session summary and attendance percentages.
+                                    Derived instructional minute balances and administrative monitoring classifications.
                                 </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-bold text-muted-foreground">Legend:</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400">≥95% Excellent</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-400">90–94.9% Good</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400">80–89.9% Monitor</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-400">&lt;80% Attention</span>
                             </div>
                         </div>
 
@@ -890,25 +1053,59 @@ export default function FacultyAttendanceIndex({
                                     <tr>
                                         <th className="px-4 py-3 font-semibold">Faculty Name</th>
                                         <th className="px-4 py-3 font-semibold">Program</th>
-                                        <th className="px-4 py-3 font-semibold text-center">Scheduled</th>
-                                        <th className="px-4 py-3 font-semibold text-center">Present</th>
-                                        <th className="px-4 py-3 font-semibold text-center">Late</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Eligible Hours</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Attended</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Leave</th>
                                         <th className="px-4 py-3 font-semibold text-center">Absent</th>
-                                        <th className="px-4 py-3 font-semibold text-center">Rate</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Late (Mins)</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Coverage Rate</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Instructional Completion</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
-                                    {summaries.map(s => (
-                                        <tr key={s.id} className="hover:bg-muted/30">
-                                            <td className="px-4 py-3 font-bold text-foreground">{s.instructor_name}</td>
-                                            <td className="px-4 py-3 text-muted-foreground">{s.faculty?.program?.code || '—'}</td>
-                                            <td className="px-4 py-3 text-center tabular-nums">{s.scheduled_sessions}</td>
-                                            <td className="px-4 py-3 text-center text-emerald-600 font-bold tabular-nums">{s.present_count}</td>
-                                            <td className="px-4 py-3 text-center text-amber-600 font-bold tabular-nums">{s.late_count}</td>
-                                            <td className="px-4 py-3 text-center text-rose-600 font-bold tabular-nums">{s.absent_count}</td>
-                                            <td className="px-4 py-3 text-center font-bold text-emerald-600 tabular-nums">{s.attendance_rate}%</td>
-                                        </tr>
-                                    ))}
+                                    {summaries.map(s => {
+                                        const coverage = s.attendance_coverage_rate ?? s.attendance_rate;
+                                        const badge = getCoverageBadge(coverage);
+                                        const completion = s.instructional_completion_rate ?? coverage;
+
+                                        return (
+                                            <tr key={s.id} className="hover:bg-muted/30">
+                                                <td className="px-4 py-3 font-bold text-foreground">{s.instructor_name}</td>
+                                                <td className="px-4 py-3 text-muted-foreground">{s.faculty?.program?.code || '—'}</td>
+                                                <td className="px-4 py-3 text-center font-mono tabular-nums">
+                                                    {s.eligible_scheduled_hours ? `${s.eligible_scheduled_hours}h` : `${(s.scheduled_sessions * 1.5).toFixed(1)}h`}
+                                                </td>
+                                                <td className="px-4 py-3 text-center text-emerald-600 font-bold tabular-nums">
+                                                    {s.attended_hours ? `${s.attended_hours}h` : `${(s.present_count * 1.5).toFixed(1)}h`}
+                                                </td>
+                                                <td className="px-4 py-3 text-center text-blue-600 font-medium tabular-nums">
+                                                    {s.approved_leave_hours ? `${s.approved_leave_hours}h` : (s.on_leave_count ? `${(s.on_leave_count * 1.5).toFixed(1)}h` : '—')}
+                                                </td>
+                                                <td className="px-4 py-3 text-center text-rose-600 font-bold tabular-nums">
+                                                    {s.unexcused_absent_hours ? `${s.unexcused_absent_hours}h` : (s.absent_count ? `${(s.absent_count * 1.5).toFixed(1)}h` : '—')}
+                                                </td>
+                                                <td className="px-4 py-3 text-center text-amber-600 font-bold tabular-nums">
+                                                    {s.total_late_minutes ? `${s.total_late_minutes}m` : '—'}
+                                                </td>
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                    <span className={cn(
+                                                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border",
+                                                        badge.style
+                                                    )}>
+                                                        <span className={cn("w-1.5 h-1.5 rounded-full", badge.dot)} />
+                                                        {coverage}% ({badge.label})
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-center font-black tabular-nums whitespace-nowrap">
+                                                    <span className={cn(
+                                                        completion >= 95 ? "text-emerald-600" : (completion >= 85 ? "text-sky-600" : "text-amber-600")
+                                                    )}>
+                                                        {completion}%
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -952,25 +1149,62 @@ export default function FacultyAttendanceIndex({
                     </div>
                 )}
 
-                {/* 9. GOOGLE SHEETS SYNC TAB */}
+                {/* 9. GOOGLE SHEETS SYNC & DATA QUALITY TAB */}
                 {activeTab === 'sync' && (
                     <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-6">
                         <div className="flex items-start justify-between pb-4 border-b border-border">
                             <div>
-                                <h2 className="text-base font-bold text-foreground">Google Sheets Synchronization</h2>
+                                <h2 className="text-base font-bold text-foreground">Google Sheets Synchronization & Staging Traceability</h2>
                                 <p className="text-xs text-muted-foreground mt-0.5">
-                                    Synchronize real-time attendance logs directly from the designated Google Sheet.
+                                    Raw external spreadsheet records are imported immutably into the OfficeHub staging database before business rules and normalization are applied.
                                 </p>
                             </div>
                         </div>
 
+                        {/* Staging Data Quality Metrics */}
+                        {sync_stats && (
+                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                    <div className="text-[10px] font-bold text-muted-foreground uppercase">Total Staged Rows</div>
+                                    <div className="text-xl font-black text-foreground mt-1 tabular-nums">
+                                        {sync_stats.total_snapshots}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground mt-0.5">Immutable audit trail</div>
+                                </div>
+                                <div className="p-4 rounded-xl border border-border bg-emerald-500/10 text-emerald-800 dark:text-emerald-300">
+                                    <div className="text-[10px] font-bold uppercase">Matched to Faculty</div>
+                                    <div className="text-xl font-black mt-1 tabular-nums text-emerald-700 dark:text-emerald-400">
+                                        {sync_stats.matched_count}
+                                    </div>
+                                    <div className="text-[10px] opacity-80 mt-0.5">Verified roster links</div>
+                                </div>
+                                <div className="p-4 rounded-xl border border-border bg-amber-500/10 text-amber-800 dark:text-amber-300">
+                                    <div className="text-[10px] font-bold uppercase">Unmatched Rows</div>
+                                    <div className="text-xl font-black mt-1 tabular-nums text-amber-700 dark:text-amber-400">
+                                        {sync_stats.unmatched_count}
+                                    </div>
+                                    <div className="text-[10px] opacity-80 mt-0.5">Awaiting alias mapping</div>
+                                </div>
+                                <div className="p-4 rounded-xl border border-border bg-rose-500/10 text-rose-800 dark:text-rose-300">
+                                    <div className="text-[10px] font-bold uppercase">Anomalies Detected</div>
+                                    <div className="text-xl font-black mt-1 tabular-nums text-rose-700 dark:text-rose-400">
+                                        {sync_stats.anomalies_count}
+                                    </div>
+                                    <div className="text-[10px] opacity-80 mt-0.5">Flagged for review</div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-3">
-                            <div className="text-xs font-semibold text-muted-foreground">Source URL</div>
+                            <div className="text-xs font-semibold text-muted-foreground">Source Spreadsheet Feed (Read-Only)</div>
                             <div className="font-mono text-xs text-primary truncate">
                                 {sheet_url}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                                Last Synchronized: <span className="font-bold text-foreground">{last_synced_at}</span>
+                            <div className="text-xs text-muted-foreground flex items-center justify-between">
+                                <span>Last Synchronized: <strong className="text-foreground">{last_synced_at}</strong></span>
+                                {sync_stats?.last_sync_batch && (
+                                    <span className="font-mono text-[10px] text-muted-foreground">Batch ID: {sync_stats.last_sync_batch.slice(0, 8)}...</span>
+                                )}
                             </div>
                         </div>
 
@@ -981,7 +1215,7 @@ export default function FacultyAttendanceIndex({
                                 className="bg-amber-400 text-slate-950 hover:bg-amber-500 font-bold text-xs rounded-xl shadow-xs"
                             >
                                 <RefreshCw className={cn("w-4 h-4 mr-2", isSyncing && "animate-spin")} />
-                                <span>{isSyncing ? 'Synchronizing...' : 'Sync from Google Sheets'}</span>
+                                <span>{isSyncing ? 'Synchronizing...' : 'Sync & Recompute Attendance'}</span>
                             </Button>
                         </div>
                     </div>

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AttendanceSourceSnapshot;
 use App\Models\Faculty;
 use App\Models\FacultyAttendance;
 use App\Models\FacultyAttendanceSummary;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class GoogleSheetsAttendanceService
 {
@@ -72,7 +74,8 @@ class GoogleSheetsAttendanceService
             })->all();
 
             $parsedSessions = [];
-            $parsedMonthlySummaries = [];
+            $syncBatchId = (string) Str::uuid();
+            $stagingSnapshots = [];
 
             // 1. Fetch Primary Lab Sheet (sessions across rooms and schedules)
             $labUrl = "https://docs.google.com/spreadsheets/d/{$spreadsheetId}/export?format=csv&gid={$gid}";
@@ -82,7 +85,7 @@ class GoogleSheetsAttendanceService
                 $lines = explode("\n", $labResponse->body());
                 $currentWeekLabel = 'August 10-14, 2026';
 
-                foreach ($lines as $line) {
+                foreach ($lines as $lineIndex => $line) {
                     $row = str_getcsv($line);
                     if (empty($row)) {
                         continue;
@@ -130,6 +133,30 @@ class GoogleSheetsAttendanceService
                             }
 
                             $facultyId = $this->resolveFacultyId($instructorStr, $facultyMap);
+                            $durationMinutes = FacultyAttendanceComputationService::parseDurationMinutes($timeStr);
+                            $primaryStatus = FacultyAttendanceComputationService::normalizePrimaryStatus($cleanStatus);
+
+                            // Staging Snapshot Audit Entry
+                            $rowHash = hash('sha256', "lab_{$parsedDate}_{$timeStr}_{$instructorStr}_{$cleanStatus}_{$lateMins}");
+                            $stagingSnapshots[] = [
+                                'source_sheet_id' => $spreadsheetId,
+                                'source_tab' => 'Primary Lab Sheet',
+                                'source_row_number' => $lineIndex + 1,
+                                'row_hash' => $rowHash,
+                                'raw_instructor_name' => $instructorStr,
+                                'matched_faculty_id' => $facultyId,
+                                'match_status' => $facultyId ? 'matched' : 'unmatched',
+                                'raw_date' => $parsedDate,
+                                'raw_time_slot' => $timeStr,
+                                'raw_room' => 'CHS',
+                                'raw_status' => $statusStr,
+                                'raw_late_minutes' => $lateMins,
+                                'raw_payload' => $row,
+                                'sync_batch_id' => $syncBatchId,
+                                'has_anomaly' => $lateMins > $durationMinutes,
+                                'anomaly_reason' => $lateMins > $durationMinutes ? 'Late minutes exceed scheduled session duration' : null,
+                                'synced_at' => Carbon::now(),
+                            ];
 
                             $parsedSessions[] = [
                                 'faculty_id' => $facultyId,
@@ -137,6 +164,9 @@ class GoogleSheetsAttendanceService
                                 'session_date' => $parsedDate,
                                 'day_of_week' => $offset['day'],
                                 'time_slot' => $timeStr,
+                                'scheduled_duration_minutes' => $durationMinutes,
+                                'delivered_minutes' => in_array($primaryStatus, ['present', 'late']) ? max(0, $durationMinutes - $lateMins) : 0,
+                                'primary_status' => $primaryStatus,
                                 'room' => 'CHS',
                                 'week_label' => $currentWeekLabel,
                                 'status' => $cleanStatus,
@@ -212,7 +242,6 @@ class GoogleSheetsAttendanceService
                 }
 
                 // Parse Statistics by Month (columns 17 - 26)
-                // Rows 1-12 typically list: August, September, October, November, December, etc.
                 for ($r = 1; $r < min(14, count($tabLines)); $r++) {
                     $row = str_getcsv($tabLines[$r]);
                     $monthName = trim($row[17] ?? '');
@@ -232,6 +261,49 @@ class GoogleSheetsAttendanceService
                         $totalScheduled = $present + $absent + $online + $others + $onLeave;
                         $rate = $totalScheduled > 0 ? round(($present / $totalScheduled) * 100, 2) : 100.0;
 
+                        // Check Anomaly: e.g. impossible sum
+                        $hasAnomaly = ($present + $absent + $late) > ($totalScheduled * 2);
+
+                        $stagingSnapshots[] = [
+                            'source_sheet_id' => $spreadsheetId,
+                            'source_tab' => $tabName,
+                            'source_row_number' => $r + 1,
+                            'row_hash' => hash('sha256', "monthly_{$tabName}_{$periodLabel}_{$totalScheduled}_{$present}"),
+                            'raw_instructor_name' => $instructorName,
+                            'matched_faculty_id' => $facultyId,
+                            'match_status' => $facultyId ? 'matched' : 'unmatched',
+                            'raw_status' => 'Monthly Summary',
+                            'raw_late_minutes' => $totalLateMins,
+                            'raw_scheduled_count' => $totalScheduled,
+                            'raw_present_count' => $present,
+                            'raw_late_count' => $late,
+                            'raw_absent_count' => $absent,
+                            'raw_payload' => $row,
+                            'sync_batch_id' => $syncBatchId,
+                            'has_anomaly' => $hasAnomaly,
+                            'anomaly_reason' => $hasAnomaly ? 'Discrepant totals in monthly sheet counts' : null,
+                            'synced_at' => Carbon::now(),
+                        ];
+
+                        // Compute defensible instructional hours (e.g., standard 1.5h per scheduled session)
+                        $scheduledHours = round($totalScheduled * 1.5, 2);
+                        $leaveHours = round($onLeave * 1.5, 2);
+                        $eligibleHours = max(0, round(($totalScheduled - $onLeave) * 1.5, 2));
+                        $attendedHours = round($present * 1.5, 2);
+                        $unexcusedAbsentHours = round($absent * 1.5, 2);
+
+                        $attendanceCoverage = $eligibleHours > 0
+                            ? min(100.0, round(($attendedHours / $eligibleHours) * 100, 2))
+                            : 100.0;
+
+                        $onTimeRate = $present > 0
+                            ? min(100.0, round((($present - $late) / $present) * 100, 2))
+                            : 100.0;
+
+                        $instructionalCompletion = $eligibleHours > 0
+                            ? min(100.0, round(($attendedHours / $eligibleHours) * 100, 2))
+                            : 100.0;
+
                         // Key by tabName and periodLabel to avoid duplicates across months
                         $key = $tabName.'_'.$periodLabel;
                         $parsedMonthlySummaries[$key] = [
@@ -249,6 +321,17 @@ class GoogleSheetsAttendanceService
                             'total_late_minutes' => $totalLateMins,
                             'scheduled_sessions' => $totalScheduled,
                             'attendance_rate' => $rate,
+                            'total_scheduled_hours' => $scheduledHours,
+                            'eligible_scheduled_hours' => $eligibleHours,
+                            'attended_hours' => $attendedHours,
+                            'approved_leave_hours' => $leaveHours,
+                            'unexcused_absent_hours' => $unexcusedAbsentHours,
+                            'make_up_required_hours' => $unexcusedAbsentHours + $leaveHours,
+                            'make_up_completed_hours' => 0,
+                            'attendance_coverage_rate' => $attendanceCoverage,
+                            'on_time_rate' => $onTimeRate,
+                            'instructional_completion_rate' => $instructionalCompletion,
+                            'is_rank_eligible' => $eligibleHours >= 12.0,
                             'academic_year' => 'AY 2026–2027',
                             'semester' => '1st Semester',
                         ];
@@ -275,6 +358,24 @@ class GoogleSheetsAttendanceService
                         $wScheduled = $wPresent + $wAbsent + $wOnline + $wOthers + $wOnLeave;
                         $wRate = $wScheduled > 0 ? round(($wPresent / $wScheduled) * 100, 2) : 100.0;
 
+                        $wScheduledHours = round($wScheduled * 1.5, 2);
+                        $wLeaveHours = round($wOnLeave * 1.5, 2);
+                        $wEligibleHours = max(0, round(($wScheduled - $wOnLeave) * 1.5, 2));
+                        $wAttendedHours = round($wPresent * 1.5, 2);
+                        $wAbsentHours = round($wAbsent * 1.5, 2);
+
+                        $wCoverage = $wEligibleHours > 0
+                            ? min(100.0, round(($wAttendedHours / $wEligibleHours) * 100, 2))
+                            : 100.0;
+
+                        $wOnTime = $wPresent > 0
+                            ? min(100.0, round((($wPresent - $wLate) / $wPresent) * 100, 2))
+                            : 100.0;
+
+                        $wCompletion = $wEligibleHours > 0
+                            ? min(100.0, round(($wAttendedHours / $wEligibleHours) * 100, 2))
+                            : 100.0;
+
                         $wKey = $tabName.'_'.$weekLabel;
                         $parsedMonthlySummaries[$wKey] = [
                             'faculty_id' => $facultyId,
@@ -291,6 +392,17 @@ class GoogleSheetsAttendanceService
                             'total_late_minutes' => $wLateMins,
                             'scheduled_sessions' => $wScheduled,
                             'attendance_rate' => $wRate,
+                            'total_scheduled_hours' => $wScheduledHours,
+                            'eligible_scheduled_hours' => $wEligibleHours,
+                            'attended_hours' => $wAttendedHours,
+                            'approved_leave_hours' => $wLeaveHours,
+                            'unexcused_absent_hours' => $wAbsentHours,
+                            'make_up_required_hours' => $wAbsentHours + $wLeaveHours,
+                            'make_up_completed_hours' => 0,
+                            'attendance_coverage_rate' => $wCoverage,
+                            'on_time_rate' => $wOnTime,
+                            'instructional_completion_rate' => $wCompletion,
+                            'is_rank_eligible' => $wEligibleHours >= 3.0,
                             'academic_year' => 'AY 2026–2027',
                             'semester' => '1st Semester',
                         ];
@@ -298,7 +410,6 @@ class GoogleSheetsAttendanceService
                 }
 
                 // 4. Parse History sessions from individual faculty tab (columns 3-9)
-                // Col 3: Laboratory, Col 4: Date, Col 5: Time, Col 6: Status, Col 7: Sub in Lab, Col 8: Late, Col 9: Day
                 for ($r = 2; $r < count($tabLines); $r++) {
                     $row = str_getcsv($tabLines[$r]);
                     $hRoom = trim($row[3] ?? '');
@@ -322,11 +433,33 @@ class GoogleSheetsAttendanceService
                             $cleanStatus = 'Late';
                         }
 
-                        // Determine week label
                         $carbonDate = Carbon::parse($hDate);
                         $weekNumber = $carbonDate->weekOfMonth;
                         $monthName = $carbonDate->format('F');
                         $hWeekLabel = "{$monthName} Week {$weekNumber}";
+
+                        $durationMinutes = FacultyAttendanceComputationService::parseDurationMinutes($hTime);
+                        $primaryStatus = FacultyAttendanceComputationService::normalizePrimaryStatus($cleanStatus);
+
+                        $stagingSnapshots[] = [
+                            'source_sheet_id' => $spreadsheetId,
+                            'source_tab' => $tabName,
+                            'source_row_number' => $r + 1,
+                            'row_hash' => hash('sha256', "history_{$tabName}_{$hDate}_{$hTime}_{$cleanStatus}_{$lateM}"),
+                            'raw_instructor_name' => $instructorName,
+                            'matched_faculty_id' => $facultyId,
+                            'match_status' => $facultyId ? 'matched' : 'unmatched',
+                            'raw_date' => $hDate,
+                            'raw_time_slot' => $hTime,
+                            'raw_room' => $hRoom,
+                            'raw_status' => $hStatus,
+                            'raw_late_minutes' => $lateM,
+                            'raw_payload' => $row,
+                            'sync_batch_id' => $syncBatchId,
+                            'has_anomaly' => $lateM > $durationMinutes,
+                            'anomaly_reason' => $lateM > $durationMinutes ? 'Late minutes exceed scheduled session duration' : null,
+                            'synced_at' => Carbon::now(),
+                        ];
 
                         $parsedSessions[] = [
                             'faculty_id' => $facultyId,
@@ -334,6 +467,9 @@ class GoogleSheetsAttendanceService
                             'session_date' => $hDate,
                             'day_of_week' => $hDay ?: $carbonDate->format('l'),
                             'time_slot' => $hTime,
+                            'scheduled_duration_minutes' => $durationMinutes,
+                            'delivered_minutes' => in_array($primaryStatus, ['present', 'late']) ? max(0, $durationMinutes - $lateM) : 0,
+                            'primary_status' => $primaryStatus,
                             'room' => $hRoom,
                             'week_label' => $hWeekLabel,
                             'status' => $cleanStatus,
@@ -348,8 +484,13 @@ class GoogleSheetsAttendanceService
             }
 
             // Database Upsert Transaction
-            DB::transaction(function () use ($parsedSessions, $parsedMonthlySummaries) {
-                // Upsert daily session records
+            DB::transaction(function () use ($parsedSessions, $parsedMonthlySummaries, $stagingSnapshots) {
+                // 1. Save immutable source snapshot staging records (in chunks)
+                foreach (array_chunk($stagingSnapshots, 200) as $chunk) {
+                    AttendanceSourceSnapshot::insert($chunk);
+                }
+
+                // 2. Upsert daily session records
                 foreach ($parsedSessions as $session) {
                     FacultyAttendance::updateOrCreate(
                         [
@@ -361,10 +502,8 @@ class GoogleSheetsAttendanceService
                     );
                 }
 
-                // Clean existing summaries so outdated/duplicate names (like 'Aguilar' vs 'Aguilar, Razel Ann') are cleanly removed
+                // 3. Clean and replace summaries with verified recalculated metrics
                 FacultyAttendanceSummary::query()->delete();
-
-                // Insert normalized monthly & weekly summaries
                 foreach ($parsedMonthlySummaries as $summary) {
                     FacultyAttendanceSummary::create($summary);
                 }
@@ -377,6 +516,8 @@ class GoogleSheetsAttendanceService
                 'message' => 'Faculty attendance synchronized successfully across all months and tabs.',
                 'synced_records' => count($parsedSessions),
                 'synced_summaries' => count($parsedMonthlySummaries),
+                'staged_snapshots' => count($stagingSnapshots),
+                'batch_id' => $syncBatchId,
             ];
         } catch (\Throwable $e) {
             Log::error('GoogleSheetsAttendanceService sync error: '.$e->getMessage(), [
