@@ -535,8 +535,120 @@ class TvDisplayController extends Controller
             ],
         ];
 
+        // Data for Slide 7 (Faculty Schedule) & Laboratory Peak Hours
+        $tz = config('services.room_schedule.timezone', 'Asia/Manila');
+        $scheduleNow = Carbon::now($tz);
+        $currentDay = $scheduleNow->format('l');
+        $currentTime = $scheduleNow->format('H:i:s');
+
+        // If today is a weekend without schedules, default to Monday
+        $activeDay = in_array($currentDay, ['Saturday', 'Sunday']) ? 'Monday' : $currentDay;
+
+        $todayRoomSchedules = RoomSchedule::with('faculty')
+            ->where('day_of_week', $activeDay)
+            ->orderBy('start_time')
+            ->orderBy('room_name')
+            ->get();
+
+        // Calculate expected peak hours per laboratory based on today's RoomSchedule
+        // Time blocks between 07:00 and 19:00 (1-hour slots)
+        $peakHoursPerLab = [];
+        $overallPeakHour = null;
+        $allLabsOccupancy = [];
+
+        $schedulesByRoom = $todayRoomSchedules->groupBy(fn ($s) => strtoupper(trim($s->room_name)));
+
+        foreach ($schedulesByRoom as $roomKey => $roomScheds) {
+            $hourlyOccupancy = [];
+            // Evaluate standard daytime hours 7:00 AM to 6:00 PM (18:00)
+            for ($h = 7; $h <= 18; $h++) {
+                $slotStart = sprintf('%02d:00:00', $h);
+                $slotEnd = sprintf('%02d:00:00', $h + 1);
+                $slotLabel = Carbon::createFromTime($h, 0)->format('g A').' - '.Carbon::createFromTime($h + 1, 0)->format('g A');
+
+                $activeInSlot = $roomScheds->filter(function ($s) use ($slotStart, $slotEnd) {
+                    return $s->start_time < $slotEnd && $s->end_time > $slotStart;
+                });
+
+                $count = $activeInSlot->count();
+                $hourlyOccupancy[$h] = [
+                    'hour' => $h,
+                    'label' => $slotLabel,
+                    'count' => $count,
+                    'is_occupied' => $count > 0,
+                    'class' => $activeInSlot->first()?->course_code,
+                ];
+            }
+
+            // Find longest or highest consecutive occupied peak period
+            $occupiedSlots = array_filter($hourlyOccupancy, fn ($o) => $o['is_occupied']);
+            $peakText = 'No scheduled classes today';
+            $peakSlotLabel = 'Low Traffic';
+            $peakStatus = 'Light';
+
+            if (! empty($occupiedSlots)) {
+                $occupiedHours = array_keys($occupiedSlots);
+                $startHour = min($occupiedHours);
+                $endHour = max($occupiedHours) + 1;
+
+                $startFormatted = Carbon::createFromTime($startHour, 0)->format('g:i A');
+                $endFormatted = Carbon::createFromTime($endHour, 0)->format('g:i A');
+                $peakText = $startFormatted.' – '.$endFormatted;
+
+                $occupancyRate = round((count($occupiedSlots) / 12) * 100);
+                if ($occupancyRate >= 70) {
+                    $peakStatus = 'Heavy Traffic';
+                } elseif ($occupancyRate >= 40) {
+                    $peakStatus = 'Moderate';
+                } else {
+                    $peakStatus = 'Normal';
+                }
+                $peakSlotLabel = "{$peakText} ({$occupancyRate}% utilized)";
+            }
+
+            $peakHoursPerLab[$roomKey] = [
+                'peak_text' => $peakText,
+                'peak_status' => $peakStatus,
+                'occupied_slots_count' => count($occupiedSlots),
+                'total_slots' => 12,
+                'hourly' => array_values($hourlyOccupancy),
+            ];
+        }
+
+        // Compute college-wide laboratory peak hour across all labs
+        $collegeHourly = [];
+        for ($h = 7; $h <= 18; $h++) {
+            $slotStart = sprintf('%02d:00:00', $h);
+            $slotEnd = sprintf('%02d:00:00', $h + 1);
+            $count = $todayRoomSchedules->filter(function ($s) use ($slotStart, $slotEnd) {
+                return $s->start_time < $slotEnd && $s->end_time > $slotStart;
+            })->count();
+            $collegeHourly[$h] = [
+                'hour' => $h,
+                'label' => Carbon::createFromTime($h, 0)->format('g A').' – '.Carbon::createFromTime($h + 1, 0)->format('g A'),
+                'count' => $count,
+            ];
+        }
+        $maxSlot = collect($collegeHourly)->sortByDesc('count')->first();
+        $overallLabPeak = $maxSlot && $maxSlot['count'] > 0
+            ? "{$maxSlot['label']} ({$maxSlot['count']} simultaneous lab classes)"
+            : 'Normal across all labs';
+
         // Data for Slide 5 (Classroom Monitoring - Facilities & Labs)
-        $facilityData = FacilityMonitoring::with('faculty')->orderBy('room_name')->get()->map(function ($fac) {
+        $facilityData = FacilityMonitoring::with('faculty')->orderBy('room_name')->get()->map(function ($fac) use ($peakHoursPerLab) {
+            $roomKey = strtoupper(trim($fac->room_name));
+            $peakInfo = $peakHoursPerLab[$roomKey] ?? null;
+
+            if (! $peakInfo) {
+                // Try partial matching e.g. "CLR 1" vs "CLR 1 Lab"
+                foreach ($peakHoursPerLab as $k => $info) {
+                    if (str_contains($roomKey, $k) || str_contains($k, $roomKey)) {
+                        $peakInfo = $info;
+                        break;
+                    }
+                }
+            }
+
             return [
                 'id' => $fac->id,
                 'room_name' => $fac->room_name,
@@ -551,27 +663,15 @@ class TvDisplayController extends Controller
                 'status' => $fac->status,
                 'remarks' => $fac->remarks,
                 'next_schedule' => $fac->next_schedule,
+                'expected_peak_hours' => $peakInfo['peak_text'] ?? '8:00 AM – 5:00 PM',
+                'peak_status' => $peakInfo['peak_status'] ?? 'Normal',
+                'hourly_occupancy' => $peakInfo['hourly'] ?? [],
             ];
         });
         $facilityLastSync = Cache::get('facility_monitoring_last_sync', clone $now);
 
         // Data for Slide 6 (Class & Lab Monitoring Summary from Google Sheets)
         $monitoringSummary = $this->fetchClassroomMonitoringSummary();
-
-        // Data for Slide 7 (Faculty Schedule)
-        $tz = config('services.room_schedule.timezone', 'Asia/Manila');
-        $scheduleNow = Carbon::now($tz);
-        $currentDay = $scheduleNow->format('l');
-        $currentTime = $scheduleNow->format('H:i:s');
-
-        // If today is a weekend without schedules, default to Monday
-        $activeDay = in_array($currentDay, ['Saturday', 'Sunday']) ? 'Monday' : $currentDay;
-
-        $todayRoomSchedules = RoomSchedule::with('faculty')
-            ->where('day_of_week', $activeDay)
-            ->orderBy('start_time')
-            ->orderBy('room_name')
-            ->get();
 
         $facultyPhotos = Faculty::all()->mapWithKeys(function ($fac) {
             return [
@@ -984,10 +1084,13 @@ class TvDisplayController extends Controller
                 'slide5' => [
                     'facilities' => $facilityData,
                     'last_updated' => Carbon::parse($facilityLastSync)->format('M d, Y h:i A'),
+                    'day' => $activeDay,
+                    'overall_peak' => $overallLabPeak,
                     'kpis' => [
                         'in_use' => $facilityData->where('status', 'In Use')->count(),
                         'available' => $facilityData->where('status', 'Available')->count(),
                         'maintenance' => $facilityData->where('status', 'Maintenance')->count(),
+                        'peak_hour' => $overallLabPeak,
                     ],
                 ],
                 'slide6' => $monitoringSummary,

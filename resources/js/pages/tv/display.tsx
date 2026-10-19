@@ -1606,13 +1606,15 @@ const ROOM_TONE: Record<string, Tone> = {
 function SlideFive({ data, isDark = false }: any) {
     const rooms = data?.facilities || [];
     const activeLabs = rooms.filter((r: any) => r.status === 'In Use' && r.instructor);
+    const day = data?.day || 'Today';
+    const overallPeak = data?.overall_peak || data?.kpis?.peak_hour || '10:00 AM – 1:00 PM';
 
     return (
         <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
             <div className="grid grid-cols-4 gap-4 shrink-0">
                 <Kpi icon={Monitor} tone="amber" accent label="Rooms in use" value={data?.kpis?.in_use ?? 0} isDark={isDark} />
                 <Kpi icon={CheckCircle2} tone="emerald" label="Available rooms" value={data?.kpis?.available ?? 0} isDark={isDark} />
-                <Kpi icon={AlertTriangle} tone="rose" label="Under maintenance" value={data?.kpis?.maintenance ?? 0} isDark={isDark} />
+                <Kpi icon={Flame} tone="orange" label={`Peak Lab Hours · ${day}`} value={overallPeak.split('(')[0].trim()} sub="Highest simultaneous lab usage" isDark={isDark} />
                 <Kpi icon={Users} tone="purple" label="Faculty in labs" value={activeLabs.length} isDark={isDark} />
             </div>
 
@@ -1622,10 +1624,13 @@ function SlideFive({ data, isDark = false }: any) {
                     {rooms.map((room: any) => {
                         const tone = ROOM_TONE[room.status] ?? 'blue';
                         const isOccupied = room.status === 'In Use';
+                        const expectedPeak = room.expected_peak_hours;
+                        const peakStatus = room.peak_status;
+
                         return (
                             <div
                                 key={room.id}
-                                className={`flex min-h-[175px] flex-col justify-between rounded-2xl p-4 transition-all border ${isOccupied
+                                className={`flex min-h-[195px] flex-col justify-between rounded-2xl p-4 transition-all border ${isOccupied
                                     ? 'border-amber-400 bg-amber-500/[0.04] shadow-[0_0_0_1px_rgba(251,191,36,0.5),0_4px_16px_rgba(245,158,11,0.12)]'
                                     : isDark
                                         ? 'bg-[#131b2e] border-white/10'
@@ -1663,8 +1668,23 @@ function SlideFive({ data, isDark = false }: any) {
                                     </div>
                                 )}
 
+                                {/* Expected Peak Hours Widget based on today's schedule */}
+                                {expectedPeak && (
+                                    <div className="mt-2 rounded-lg px-2.5 py-1.5 bg-amber-500/10 dark:bg-amber-400/10 border border-amber-400/25 flex items-center justify-between text-[11px]">
+                                        <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold truncate">
+                                            <Flame size={12} className="shrink-0 text-amber-500" />
+                                            <span className="truncate">Peak: <strong className="font-bold">{expectedPeak}</strong></span>
+                                        </div>
+                                        {peakStatus && (
+                                            <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.2 rounded text-amber-700 dark:text-amber-400 bg-amber-400/20">
+                                                {peakStatus}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+
                                 {room.next_schedule && (
-                                    <p className="mt-2 line-clamp-1 border-t border-slate-100 dark:border-white/5 pt-2 text-[11px] text-slate-500 dark:text-slate-400">
+                                    <p className="mt-1.5 line-clamp-1 border-t border-slate-100 dark:border-white/5 pt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
                                         <strong className="font-bold text-slate-800 dark:text-slate-200">Up next:</strong> {room.next_schedule}
                                     </p>
                                 )}

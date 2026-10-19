@@ -186,8 +186,8 @@ export default function GenerateReportPage({
         programSummary: true,
     });
 
-    // 5. Configurable Signatories
-    const [signatoriesList, setSignatoriesList] = useState<SignatoryItem[]>(() => {
+    // Helper function to build default signatories
+    const getDefaultSignatories = (): SignatoryItem[] => {
         const programChair = faculties.find(f => f.academic_rank?.toLowerCase().includes('chair') || f.academic_rank?.toLowerCase().includes('associate')) || faculties[0];
         return [
             {
@@ -215,6 +215,24 @@ export default function GenerateReportPage({
                 showSignatureLine: true,
             },
         ];
+    };
+
+    // 5. Configurable Signatories with persistent storage (localStorage)
+    const [signatoriesList, setSignatoriesList] = useState<SignatoryItem[]>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const saved = localStorage.getItem('cids_attendance_report_signatories');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        return parsed;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to parse saved signatories from localStorage:', e);
+            }
+        }
+        return getDefaultSignatories();
     });
 
     // 6. Inline / Modal Faculty Name Editing state
@@ -275,6 +293,17 @@ export default function GenerateReportPage({
     const [isMaximized, setIsMaximized] = useState<boolean>(false);
     const previewContainerRef = useRef<HTMLDivElement>(null);
 
+    // Save signatories list to localStorage
+    const persistSignatories = (updated: SignatoryItem[]) => {
+        try {
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('cids_attendance_report_signatories', JSON.stringify(updated));
+            }
+        } catch (e) {
+            console.warn('Failed to save signatories to localStorage:', e);
+        }
+    };
+
     // Add a new signatory
     const handleAddSignatory = () => {
         const newSig: SignatoryItem = {
@@ -285,20 +314,47 @@ export default function GenerateReportPage({
             department: 'Office of Academic Affairs',
             showSignatureLine: true,
         };
-        setSignatoriesList([...signatoriesList, newSig]);
+        const updated = [...signatoriesList, newSig];
+        setSignatoriesList(updated);
+        persistSignatories(updated);
     };
 
     // Remove a signatory
     const handleRemoveSignatory = (id: string) => {
         if (signatoriesList.length <= 1) return;
-        setSignatoriesList(signatoriesList.filter(s => s.id !== id));
+        const updated = signatoriesList.filter(s => s.id !== id);
+        setSignatoriesList(updated);
+        persistSignatories(updated);
     };
 
     // Update signatory field
     const handleUpdateSignatory = (id: string, field: keyof SignatoryItem, value: any) => {
-        setSignatoriesList(
-            signatoriesList.map(s => (s.id === id ? { ...s, [field]: value } : s))
-        );
+        const updated = signatoriesList.map(s => (s.id === id ? { ...s, [field]: value } : s));
+        setSignatoriesList(updated);
+        persistSignatories(updated);
+    };
+
+    // Reset signatories to default
+    const handleResetSignatories = () => {
+        const defaults = getDefaultSignatories();
+        setSignatoriesList(defaults);
+        persistSignatories(defaults);
+        showToast('Signatories reset to default template.');
+    };
+
+    // Save full template (signatories + summaries toggles)
+    const handleSaveTemplate = () => {
+        try {
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('cids_attendance_report_signatories', JSON.stringify(signatoriesList));
+                localStorage.setItem('cids_attendance_report_summaries', JSON.stringify(keySummaries));
+                localStorage.setItem('cids_attendance_report_format', reportFormat);
+            }
+            showToast('Template & signatories saved successfully!');
+        } catch (e) {
+            console.error('Failed to save template:', e);
+            showToast('Failed to save template settings.');
+        }
     };
 
     // Toggle Maximize / Fullscreen View
@@ -491,6 +547,7 @@ export default function GenerateReportPage({
     };
 
     // Handle Direct PDF Generation / Download (Directly saves PDF file, does not open print modal)
+    // Handle Direct PDF Generation / Download with exactly 1.0 inch margins
     const handleGeneratePdf = async () => {
         const sheetElement = document.getElementById('pdf-preview-sheet');
         if (!sheetElement || isGeneratingPdf) return;
@@ -499,8 +556,13 @@ export default function GenerateReportPage({
 
         const fileName = `CIDS_Faculty_Attendance_Report_${selectedAY.replace(/[\s–—-]+/g, '_')}_${selectedSemester.replace(/[\s–—-]+/g, '_')}.pdf`;
 
+        // Temporarily reset preview transform/scale for clean high-res canvas rendering
+        const originalTransform = sheetElement.style.transform;
+        const originalBoxShadow = sheetElement.style.boxShadow;
+        sheetElement.style.transform = 'none';
+        sheetElement.style.boxShadow = 'none';
+
         try {
-            // First attempt: Dynamic import of html2canvas and jsPDF
             const html2canvasModule = await import('html2canvas');
             const html2canvas = html2canvasModule.default || html2canvasModule;
             const { jsPDF } = await import('jspdf');
@@ -508,43 +570,79 @@ export default function GenerateReportPage({
             const canvas = await html2canvas(sheetElement, {
                 scale: 2,
                 useCORS: true,
+                allowTaint: true,
                 logging: false,
                 backgroundColor: '#ffffff',
-                windowWidth: 1200,
+                scrollX: 0,
+                scrollY: 0,
             });
+
+            // Restore preview styling
+            sheetElement.style.transform = originalTransform;
+            sheetElement.style.boxShadow = originalBoxShadow;
 
             const imgData = canvas.toDataURL('image/jpeg', 0.98);
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+            const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
-            const imgWidth = pdfWidth;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            // 1.0 inch margin in mm = 25.4mm
+            const margin = 25.4;
+            const printableWidth = pageWidth - (margin * 2); // 159.2mm
+            const printableHeight = pageHeight - (margin * 2); // 246.2mm
 
+            const imgWidth = printableWidth;
+            const imgHeight = (canvas.height * printableWidth) / canvas.width;
+
+            // Handle multi-page pagination with clean 1.0 margin clipping
             let heightLeft = imgHeight;
-            let position = 0;
+            let sourceY = 0;
 
-            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-            heightLeft -= pdfHeight;
+            // First page
+            pdf.addImage(
+                imgData,
+                'JPEG',
+                margin,
+                margin - sourceY,
+                imgWidth,
+                imgHeight,
+                undefined,
+                'FAST'
+            );
+            heightLeft -= printableHeight;
 
+            // Subsequent pages
             while (heightLeft > 0) {
-                position = heightLeft - imgHeight;
+                sourceY += printableHeight;
                 pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-                heightLeft -= pdfHeight;
+                pdf.addImage(
+                    imgData,
+                    'JPEG',
+                    margin,
+                    margin - sourceY,
+                    imgWidth,
+                    imgHeight,
+                    undefined,
+                    'FAST'
+                );
+                heightLeft -= printableHeight;
             }
 
             pdf.save(fileName);
             showToast('PDF downloaded successfully!');
         } catch (error) {
-            console.error('Direct PDF export error, attempting html2pdf fallback:', error);
+            console.error('Direct PDF export error, attempting fallback:', error);
+            // Ensure preview transform is restored if error occurred
+            sheetElement.style.transform = originalTransform;
+            sheetElement.style.boxShadow = originalBoxShadow;
+
             try {
-                // Fallback attempt: html2pdf bundle
+                // Fallback attempt: html2pdf bundle if available
                 // @ts-ignore
                 const html2pdfModule = await import('html2pdf.js/dist/html2pdf.bundle.min.js');
                 const html2pdf = html2pdfModule.default || html2pdfModule;
                 await html2pdf().set({
-                    margin: [8, 10, 8, 10],
+                    margin: [25.4, 25.4, 25.4, 25.4], // 1.0 inch margins all around
                     filename: fileName,
                     image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
@@ -553,7 +651,7 @@ export default function GenerateReportPage({
                 showToast('PDF downloaded successfully!');
             } catch (fallbackErr) {
                 console.error('Fallback export error:', fallbackErr);
-                alert('Could not generate PDF directly in this browser. Please use Print Preview and select "Save as PDF".');
+                alert('Could not generate PDF directly. Please use "Print Preview" and select "Save as PDF" with 1-inch margins.');
             }
         } finally {
             setIsGeneratingPdf(false);
@@ -564,7 +662,7 @@ export default function GenerateReportPage({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Generate Faculty Attendance Report" />
 
-            {/* Print Stylesheet (Suppresses browser default header & footer: URL, date, page number) */}
+            {/* Print Stylesheet (Enforces 1.0 inch margin on all sides: header, footer, content) */}
             <style>{`
                 @media print {
                     .no-print, header, nav, aside, [data-sidebar="sidebar"] {
@@ -580,15 +678,20 @@ export default function GenerateReportPage({
                         display: block !important;
                         box-shadow: none !important;
                         border: none !important;
-                        padding: 10mm 14mm !important;
-                        margin: 0 !important;
+                        padding: 1in !important; /* Exactly 1.0 inch margins all around */
+                        margin: 0 auto !important;
                         width: 100% !important;
                         max-width: 100% !important;
                         transform: none !important;
+                        box-sizing: border-box !important;
+                    }
+                    .page-break-inside-avoid {
+                        break-inside: avoid !important;
+                        page-break-inside: avoid !important;
                     }
                     @page {
                         size: A4 portrait;
-                        margin: 0 !important;
+                        margin: 1in !important; /* 1.0 inch margin for header/footer clearance */
                     }
                 }
             `}</style>
@@ -1193,14 +1296,26 @@ export default function GenerateReportPage({
                                         </span>
                                     </div>
 
-                                    <Button
-                                        type="button"
-                                        onClick={handleAddSignatory}
-                                        className="h-8 px-3 text-[11px] font-bold rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 flex items-center gap-1.5 cursor-pointer shadow-xs"
-                                    >
-                                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                                        <span>Add Signatory</span>
-                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            onClick={handleResetSignatories}
+                                            className="h-8 px-2.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+                                            title="Reset signatories to default template"
+                                        >
+                                            <RotateCcw className="w-3 h-3" />
+                                            <span>Reset Signatories</span>
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            onClick={handleAddSignatory}
+                                            className="h-8 px-3 text-[11px] font-bold rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                        >
+                                            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                                            <span>Add Signatory</span>
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 {/* Vertical Layout for Signatories as requested */}
@@ -1287,7 +1402,7 @@ export default function GenerateReportPage({
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        onClick={() => showToast('Template settings saved successfully!')}
+                                        onClick={handleSaveTemplate}
                                         className="h-9 px-3 text-xs font-semibold rounded-xl border-border bg-card flex items-center gap-1.5 hover:border-amber-400/60 cursor-pointer"
                                     >
                                         <BookmarkCheck className="w-3.5 h-3.5 text-muted-foreground" />
@@ -1419,7 +1534,7 @@ export default function GenerateReportPage({
                             <div
                                 id="pdf-preview-sheet"
                                 className={cn(
-                                    "print-only-sheet w-full min-h-[1080px] bg-white text-slate-900 border border-slate-300 shadow-xl p-8 sm:p-10 transition-transform origin-top flex flex-col justify-between",
+                                    "print-only-sheet w-full min-h-[1080px] bg-white text-slate-900 border border-slate-300 shadow-xl p-[1in] transition-transform origin-top flex flex-col justify-between box-border",
                                     isMaximized ? "max-w-[1050px]" : "max-w-[850px]"
                                 )}
                                 style={{ transform: `scale(${zoomLevel / 100})` }}
@@ -1591,7 +1706,7 @@ export default function GenerateReportPage({
                                 </div>
 
                                 {/* 5. SIGNATORIES SECTION (Horizontal arrangement, max 3 per line, no top border line) */}
-                                <div className="mt-8 pt-4">
+                                <div className="mt-8 pt-4 page-break-inside-avoid">
                                     {/* Signatories: maximum of 3 per horizontal row */}
                                     <div className="grid grid-cols-3 gap-x-8 gap-y-8 text-center">
                                         {signatoriesList.map((sig) => (
