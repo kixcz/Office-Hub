@@ -8,6 +8,7 @@ use App\Models\FacultyAttendance;
 use App\Models\FacultyAttendanceSummary;
 use App\Models\Program;
 use App\Models\Requirement;
+use App\Models\Role;
 use App\Models\RoomSchedule;
 use App\Models\Submission;
 use App\Services\ComplianceService;
@@ -30,7 +31,7 @@ class FacultyController extends Controller
         $isProgramHead = $user?->hasRole('Program Head') || ($user?->hasRole('Program Chair') ?? false);
         $userProgramId = $user?->faculty?->program_id;
 
-        $facultyQuery = Faculty::with(['program', 'submissions'])->latest();
+        $facultyQuery = Faculty::with(['program', 'submissions', 'user.roles'])->latest();
         if ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId) {
             $facultyQuery->where('program_id', $userProgramId);
         }
@@ -581,5 +582,64 @@ class FacultyController extends Controller
         $faculty->delete();
 
         return redirect()->route('faculties.index')->with('success', 'Faculty profile deleted successfully.');
+    }
+
+    /**
+     * Set or toggle faculty leadership roles (Program Head, Dean).
+     */
+    public function assignRole(Request $request, Faculty $faculty): RedirectResponse
+    {
+        $user = $request->user();
+        $isSuperAdmin = $user?->hasRole('System Administrator') ?? false;
+        $isDean = $user?->hasRole('Dean') ?? false;
+
+        abort_unless(
+            $isSuperAdmin || $isDean,
+            403,
+            'Only the Dean or System Administrator can appoint Program Heads or Deans.'
+        );
+
+        $validated = $request->validate([
+            'role' => 'required|in:Program Head,Dean,Faculty Member',
+            'action' => 'required|in:assign,revoke',
+            'program_id' => 'nullable|exists:programs,id',
+        ]);
+
+        // Ensure faculty has an associated User
+        $facultyUser = $faculty->user ?? $faculty->syncUserAccount();
+        if (! $facultyUser) {
+            // Generate fallback email if empty
+            $cleanName = strtolower(substr($faculty->first_name, 0, 1).preg_replace('/[^a-zA-Z0-9]/', '', $faculty->last_name));
+            $faculty->email = "{$cleanName}@cids.edu";
+            $faculty->save();
+            $facultyUser = $faculty->syncUserAccount();
+        }
+
+        $targetRole = Role::firstOrCreate(['name' => $validated['role']]);
+
+        if ($validated['action'] === 'assign') {
+            // If assigning as Program Head of a program, update faculty's program_id if provided
+            if ($validated['role'] === 'Program Head' && ! empty($validated['program_id'])) {
+                $faculty->update(['program_id' => $validated['program_id']]);
+            }
+
+            // If appointing a Program Head for this program, optionally demote previous heads if single-head per program is desired,
+            // or simply attach the role to the designated user.
+            if (! $facultyUser->roles()->where('role_id', $targetRole->id)->exists()) {
+                $facultyUser->roles()->attach($targetRole->id);
+            }
+
+            // Sync faculty academic rank or title note if applicable
+            $roleLabel = $validated['role'] === 'Program Head'
+                ? "Program Head ({$faculty->program?->code})"
+                : 'College Dean';
+
+            return redirect()->back()->with('success', "{$faculty->title_name} is now designated as {$roleLabel}. Their dashboard and navigation will immediately reflect executive {$validated['role']} modules.");
+        } else {
+            // Revoke role
+            $facultyUser->roles()->detach($targetRole->id);
+
+            return redirect()->back()->with('success', "Revoked {$validated['role']} designation from {$faculty->title_name}.");
+        }
     }
 }

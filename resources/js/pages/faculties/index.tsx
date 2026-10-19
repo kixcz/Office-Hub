@@ -65,6 +65,7 @@ interface Program {
 
 interface Faculty {
     id: number;
+    user_id?: number | null;
     first_name: string;
     last_name: string;
     full_name?: string;
@@ -87,6 +88,15 @@ interface Faculty {
     created_at?: string;
     updated_at?: string;
     submissions?: any[];
+    user?: {
+        id: number;
+        name: string;
+        email: string;
+        roles?: Array<{
+            id: number;
+            name: string;
+        }>;
+    } | null;
 }
 
 interface NeedsAttentionItem {
@@ -193,6 +203,39 @@ export default function FacultiesIndex({
     const [attentionStatusFilter, setAttentionStatusFilter] = useState('all');
     const [sortBy, setSortBy] = useState<'name_asc' | 'name_desc' | 'recent' | 'rank'>('name_asc');
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+
+    // Appointment Role State (Program Head / Dean)
+    const [appointingFaculty, setAppointingFaculty] = useState<Faculty | null>(null);
+    const [targetRole, setTargetRole] = useState<'Program Head' | 'Dean'>('Program Head');
+    const [targetProgramId, setTargetProgramId] = useState<string>('');
+    const [isAppointing, setIsAppointing] = useState(false);
+
+    const openAppointModal = (faculty: Faculty, role: 'Program Head' | 'Dean') => {
+        setAppointingFaculty(faculty);
+        setTargetRole(role);
+        setTargetProgramId(faculty.program_id ? String(faculty.program_id) : (programs[0]?.id ? String(programs[0].id) : ''));
+    };
+
+    const handleConfirmRoleAssign = (action: 'assign' | 'revoke') => {
+        if (!appointingFaculty) return;
+        setIsAppointing(true);
+
+        router.post(
+            `/faculties/${appointingFaculty.id}/assign-role`,
+            {
+                role: targetRole,
+                action: action,
+                program_id: targetRole === 'Program Head' ? (targetProgramId ? Number(targetProgramId) : null) : null,
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setIsAppointing(false);
+                    setAppointingFaculty(null);
+                },
+            }
+        );
+    };
 
     // Form fields
     const [firstName, setFirstName] = useState('');
@@ -821,10 +864,31 @@ export default function FacultiesIndex({
                                                                 })()}
 
                                                                 <div className="min-w-0">
-                                                                    <div className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
+                                                                    <div className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5 flex-wrap">
                                                                         <span className="truncate">
                                                                             {faculty.title_name || `Prof. ${faculty.first_name} ${faculty.last_name}`}
                                                                         </span>
+                                                                        {(() => {
+                                                                            const roles = faculty.user?.roles?.map((r) => r.name) || [];
+                                                                            const isPH = roles.includes('Program Head') || roles.includes('Program Chair');
+                                                                            const isD = roles.includes('Dean');
+
+                                                                            if (isD) {
+                                                                                return (
+                                                                                    <Badge className="text-[9px] font-black bg-amber-500 hover:bg-amber-600 text-slate-950 border-amber-600/30 px-1.5 py-0">
+                                                                                        College Dean
+                                                                                    </Badge>
+                                                                                );
+                                                                            }
+                                                                            if (isPH) {
+                                                                                return (
+                                                                                    <Badge className="text-[9px] font-black bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800 px-1.5 py-0">
+                                                                                        Program Head
+                                                                                    </Badge>
+                                                                                );
+                                                                            }
+                                                                            return null;
+                                                                        })()}
                                                                         {hasAttention && (
                                                                             <span
                                                                                 className="w-2 h-2 rounded-full bg-rose-500 shrink-0"
@@ -960,7 +1024,7 @@ export default function FacultiesIndex({
                                                                             <MoreVertical className="h-4 w-4" />
                                                                         </button>
                                                                     </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent align="end" className="w-44 text-xs font-['Poppins']">
+                                                                    <DropdownMenuContent align="end" className="w-56 text-xs font-['Poppins']">
                                                                         <DropdownMenuItem onClick={() => router.visit(`/faculties/${faculty.id}`)}>
                                                                             <User className="h-3.5 w-3.5 mr-2 text-primary" />
                                                                             View Dossier
@@ -971,6 +1035,38 @@ export default function FacultiesIndex({
                                                                                 Edit Credentials
                                                                             </DropdownMenuItem>
                                                                         )}
+
+                                                                        {/* Leadership Designation Options (Super Admin / Dean only) */}
+                                                                        {(user_permissions.is_super_admin || user_permissions.is_dean) && (
+                                                                            <>
+                                                                                <DropdownMenuSeparator />
+                                                                                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                                                                    Leadership Role
+                                                                                </div>
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() => openAppointModal(faculty, 'Program Head')}
+                                                                                    className="text-purple-700 dark:text-purple-300 focus:bg-purple-50 dark:focus:bg-purple-950/40"
+                                                                                >
+                                                                                    <GraduationCap className="h-3.5 w-3.5 mr-2 text-purple-600" />
+                                                                                    {faculty.user?.roles?.some((r) => r.name === 'Program Head' || r.name === 'Program Chair')
+                                                                                        ? 'Manage Program Head...'
+                                                                                        : 'Set as Program Head...'}
+                                                                                </DropdownMenuItem>
+
+                                                                                {user_permissions.is_super_admin && (
+                                                                                    <DropdownMenuItem
+                                                                                        onClick={() => openAppointModal(faculty, 'Dean')}
+                                                                                        className="text-amber-700 dark:text-amber-300 focus:bg-amber-50 dark:focus:bg-amber-950/40"
+                                                                                    >
+                                                                                        <ShieldCheck className="h-3.5 w-3.5 mr-2 text-amber-600" />
+                                                                                        {faculty.user?.roles?.some((r) => r.name === 'Dean')
+                                                                                            ? 'Manage Dean Role...'
+                                                                                            : 'Set as College Dean...'}
+                                                                                    </DropdownMenuItem>
+                                                                                )}
+                                                                            </>
+                                                                        )}
+
                                                                         {user_permissions.can_delete && (
                                                                             <>
                                                                                 <DropdownMenuSeparator />
@@ -1496,6 +1592,119 @@ export default function FacultiesIndex({
                                 </button>
                             </DialogFooter>
                         </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Role Appointment Dialog (Program Head / Dean) */}
+                <Dialog open={!!appointingFaculty} onOpenChange={(open) => !open && setAppointingFaculty(null)}>
+                    <DialogContent className="sm:max-w-md font-['Poppins']">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-base font-black">
+                                {targetRole === 'Program Head' ? (
+                                    <>
+                                        <GraduationCap className="w-5 h-5 text-purple-600" />
+                                        <span>Designate Program Head</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShieldCheck className="w-5 h-5 text-amber-500" />
+                                        <span>Designate College Dean</span>
+                                    </>
+                                )}
+                            </DialogTitle>
+                        </DialogHeader>
+
+                        {appointingFaculty && (
+                            <div className="space-y-4 pt-2 text-xs">
+                                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0">
+                                        {appointingFaculty.first_name[0]}{appointingFaculty.last_name[0]}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="font-extrabold text-foreground text-sm truncate">
+                                            {appointingFaculty.title_name || `${appointingFaculty.first_name} ${appointingFaculty.last_name}`}
+                                        </div>
+                                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                                            {appointingFaculty.academic_rank || 'Faculty Member'} • {appointingFaculty.program?.code || 'Unassigned'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {targetRole === 'Program Head' && (
+                                    <div>
+                                        <label className="text-xs font-bold text-foreground block mb-1">
+                                            Assigned Program <span className="text-rose-500">*</span>
+                                        </label>
+                                        <select
+                                            value={targetProgramId}
+                                            onChange={(e) => setTargetProgramId(e.target.value)}
+                                            className="w-full h-9 rounded-xl border border-input bg-background px-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                                        >
+                                            {programs.map((p) => (
+                                                <option key={p.id} value={p.id}>
+                                                    {p.code} - {p.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <span className="text-[10px] text-muted-foreground block mt-1">
+                                            This faculty member will have executive Program Head authority over all faculty, sections, exam monitors, make-up classes, and scheduling review for this department.
+                                        </span>
+                                    </div>
+                                )}
+
+                                {targetRole === 'Dean' && (
+                                    <div className="p-3 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-200">
+                                        <p className="text-xs font-medium leading-relaxed">
+                                            Designating this faculty as <strong>College Dean</strong> grants college-wide executive oversight over all programs, faculty workloads, exam schedules, and master timetable approvals.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="p-3 rounded-xl border border-border bg-card space-y-1.5">
+                                    <div className="text-[11px] font-bold text-foreground flex items-center justify-between">
+                                        <span>Current Status:</span>
+                                        {appointingFaculty.user?.roles?.some((r) => r.name === targetRole) ? (
+                                            <span className="text-emerald-600 font-extrabold flex items-center gap-1">
+                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                Currently Active {targetRole}
+                                            </span>
+                                        ) : (
+                                            <span className="text-muted-foreground font-semibold">Not Designated</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <DialogFooter className="pt-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAppointingFaculty(null)}
+                                        className="h-9 px-3 rounded-xl text-xs font-semibold border border-input bg-background hover:bg-muted"
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    {appointingFaculty.user?.roles?.some((r) => r.name === targetRole) ? (
+                                        <button
+                                            type="button"
+                                            disabled={isAppointing}
+                                            onClick={() => handleConfirmRoleAssign('revoke')}
+                                            className="h-9 px-3 rounded-xl text-xs font-bold text-rose-600 border border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                        >
+                                            {isAppointing ? 'Updating...' : `Revoke ${targetRole}`}
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            disabled={isAppointing}
+                                            onClick={() => handleConfirmRoleAssign('assign')}
+                                            className="h-9 px-4 rounded-xl text-xs font-bold bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:opacity-90 shadow-2xs"
+                                        >
+                                            {isAppointing ? 'Appointing...' : `Appoint as ${targetRole}`}
+                                        </button>
+                                    )}
+                                </DialogFooter>
+                            </div>
+                        )}
                     </DialogContent>
                 </Dialog>
 

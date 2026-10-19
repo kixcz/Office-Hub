@@ -286,6 +286,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Programs & Faculties
     Route::resource('programs', ProgramController::class);
+    Route::post('/faculties/{faculty}/assign-role', [FacultyController::class, 'assignRole'])->name('faculties.assign-role');
     Route::resource('faculties', FacultyController::class);
 
     // Operations -> Facility & Room Problem Reports (Dean / Super Admin)
