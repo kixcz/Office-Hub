@@ -43,6 +43,7 @@ import {
     Send,
     Award,
     History,
+    ShieldCheck,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -65,6 +66,7 @@ const adminNavGroups: NavGroup[] = [
             { title: 'Meetings', url: '/schedule/meetings', icon: Projector },
             { title: 'Activities', url: '/schedule/activities', icon: Activity },
             { title: 'Lab Monitoring', url: '/classroom-monitoring', icon: Monitor },
+            { title: 'Lab In-Charge', url: '/operations/lab-in-charge', icon: ShieldCheck },
             { title: 'Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },
             { title: 'Faculty Workload', url: '/operations/faculty-workload', icon: Briefcase },
             { title: 'Make-Up Classes', url: '/operations/make-up-classes', icon: RefreshCw },
@@ -262,24 +264,19 @@ const facultyNavGroups: NavGroup[] = [
 // Lab In-Charge Navigation Groups (Operational Workspace)
 const labInChargeNavGroups: NavGroup[] = [
     {
-        title: 'LAB OPERATIONS',
+        title: 'OPERATIONS',
         items: [
-            { title: 'Operational Dashboard', url: '/monitoring/lab-in-charge?tab=dashboard', icon: LayoutGrid },
-            { title: 'Classroom & Lab Mon.', url: '/classroom-monitoring', icon: Monitor },
-            { title: "Today's Lab Schedule", url: '/monitoring/lab-in-charge?tab=today', icon: CalendarDays },
-            { title: 'Room Status Board', url: '/monitoring/lab-in-charge?tab=rooms', icon: Monitor },
-            { title: 'Lab Timetables', url: '/monitoring/lab-in-charge?tab=timetables', icon: Calendar },
-            { title: 'End-of-Day Closing Report', url: '/monitoring/lab-in-charge?tab=end_of_day', icon: FileCheck },
+            { title: 'Dashboard', url: '/monitoring/lab-in-charge?tab=dashboard', icon: LayoutGrid },
+            { title: 'Live Lab Monitoring', url: '/monitoring/lab-in-charge?tab=live', icon: Monitor },
+            { title: 'Lab Schedules', url: '/monitoring/lab-in-charge?tab=schedules', icon: CalendarDays },
+            { title: 'Daily Closing Reports', url: '/monitoring/lab-in-charge?tab=closing_reports', icon: ClipboardCheck },
         ],
     },
     {
-        title: 'MONITORING & INCIDENTS',
+        title: 'MONITORING & RECORDS',
         items: [
-            { title: 'Discrepancies & Incidents', url: '/monitoring/lab-in-charge?tab=discrepancies', icon: AlertTriangle },
-            { title: 'Action Required', url: '/monitoring/lab-in-charge?tab=action_required', icon: Bell },
-            { title: 'Historical Monitoring', url: '/monitoring/lab-in-charge?tab=historical', icon: History },
-            { title: 'Monitoring Audit History', url: '/monitoring/lab-in-charge?tab=history', icon: ClipboardCheck },
-            { title: 'My Assigned Labs', url: '/monitoring/lab-in-charge?tab=assigned_labs', icon: Building2 },
+            { title: 'Alerts & Incidents', url: '/monitoring/lab-in-charge?tab=alerts', icon: AlertTriangle, badge: 0 },
+            { title: 'Monitoring History', url: '/monitoring/lab-in-charge?tab=history', icon: History },
         ],
     },
     {

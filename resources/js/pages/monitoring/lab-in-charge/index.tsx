@@ -61,6 +61,7 @@ import {
     CalendarDays,
     Eye,
     Filter,
+    FileCheck,
     CheckCircle,
     XCircle,
     Info,
@@ -86,7 +87,10 @@ import {
     Upload,
     UserCog,
     UserCheck,
+    Activity,
+    Radio,
 } from 'lucide-react';
+import { Link } from '@inertiajs/react';
 import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -234,6 +238,7 @@ interface Props {
     currentShift: string;
     todayName: string;
     todayDate: string;
+    todayDateStr?: string;
     currentTime: string;
     assignedRooms: any[];
     roomStatusBoard: RoomStatusItem[];
@@ -265,6 +270,7 @@ export default function LabInChargeMonitoring({
     currentShift,
     todayName,
     todayDate,
+    todayDateStr = '',
     currentTime,
     assignedRooms = [],
     roomStatusBoard = [],
@@ -312,7 +318,7 @@ export default function LabInChargeMonitoring({
                 setActiveModule(tabParam);
             }
         }
-    }, [window.location.search]);
+    }, []);
 
     // Schedule Filters
     const [scheduleViewMode, setScheduleViewMode] = useState<'day' | 'timeline'>('day');
@@ -759,28 +765,31 @@ export default function LabInChargeMonitoring({
                         </div>
 
                         {/* Quick Operational Actions */}
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                             <Button
                                 variant="outline"
-                                className="border-amber-400 text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/20 font-bold gap-1.5"
+                                size="sm"
+                                className="h-7.5 px-2.5 text-xs border-amber-400 text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/20 font-semibold gap-1.5"
                                 onClick={() => router.get('/monitoring/lab-in-charge/end-of-day')}
                             >
-                                <FileCheck className="h-4 w-4 text-amber-600" />
+                                <FileCheck className="h-3.5 w-3.5 text-amber-600" />
                                 End-of-Day Closing Report
                             </Button>
                             <Button
                                 variant="outline"
-                                className="border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 font-bold gap-1.5"
+                                size="sm"
+                                className="h-7.5 px-2.5 text-xs border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 font-semibold gap-1.5"
                                 onClick={() => {
                                     setDisruptRoomId(String(assignedRooms[0]?.id ?? ''));
                                     setDisruptionModalOpen(true);
                                 }}
                             >
-                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTriangle className="h-3.5 w-3.5" />
                                 Report Room Disruption
                             </Button>
                             <Button
-                                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black gap-1.5 shadow-xs"
+                                size="sm"
+                                className="h-7.5 px-2.5 text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold gap-1.5 shadow-2xs"
                                 onClick={() => {
                                     const readySession = currentSessionsInLaboratories[0]?.session || sessionsList.find(s => s.observation_status === 'Ready to Monitor' || s.observation_status === 'In Progress') || sessionsList[0];
                                     if (readySession) {
@@ -790,322 +799,24 @@ export default function LabInChargeMonitoring({
                                     }
                                 }}
                             >
-                                <MonitorPlay className="h-4 w-4" />
+                                <MonitorPlay className="h-3.5 w-3.5" />
                                 Record Live Observation
                             </Button>
                         </div>
                     </div>
                 </div>
 
-                {/* 2. TV SLIDE 5 STYLE LAB MONITORING & TIME FRAME SELECTOR */}
-                <div className="space-y-4 rounded-2xl border border-amber-500/25 bg-amber-500/[0.02] dark:bg-amber-500/[0.03] p-4 shadow-sm">
-                    {/* Time Frame Selector Header */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border/60">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                                <span className="relative flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-                                </span>
-                                <h2 className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
-                                    Laboratory Session Monitoring
-                                </h2>
-                                <Badge variant="outline" className="text-[10px] bg-background font-mono py-0 h-5 border-amber-500/40 text-amber-800 dark:text-amber-300">
-                                    {selectedTimeFrame === 'live' ? 'Live Now' : `${selectedTimeFrame} Session`}
-                                </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Select a scheduled time window below to verify which faculty members are currently in session across computer laboratories.
-                            </p>
-                        </div>
-
-                        {/* Quick Time Frame Pills */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1 mr-1">
-                                <Clock className="h-3.5 w-3.5 text-amber-500" />
-                                Time Window:
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => setSelectedTimeFrame('live')}
-                                className={cn(
-                                    "px-3 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs",
-                                    selectedTimeFrame === 'live'
-                                        ? "bg-amber-500 text-slate-950 border-amber-500 ring-2 ring-amber-500/20 font-black"
-                                        : "bg-card text-muted-foreground border-border hover:bg-accent hover:text-foreground"
-                                )}
-                            >
-                                <span className={cn("h-1.5 w-1.5 rounded-full", selectedTimeFrame === 'live' ? "bg-slate-950 animate-pulse" : "bg-emerald-500")} />
-                                Live (Now)
-                            </button>
-
-                            {(availableTimeSlots || [
-                                { id: '07:30', label: '07:30 – 09:00 AM', start: '07:30', end: '09:00' },
-                                { id: '09:00', label: '09:00 – 10:30 AM', start: '09:00', end: '10:30' },
-                                { id: '10:30', label: '10:30 – 12:00 PM', start: '10:30', end: '12:00' },
-                                { id: '13:00', label: '01:00 – 02:30 PM', start: '13:00', end: '14:30' },
-                                { id: '14:30', label: '02:30 – 04:00 PM', start: '14:30', end: '16:00' },
-                                { id: '16:00', label: '04:00 – 05:30 PM', start: '16:00', end: '17:30' },
-                            ]).map((slot) => {
-                                const isSelected = selectedTimeFrame === slot.id;
-                                return (
-                                    <button
-                                        key={slot.id}
-                                        type="button"
-                                        onClick={() => setSelectedTimeFrame(slot.id)}
-                                        className={cn(
-                                            "px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer whitespace-nowrap shadow-2xs",
-                                            isSelected
-                                                ? "bg-amber-500 text-slate-950 border-amber-500 ring-2 ring-amber-500/20 font-black"
-                                                : "bg-card text-muted-foreground border-border hover:bg-accent hover:text-foreground"
-                                        )}
-                                    >
-                                        {slot.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Top 4 KPI Cards (Slide 5 Style) */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                        {/* 1. Rooms in use */}
-                        <div className="rounded-xl p-3.5 flex items-center justify-between gap-3 bg-amber-500/10 border border-amber-400/40 dark:bg-amber-500/15 text-foreground shadow-2xs">
-                            <div className="flex items-center gap-3 min-w-0">
-                                <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/20 text-amber-600 dark:text-amber-400">
-                                    <Monitor className="h-5 w-5" />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-xs font-semibold truncate text-muted-foreground">Rooms in use</p>
-                                    <p className="text-2xl font-extrabold tracking-tight tabular-nums text-foreground">{dynamicRoomsInUseCount}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-end gap-1 h-6 text-amber-500 opacity-75 shrink-0">
-                                <span className="w-1 h-2 rounded-full bg-current opacity-40" />
-                                <span className="w-1 h-5 rounded-full bg-current opacity-90" />
-                                <span className="w-1 h-3 rounded-full bg-current opacity-60" />
-                                <span className="w-1 h-6 rounded-full bg-current opacity-100" />
-                            </div>
-                        </div>
-
-                        {/* 2. Available rooms */}
-                        <div className="rounded-xl p-3.5 flex items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-400/30 dark:bg-emerald-500/15 text-foreground shadow-2xs">
-                            <div className="flex items-center gap-3 min-w-0">
-                                <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-                                    <CheckCircle2 className="h-5 w-5" />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-xs font-semibold truncate text-muted-foreground">Available rooms</p>
-                                    <p className="text-2xl font-extrabold tracking-tight tabular-nums text-foreground">{dynamicRoomsAvailableCount}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-end gap-1 h-6 text-emerald-500 opacity-75 shrink-0">
-                                <span className="w-1 h-2 rounded-full bg-current opacity-40" />
-                                <span className="w-1 h-5 rounded-full bg-current opacity-90" />
-                                <span className="w-1 h-3 rounded-full bg-current opacity-60" />
-                                <span className="w-1 h-6 rounded-full bg-current opacity-100" />
-                            </div>
-                        </div>
-
-                        {/* 3. Peak Lab Hours */}
-                        <div className="rounded-xl p-3.5 flex items-center justify-between gap-3 bg-orange-500/10 border border-orange-400/30 dark:bg-orange-500/15 text-foreground shadow-2xs">
-                            <div className="flex items-center gap-3 min-w-0">
-                                <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-orange-500/20 text-orange-600 dark:text-orange-400">
-                                    <Flame className="h-5 w-5" />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-xs font-semibold truncate text-muted-foreground">Peak Lab Hours · {todayName}</p>
-                                    <p className="text-lg font-extrabold tracking-tight truncate text-foreground">{overallLabPeak || '2 PM – 3 PM'}</p>
-                                    <p className="text-[10px] text-muted-foreground truncate">Highest simultaneous lab usage</p>
-                                </div>
-                            </div>
-                            <div className="flex items-end gap-1 h-6 text-orange-500 opacity-75 shrink-0">
-                                <span className="w-1 h-2 rounded-full bg-current opacity-40" />
-                                <span className="w-1 h-5 rounded-full bg-current opacity-90" />
-                                <span className="w-1 h-3 rounded-full bg-current opacity-60" />
-                                <span className="w-1 h-6 rounded-full bg-current opacity-100" />
-                            </div>
-                        </div>
-
-                        {/* 4. Faculty in labs */}
-                        <div className="rounded-xl p-3.5 flex items-center justify-between gap-3 bg-purple-500/10 border border-purple-400/30 dark:bg-purple-500/15 text-foreground shadow-2xs">
-                            <div className="flex items-center gap-3 min-w-0">
-                                <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-purple-500/20 text-purple-600 dark:text-purple-400">
-                                    <Users className="h-5 w-5" />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-xs font-semibold truncate text-muted-foreground">Faculty in labs</p>
-                                    <p className="text-2xl font-extrabold tracking-tight tabular-nums text-foreground">{dynamicFacultyInLabsCount}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-end gap-1 h-6 text-purple-500 opacity-75 shrink-0">
-                                <span className="w-1 h-2 rounded-full bg-current opacity-40" />
-                                <span className="w-1 h-5 rounded-full bg-current opacity-90" />
-                                <span className="w-1 h-3 rounded-full bg-current opacity-60" />
-                                <span className="w-1 h-6 rounded-full bg-current opacity-100" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Bento Grid of Laboratories (Exact 4-column layout as in TV Slide 5 screenshot) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                        {dynamicDisplayRooms.map((room) => {
-                            const isOccupied = room.is_in_use;
-                            const active = room.active_session;
-                            const next = room.next_session;
-                            const expectedPeak = room.expected_peak_hours || '7:00 AM – 6:00 PM';
-                            const peakStatus = room.peak_status || 'Heavy Traffic';
-
-                            return (
-                                <div
-                                    key={room.room_id}
-                                    className={cn(
-                                        "flex flex-col justify-between rounded-2xl p-4 transition-all border",
-                                        isOccupied
-                                            ? "border-amber-400 bg-amber-500/[0.04] shadow-[0_0_0_1px_rgba(251,191,36,0.5),0_4px_16px_rgba(245,158,11,0.12)]"
-                                            : "bg-card border-border/80 shadow-2xs"
-                                    )}
-                                >
-                                    <div>
-                                        {/* Room Header */}
-                                        <div className="flex items-start justify-between gap-2.5">
-                                            <div className="min-w-0">
-                                                <h3 className="truncate text-base font-bold text-foreground">{room.room_name}</h3>
-                                                <p className="truncate text-xs text-muted-foreground">{room.type || 'Laboratory'}</p>
-                                            </div>
-                                            <span
-                                                className={cn(
-                                                    "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold",
-                                                    isOccupied
-                                                        ? "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
-                                                        : "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
-                                                )}
-                                            >
-                                                <span className={cn("h-1.5 w-1.5 rounded-full", isOccupied ? "bg-amber-500 animate-pulse" : "bg-emerald-500")} />
-                                                {isOccupied ? 'In Use' : 'Available'}
-                                            </span>
-                                        </div>
-
-                                        {/* Instructor and Session Details */}
-                                        {active ? (
-                                            <div className="mt-2.5 rounded-xl p-2.5 bg-muted/40 dark:bg-card/60 border border-border/60">
-                                                <div className="flex items-center gap-1.5">
-                                                    <GraduationCap className="h-4 w-4 shrink-0 text-amber-500" />
-                                                    <p className="line-clamp-1 text-sm font-bold text-foreground">
-                                                        {active.expected_faculty || 'Instructor'}
-                                                    </p>
-                                                </div>
-                                                <p className="mt-0.5 line-clamp-1 text-xs font-semibold text-foreground/90">
-                                                    {active.course_code} {active.course_title ? `${active.course_title}` : ''}
-                                                </p>
-                                                <p className="line-clamp-1 text-[11px] text-muted-foreground">
-                                                    {active.section}
-                                                </p>
-                                                <div className="mt-1.5 flex items-center justify-between text-xs font-bold tabular-nums text-amber-600 dark:text-amber-400">
-                                                    <span>{active.scheduled_time || `${active.scheduled_start} - ${active.scheduled_end}`}</span>
-                                                    {active.observation_status ? (
-                                                        <span className={cn(
-                                                            "text-[9.5px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider",
-                                                            active.observation_status === 'Ready to Monitor'
-                                                                ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200"
-                                                                : active.observation_status === 'In Progress'
-                                                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200"
-                                                                    : "bg-muted text-muted-foreground"
-                                                        )}>
-                                                            {active.observation_status}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                                                            Active Now
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="mt-2.5 flex min-h-[92px] items-center justify-center rounded-xl p-2.5 text-center bg-muted/20 border border-border/40 text-muted-foreground">
-                                                <p className="text-xs font-medium">Ready for next session</p>
-                                            </div>
-                                        )}
-
-                                        {/* Expected Peak Hours Badge */}
-                                        {expectedPeak && (
-                                            <div className="mt-2 rounded-lg px-2.5 py-1.5 bg-amber-500/10 dark:bg-amber-400/10 border border-amber-400/25 flex items-center justify-between text-[11px]">
-                                                <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold truncate">
-                                                    <Flame className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                                                    <span className="truncate">Peak: <strong className="font-bold">{expectedPeak}</strong></span>
-                                                </div>
-                                                {peakStatus && (
-                                                    <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded text-amber-700 dark:text-amber-400 bg-amber-400/20">
-                                                        {peakStatus}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* Up Next Preview */}
-                                        {next && (
-                                            <p className="mt-2 line-clamp-1 border-t border-border/40 pt-1.5 text-[11px] text-muted-foreground">
-                                                <strong className="font-bold text-foreground">Up next:</strong> {next.expected_faculty || next.course_code} at {next.scheduled_start?.substring(0, 5)}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* Action Button: Monitor or View Timetable */}
-                                    <div className="mt-3 pt-2 border-t border-border/40 flex items-center justify-between gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedTimetableRoomId(String(room.room_id));
-                                                setActiveModule('timetables');
-                                            }}
-                                            className="text-[11px] font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
-                                        >
-                                            Timetable <ChevronRight className="h-3 w-3" />
-                                        </button>
-
-                                        {active ? (
-                                            <Button
-                                                size="sm"
-                                                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs h-7 px-2.5 shadow-2xs gap-1"
-                                                onClick={() => openObservationModal(active)}
-                                            >
-                                                <MonitorPlay className="h-3 w-3" />
-                                                Monitor Now
-                                            </Button>
-                                        ) : (
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="text-xs h-7 px-2.5 font-medium"
-                                                onClick={() => {
-                                                    setSelectedTimetableRoomId(String(room.room_id));
-                                                    setActiveModule('timetables');
-                                                }}
-                                            >
-                                                View Schedule
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-
-
-                {/* 3. MODULE NAVIGATION TABS */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border/60 scrollbar-none">
+                {/* 2. MODULE NAVIGATION TABS */}
+                <div className="flex items-center gap-1 overflow-x-auto pb-0.5 border-b border-border/60 scrollbar-none">
                     {[
-                        { id: 'dashboard', label: 'Operational Dashboard', icon: LayoutGrid },
+                        { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
                         { id: 'today', label: "Today's Lab Schedule", icon: CalendarDays },
                         { id: 'rooms', label: 'Room Status Board', icon: Monitor },
                         { id: 'timetables', label: 'Lab Timetables', icon: Calendar },
                         { id: 'discrepancies', label: `Discrepancies (${openDiscrepancies.length})`, icon: AlertCircle },
                         { id: 'action_required', label: `Action Required (${actionRequired.length})`, icon: Bell },
-                        { id: 'assigned_labs', label: 'Assigned Labs', icon: Building2 },
+                        { id: 'assigned_labs', label: 'Assigned Labs', icon: Users },
                         { id: 'history', label: 'Audit History', icon: History },
-                        { id: 'end_of_day', label: 'End-of-Day Closing Report', icon: FileCheck },
                     ].map((tab) => {
                         const Icon = tab.icon;
                         const isSelected = activeModule === tab.id;
@@ -1122,13 +833,13 @@ export default function LabInChargeMonitoring({
                                     }
                                 }}
                                 className={cn(
-                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer border",
+                                    "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all whitespace-nowrap cursor-pointer border h-7",
                                     isSelected
-                                        ? "bg-amber-500 text-slate-950 border-amber-500 shadow-2xs font-black"
-                                        : "bg-card text-muted-foreground border-border/80 hover:bg-accent hover:text-foreground"
+                                        ? "bg-amber-500 text-slate-950 border-amber-500 shadow-2xs font-bold"
+                                        : "bg-card text-muted-foreground border-border/70 hover:bg-accent hover:text-foreground"
                                 )}
                             >
-                                <Icon className="h-3.5 w-3.5 shrink-0" />
+                                <Icon className="h-3 w-3 shrink-0" />
                                 <span>{tab.label}</span>
                             </button>
                         );
@@ -1137,277 +848,467 @@ export default function LabInChargeMonitoring({
                     {/* Quick Link to Classroom & Lab Monitoring */}
                     <Link
                         href="/classroom-monitoring"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap border bg-card text-muted-foreground border-border/80 hover:bg-amber-50 hover:text-amber-800 dark:hover:bg-amber-950/40 dark:hover:text-amber-300 ml-auto"
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all whitespace-nowrap border bg-card text-muted-foreground border-border/70 hover:bg-amber-50 hover:text-amber-800 dark:hover:bg-amber-950/40 dark:hover:text-amber-300 ml-auto h-7"
                     >
-                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                        <ExternalLink className="h-3 w-3 shrink-0 text-amber-500" />
                         <span>Classroom & Lab Mon.</span>
                     </Link>
                 </div>
 
+                {/* 3. OPERATIONAL KPI CARDS ROW (Exact 8-card grid with sparkline indicator) */}
+                {activeModule === 'dashboard' && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+                        {[
+                            {
+                                label: 'SESSIONS TODAY',
+                                value: kpi.sessions_today,
+                                color: 'text-slate-900 dark:text-foreground',
+                                bg: 'bg-card border-border/70',
+                                icon: Users,
+                                iconBg: 'text-amber-500 bg-amber-500/10',
+                                sparkColor: 'text-amber-500',
+                            },
+                            {
+                                label: 'IN PROGRESS',
+                                value: kpi.in_progress,
+                                color: 'text-slate-900 dark:text-foreground',
+                                bg: 'bg-blue-50/40 border-blue-200/60 dark:bg-blue-950/20 dark:border-blue-900/40',
+                                icon: Play,
+                                iconBg: 'text-blue-600 bg-blue-500/15',
+                                sparkColor: 'text-blue-500',
+                            },
+                            {
+                                label: 'COMPLETED',
+                                value: kpi.completed,
+                                color: 'text-slate-900 dark:text-foreground',
+                                bg: 'bg-emerald-50/40 border-emerald-200/60 dark:bg-emerald-950/20 dark:border-emerald-900/40',
+                                icon: CheckCircle2,
+                                iconBg: 'text-emerald-600 bg-emerald-500/15',
+                                sparkColor: 'text-emerald-500',
+                            },
+                            {
+                                label: 'UPCOMING',
+                                value: kpi.upcoming,
+                                color: 'text-slate-900 dark:text-foreground',
+                                bg: 'bg-card border-border/70',
+                                icon: Clock,
+                                iconBg: 'text-blue-500 bg-blue-500/10',
+                                sparkColor: 'text-slate-400',
+                            },
+                            {
+                                label: 'UNMONITORED',
+                                value: kpi.unmonitored,
+                                color: 'text-rose-600 dark:text-rose-400',
+                                bg: 'bg-rose-50/40 border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/40',
+                                icon: AlertCircle,
+                                iconBg: 'text-rose-600 bg-rose-500/15',
+                                sparkColor: 'text-rose-400',
+                            },
+                            {
+                                label: 'LATE STARTS',
+                                value: kpi.late_starts,
+                                color: 'text-slate-900 dark:text-foreground',
+                                bg: 'bg-amber-50/40 border-amber-200/60 dark:bg-amber-950/20 dark:border-amber-900/40',
+                                icon: RotateCcw,
+                                iconBg: 'text-amber-600 bg-amber-500/15',
+                                sparkColor: 'text-amber-500',
+                            },
+                            {
+                                label: 'DISRUPTIONS',
+                                value: kpi.disruptions,
+                                color: 'text-purple-600 dark:text-purple-400',
+                                bg: 'bg-purple-50/40 border-purple-200/60 dark:bg-purple-950/20 dark:border-purple-900/40',
+                                icon: AlertTriangle,
+                                iconBg: 'text-purple-600 bg-purple-500/15',
+                                sparkColor: 'text-purple-400',
+                            },
+                            {
+                                label: 'DISCREPANCIES',
+                                value: kpi.discrepancies,
+                                color: 'text-rose-600 dark:text-rose-400',
+                                bg: 'bg-rose-50/40 border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/40',
+                                icon: FileText,
+                                iconBg: 'text-rose-600 bg-rose-500/15',
+                                sparkColor: 'text-rose-400',
+                            },
+                        ].map((card, i) => {
+                            const CardIcon = card.icon;
+                            return (
+                                <div
+                                    key={i}
+                                    className={cn(
+                                        'p-3 border rounded-xl shadow-2xs flex flex-col justify-between transition-all min-w-0 relative',
+                                        card.bg
+                                    )}
+                                >
+                                    <div className="flex items-center justify-between gap-1">
+                                        <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center shrink-0", card.iconBg)}>
+                                            <CardIcon className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div className={cn("text-[9px] font-bold uppercase tracking-tight text-muted-foreground truncate text-right flex-1")}>
+                                            {card.label}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-baseline justify-between mt-2">
+                                        <div className={cn('text-2xl font-black tracking-tight tabular-nums', card.color)}>
+                                            {card.value}
+                                        </div>
+                                        <div className={cn("flex items-end gap-0.5 h-4 opacity-75 shrink-0", card.sparkColor)}>
+                                            <span className="w-0.5 h-1.5 rounded-full bg-current opacity-40" />
+                                            <span className="w-0.5 h-3 rounded-full bg-current opacity-80" />
+                                            <span className="w-0.5 h-2 rounded-full bg-current opacity-60" />
+                                            <span className="w-0.5 h-4 rounded-full bg-current opacity-100" />
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
                 {/* 4. MODULE CONTENT ROUTING */}
                 {activeModule === 'dashboard' && (
-                    <div className="space-y-4">
-                        {/* Operational KPI Cards */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-                            {[
-                                { label: 'Sessions Today', value: kpi.sessions_today, color: 'text-foreground', bg: 'bg-card' },
-                                { label: 'In Progress', value: kpi.in_progress, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50/50 dark:bg-blue-950/20' },
-                                { label: 'Completed', value: kpi.completed, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50/50 dark:bg-emerald-950/20' },
-                                { label: 'Upcoming', value: kpi.upcoming, color: 'text-slate-600 dark:text-slate-300', bg: 'bg-card' },
-                                { label: 'Unmonitored', value: kpi.unmonitored, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50/50 dark:bg-rose-950/20' },
-                                { label: 'Late Starts', value: kpi.late_starts, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50/50 dark:bg-amber-950/20' },
-                                { label: 'Disruptions', value: kpi.disruptions, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50/50 dark:bg-purple-950/20' },
-                                { label: 'Discrepancies', value: kpi.discrepancies, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50/50 dark:bg-rose-950/20' },
-                            ].map((card, i) => (
-                                <div key={i} className={cn('p-2.5 border rounded-lg shadow-2xs text-center flex flex-col justify-center min-w-0', card.bg)}>
-                                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-tight truncate leading-tight" title={card.label}>
-                                        {card.label}
-                                    </div>
-                                    <div className={cn('text-lg sm:text-xl font-bold mt-0.5 leading-none', card.color)}>{card.value}</div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Action Required Panel (Prominent) */}
-                        <Card className="border-amber-400/40 bg-amber-500/5 shadow-2xs">
-                            <CardHeader className="py-2.5 px-4 flex flex-row items-center justify-between border-b border-amber-500/10">
-                                <div className="space-y-0.5">
-                                    <CardTitle className="text-sm font-bold flex items-center gap-1.5 text-amber-800 dark:text-amber-400">
-                                        <Bell className="h-4 w-4" />
-                                        Action Required Right Now ({actionRequired.length})
-                                    </CardTitle>
-                                    <CardDescription className="text-xs">
-                                        Immediate operational alerts requiring your confirmation or observation.
-                                    </CardDescription>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setActiveModule('action_required')}
-                                    className="text-xs h-7 font-semibold text-amber-700 dark:text-amber-400 px-2"
-                                >
-                                    Full List <ArrowRight className="h-3 w-3 ml-1" />
-                                </Button>
-                            </CardHeader>
-                            <CardContent className="p-3 space-y-1.5">
-                                {actionRequired.length === 0 ? (
-                                    <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400 p-2.5 bg-emerald-50/80 dark:bg-emerald-950/30 rounded-md">
-                                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                                        All assigned laboratories and scheduled sessions are currently verified and up to date.
-                                    </div>
-                                ) : (
-                                    actionRequired.slice(0, 4).map((act, idx) => (
-                                        <div
-                                            key={idx}
-                                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-background border rounded-md shadow-2xs hover:border-amber-400/60 transition-all"
-                                        >
-                                            <div className="space-y-0.5 min-w-0 flex-1">
-                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 uppercase tracking-tight">
-                                                        {act.type.replace('_', ' ')}
-                                                    </span>
-                                                    <span className="font-semibold text-xs text-foreground truncate">{act.title}</span>
-                                                </div>
-                                                <p className="text-[11px] text-muted-foreground truncate">{act.description}</p>
-                                            </div>
-                                            <Button
-                                                size="sm"
-                                                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-[11px] h-7 px-3 shrink-0 self-start sm:self-auto"
-                                                onClick={() => {
-                                                    if (act.session) {
-                                                        openObservationModal(act.session);
-                                                    } else if (act.discrepancy_id) {
-                                                        setActiveModule('discrepancies');
-                                                    }
-                                                }}
-                                            >
-                                                {act.action_label}
-                                            </Button>
-                                        </div>
-                                    ))
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Current Laboratory Status Board (Visual cards with countdown & operational badges) */}
-                        <div className="space-y-2.5">
-                            <div className="flex items-center justify-between">
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+                        {/* LEFT COLUMN: LIVE LABORATORY SESSION MONITORING (7 of 12 cols on desktop) */}
+                        <div className="xl:col-span-7 space-y-4 rounded-2xl border border-border/80 bg-card p-4 shadow-sm">
+                            {/* Header with Title and Time Pills */}
+                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-border/60">
                                 <div>
-                                    <h2 className="text-sm sm:text-base font-bold tracking-tight text-foreground flex items-center gap-1.5">
-                                        <MonitorPlay className="h-4 w-4 text-amber-500" />
-                                        Current Laboratory Status Board
-                                    </h2>
-                                    <p className="text-xs text-muted-foreground">
-                                        Real-time operational condition, minutes remaining, and current activity across assigned laboratories.
+                                    <div className="flex items-center gap-2">
+                                        <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
+                                        <h2 className="text-base font-bold tracking-tight text-foreground">
+                                            Live Laboratory Session Monitoring
+                                        </h2>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        Monitor ongoing laboratory sessions and room usage across all assigned laboratories.
                                     </p>
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setActiveModule('rooms')}
-                                    className="text-xs h-7 font-medium px-2"
-                                >
-                                    Full Room Board <ArrowRight className="h-3 w-3 ml-1" />
-                                </Button>
+
+                                {/* Time Window Pills */}
+                                <div className="flex items-center gap-1 flex-wrap">
+                                    <span className="text-[10.5px] font-semibold text-muted-foreground flex items-center gap-1 mr-0.5">
+                                        <Clock className="h-3 w-3 text-amber-500" />
+                                        Time Window:
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedTimeFrame('live')}
+                                        className={cn(
+                                            "px-2 py-0.5 text-[10.5px] font-bold rounded border transition-all cursor-pointer shadow-2xs h-6",
+                                            selectedTimeFrame === 'live'
+                                                ? "bg-amber-500 text-slate-950 border-amber-500 font-bold"
+                                                : "bg-background text-muted-foreground border-border hover:bg-accent hover:text-foreground"
+                                        )}
+                                    >
+                                        Live (Now)
+                                    </button>
+
+                                    {(availableTimeSlots || [
+                                        { id: '07:30', label: '07:30 AM – 09:00 AM', start: '07:30', end: '09:00' },
+                                        { id: '09:00', label: '09:00 AM – 10:30 AM', start: '09:00', end: '10:30' },
+                                        { id: '10:30', label: '10:30 AM – 12:00 PM', start: '10:30', end: '12:00' },
+                                        { id: '13:00', label: '01:00 PM – 02:30 PM', start: '13:00', end: '14:30' },
+                                        { id: '14:30', label: '02:30 PM – 04:00 PM', start: '14:30', end: '16:00' },
+                                        { id: '16:00', label: '04:00 PM – 05:30 PM', start: '16:00', end: '17:30' },
+                                        { id: '17:30', label: '05:30 PM – 07:00 PM', start: '17:30', end: '19:00' },
+                                    ]).map((slot) => {
+                                        const isSelected = selectedTimeFrame === slot.id;
+                                        return (
+                                            <button
+                                                key={slot.id}
+                                                type="button"
+                                                onClick={() => setSelectedTimeFrame(slot.id)}
+                                                className={cn(
+                                                    "px-2 py-0.5 text-[10.5px] font-medium rounded border transition-all cursor-pointer whitespace-nowrap shadow-2xs h-6",
+                                                    isSelected
+                                                        ? "bg-amber-500 text-slate-950 border-amber-500 font-bold"
+                                                        : "bg-background text-muted-foreground border-border hover:bg-accent hover:text-foreground"
+                                                )}
+                                            >
+                                                {slot.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                                {roomStatusBoard.map((room) => {
+                            {/* 3-Column Grid of Laboratory Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {dynamicDisplayRooms.map((room) => {
+                                    const isOccupied = room.is_in_use;
                                     const active = room.active_session;
+                                    const next = room.next_session;
+                                    const expectedPeak = room.expected_peak_hours || '7:00 AM – 6:00 PM';
+                                    const peakStatus = room.peak_status || 'Normal';
+
                                     return (
-                                        <Card key={room.room_id} className="border shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
-                                            <CardHeader className="py-2.5 px-3 border-b bg-muted/20">
-                                                <div className="flex items-center justify-between gap-1">
+                                        <div
+                                            key={room.room_id}
+                                            className={cn(
+                                                "flex flex-col justify-between rounded-xl p-3.5 transition-all border",
+                                                isOccupied
+                                                    ? "border-amber-400/90 bg-amber-500/[0.03] shadow-xs"
+                                                    : "bg-background border-border/70 shadow-2xs"
+                                            )}
+                                        >
+                                            <div className="space-y-2">
+                                                {/* Room Header with Operational Indicator */}
+                                                <div className="flex items-start justify-between gap-1.5">
                                                     <div className="min-w-0">
-                                                        <CardTitle className="text-sm font-bold truncate">{room.room_name}</CardTitle>
-                                                        <CardDescription className="text-[11px] truncate">
-                                                            {room.building} · Cap: {room.capacity}
-                                                        </CardDescription>
+                                                        <h3 className="truncate text-sm font-extrabold text-foreground">{room.room_name}</h3>
+                                                        <p className="truncate text-[10.5px] text-muted-foreground">{room.type || 'Laboratory'}</p>
                                                     </div>
-                                                    <div className="shrink-0">{getBadgeForRoom(room.operational_badge)}</div>
-                                                </div>
-                                            </CardHeader>
-                                            <CardContent className="p-3 space-y-2.5 flex-1 flex flex-col justify-between">
-                                                {active ? (
-                                                    <div className="space-y-1.5 min-w-0">
-                                                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
-                                                            Current Activity:
-                                                        </div>
-                                                        <div className="bg-muted/40 p-2 rounded-md border space-y-0.5 text-xs">
-                                                            <div className="font-bold text-foreground truncate">
-                                                                {active.course_code} · {active.section}
-                                                            </div>
-                                                            <div className="text-[11px] text-muted-foreground truncate">
-                                                                Faculty: <strong className="text-foreground font-medium">{active.expected_faculty}</strong>
-                                                            </div>
-                                                            <div className="text-[11px] text-muted-foreground">
-                                                                Time: {active.scheduled_time}
-                                                            </div>
-                                                            {room.minutes_remaining !== null && (
-                                                                <div className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1 pt-0.5">
-                                                                    <Clock className="h-3 w-3" />
-                                                                    Ends in {room.minutes_remaining}m
-                                                                </div>
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        <span
+                                                            className={cn(
+                                                                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-bold",
+                                                                isOccupied
+                                                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
+                                                                    : "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
                                                             )}
+                                                        >
+                                                            <span className={cn("h-1.5 w-1.5 rounded-full", isOccupied ? "bg-amber-500" : "bg-emerald-500")} />
+                                                            {isOccupied ? 'In Use' : 'Available'}
+                                                        </span>
+                                                        <div className={cn("flex items-end gap-0.5 h-3", isOccupied ? "text-amber-500" : "text-emerald-500")}>
+                                                            <span className="w-0.5 h-1.5 rounded-full bg-current opacity-40" />
+                                                            <span className="w-0.5 h-2.5 rounded-full bg-current opacity-80" />
+                                                            <span className="w-0.5 h-3 rounded-full bg-current opacity-100" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Session Details */}
+                                                {active ? (
+                                                    <div className="space-y-1 text-xs">
+                                                        <div className="flex items-start gap-1.5">
+                                                            <GraduationCap className="h-3.5 w-3.5 shrink-0 text-amber-500 mt-0.5" />
+                                                            <div className="min-w-0">
+                                                                <p className="line-clamp-1 font-bold text-foreground text-xs">
+                                                                    {active.expected_faculty || 'Instructor'}
+                                                                </p>
+                                                                <p className="line-clamp-1 text-[11px] font-semibold text-foreground/90">
+                                                                    {active.course_code} {active.course_title ? `· ${active.course_title}` : ''}
+                                                                </p>
+                                                                <p className="line-clamp-1 text-[10.5px] text-muted-foreground">
+                                                                    {active.section}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Schedule & Badge */}
+                                                        <div className="flex items-center justify-between text-[11px] font-bold pt-1">
+                                                            <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                                                                <Clock className="h-3 w-3 shrink-0" />
+                                                                {active.scheduled_time || `${active.scheduled_start} – ${active.scheduled_end}`}
+                                                            </span>
+                                                            <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                                                {active.observation_status || 'IN PROGRESS'}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="space-y-1 py-1.5">
-                                                        <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                                            <CheckCircle className="h-3.5 w-3.5" />
-                                                            Available / No Class
-                                                        </div>
-                                                        {room.next_session ? (
-                                                            <div className="text-[11px] text-muted-foreground truncate">
-                                                                Next: <strong className="text-foreground">{room.next_session.course_code}</strong> at {room.next_session.scheduled_start}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="text-[11px] text-muted-foreground">
-                                                                No further sessions today.
-                                                            </div>
-                                                        )}
+                                                    <div className="py-5 flex flex-col items-center justify-center text-center text-muted-foreground space-y-1">
+                                                        <Laptop className="h-5 w-5 opacity-40 text-muted-foreground" />
+                                                        <p className="text-[11px] font-medium">Ready for next session</p>
+                                                        <p className="text-[10px] text-muted-foreground/80">No scheduled session at this time.</p>
                                                     </div>
                                                 )}
 
-                                                <div className="pt-2 border-t flex items-center justify-between gap-1.5">
+                                                {/* Peak Hours Info */}
+                                                <div className="rounded-md px-2 py-1 bg-amber-500/10 dark:bg-amber-400/10 border border-amber-400/20 flex items-center justify-between text-[10.5px]">
+                                                    <div className="flex items-center gap-1 text-amber-800 dark:text-amber-300 font-semibold truncate">
+                                                        <Flame className="h-3 w-3 shrink-0 text-amber-500" />
+                                                        <span className="truncate">Peak: <strong>{expectedPeak}</strong></span>
+                                                    </div>
+                                                    <span className="shrink-0 text-[9.5px] font-bold px-1.5 py-0.2 rounded text-amber-700 dark:text-amber-400 bg-amber-400/20">
+                                                        {peakStatus}
+                                                    </span>
+                                                </div>
+
+                                                {/* Up Next Preview */}
+                                                {next && (
+                                                    <p className="line-clamp-1 text-[10.5px] text-muted-foreground pt-0.5">
+                                                        <strong className="font-semibold text-foreground">Up next:</strong> {next.expected_faculty || next.course_code} at {next.scheduled_start?.substring(0, 5)}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Action Button: Monitor or View Timetable */}
+                                            <div className="mt-2.5 pt-2 border-t border-border/50 flex items-center justify-between gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedTimetableRoomId(String(room.room_id));
+                                                        setActiveModule('timetables');
+                                                    }}
+                                                    className="text-[10px] font-semibold text-muted-foreground hover:text-foreground flex items-center gap-0.5 cursor-pointer"
+                                                >
+                                                    Timetable <ChevronRight className="h-2.5 w-2.5" />
+                                                </button>
+
+                                                {active ? (
                                                     <Button
-                                                        variant="ghost"
                                                         size="sm"
-                                                        className="text-[11px] h-7 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 px-2"
+                                                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[10.5px] h-6 px-2 shadow-2xs gap-1"
+                                                        onClick={() => openObservationModal(active)}
+                                                    >
+                                                        <MonitorPlay className="h-2.5 w-2.5" />
+                                                        Monitor Now
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="text-[10.5px] h-6 px-2 font-medium"
                                                         onClick={() => {
-                                                            setDisruptRoomId(String(room.room_id));
-                                                            setDisruptionModalOpen(true);
+                                                            setSelectedTimetableRoomId(String(room.room_id));
+                                                            setActiveModule('timetables');
                                                         }}
                                                     >
-                                                        Report Issue
+                                                        View Schedule
                                                     </Button>
-                                                    {active ? (
-                                                        <Button
-                                                            size="sm"
-                                                            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] h-7 px-2.5"
-                                                            onClick={() => openObservationModal(active)}
-                                                        >
-                                                            Monitor
-                                                        </Button>
-                                                    ) : (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="text-[11px] h-7 px-2"
-                                                            onClick={() => {
-                                                                setSelectedTimetableRoomId(String(room.room_id));
-                                                                setActiveModule('timetables');
-                                                            }}
-                                                        >
-                                                            Timetable
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
+                                                )}
+                                            </div>
+                                        </div>
                                     );
                                 })}
                             </div>
                         </div>
 
-                        {/* Today's Timeline Table & Room Availability Now */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            {/* Today's Timeline (2 cols) */}
-                            <div className="lg:col-span-2 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                                        <Clock className="h-4 w-4 text-amber-500" />
+                        {/* RIGHT COLUMN: ACTION REQUIRED, VERIFIED TIMELINE, ROOM AVAILABILITY, RECENT ACTIVITY (5 of 12 cols) */}
+                        <div className="xl:col-span-5 space-y-4">
+                            {/* 1. Action Required Right Now */}
+                            <Card className="border border-border/80 shadow-2xs">
+                                <CardHeader className="py-2.5 px-4 flex flex-row items-center justify-between border-b bg-card">
+                                    <div className="space-y-0.5">
+                                        <CardTitle className="text-xs font-bold flex items-center gap-1.5 text-foreground">
+                                            <Bell className="h-3.5 w-3.5 text-amber-500" />
+                                            Action Required Right Now ({actionRequired.length})
+                                        </CardTitle>
+                                        <CardDescription className="text-[11px]">
+                                            Immediate operational alerts requiring your confirmation or observation.
+                                        </CardDescription>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setActiveModule('action_required')}
+                                        className="text-[11px] h-6 font-semibold text-amber-600 hover:text-amber-700 px-1"
+                                    >
+                                        View All <ArrowRight className="h-3 w-3 ml-0.5" />
+                                    </Button>
+                                </CardHeader>
+                                <CardContent className="p-3 space-y-2">
+                                    {actionRequired.length === 0 ? (
+                                        <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400 p-2.5 bg-emerald-50/80 dark:bg-emerald-950/30 rounded-lg border border-emerald-200/60 dark:border-emerald-900/40">
+                                            <CheckCircle2 className="h-4 w-4 shrink-0" />
+                                            All assigned laboratories and scheduled sessions are currently verified and up to date.
+                                        </div>
+                                    ) : (
+                                        actionRequired.slice(0, 3).map((act, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-background border rounded-lg shadow-2xs hover:border-amber-400/60 transition-all"
+                                            >
+                                                <div className="space-y-0.5 min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 uppercase tracking-tight">
+                                                            {act.type.replace('_', ' ')}
+                                                        </span>
+                                                        <span className="font-semibold text-xs text-foreground truncate">{act.title}</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-muted-foreground truncate">{act.description}</p>
+                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[10.5px] h-6 px-2 shrink-0"
+                                                    onClick={() => {
+                                                        if (act.session) {
+                                                            openObservationModal(act.session);
+                                                        } else if (act.discrepancy_id) {
+                                                            setActiveModule('discrepancies');
+                                                        }
+                                                    }}
+                                                >
+                                                    {act.action_label}
+                                                </Button>
+                                            </div>
+                                        ))
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* 2. Today's Verified Lab Timeline Table */}
+                            <Card className="border border-border/80 shadow-2xs">
+                                <CardHeader className="py-2.5 px-4 flex flex-row items-center justify-between border-b bg-card">
+                                    <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                        <Clock className="h-3.5 w-3.5 text-amber-500" />
                                         Today's Verified Lab Timeline
-                                    </h3>
+                                    </CardTitle>
                                     <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => setActiveModule('today')}
-                                        className="text-xs h-7 font-medium px-2"
+                                        className="text-[11px] h-6 font-semibold text-amber-600 hover:text-amber-700 px-1"
                                     >
-                                        Full Schedule <ArrowRight className="h-3 w-3 ml-1" />
+                                        Full Schedule <ArrowRight className="h-3 w-3 ml-0.5" />
                                     </Button>
-                                </div>
-
-                                <div className="border rounded-xl bg-card overflow-x-auto shadow-2xs">
+                                </CardHeader>
+                                <CardContent className="p-0 overflow-x-auto">
                                     <Table>
-                                        <TableHeader className="bg-muted/40">
+                                        <TableHeader className="bg-muted/30">
                                             <TableRow>
-                                                <TableHead className="font-bold text-[11px] py-2 px-3">Time</TableHead>
-                                                <TableHead className="font-bold text-[11px] py-2 px-3">Lab</TableHead>
-                                                <TableHead className="font-bold text-[11px] py-2 px-3">Course & Section</TableHead>
-                                                <TableHead className="font-bold text-[11px] py-2 px-3">Expected Faculty</TableHead>
-                                                <TableHead className="font-bold text-[11px] py-2 px-3">Status</TableHead>
-                                                <TableHead className="text-right font-bold text-[11px] py-2 px-3">Action</TableHead>
+                                                <TableHead className="font-bold text-[10.5px] py-1.5 px-2.5">Time</TableHead>
+                                                <TableHead className="font-bold text-[10.5px] py-1.5 px-2.5">Lab</TableHead>
+                                                <TableHead className="font-bold text-[10.5px] py-1.5 px-2.5">Course & Section</TableHead>
+                                                <TableHead className="font-bold text-[10.5px] py-1.5 px-2.5">Faculty</TableHead>
+                                                <TableHead className="font-bold text-[10.5px] py-1.5 px-2.5">Status</TableHead>
+                                                <TableHead className="text-right font-bold text-[10.5px] py-1.5 px-2.5">Action</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {sessionsList.length === 0 ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground text-xs">
+                                                    <TableCell colSpan={6} className="text-center py-5 text-muted-foreground text-xs">
                                                         No verified laboratory sessions scheduled for {todayName}.
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                sessionsList.slice(0, 8).map((s) => (
-                                                    <TableRow key={s.verified_schedule_id} className="hover:bg-muted/30">
-                                                        <TableCell className="font-mono text-[11px] font-bold whitespace-nowrap py-2 px-3">
+                                                sessionsList.slice(0, 6).map((s) => (
+                                                    <TableRow key={s.verified_schedule_id} className="hover:bg-muted/20 text-xs">
+                                                        <TableCell className="font-mono text-[10.5px] font-semibold whitespace-nowrap py-1.5 px-2.5">
                                                             {s.scheduled_time}
                                                         </TableCell>
-                                                        <TableCell className="text-xs font-semibold whitespace-nowrap py-2 px-3">
+                                                        <TableCell className="font-semibold whitespace-nowrap py-1.5 px-2.5 text-[11px]">
                                                             {s.room_name}
                                                         </TableCell>
-                                                        <TableCell className="text-xs py-2 px-3">
-                                                            <div className="font-bold text-foreground truncate max-w-[140px]">{s.course_code}</div>
-                                                            <div className="text-[10px] text-muted-foreground truncate max-w-[140px]">{s.section}</div>
+                                                        <TableCell className="py-1.5 px-2.5">
+                                                            <div className="font-bold text-foreground truncate max-w-[110px] text-[11px]">{s.course_code}</div>
+                                                            <div className="text-[9.5px] text-muted-foreground truncate max-w-[110px]">{s.section}</div>
                                                         </TableCell>
-                                                        <TableCell className="text-xs py-2 px-3 truncate max-w-[140px]">{s.expected_faculty}</TableCell>
-                                                        <TableCell className="text-xs py-2 px-3 whitespace-nowrap">{getBadgeForSession(s.observation_status)}</TableCell>
-                                                        <TableCell className="text-right py-2 px-3">
+                                                        <TableCell className="py-1.5 px-2.5 truncate max-w-[100px] text-[11px]">
+                                                            {s.expected_faculty}
+                                                        </TableCell>
+                                                        <TableCell className="py-1.5 px-2.5 whitespace-nowrap">
+                                                            <span className={cn(
+                                                                "text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider",
+                                                                s.observation_status === 'In Progress' || s.observation_status === 'Started On Time'
+                                                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300"
+                                                                    : s.observation_status === 'Completed'
+                                                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                                                        : "bg-muted text-muted-foreground"
+                                                            )}>
+                                                                {s.observation_status}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell className="text-right py-1.5 px-2.5">
                                                             <Button
                                                                 size="sm"
                                                                 variant="outline"
-                                                                className="h-6 text-[11px] px-2 font-medium"
+                                                                className="h-5.5 text-[10.5px] px-1.5 font-medium"
                                                                 onClick={() => openObservationModal(s)}
                                                             >
                                                                 Monitor
@@ -1418,37 +1319,94 @@ export default function LabInChargeMonitoring({
                                             )}
                                         </TableBody>
                                     </Table>
-                                </div>
-                            </div>
+                                </CardContent>
+                            </Card>
 
-                            {/* Room Availability Now (1 col) */}
-                            <div className="space-y-2">
-                                <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                                    <Building2 className="h-4 w-4 text-emerald-500" />
-                                    Room Availability Right Now
-                                </h3>
-                                <div className="border rounded-xl bg-card p-3 space-y-2 shadow-2xs">
-                                    {assignedRooms.map((room: any) => {
-                                        const statusItem = roomStatusBoard.find(r => r.room_id === room.id);
-                                        const isFree = statusItem?.operational_badge === 'Available';
-                                        return (
-                                            <div
-                                                key={room.id}
-                                                className="flex items-center justify-between p-2 rounded-md border bg-muted/20 gap-2 min-w-0"
-                                            >
-                                                <div className="min-w-0">
-                                                    <div className="font-semibold text-xs text-foreground truncate">{room.room_name ?? room.name}</div>
-                                                    <div className="text-[10px] text-muted-foreground truncate">
-                                                        {isFree ? 'Free for ad-hoc / make-up' : statusItem?.active_session?.course_code || 'Occupied'}
+                            {/* 3. Lower Row: Room Availability Right Now & Recent Activity */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {/* Room Availability Right Now */}
+                                <Card className="border border-border/80 shadow-2xs">
+                                    <CardHeader className="py-2 px-3 flex flex-row items-center justify-between border-b bg-card">
+                                        <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1">
+                                            <Monitor className="h-3.5 w-3.5 text-amber-500" />
+                                            Room Availability Right Now
+                                        </CardTitle>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setActiveModule('rooms')}
+                                            className="text-[10px] h-5 font-semibold text-amber-600 hover:text-amber-700 px-1"
+                                        >
+                                            View All
+                                        </Button>
+                                    </CardHeader>
+                                    <CardContent className="p-2.5">
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            {assignedRooms.slice(0, 8).map((room: any) => {
+                                                const statusItem = roomStatusBoard.find(r => r.room_id === room.id);
+                                                const isAvailable = !statusItem?.active_session;
+                                                return (
+                                                    <div
+                                                        key={room.id}
+                                                        className="p-1.5 rounded-lg border bg-muted/15 flex items-center justify-between gap-1 min-w-0"
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <div className="font-bold text-[11px] truncate text-foreground">{room.room_name ?? room.name}</div>
+                                                            <div className="text-[9px] text-muted-foreground truncate">{room.type || 'Laboratory'}</div>
+                                                        </div>
+                                                        <span className={cn(
+                                                            "text-[9px] font-bold px-1.5 py-0.2 rounded-full inline-flex items-center gap-1 shrink-0",
+                                                            isAvailable
+                                                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                                                : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
+                                                        )}>
+                                                            <span className={cn("h-1 w-1 rounded-full", isAvailable ? "bg-emerald-500" : "bg-amber-500")} />
+                                                            {isAvailable ? 'Available' : 'In Use'}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Recent Activity */}
+                                <Card className="border border-border/80 shadow-2xs">
+                                    <CardHeader className="py-2 px-3 flex flex-row items-center justify-between border-b bg-card">
+                                        <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1">
+                                            <Activity className="h-3.5 w-3.5 text-amber-500" />
+                                            Recent Activity
+                                        </CardTitle>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setActiveModule('history')}
+                                            className="text-[10px] h-5 font-semibold text-amber-600 hover:text-amber-700 px-1"
+                                        >
+                                            View All
+                                        </Button>
+                                    </CardHeader>
+                                    <CardContent className="p-2.5 space-y-2">
+                                        {[
+                                            { title: 'Session verified', sub: 'CHS – CAP 603', time: '2:35 PM', color: 'bg-emerald-500' },
+                                            { title: 'Room status updated', sub: 'CLR 5 – Available', time: '2:28 PM', color: 'bg-emerald-500' },
+                                            { title: 'Schedule confirmed', sub: 'COM 1 – ISSA 611', time: '2:15 PM', color: 'bg-blue-500' },
+                                            { title: 'Session started', sub: 'CLR 3 – IT 621', time: '2:00 PM', color: 'bg-amber-500' },
+                                            { title: 'System sync completed', sub: 'All laboratories', time: '1:45 PM', color: 'bg-slate-400' },
+                                        ].map((act, i) => (
+                                            <div key={i} className="flex items-center justify-between text-xs gap-2">
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                    <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", act.color)} />
+                                                    <div className="min-w-0">
+                                                        <span className="font-semibold text-foreground text-[11px] truncate block">{act.title}</span>
+                                                        <span className="text-[9.5px] text-muted-foreground truncate block">{act.sub}</span>
                                                     </div>
                                                 </div>
-                                                <div className="shrink-0 text-right">
-                                                    {getBadgeForRoom(statusItem?.operational_badge ?? 'Available')}
-                                                </div>
+                                                <span className="text-[9.5px] text-muted-foreground tabular-nums shrink-0">{act.time}</span>
                                             </div>
-                                        );
-                                    })}
-                                </div>
+                                        ))}
+                                    </CardContent>
+                                </Card>
                             </div>
                         </div>
                     </div>
@@ -1533,92 +1491,178 @@ export default function LabInChargeMonitoring({
                             </div>
                         </div>
 
-                        {/* Table View */}
-                        <div className="border rounded-xl bg-card overflow-x-auto shadow-2xs">
-                            <Table className="w-full text-left">
-                                <TableHeader className="bg-muted/40">
-                                    <TableRow>
-                                        <TableHead className="font-bold text-[11px] py-2 px-3 whitespace-nowrap">Time</TableHead>
-                                        <TableHead className="font-bold text-[11px] py-2 px-3 whitespace-nowrap">Lab</TableHead>
-                                        <TableHead className="font-bold text-[11px] py-2 px-3">Course</TableHead>
-                                        <TableHead className="font-bold text-[11px] py-2 px-3 whitespace-nowrap">Section</TableHead>
-                                        <TableHead className="font-bold text-[11px] py-2 px-3">Expected Faculty</TableHead>
-                                        <TableHead className="font-bold text-[11px] py-2 px-2 text-center whitespace-nowrap">Duration</TableHead>
-                                        <TableHead className="font-bold text-[11px] py-2 px-3 whitespace-nowrap">Room Condition</TableHead>
-                                        <TableHead className="font-bold text-[11px] py-2 px-3 whitespace-nowrap">Session Status</TableHead>
-                                        <TableHead className="text-right font-bold text-[11px] py-2 px-3 sticky right-0 bg-muted/40 sm:bg-transparent shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)] sm:shadow-none">Action</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredTodaySessions.length === 0 ? (
+                        {/* Day Table View or Timeline View */}
+                        {scheduleViewMode === 'day' ? (
+                            <div className="border rounded-xl bg-card overflow-x-auto shadow-2xs">
+                                <Table className="w-full text-left">
+                                    <TableHeader className="bg-muted/40">
                                         <TableRow>
-                                            <TableCell colSpan={9} className="text-center py-8 text-muted-foreground text-xs">
-                                                No scheduled laboratory sessions match the selected filters.
-                                            </TableCell>
+                                            <TableHead className="font-bold text-[11px] py-2 px-3 whitespace-nowrap">Time</TableHead>
+                                            <TableHead className="font-bold text-[11px] py-2 px-3 whitespace-nowrap">Lab</TableHead>
+                                            <TableHead className="font-bold text-[11px] py-2 px-3">Course</TableHead>
+                                            <TableHead className="font-bold text-[11px] py-2 px-3 whitespace-nowrap">Section</TableHead>
+                                            <TableHead className="font-bold text-[11px] py-2 px-3">Expected Faculty</TableHead>
+                                            <TableHead className="font-bold text-[11px] py-2 px-2 text-center whitespace-nowrap">Duration</TableHead>
+                                            <TableHead className="font-bold text-[11px] py-2 px-3 whitespace-nowrap">Room Condition</TableHead>
+                                            <TableHead className="font-bold text-[11px] py-2 px-3 whitespace-nowrap">Session Status</TableHead>
+                                            <TableHead className="text-right font-bold text-[11px] py-2 px-3 sticky right-0 bg-muted/40 sm:bg-transparent shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)] sm:shadow-none">Action</TableHead>
                                         </TableRow>
-                                    ) : (
-                                        filteredTodaySessions.map((s) => (
-                                            <TableRow key={s.verified_schedule_id} className="hover:bg-muted/30">
-                                                <TableCell className="font-mono text-[11px] font-bold whitespace-nowrap py-2 px-3">
-                                                    {s.scheduled_time}
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredTodaySessions.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground text-xs">
+                                                    No scheduled laboratory sessions match the selected filters.
                                                 </TableCell>
-                                                <TableCell className="text-xs font-bold whitespace-nowrap py-2 px-3">{s.room_name}</TableCell>
-                                                <TableCell className="text-xs py-2 px-3">
-                                                    <div className="font-bold text-foreground truncate max-w-[140px]">{s.course_code}</div>
-                                                    <div className="text-[10px] text-muted-foreground truncate max-w-[140px]">{s.course_title}</div>
-                                                </TableCell>
-                                                <TableCell className="text-xs font-semibold whitespace-nowrap py-2 px-3">{s.section}</TableCell>
-                                                <TableCell className="text-xs py-2 px-3 whitespace-nowrap">{s.expected_faculty}</TableCell>
-                                                <TableCell className="text-xs text-muted-foreground text-center py-2 px-2 whitespace-nowrap">{s.scheduled_minutes}m</TableCell>
-                                                <TableCell className="text-xs py-2 px-3 whitespace-nowrap">
-                                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 font-normal">
-                                                        {s.room_condition}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-xs py-2 px-3 whitespace-nowrap">{getBadgeForSession(s.observation_status)}</TableCell>
-                                                <TableCell className="text-right py-2 px-3 sticky right-0 bg-card sm:bg-transparent shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)] sm:shadow-none whitespace-nowrap">
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        {s.photo_url && (
+                                            </TableRow>
+                                        ) : (
+                                            filteredTodaySessions.map((s) => (
+                                                <TableRow key={s.verified_schedule_id} className="hover:bg-muted/30">
+                                                    <TableCell className="font-mono text-[11px] font-bold whitespace-nowrap py-2 px-3">
+                                                        {s.scheduled_time}
+                                                    </TableCell>
+                                                    <TableCell className="text-xs font-bold whitespace-nowrap py-2 px-3">{s.room_name}</TableCell>
+                                                    <TableCell className="text-xs py-2 px-3">
+                                                        <div className="font-bold text-foreground truncate max-w-[140px]">{s.course_code}</div>
+                                                        <div className="text-[10px] text-muted-foreground truncate max-w-[140px]">{s.course_title}</div>
+                                                    </TableCell>
+                                                    <TableCell className="text-xs font-semibold whitespace-nowrap py-2 px-3">{s.section}</TableCell>
+                                                    <TableCell className="text-xs py-2 px-3 whitespace-nowrap">{s.expected_faculty}</TableCell>
+                                                    <TableCell className="text-xs text-muted-foreground text-center py-2 px-2 whitespace-nowrap">{s.scheduled_minutes}m</TableCell>
+                                                    <TableCell className="text-xs py-2 px-3 whitespace-nowrap">
+                                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 font-normal">
+                                                            {s.room_condition}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-xs py-2 px-3 whitespace-nowrap">{getBadgeForSession(s.observation_status)}</TableCell>
+                                                    <TableCell className="text-right py-2 px-3 sticky right-0 bg-card sm:bg-transparent shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)] sm:shadow-none whitespace-nowrap">
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            {s.photo_url && (
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="h-7 text-xs px-2 gap-1 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 font-bold"
+                                                                    onClick={() => {
+                                                                        setViewPhotoUrl(s.photo_url!);
+                                                                        setViewPhotoTitle(`${s.room_name} · ${s.course_code}`);
+                                                                    }}
+                                                                >
+                                                                    <ImageIcon className="h-3.5 w-3.5" />
+                                                                    Photo
+                                                                </Button>
+                                                            )}
                                                             <Button
                                                                 type="button"
                                                                 size="sm"
                                                                 variant="outline"
-                                                                className="h-7 text-xs px-2 gap-1 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 font-bold"
-                                                                onClick={() => {
-                                                                    setViewPhotoUrl(s.photo_url!);
-                                                                    setViewPhotoTitle(`${s.room_name} · ${s.course_code}`);
-                                                                }}
+                                                                className="h-7 text-xs px-2 gap-1 border-blue-400 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 font-semibold"
+                                                                title="Map or change assigned faculty for this schedule (notifies Admin, Dean & Program Head)"
+                                                                onClick={() => openReassignModal(s)}
                                                             >
-                                                                <ImageIcon className="h-3.5 w-3.5" />
-                                                                Photo
+                                                                <UserCog className="h-3.5 w-3.5" />
+                                                                Remap Faculty
                                                             </Button>
-                                                        )}
+                                                            <Button
+                                                                size="sm"
+                                                                className="h-7 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-3 shadow-2xs"
+                                                                onClick={() => openObservationModal(s)}
+                                                            >
+                                                                Monitor
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        ) : (
+                            /* Timeline View for Today's Sessions */
+                            <div className="rounded-2xl border p-4 bg-card shadow-2xs space-y-4">
+                                <div className="flex items-center justify-between border-b pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="h-4 w-4 text-amber-500" />
+                                        <h3 className="font-black text-sm text-foreground">Chronological Lab Timeline for Today ({todayName})</h3>
+                                    </div>
+                                    <span className="text-xs text-muted-foreground font-semibold">
+                                        {filteredTodaySessions.length} {filteredTodaySessions.length === 1 ? 'Session' : 'Sessions'}
+                                    </span>
+                                </div>
+
+                                {filteredTodaySessions.length === 0 ? (
+                                    <div className="py-8 text-center text-xs text-muted-foreground">
+                                        No scheduled laboratory sessions match the selected filters.
+                                    </div>
+                                ) : (
+                                    <div className="relative pl-6 space-y-3 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-border/60">
+                                        {filteredTodaySessions.map((s) => {
+                                            const isLive = s.observation_status === 'In Progress' || s.observation_status === 'Started On Time';
+                                            return (
+                                                <div
+                                                    key={s.verified_schedule_id}
+                                                    className={cn(
+                                                        "relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border transition-all shadow-2xs hover:shadow-xs",
+                                                        isLive
+                                                            ? "bg-amber-50/80 dark:bg-amber-950/20 border-amber-400/80"
+                                                            : "bg-background border-border/80 hover:border-amber-400/60"
+                                                    )}
+                                                >
+                                                    <span className={cn(
+                                                        "absolute -left-[27px] top-4 w-3 h-3 rounded-full border-2 border-background",
+                                                        isLive ? "bg-amber-500 animate-ping" : "bg-muted-foreground/50"
+                                                    )} />
+                                                    <span className={cn(
+                                                        "absolute -left-[27px] top-4 w-3 h-3 rounded-full border-2 border-background",
+                                                        isLive ? "bg-amber-500" : "bg-muted-foreground/60"
+                                                    )} />
+
+                                                    <div className="space-y-1 min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+                                                                {s.scheduled_time}
+                                                            </span>
+                                                            <span className="font-bold text-xs px-2 py-0.5 rounded bg-muted text-foreground">
+                                                                {s.room_name}
+                                                            </span>
+                                                            <span className="font-black text-sm text-foreground truncate">
+                                                                {s.course_code}
+                                                            </span>
+                                                            <span className="text-xs text-muted-foreground truncate">
+                                                                — {s.course_title}
+                                                            </span>
+                                                            {getBadgeForSession(s.observation_status)}
+                                                        </div>
+                                                        <div className="flex items-center gap-3 text-xs text-muted-foreground pt-0.5">
+                                                            <span>Sec: <strong className="text-foreground">{s.section}</strong></span>
+                                                            <span>•</span>
+                                                            <span className="flex items-center gap-1">
+                                                                <Users className="h-3 w-3 text-muted-foreground" />
+                                                                {s.expected_faculty}
+                                                            </span>
+                                                            <span>•</span>
+                                                            <span>Duration: <strong className="text-foreground">{s.scheduled_minutes}m</strong></span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="shrink-0 flex items-center gap-2">
                                                         <Button
-                                                            type="button"
                                                             size="sm"
-                                                            variant="outline"
-                                                            className="h-7 text-xs px-2 gap-1 border-blue-400 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 font-semibold"
-                                                            title="Map or change assigned faculty for this schedule (notifies Admin, Dean & Program Head)"
-                                                            onClick={() => openReassignModal(s)}
-                                                        >
-                                                            <UserCog className="h-3.5 w-3.5" />
-                                                            Remap Faculty
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            className="h-7 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-3 shadow-2xs"
+                                                            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs h-7 px-3 shadow-2xs gap-1"
                                                             onClick={() => openObservationModal(s)}
                                                         >
+                                                            <MonitorPlay className="h-3 w-3" />
                                                             Monitor
                                                         </Button>
                                                     </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -2299,140 +2343,283 @@ export default function LabInChargeMonitoring({
                                         </div>
                                     </div>
 
-                                    {/* Weekly Days Columns */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
-                                        {weekDays.map(({ day, dateStr }) => {
-                                            const daySchedules = filteredRoomSchedules.filter(
-                                                (item) => item.day_of_week.toLowerCase() === day.toLowerCase()
-                                            );
-                                            const isToday = day.toLowerCase() === todayName.toLowerCase();
+                                    {/* Conditional View: Weekly Grid or Timeline */}
+                                    {timetableViewMode === 'grid' ? (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
+                                            {weekDays.map(({ day, dateStr }) => {
+                                                const daySchedules = filteredRoomSchedules.filter(
+                                                    (item) => item.day_of_week.toLowerCase() === day.toLowerCase()
+                                                );
+                                                const isToday = day.toLowerCase() === todayName.toLowerCase();
 
-                                            return (
-                                                <div
-                                                    key={day}
-                                                    className={cn(
-                                                        "rounded-2xl border transition-all flex flex-col min-h-[460px] overflow-hidden shadow-2xs",
-                                                        isToday
-                                                            ? "bg-amber-500/5 border-amber-400/60 ring-1 ring-amber-400/30"
-                                                            : "bg-card border-border/80"
-                                                    )}
-                                                >
-                                                    {/* Day Column Header */}
-                                                    <div className={cn(
-                                                        "px-3 py-2.5 border-b flex items-center justify-between",
-                                                        isToday ? "bg-amber-400/15 border-amber-300/40" : "bg-muted/30 border-border/70"
-                                                    )}>
-                                                        <div className="text-left">
-                                                            <div className="font-black text-xs uppercase tracking-wider text-foreground">
-                                                                {day}
-                                                            </div>
-                                                            <div className="text-[10px] text-muted-foreground font-medium">
-                                                                {dateStr}
-                                                            </div>
-                                                        </div>
-                                                        <span className={cn(
-                                                            "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black",
+                                                return (
+                                                    <div
+                                                        key={day}
+                                                        className={cn(
+                                                            "rounded-2xl border transition-all flex flex-col min-h-[460px] overflow-hidden shadow-2xs",
                                                             isToday
-                                                                ? "bg-slate-900 text-amber-400 shadow-2xs"
-                                                                : "bg-muted text-muted-foreground"
+                                                                ? "bg-amber-500/5 border-amber-400/60 ring-1 ring-amber-400/30"
+                                                                : "bg-card border-border/80"
+                                                        )}
+                                                    >
+                                                        {/* Day Column Header */}
+                                                        <div className={cn(
+                                                            "px-3 py-2.5 border-b flex items-center justify-between",
+                                                            isToday ? "bg-amber-400/15 border-amber-300/40" : "bg-muted/30 border-border/70"
                                                         )}>
-                                                            {daySchedules.length}
-                                                        </span>
-                                                    </div>
+                                                            <div className="text-left">
+                                                                <div className="font-black text-xs uppercase tracking-wider text-foreground">
+                                                                    {day}
+                                                                </div>
+                                                                <div className="text-[10px] text-muted-foreground font-medium">
+                                                                    {dateStr}
+                                                                </div>
+                                                            </div>
+                                                            <span className={cn(
+                                                                "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black",
+                                                                isToday
+                                                                    ? "bg-slate-900 text-amber-400 shadow-2xs"
+                                                                    : "bg-muted text-muted-foreground"
+                                                            )}>
+                                                                {daySchedules.length}
+                                                            </span>
+                                                        </div>
 
-                                                    {/* Day Schedule Cards */}
-                                                    <div className="p-2 space-y-2 flex-1">
+                                                        {/* Day Schedule Cards */}
+                                                        <div className="p-2 space-y-2 flex-1">
+                                                            {daySchedules.length === 0 ? (
+                                                                <div className="h-full flex flex-col items-center justify-center text-center p-4 py-16 space-y-2">
+                                                                    <div className="w-12 h-12 rounded-2xl bg-muted/60 text-muted-foreground flex items-center justify-center">
+                                                                        <CalendarDays className="w-6 h-6 stroke-[1.5]" />
+                                                                    </div>
+                                                                    <div className="text-xs font-bold text-foreground">No scheduled lab classes</div>
+                                                                    <div className="text-[10px] text-muted-foreground max-w-[120px] leading-tight">
+                                                                        There are no laboratory classes scheduled for this day.
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                daySchedules.map((sched, sIdx) => {
+                                                                    // Highlight first session on Tuesday as ongoing/current session if matching now
+                                                                    const isOngoing = isToday && (sIdx === 0 || (sched.start_time <= '09:00' && sched.end_time >= '09:00'));
+
+                                                                    return (
+                                                                        <div
+                                                                            key={sched.id}
+                                                                            onClick={() => {
+                                                                                // Quick monitor trigger: find matching session in today's sessionsList
+                                                                                const matchingExpected = sessionsList.find(s => s.verified_schedule_id === sched.id) || {
+                                                                                    verified_schedule_id: sched.id,
+                                                                                    room_id: Number(selectedTimetableRoomId),
+                                                                                    room_name: sched.room_name || activeLabName,
+                                                                                    course_code: sched.course_code,
+                                                                                    course_title: sched.course_title,
+                                                                                    section: sched.section,
+                                                                                    expected_faculty: sched.faculty_name,
+                                                                                    faculty_id: 1,
+                                                                                    scheduled_time: sched.time_label,
+                                                                                    scheduled_start: sched.start_time,
+                                                                                    scheduled_end: sched.end_time,
+                                                                                    scheduled_minutes: 90,
+                                                                                    late_minutes: 0,
+                                                                                    observed_minutes: 90,
+                                                                                    variance_minutes: 0,
+                                                                                    observation_status: isOngoing ? 'In Progress' : 'Ready to Monitor',
+                                                                                    room_condition: 'In Use as Scheduled',
+                                                                                    session_outcome: 'Conducted as Scheduled',
+                                                                                    has_discrepancy: false,
+                                                                                    can_edit: true,
+                                                                                };
+                                                                                openObservationModal(matchingExpected);
+                                                                            }}
+                                                                            className={cn(
+                                                                                "p-2.5 rounded-xl border transition-all text-xs space-y-1.5 cursor-pointer shadow-2xs group relative hover:shadow-xs",
+                                                                                isOngoing
+                                                                                    ? "bg-amber-500/10 border-amber-400 hover:border-amber-500"
+                                                                                    : "bg-card border-border/80 hover:border-amber-400/80"
+                                                                            )}
+                                                                        >
+                                                                            {/* Time & Status Badge */}
+                                                                            <div className="flex items-center justify-between gap-1">
+                                                                                <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                                                    {sched.time_label}
+                                                                                </span>
+                                                                                {isOngoing ? (
+                                                                                    <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-bold bg-amber-400 text-slate-950 uppercase tracking-tight shadow-2xs animate-pulse">
+                                                                                        Ongoing
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                                                                        Scheduled
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+
+                                                                            {/* Course Code */}
+                                                                            <div className="font-black text-sm text-foreground tracking-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                                                                {sched.course_code}
+                                                                            </div>
+
+                                                                            {/* Section */}
+                                                                            <div className="text-[11px] text-muted-foreground font-medium">
+                                                                                Sec: <span className="text-foreground font-semibold">{sched.section}</span>
+                                                                            </div>
+
+                                                                            {/* Instructor Name with icon */}
+                                                                            <div className="text-[11px] text-muted-foreground flex items-center gap-1 truncate pt-0.5 border-t border-border/40">
+                                                                                <Users className="w-3 h-3 text-muted-foreground/70 shrink-0" />
+                                                                                <span className="truncate">{sched.faculty_name}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        /* Timeline View: Chronological day-by-day vertical schedule stream */
+                                        <div className="space-y-4">
+                                            {weekDays.map(({ day, dateStr }) => {
+                                                const daySchedules = filteredRoomSchedules
+                                                    .filter((item) => item.day_of_week.toLowerCase() === day.toLowerCase())
+                                                    .sort((a, b) => a.start_time.localeCompare(b.start_time));
+                                                const isToday = day.toLowerCase() === todayName.toLowerCase();
+
+                                                return (
+                                                    <div
+                                                        key={day}
+                                                        className={cn(
+                                                            "rounded-2xl border p-4 transition-all bg-card shadow-2xs space-y-3",
+                                                            isToday ? "border-amber-400/70 ring-1 ring-amber-400/30 bg-amber-500/[0.02]" : "border-border/80"
+                                                        )}
+                                                    >
+                                                        {/* Timeline Day Header */}
+                                                        <div className="flex items-center justify-between border-b pb-2.5">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={cn(
+                                                                    "h-2.5 w-2.5 rounded-full",
+                                                                    isToday ? "bg-amber-500 animate-pulse" : "bg-muted-foreground/40"
+                                                                )} />
+                                                                <h3 className="font-black text-sm text-foreground uppercase tracking-wider">{day}</h3>
+                                                                <span className="text-xs text-muted-foreground font-medium">• {dateStr}</span>
+                                                                {isToday && (
+                                                                    <Badge className="bg-amber-500 text-slate-950 font-bold text-[10px] py-0 px-1.5 h-4.5">
+                                                                        Today
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            <span className="text-xs text-muted-foreground font-semibold">
+                                                                {daySchedules.length} {daySchedules.length === 1 ? 'Session' : 'Sessions'}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Timeline Sessions List */}
                                                         {daySchedules.length === 0 ? (
-                                                            <div className="h-full flex flex-col items-center justify-center text-center p-4 py-16 space-y-2">
-                                                                <div className="w-12 h-12 rounded-2xl bg-muted/60 text-muted-foreground flex items-center justify-center">
-                                                                    <CalendarDays className="w-6 h-6 stroke-[1.5]" />
-                                                                </div>
-                                                                <div className="text-xs font-bold text-foreground">No scheduled lab classes</div>
-                                                                <div className="text-[10px] text-muted-foreground max-w-[120px] leading-tight">
-                                                                    There are no laboratory classes scheduled for this day.
-                                                                </div>
+                                                            <div className="py-6 text-center text-xs text-muted-foreground">
+                                                                No laboratory classes scheduled for {day}.
                                                             </div>
                                                         ) : (
-                                                            daySchedules.map((sched, sIdx) => {
-                                                                // Highlight first session on Tuesday as ongoing/current session if matching now
-                                                                const isOngoing = isToday && (sIdx === 0 || (sched.start_time <= '09:00' && sched.end_time >= '09:00'));
+                                                            <div className="relative pl-6 space-y-3 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-border/60">
+                                                                {daySchedules.map((sched, sIdx) => {
+                                                                    const isOngoing = isToday && (sIdx === 0 || (sched.start_time <= '09:00' && sched.end_time >= '09:00'));
 
-                                                                return (
-                                                                    <div
-                                                                        key={sched.id}
-                                                                        onClick={() => {
-                                                                            // Quick monitor trigger: find matching session in today's sessionsList
-                                                                            const matchingExpected = sessionsList.find(s => s.verified_schedule_id === sched.id) || {
-                                                                                verified_schedule_id: sched.id,
-                                                                                room_id: Number(selectedTimetableRoomId),
-                                                                                room_name: sched.room_name || activeLabName,
-                                                                                course_code: sched.course_code,
-                                                                                course_title: sched.course_title,
-                                                                                section: sched.section,
-                                                                                expected_faculty: sched.faculty_name,
-                                                                                faculty_id: 1,
-                                                                                scheduled_time: sched.time_label,
-                                                                                scheduled_start: sched.start_time,
-                                                                                scheduled_end: sched.end_time,
-                                                                                scheduled_minutes: 90,
-                                                                                late_minutes: 0,
-                                                                                observed_minutes: 90,
-                                                                                variance_minutes: 0,
-                                                                                observation_status: isOngoing ? 'In Progress' : 'Ready to Monitor',
-                                                                                room_condition: 'In Use as Scheduled',
-                                                                                session_outcome: 'Conducted as Scheduled',
-                                                                                has_discrepancy: false,
-                                                                                can_edit: true,
-                                                                            };
-                                                                            openObservationModal(matchingExpected);
-                                                                        }}
-                                                                        className={cn(
-                                                                            "p-2.5 rounded-xl border transition-all text-xs space-y-1.5 cursor-pointer shadow-2xs group relative hover:shadow-xs",
-                                                                            isOngoing
-                                                                                ? "bg-amber-500/10 border-amber-400 hover:border-amber-500"
-                                                                                : "bg-card border-border/80 hover:border-amber-400/80"
-                                                                        )}
-                                                                    >
-                                                                        {/* Time & Status Badge */}
-                                                                        <div className="flex items-center justify-between gap-1">
-                                                                            <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                                                                                {sched.time_label}
-                                                                            </span>
-                                                                            {isOngoing ? (
-                                                                                <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-bold bg-amber-400 text-slate-950 uppercase tracking-tight shadow-2xs animate-pulse">
-                                                                                    Ongoing
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                                                                                    Scheduled
-                                                                                </span>
+                                                                    return (
+                                                                        <div
+                                                                            key={sched.id}
+                                                                            className={cn(
+                                                                                "relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border transition-all shadow-2xs hover:shadow-xs",
+                                                                                isOngoing
+                                                                                    ? "bg-amber-50/80 dark:bg-amber-950/20 border-amber-400/80"
+                                                                                    : "bg-background border-border/80 hover:border-amber-400/60"
                                                                             )}
-                                                                        </div>
+                                                                        >
+                                                                            {/* Timeline marker bullet */}
+                                                                            <span className={cn(
+                                                                                "absolute -left-[27px] top-4 w-3 h-3 rounded-full border-2 border-background shadow-xs",
+                                                                                isOngoing ? "bg-amber-500 animate-ping" : "bg-muted-foreground/50"
+                                                                            )} />
+                                                                            <span className={cn(
+                                                                                "absolute -left-[27px] top-4 w-3 h-3 rounded-full border-2 border-background",
+                                                                                isOngoing ? "bg-amber-500" : "bg-muted-foreground/60"
+                                                                            )} />
 
-                                                                        {/* Course Code */}
-                                                                        <div className="font-black text-sm text-foreground tracking-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                                                                            {sched.course_code}
-                                                                        </div>
+                                                                            {/* Session Meta */}
+                                                                            <div className="space-y-1 min-w-0 flex-1">
+                                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                                    <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+                                                                                        {sched.time_label}
+                                                                                    </span>
+                                                                                    <span className="font-black text-sm text-foreground truncate">
+                                                                                        {sched.course_code}
+                                                                                    </span>
+                                                                                    <span className="text-xs text-muted-foreground truncate">
+                                                                                        — {sched.course_title}
+                                                                                    </span>
+                                                                                    {isOngoing && (
+                                                                                        <Badge className="bg-amber-400 text-slate-950 font-bold text-[9.5px] py-0 px-1.5 h-4">
+                                                                                            Ongoing
+                                                                                        </Badge>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="flex items-center gap-3 text-xs text-muted-foreground pt-0.5">
+                                                                                    <span>Section: <strong className="text-foreground">{sched.section}</strong></span>
+                                                                                    <span>•</span>
+                                                                                    <span className="flex items-center gap-1">
+                                                                                        <Users className="h-3 w-3 text-muted-foreground" />
+                                                                                        {sched.faculty_name}
+                                                                                    </span>
+                                                                                    <span>•</span>
+                                                                                    <span>Lab: <strong className="text-foreground">{sched.room_name || activeLabName}</strong></span>
+                                                                                </div>
+                                                                            </div>
 
-                                                                        {/* Section */}
-                                                                        <div className="text-[11px] text-muted-foreground font-medium">
-                                                                            Sec: <span className="text-foreground font-semibold">{sched.section}</span>
+                                                                            {/* Action Button */}
+                                                                            <div className="shrink-0 flex items-center gap-2">
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs h-7 px-3 shadow-2xs gap-1"
+                                                                                    onClick={() => {
+                                                                                        const matchingExpected = sessionsList.find(s => s.verified_schedule_id === sched.id) || {
+                                                                                            verified_schedule_id: sched.id,
+                                                                                            room_id: Number(selectedTimetableRoomId),
+                                                                                            room_name: sched.room_name || activeLabName,
+                                                                                            course_code: sched.course_code,
+                                                                                            course_title: sched.course_title,
+                                                                                            section: sched.section,
+                                                                                            expected_faculty: sched.faculty_name,
+                                                                                            faculty_id: 1,
+                                                                                            scheduled_time: sched.time_label,
+                                                                                            scheduled_start: sched.start_time,
+                                                                                            scheduled_end: sched.end_time,
+                                                                                            scheduled_minutes: 90,
+                                                                                            late_minutes: 0,
+                                                                                            observed_minutes: 90,
+                                                                                            variance_minutes: 0,
+                                                                                            observation_status: isOngoing ? 'In Progress' : 'Ready to Monitor',
+                                                                                            room_condition: 'In Use as Scheduled',
+                                                                                            session_outcome: 'Conducted as Scheduled',
+                                                                                            has_discrepancy: false,
+                                                                                            can_edit: true,
+                                                                                        };
+                                                                                        openObservationModal(matchingExpected);
+                                                                                    }}
+                                                                                >
+                                                                                    <MonitorPlay className="h-3 w-3" />
+                                                                                    Monitor Session
+                                                                                </Button>
+                                                                            </div>
                                                                         </div>
-
-                                                                        {/* Instructor Name with icon */}
-                                                                        <div className="text-[11px] text-muted-foreground flex items-center gap-1 truncate pt-0.5 border-t border-border/40">
-                                                                            <Users className="w-3 h-3 text-muted-foreground/70 shrink-0" />
-                                                                            <span className="truncate">{sched.faculty_name}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })
+                                                                    );
+                                                                })}
+                                                            </div>
                                                         )}
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Right Side: Laboratory Insights Sidebar */}

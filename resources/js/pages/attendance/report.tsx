@@ -1242,7 +1242,7 @@ export default function GenerateReportPage({
             const margin = 12.0; // 12mm consistent margin
             let currentY = margin;
 
-            // Load CIDS Logo as Data URL if available
+            // Load CIDS Logo as Data URL
             let logoDataUrl: string | null = null;
             try {
                 const img = new Image();
@@ -1254,12 +1254,30 @@ export default function GenerateReportPage({
                 });
                 if (img.width && img.height) {
                     const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = img.width;
-                    tempCanvas.height = img.height;
+                    const size = Math.min(img.width, img.height);
+                    tempCanvas.width = size;
+                    tempCanvas.height = size;
                     const ctx = tempCanvas.getContext('2d');
                     if (ctx) {
-                        ctx.drawImage(img, 0, 0);
-                        logoDataUrl = tempCanvas.toDataURL('image/jpeg', 0.95);
+                        // Fill white background first
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, size, size);
+
+                        // Clip circular emblem
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, true);
+                        ctx.closePath();
+                        ctx.clip();
+
+                        // Draw source image centered
+                        const offsetX = (img.width - size) / 2;
+                        const offsetY = (img.height - size) / 2;
+                        ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, size, size);
+                        ctx.restore();
+
+                        // Export as PNG so white/circular background is cleanly maintained
+                        logoDataUrl = tempCanvas.toDataURL('image/png');
                     }
                 }
             } catch (err) {
@@ -1272,7 +1290,7 @@ export default function GenerateReportPage({
                 if (logoDataUrl) {
                     const logoSize = 18;
                     const logoX = (pageWidth - logoSize) / 2;
-                    doc.addImage(logoDataUrl, 'JPEG', logoX, y, logoSize, logoSize);
+                    doc.addImage(logoDataUrl, 'PNG', logoX, y, logoSize, logoSize);
                     y += logoSize + 2;
                 }
 
@@ -1504,9 +1522,63 @@ export default function GenerateReportPage({
                 },
             });
 
-            currentY = (doc as any).lastAutoTable.finalY + 6;
+            currentY = (doc as any).lastAutoTable.finalY + 4;
 
-            // 4. Signatories Section (render on current page or start new page if space is insufficient)
+            // 4. Monochrome Black & White Legend and Formulas (Below Table, Above Signatories)
+            const legendBlockHeight = 22;
+            if (currentY + legendBlockHeight + 35 > pageHeight - margin) {
+                doc.addPage();
+                currentY = margin + 5;
+            }
+
+            // Draw bounding border box for legend
+            const legendWidth = pageWidth - (margin * 2);
+            doc.setDrawColor(15, 23, 42); // slate-900 / black
+            doc.setLineWidth(0.2);
+            doc.rect(margin, currentY, legendWidth, 20);
+
+            // Header line of legend
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(15, 23, 42);
+            doc.text('ATTENDANCE COVERAGE MONITORING LEGEND:', margin + 3, currentY + 4.5);
+
+            // Tiers in B&W
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.text('[ >=95.0% Excellent ]   [ 90.0-94.99% Good ]   [ 80.0-89.99% Needs Monitoring ]   [ <80.0% Needs Attention ]   [ N/A - Excluded ]', margin + 70, currentY + 4.5);
+
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(6.5);
+            doc.setTextColor(70, 70, 70);
+            doc.text('Atomic Baseline: Minutes (e.g. 1.5h = 90m / 3.0h = 180m)', pageWidth - margin - 3, currentY + 4.5, { align: 'right' });
+
+            // Horizontal dividing line
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin + 2, currentY + 6.5, pageWidth - margin - 2, currentY + 6.5);
+
+            // Row 1: Formulas
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(15, 23, 42);
+            const colW = (legendWidth - 6) / 3;
+            doc.text('Eligible Mins = Scheduled Mins - Approved Excluded Mins (Leave, Suspensions, Holidays).', margin + 3, currentY + 10);
+            doc.text('Attendance Coverage = (Attended Eligible Mins / Eligible Mins) x 100. (N/A when Eligible = 0).', margin + 3 + colW, currentY + 10);
+            doc.text('Instructional Completion = ((Attended Mins + Make-Up Completed) / Required Scheduled Mins) x 100.', margin + 3 + (colW * 2), currentY + 10);
+
+            // Row 2: Status Definitions (Excellent, Good, Needs Monitoring, Needs Attention, N/A - Excluded)
+            doc.setFontSize(6);
+            doc.setTextColor(60, 60, 60);
+            const defColW = (legendWidth - 6) / 5;
+            doc.text('>=95.0% Excellent: Outstanding delivery; attended almost all eligible hours.', margin + 3, currentY + 14.5, { maxWidth: defColW - 2 });
+            doc.text('90.0-94.99% Good: Meets delivery standard; minor variances within threshold.', margin + 3 + defColW, currentY + 14.5, { maxWidth: defColW - 2 });
+            doc.text('80.0-89.99% Needs Mon.: Below ideal target; requires monitoring or make-up.', margin + 3 + (defColW * 2), currentY + 14.5, { maxWidth: defColW - 2 });
+            doc.text('<80.0% Needs Attn.: Critical gap; missed substantial hours requiring intervention.', margin + 3 + (defColW * 3), currentY + 14.5, { maxWidth: defColW - 2 });
+            doc.text('N/A - Excluded: Eligible scheduled minutes = 0 (100% approved leave, holidays).', margin + 3 + (defColW * 4), currentY + 14.5, { maxWidth: defColW - 2 });
+
+            currentY += 24;
+
+            // 5. Signatories Section (render on current page or start new page if space is insufficient)
             const requiredSignatoryHeight = 35;
             if (currentY + requiredSignatoryHeight > pageHeight - 20) {
                 doc.addPage();
@@ -2539,10 +2611,7 @@ export default function GenerateReportPage({
                                         <img
                                             src="/CIDS_Logo.jpg"
                                             alt="CIDS Logo"
-                                            className="w-16 h-16 object-contain rounded-full shadow-xs"
-                                            onError={(e: any) => {
-                                                e.currentTarget.style.display = 'none';
-                                            }}
+                                            className="w-16 h-16 object-contain rounded-full bg-white p-0.5 shadow-2xs"
                                         />
                                         <div className="space-y-0.5">
                                             <p className="text-[10px] tracking-wider text-slate-600 uppercase font-semibold">
@@ -2927,22 +2996,56 @@ export default function GenerateReportPage({
                                         </div>
                                     </div>
 
-                                    {/* Administrative Attendance Coverage Legend & Monitoring Formula Guide */}
-                                    <div className="mt-3 p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-[8.5px] leading-tight space-y-1.5 text-slate-700 page-break-inside-avoid break-inside-avoid">
-                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-1.5">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="font-bold text-slate-900 uppercase tracking-wider text-[9px]">Attendance Coverage Monitoring Legend:</span>
-                                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">≥95.0% Excellent</span>
-                                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-blue-100 text-blue-800 border border-blue-300">90.0–94.99% Good</span>
-                                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-100 text-amber-800 border border-amber-300">80.0–89.99% Needs Monitoring</span>
-                                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-rose-100 text-rose-800 border border-rose-300">&lt;80.0% Needs Attention</span>
+                                    {/* Administrative Attendance Coverage Legend & Monitoring Formula Guide (Black & White below Matrix, above Signatories) */}
+                                    <div className="mt-3 p-3 rounded-xs border border-slate-900 bg-white text-[8.5px] leading-tight space-y-2 text-slate-900 page-break-inside-avoid break-inside-avoid">
+                                        {/* Header Row: Legend Title & Tier Badges in B&W */}
+                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-900 pb-2">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className="font-black text-slate-900 uppercase tracking-wider text-[9px]">ATTENDANCE COVERAGE MONITORING LEGEND:</span>
+                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">≥95.0% Excellent</span>
+                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">90.0–94.99% Good</span>
+                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">80.0–89.99% Needs Monitoring</span>
+                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">&lt;80.0% Needs Attention</span>
+                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">N/A – Excluded</span>
                                             </div>
-                                            <span className="text-slate-500 italic">Atomic Baseline: <strong>Minutes</strong> (e.g. 1.5h = 90 min / 3.0h = 180 min)</span>
+                                            <span className="text-slate-700 italic text-[8px]">Atomic Baseline: <strong>Minutes</strong> (e.g. 1.5h = 90 min / 3.0h = 180 min)</span>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[8px] text-slate-600">
-                                            <p><strong>Eligible Mins</strong> = Scheduled Mins − Approved Excluded Mins (Approved Leave, Suspensions, Institutional Holidays).</p>
-                                            <p><strong>Attendance Coverage</strong> = (Attended Eligible Mins ÷ Eligible Mins) × 100. (N/A when Eligible Mins = 0).</p>
-                                            <p><strong>Instructional Completion</strong> = ((Attended Mins + Make-Up Completed Mins) ÷ Required Scheduled Mins) × 100.</p>
+
+                                        {/* Row 1: Core Mathematical Formulas */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[8px] text-slate-900 border-b border-slate-300 pb-2">
+                                            <p>
+                                                <strong>Eligible Mins</strong> = Scheduled Mins − Approved Excluded Mins (Approved Leave, Suspensions, Institutional Holidays).
+                                            </p>
+                                            <p>
+                                                <strong>Attendance Coverage</strong> = (Attended Eligible Mins ÷ Eligible Mins) × 100. (Returns N/A when Eligible Mins = 0).
+                                            </p>
+                                            <p>
+                                                <strong>Instructional Completion</strong> = ((Attended Mins + Make-Up Completed Mins) ÷ Required Scheduled Mins) × 100.
+                                            </p>
+                                        </div>
+
+                                        {/* Row 2: Status Definitions & Meaning Guide */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 text-[8px] text-slate-800">
+                                            <div>
+                                                <p className="font-bold text-slate-900">≥95.0% Excellent:</p>
+                                                <p className="text-[7.5px] text-slate-700">Outstanding delivery; faculty attended almost all eligible teaching hours on schedule.</p>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-900">90.0–94.99% Good:</p>
+                                                <p className="text-[7.5px] text-slate-700">Meets standard delivery target; minor variances or late arrivals within acceptable threshold.</p>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-900">80.0–89.99% Needs Monitoring:</p>
+                                                <p className="text-[7.5px] text-slate-700">Below ideal target; instructional delivery requires monitoring or scheduling of make-up classes.</p>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-900">&lt;80.0% Needs Attention:</p>
+                                                <p className="text-[7.5px] text-slate-700">Critical deficiency; faculty missed substantial contact hours requiring urgent make-up or intervention.</p>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-900">N/A – Excluded:</p>
+                                                <p className="text-[7.5px] text-slate-700">Eligible scheduled minutes are zero (e.g. 100% on approved official leave, institutional class suspensions, or no active classes this period).</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

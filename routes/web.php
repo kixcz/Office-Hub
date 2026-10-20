@@ -17,6 +17,7 @@ use App\Http\Controllers\LabInChargeMonitoringController;
 use App\Http\Controllers\OfficeRequestController;
 use App\Http\Controllers\Operations\ExamMonitoringController;
 use App\Http\Controllers\Operations\FacultyWorkloadManagementController;
+use App\Http\Controllers\Operations\LabInChargeManagementController;
 use App\Http\Controllers\Operations\MakeUpClassMonitoringController;
 use App\Http\Controllers\Operations\RoomUtilizationReportController;
 use App\Http\Controllers\Performance\FacultyPerformanceController;
@@ -353,6 +354,18 @@ Route::middleware(['auth'])->group(function () {
     // Operations -> Room Utilization Report & Capacity Analytics (Super Admin, Dean & Program Heads)
     Route::prefix('operations/room-utilization')->name('operations.room-utilization.')->group(function () {
         Route::get('/', [RoomUtilizationReportController::class, 'index'])->name('index');
+    });
+
+    // Operations -> Lab In-Charge Management & Facility Responsibility (Super Admin)
+    Route::prefix('operations/lab-in-charge')->name('operations.lab-in-charge.')->group(function () {
+        Route::get('/', [LabInChargeManagementController::class, 'index'])->name('index');
+        Route::post('/users', [LabInChargeManagementController::class, 'createUser'])->name('users.create');
+        Route::post('/assignments', [LabInChargeManagementController::class, 'storeAssignment'])->name('assignments.store');
+        Route::post('/assignments/{assignment}/temporary-coverage', [LabInChargeManagementController::class, 'addTemporaryCoverage'])->name('assignments.temporary-coverage');
+        Route::post('/assignments/{assignment}/reassign', [LabInChargeManagementController::class, 'reassign'])->name('assignments.reassign');
+        Route::post('/assignments/{assignment}/suspend', [LabInChargeManagementController::class, 'suspend'])->name('assignments.suspend');
+        Route::post('/assignments/{assignment}/end', [LabInChargeManagementController::class, 'endAssignment'])->name('assignments.end');
+        Route::post('/sessions/{session}/reopen', [LabInChargeManagementController::class, 'reopenMonitoringSession'])->name('sessions.reopen');
     });
 
     // Faculty Personal Academic & Administrative Workspace (7 Groups, 19 Modules)

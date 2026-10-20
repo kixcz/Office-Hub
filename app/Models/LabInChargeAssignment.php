@@ -10,14 +10,19 @@ class LabInChargeAssignment extends Model
     protected $fillable = [
         'user_id',
         'room_id',
+        'academic_period_id',
         'shift_name',
         'role_type',
         'assigned_days',
-        'shift_start_time',
-        'shift_end_time',
         'effective_from',
         'effective_until',
+        'shift_start_time',
+        'shift_end_time',
         'is_active',
+        'status',
+        'reliever_user_id',
+        'notes',
+        'assigned_by_user_id',
     ];
 
     protected function casts(): array
@@ -37,5 +42,25 @@ class LabInChargeAssignment extends Model
     public function room(): BelongsTo
     {
         return $this->belongsTo(Room::class);
+    }
+
+    public function academicPeriod(): BelongsTo
+    {
+        return $this->belongsTo(AcademicPeriod::class);
+    }
+
+    public function relieverUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reliever_user_id');
+    }
+
+    public function assignedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_by_user_id');
+    }
+
+    public function audits()
+    {
+        return $this->hasMany(LabInChargeAssignmentAudit::class, 'assignment_id');
     }
 }
