@@ -15,6 +15,7 @@ use App\Models\ScheduleCandidate;
 use App\Models\ScheduleSwapRequest;
 use App\Models\ScheduleVersion;
 use App\Models\Section;
+use App\Models\VerifiedSchedule;
 use App\Services\Scheduling\GeminiScheduleAssistant;
 use App\Services\Scheduling\TimetableGenerator;
 use Illuminate\Http\Request;
@@ -312,6 +313,24 @@ class SemesterScheduleController extends Controller
         $currentPeriod = AcademicPeriod::current();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
         $schedules = RoomSchedule::with('faculty')->get();
+
+        // Retrieve verified schedules map to enable direct remapping from Master Timetable
+        $verifiedSchedules = VerifiedSchedule::with('room')->get();
+
+        $schedules = $schedules->map(function ($s) use ($verifiedSchedules) {
+            $matchingVerified = $verifiedSchedules->first(function ($vs) use ($s) {
+                $roomMatches = strcasecmp(trim($vs->room?->room_name ?? $vs->room?->name ?? ''), trim($s->room_name ?? '')) === 0;
+                $dayMatches = stripos($vs->day_of_week, $s->day_of_week) !== false || stripos($s->day_of_week, $vs->day_of_week) !== false;
+                $timeMatches = substr($vs->scheduled_start_time, 0, 5) === substr($s->start_time, 0, 5);
+
+                return $roomMatches && $dayMatches && $timeMatches;
+            });
+
+            $s->verified_schedule_id = $matchingVerified?->id ?? null;
+
+            return $s;
+        });
+
         $rooms = RoomSchedule::select('room_name')->distinct()->whereNotNull('room_name')->pluck('room_name');
         $sections = RoomSchedule::select('section')->distinct()->whereNotNull('section')->where('section', '!=', '')->pluck('section');
         $faculties = Faculty::select('id', 'first_name', 'last_name', 'academic_rank')->get();

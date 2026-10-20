@@ -16,10 +16,31 @@ import {
     Printer,
     FileSpreadsheet,
     FileText,
+    UserCog,
+    UserCheck,
+    Info,
 } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
+import { router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -29,6 +50,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface ScheduleItem {
     id: number;
+    verified_schedule_id?: number | null;
     room_name: string;
     day_of_week: string;
     start_time: string;
@@ -71,6 +93,46 @@ export default function MasterTimetableIndex({
     const [filterSection, setFilterSection] = useState<string>('all');
     const [filterRoom, setFilterRoom] = useState<string>('all');
     const [filterFaculty, setFilterFaculty] = useState<string>('all');
+
+    // Remap / Reassign Faculty State (Super Admin / Academic Head)
+    const [reassignModalOpen, setReassignModalOpen] = useState(false);
+    const [reassignItem, setReassignItem] = useState<ScheduleItem | null>(null);
+    const [newFacultyId, setNewFacultyId] = useState('');
+    const [reassignType, setReassignType] = useState<'Permanent' | 'Substitute / Temporary' | 'Daily Override'>('Permanent');
+    const [reassignReason, setReassignReason] = useState('');
+    const [reassignEffectiveDate, setReassignEffectiveDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const openReassignModal = (item: ScheduleItem) => {
+        setReassignItem(item);
+        setNewFacultyId('');
+        setReassignType('Permanent');
+        setReassignReason('');
+        setReassignEffectiveDate(new Date().toISOString().split('T')[0]);
+        setReassignModalOpen(true);
+    };
+
+    const handleReassignSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!reassignItem?.verified_schedule_id) return;
+        setIsSubmitting(true);
+
+        router.post(
+            `/monitoring/lab-in-charge/schedules/${reassignItem.verified_schedule_id}/reassign-faculty`,
+            {
+                new_faculty_id: newFacultyId,
+                reassignment_type: reassignType,
+                reason: reassignReason,
+                effective_date: reassignEffectiveDate,
+            },
+            {
+                onFinish: () => {
+                    setIsSubmitting(false);
+                    setReassignModalOpen(false);
+                },
+            }
+        );
+    };
 
     const filteredSchedules = useMemo(() => {
         return schedules.filter((s) => {
@@ -196,6 +258,7 @@ export default function MasterTimetableIndex({
                                     <th className="py-3 px-4">Assigned Facility</th>
                                     <th className="py-3 px-4">Faculty In-Charge</th>
                                     <th className="py-3 px-4 text-center">Status</th>
+                                    <th className="py-3 px-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -243,6 +306,20 @@ export default function MasterTimetableIndex({
                                                 Official
                                             </Badge>
                                         </td>
+                                        <td className="py-3 px-4 text-right">
+                                            {s.verified_schedule_id ? (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-7 px-2.5 text-[11px] font-semibold gap-1 text-blue-700 hover:text-blue-800 hover:bg-blue-50 border-blue-200"
+                                                    onClick={() => openReassignModal(s)}
+                                                >
+                                                    <UserCog className="size-3" /> Remap Faculty
+                                                </Button>
+                                            ) : (
+                                                <span className="text-[10px] text-gray-400 italic">Unlinked</span>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -251,6 +328,134 @@ export default function MasterTimetableIndex({
                 </div>
                 </div>
             </SchedulingWorkspaceLayout>
+
+            {/* Remap Faculty Dialog Modal */}
+            <Dialog open={reassignModalOpen} onOpenChange={setReassignModalOpen}>
+                <DialogContent className="max-w-lg font-['Poppins']">
+                    <DialogHeader>
+                        <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700">
+                                <UserCog className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-base font-bold">
+                                    Remap Faculty on Official Schedule
+                                </DialogTitle>
+                                <DialogDescription className="text-xs">
+                                    Change or assign teaching faculty for this course offering. Changes are broadcast to the Super Admin, Dean, and Program Head.
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+
+                    {reassignItem && (
+                        <form onSubmit={handleReassignSubmit} className="space-y-4 pt-1">
+                            {/* Schedule Summary Card */}
+                            <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-1 text-xs">
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold text-gray-900 text-sm">
+                                        {reassignItem.course_code}
+                                    </span>
+                                    <Badge variant="outline" className="font-semibold text-[10px]">
+                                        {reassignItem.section}
+                                    </Badge>
+                                </div>
+                                <div className="text-[11px] text-gray-500">
+                                    {reassignItem.course_title}
+                                </div>
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-gray-600 pt-1 text-[11px]">
+                                    <span>📅 {reassignItem.day_of_week}</span>
+                                    <span>⏰ {reassignItem.start_time} - {reassignItem.end_time}</span>
+                                    <span>📍 {reassignItem.room_name}</span>
+                                </div>
+                                <div className="pt-1.5 border-t border-gray-200 text-[11px] flex items-center justify-between">
+                                    <span className="text-gray-500">Current Assigned Faculty:</span>
+                                    <span className="font-bold text-gray-900">
+                                        {reassignItem.faculty?.first_name ? `${reassignItem.faculty.first_name} ${reassignItem.faculty.last_name}` : reassignItem.instructor || 'Unassigned / TBA'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* New Faculty Dropdown */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-bold flex items-center gap-1.5">
+                                    <UserCheck className="h-3.5 w-3.5 text-blue-600" />
+                                    Select New Faculty Assignment
+                                </Label>
+                                <Select value={newFacultyId} onValueChange={setNewFacultyId} required>
+                                    <SelectTrigger className="h-9 text-xs">
+                                        <SelectValue placeholder="Choose replacing faculty member..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {faculties
+                                            .filter((f) => f.id !== reassignItem.faculty_id)
+                                            .map((f) => (
+                                                <SelectItem key={f.id} value={String(f.id)}>
+                                                    {f.first_name} {f.last_name} {f.academic_rank ? `(${f.academic_rank})` : ''}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Reassignment Scope / Type */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-bold">Reassignment Type</Label>
+                                <Select value={reassignType} onValueChange={(val: any) => setReassignType(val)}>
+                                    <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Permanent">Permanent (Official Semester Mapping)</SelectItem>
+                                        <SelectItem value="Substitute / Temporary">Substitute / Temporary Coverage</SelectItem>
+                                        <SelectItem value="Daily Override">Daily Session Override</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Mandatory Reason */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-bold">Audit Reason / Justification</Label>
+                                <Textarea
+                                    className="text-xs min-h-[70px]"
+                                    placeholder="State why this schedule was remapped (e.g. Dean-approved teaching load balance, substitute professor, official faculty change)..."
+                                    value={reassignReason}
+                                    onChange={(e) => setReassignReason(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            {/* Notification Notice */}
+                            <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-[11px] text-blue-900 flex items-start gap-2">
+                                <Info className="h-4 w-4 shrink-0 mt-0.5 text-blue-600" />
+                                <div>
+                                    <strong>Automated Audit Broadcast:</strong> The Super Admin, Dean, and Program Head will be notified and recorded on the permanent audit log.
+                                </div>
+                            </div>
+
+                            <DialogFooter className="pt-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setReassignModalOpen(false)}
+                                    disabled={isSubmitting}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                                    disabled={isSubmitting || !newFacultyId || reassignReason.trim().length < 5}
+                                >
+                                    {isSubmitting ? 'Remapping...' : 'Confirm Faculty Remap'}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    )}
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

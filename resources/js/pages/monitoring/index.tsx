@@ -27,6 +27,8 @@ import {
     Layers,
     ChevronRight,
     DoorClosed,
+    ShieldCheck,
+    MonitorPlay,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -579,6 +581,21 @@ export default function MonitoringIndex({ rooms = [], schedules = [], faculties 
                                                             Now
                                                         </span>
                                                     </div>
+                                                </div>
+
+                                                {/* Action Bar for Live Observation / Monitoring */}
+                                                <div className="mt-2.5 pt-2 border-t border-amber-200/60 dark:border-amber-800/40 flex items-center justify-between gap-2">
+                                                    <span className="text-[10px] font-semibold text-amber-900/70 dark:text-amber-300/70 flex items-center gap-1">
+                                                        <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                                                        Ready to Monitor
+                                                    </span>
+                                                    <Link
+                                                        href={`/monitoring/lab-in-charge?tab=today&search=${encodeURIComponent(current.course_code || current.instructor || room)}`}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-2xs transition-all"
+                                                    >
+                                                        <MonitorPlay className="w-3 h-3" />
+                                                        <span>Monitor Session</span>
+                                                    </Link>
                                                 </div>
                                             </div>
                                         ) : (

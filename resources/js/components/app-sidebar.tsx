@@ -265,6 +265,7 @@ const labInChargeNavGroups: NavGroup[] = [
         title: 'LAB OPERATIONS',
         items: [
             { title: 'Operational Dashboard', url: '/monitoring/lab-in-charge?tab=dashboard', icon: LayoutGrid },
+            { title: 'Classroom & Lab Mon.', url: '/classroom-monitoring', icon: Monitor },
             { title: "Today's Lab Schedule", url: '/monitoring/lab-in-charge?tab=today', icon: CalendarDays },
             { title: 'Room Status Board', url: '/monitoring/lab-in-charge?tab=rooms', icon: Monitor },
             { title: 'Lab Timetables', url: '/monitoring/lab-in-charge?tab=timetables', icon: Calendar },

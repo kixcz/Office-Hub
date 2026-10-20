@@ -42,19 +42,29 @@ class LabInChargeMonitoringController extends Controller
 
         $assignedRoomIds = $assignments->pluck('room_id');
 
-        // Fallback for Super Admin or testing if no assignment has been provisioned yet
-        if ($assignedRoomIds->isEmpty()) {
-            $assignedRooms = Room::where('room_name', 'like', '%CLR%')
-                ->orWhere('room_name', 'like', '%COM%')
-                ->orWhere('room_name', 'like', '%Lab%')
-                ->orWhere('type', 'like', '%Lab%')
-                ->get();
+        // Fetch assigned laboratories, or all computer laboratories if none or viewing full labs
+        $canonicalOrder = ['CHS', 'CLR 1', 'CLR 2', 'CLR 3', 'CLR 4', 'CLR 5', 'COM 1', 'CLR 4 (MAC LAB)', 'CLR 5 (NETWORK LAB)', 'COM 2', 'COM 3', 'COM 4', 'NET LAB', 'MAC LAB'];
+
+        if ($assignedRoomIds->isEmpty() || $request->has('all_labs')) {
+            $assignedRooms = Room::where(function ($q) {
+                $q->where('room_name', 'like', '%CLR%')
+                    ->orWhere('room_name', 'like', '%COM%')
+                    ->orWhere('room_name', 'like', '%CHS%')
+                    ->orWhere('room_name', 'like', '%Lab%')
+                    ->orWhere('type', 'like', '%Lab%');
+            })->get();
         } else {
             $assignedRooms = Room::whereIn('id', $assignedRoomIds)->get();
+            // Ensure core labs (CHS, CLR 1-5, COM 1) are available for comprehensive monitoring
+            if ($assignedRooms->count() < 7) {
+                $coreLabNames = ['CHS', 'CLR 1', 'CLR 2', 'CLR 3', 'CLR 4', 'CLR 5', 'COM 1'];
+                $assignedRooms = Room::whereIn('room_name', $coreLabNames)
+                    ->orWhereIn('id', $assignedRoomIds)
+                    ->get();
+            }
         }
 
         // Canonical display order matching the TV display bento grid (CHS, CLR 1..5, COM 1, etc.)
-        $canonicalOrder = ['CHS', 'CLR 1', 'CLR 2', 'CLR 3', 'CLR 4', 'CLR 5', 'COM 1', 'CLR 4 (MAC LAB)', 'CLR 5 (NETWORK LAB)', 'COM 2', 'COM 3', 'COM 4', 'NET LAB', 'MAC LAB'];
         $assignedRooms = $assignedRooms->sortBy(function ($r) use ($canonicalOrder) {
             $name = strtoupper(trim($r->room_name ?? $r->name ?? ''));
             $pos = array_search($name, $canonicalOrder);
@@ -236,7 +246,7 @@ class LabInChargeMonitoringController extends Controller
                 $start = Carbon::parse($s['scheduled_start']);
                 $end = Carbon::parse($s['scheduled_end']);
 
-                return $now->between($start->copy()->subMinutes(10), $end);
+                return $now->between($start->copy()->subMinutes(15), $end);
             });
 
             // Find upcoming session next
@@ -1318,7 +1328,12 @@ class LabInChargeMonitoringController extends Controller
         ]);
 
         // 2. Also keep synchronous RoomSchedule entries aligned if present
-        RoomSchedule::where('room_id', $schedule->room_id)
+        $roomName = $schedule->room?->room_name ?? $schedule->room?->name;
+        $roomScheduleQuery = RoomSchedule::query();
+        if ($roomName) {
+            $roomScheduleQuery->where('room_name', $roomName);
+        }
+        $roomScheduleQuery
             ->where('day_of_week', 'like', "%{$schedule->day_of_week}%")
             ->where('start_time', $schedule->scheduled_start_time)
             ->update([
@@ -1360,4 +1375,3 @@ class LabInChargeMonitoringController extends Controller
         return back()->with('success', "Faculty for {$courseCode} successfully remapped from {$prevName} to {$newName} ({$validated['reassignment_type']}). Notifications dispatched to Super Admin, Dean, and Program Head.");
     }
 }
-

@@ -10,9 +10,7 @@ class ScheduleFacultyReassignedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(public ScheduleFacultyReassignment $reassignment)
-    {
-    }
+    public function __construct(public ScheduleFacultyReassignment $reassignment) {}
 
     public function via(object $notifiable): array
     {
@@ -45,6 +43,10 @@ class ScheduleFacultyReassignedNotification extends Notification
             'message' => "{$changerName} ({$changerRole}) remapped the faculty for {$courseCode} ({$sectionName}, {$roomName}) from {$prevName} to {$newName}.",
             'verified_schedule_id' => $sched?->id,
             'reassignment_id' => $this->reassignment->id,
+            'course_code' => $courseCode,
+            'course_title' => $sched?->course?->title ?? '',
+            'section' => $sectionName,
+            'room' => $roomName,
             'previous_faculty' => $prevName,
             'new_faculty' => $newName,
             'changed_by' => $changerName,

@@ -84,6 +84,8 @@ import {
     Trash2,
     ZoomIn,
     Upload,
+    UserCog,
+    UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -369,6 +371,44 @@ export default function LabInChargeMonitoring({
     const [selectedHistoryItem, setSelectedHistoryItem] = useState<HistoricalSessionItem | null>(null);
     const [correctionNotes, setCorrectionNotes] = useState('');
 
+    // Reassign / Map Faculty Modal State (for Super Admin & Lab In-Charge)
+    const [reassignModalOpen, setReassignModalOpen] = useState(false);
+    const [reassignSchedule, setReassignSchedule] = useState<ExpectedSession | null>(null);
+    const [newFacultyId, setNewFacultyId] = useState('');
+    const [reassignType, setReassignType] = useState<'Permanent' | 'Substitute / Temporary' | 'Daily Override'>('Permanent');
+    const [reassignReason, setReassignReason] = useState('');
+    const [reassignEffectiveDate, setReassignEffectiveDate] = useState(todayDateStr || '');
+
+    const openReassignModal = (session: ExpectedSession) => {
+        setReassignSchedule(session);
+        setNewFacultyId('');
+        setReassignType('Permanent');
+        setReassignReason('');
+        setReassignEffectiveDate(todayDateStr || '');
+        setReassignModalOpen(true);
+    };
+
+    const handleReassignFacultySubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!reassignSchedule) return;
+        setIsSubmitting(true);
+        router.post(
+            `/monitoring/lab-in-charge/schedules/${reassignSchedule.verified_schedule_id}/reassign-faculty`,
+            {
+                new_faculty_id: newFacultyId,
+                reassignment_type: reassignType,
+                reason: reassignReason,
+                effective_date: reassignEffectiveDate,
+            },
+            {
+                onFinish: () => {
+                    setIsSubmitting(false);
+                    setReassignModalOpen(false);
+                },
+            }
+        );
+    };
+
     // Open observation modal pre-populated
     const openObservationModal = (session: ExpectedSession, historical = false) => {
         setTargetSession(session);
@@ -585,11 +625,26 @@ export default function LabInChargeMonitoring({
             const roomSessions = sessionsList.filter((s) => s.room_id === room.room_id);
 
             if (selectedTimeFrame === 'live') {
+                let liveActive = room.active_session;
+                if (!liveActive) {
+                    // Match against current time if available, or session marked In Progress / Ready to Monitor
+                    const nowPoint = currentTime ? `${currentTime.trim()}:00` : '';
+                    liveActive = roomSessions.find((s) => {
+                        if (s.observation_status === 'In Progress' || s.observation_status === 'Ready to Monitor') return true;
+                        if (nowPoint) {
+                            const sStart = `${s.scheduled_start}:00`;
+                            const sEnd = `${s.scheduled_end}:00`;
+                            return sStart <= nowPoint && sEnd > nowPoint;
+                        }
+                        return false;
+                    }) ?? null;
+                }
+
                 return {
                     ...room,
-                    active_session: room.active_session,
+                    active_session: liveActive,
                     next_session: room.next_session,
-                    is_in_use: Boolean(room.active_session),
+                    is_in_use: Boolean(liveActive),
                 };
             }
 
@@ -946,11 +1001,22 @@ export default function LabInChargeMonitoring({
                                                 <p className="line-clamp-1 text-[11px] text-muted-foreground">
                                                     {active.section}
                                                 </p>
-                                                <div className="mt-1 flex items-center justify-between text-xs font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                                                <div className="mt-1.5 flex items-center justify-between text-xs font-bold tabular-nums text-amber-600 dark:text-amber-400">
                                                     <span>{active.scheduled_time || `${active.scheduled_start} - ${active.scheduled_end}`}</span>
-                                                    {active.observation_status && (
-                                                        <span className="text-[10px] font-semibold text-muted-foreground">
+                                                    {active.observation_status ? (
+                                                        <span className={cn(
+                                                            "text-[9.5px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider",
+                                                            active.observation_status === 'Ready to Monitor'
+                                                                ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200"
+                                                                : active.observation_status === 'In Progress'
+                                                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200"
+                                                                    : "bg-muted text-muted-foreground"
+                                                        )}>
                                                             {active.observation_status}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                                                            Active Now
                                                         </span>
                                                     )}
                                                 </div>
@@ -1028,9 +1094,57 @@ export default function LabInChargeMonitoring({
 
 
 
-                {/* 3. MODULE CONTENT ROUTING */}
+                {/* 3. MODULE NAVIGATION TABS */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border/60 scrollbar-none">
+                    {[
+                        { id: 'dashboard', label: 'Operational Dashboard', icon: LayoutGrid },
+                        { id: 'today', label: "Today's Lab Schedule", icon: CalendarDays },
+                        { id: 'rooms', label: 'Room Status Board', icon: Monitor },
+                        { id: 'timetables', label: 'Lab Timetables', icon: Calendar },
+                        { id: 'discrepancies', label: `Discrepancies (${openDiscrepancies.length})`, icon: AlertCircle },
+                        { id: 'action_required', label: `Action Required (${actionRequired.length})`, icon: Bell },
+                        { id: 'assigned_labs', label: 'Assigned Labs', icon: Building2 },
+                        { id: 'history', label: 'Audit History', icon: History },
+                        { id: 'end_of_day', label: 'End-of-Day Closing Report', icon: FileCheck },
+                    ].map((tab) => {
+                        const Icon = tab.icon;
+                        const isSelected = activeModule === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => {
+                                    setActiveModule(tab.id as any);
+                                    if (typeof window !== 'undefined') {
+                                        const url = new URL(window.location.href);
+                                        url.searchParams.set('tab', tab.id);
+                                        window.history.replaceState({}, '', url.toString());
+                                    }
+                                }}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer border",
+                                    isSelected
+                                        ? "bg-amber-500 text-slate-950 border-amber-500 shadow-2xs font-black"
+                                        : "bg-card text-muted-foreground border-border/80 hover:bg-accent hover:text-foreground"
+                                )}
+                            >
+                                <Icon className="h-3.5 w-3.5 shrink-0" />
+                                <span>{tab.label}</span>
+                            </button>
+                        );
+                    })}
 
-                {/* MODULE 1: DASHBOARD (Attention-First, KPI Counts, Action Required, Timeline, Availability Now) */}
+                    {/* Quick Link to Classroom & Lab Monitoring */}
+                    <Link
+                        href="/classroom-monitoring"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap border bg-card text-muted-foreground border-border/80 hover:bg-amber-50 hover:text-amber-800 dark:hover:bg-amber-950/40 dark:hover:text-amber-300 ml-auto"
+                    >
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                        <span>Classroom & Lab Mon.</span>
+                    </Link>
+                </div>
+
+                {/* 4. MODULE CONTENT ROUTING */}
                 {activeModule === 'dashboard' && (
                     <div className="space-y-4">
                         {/* Operational KPI Cards */}
@@ -1479,6 +1593,17 @@ export default function LabInChargeMonitoring({
                                                                 Photo
                                                             </Button>
                                                         )}
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-7 text-xs px-2 gap-1 border-blue-400 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 font-semibold"
+                                                            title="Map or change assigned faculty for this schedule (notifies Admin, Dean & Program Head)"
+                                                            onClick={() => openReassignModal(s)}
+                                                        >
+                                                            <UserCog className="h-3.5 w-3.5" />
+                                                            Remap Faculty
+                                                        </Button>
                                                         <Button
                                                             size="sm"
                                                             className="h-7 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-3 shadow-2xs"
@@ -2602,7 +2727,19 @@ export default function LabInChargeMonitoring({
                                             <strong className="text-foreground">{targetSession.section}</strong>
                                         </div>
                                         <div>
-                                            <span className="text-muted-foreground block text-[10px] uppercase">Expected Faculty:</span>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground block text-[10px] uppercase">Expected Faculty:</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setMonitoringModalOpen(false);
+                                                        openReassignModal(targetSession);
+                                                    }}
+                                                    className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-bold flex items-center gap-0.5 cursor-pointer"
+                                                >
+                                                    <UserCog className="h-3 w-3" /> Remap Faculty
+                                                </button>
+                                            </div>
                                             <strong className="text-foreground">{targetSession.expected_faculty}</strong>
                                         </div>
                                         <div>
@@ -3089,6 +3226,122 @@ export default function LabInChargeMonitoring({
                                     disabled={isSubmitting}
                                 >
                                     {isSubmitting ? 'Submitting...' : 'Send Correction Request'}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* REMAP / REASSIGN FACULTY MODAL (Super Admin & Lab In-Charge) */}
+            <Dialog open={reassignModalOpen} onOpenChange={setReassignModalOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-base font-black flex items-center gap-2 text-foreground">
+                            <UserCog className="h-5 w-5 text-blue-600" />
+                            Remap Faculty on Verified Schedule
+                        </DialogTitle>
+                        <DialogDescription className="text-xs">
+                            Change the assigned faculty member for this schedule slot. The Super Admin, Dean, and Program Head will be automatically notified with your user identity and audit reason.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {reassignSchedule && (
+                        <form onSubmit={handleReassignFacultySubmit} className="space-y-3.5">
+                            {/* Schedule Summary Box */}
+                            <div className="p-3 bg-muted/40 rounded-xl border text-xs space-y-1">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground uppercase text-[10px]">Course:</span>
+                                    <strong className="text-foreground">{reassignSchedule.course_code} ({reassignSchedule.section})</strong>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground uppercase text-[10px]">Laboratory:</span>
+                                    <strong className="text-foreground">{reassignSchedule.room_name}</strong>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground uppercase text-[10px]">Scheduled Window:</span>
+                                    <strong className="text-amber-700 dark:text-amber-400 font-mono">{reassignSchedule.scheduled_time}</strong>
+                                </div>
+                                <div className="flex justify-between pt-1 border-t">
+                                    <span className="text-muted-foreground uppercase text-[10px]">Current Faculty:</span>
+                                    <strong className="text-rose-600 dark:text-rose-400">{reassignSchedule.expected_faculty}</strong>
+                                </div>
+                            </div>
+
+                            {/* Select New Faculty */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-bold flex items-center gap-1">
+                                    <UserCheck className="h-3.5 w-3.5 text-blue-600" />
+                                    Select New Faculty Assignment
+                                </Label>
+                                <Select value={newFacultyId} onValueChange={setNewFacultyId} required>
+                                    <SelectTrigger className="h-9 text-xs">
+                                        <SelectValue placeholder="Choose replacing faculty member..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {allFaculty
+                                            .filter((f) => f.id !== reassignSchedule.faculty_id)
+                                            .map((f) => (
+                                                <SelectItem key={f.id} value={String(f.id)}>
+                                                    {f.first_name} {f.last_name}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Reassignment Scope / Type */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-bold">Reassignment Type</Label>
+                                <Select value={reassignType} onValueChange={(val: any) => setReassignType(val)}>
+                                    <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Permanent">Permanent (Official Semester Mapping)</SelectItem>
+                                        <SelectItem value="Substitute / Temporary">Substitute / Temporary Coverage</SelectItem>
+                                        <SelectItem value="Daily Override">Daily Session Override</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Mandatory Reason */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-bold">Audit Reason / Justification</Label>
+                                <Textarea
+                                    className="text-xs min-h-[70px]"
+                                    placeholder="State why this schedule was remapped (e.g. Approved teaching substitution, workload rebalance, faculty department assignment)..."
+                                    value={reassignReason}
+                                    onChange={(e) => setReassignReason(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            {/* Notification Notice */}
+                            <div className="p-2.5 rounded-lg bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 text-[11px] text-blue-900 dark:text-blue-300 flex items-start gap-2">
+                                <Info className="h-4 w-4 shrink-0 mt-0.5 text-blue-600" />
+                                <div>
+                                    <strong>Automated Audit Broadcast:</strong> The Super Admin, Dean, and Program Head will receive a notification identifying you (<span className="font-semibold">{labInChargeUser.name}</span>) as the person who performed this remapping.
+                                </div>
+                            </div>
+
+                            <DialogFooter className="pt-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setReassignModalOpen(false)}
+                                    disabled={isSubmitting}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                                    disabled={isSubmitting || !newFacultyId || reassignReason.trim().length < 5}
+                                >
+                                    {isSubmitting ? 'Remapping...' : 'Confirm Faculty Remap'}
                                 </Button>
                             </DialogFooter>
                         </form>
