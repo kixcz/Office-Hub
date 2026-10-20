@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Faculty;
+use App\Models\LabInChargeAssignment;
 use App\Models\Program;
 use App\Models\Role;
+use App\Models\Room;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -131,6 +133,43 @@ class RolesAndUsersSeeder extends Seeder
                     'status' => 'Active',
                 ]
             );
+        }
+
+        // Create Lab In-Charge User
+        $labRole = Role::firstOrCreate(['name' => 'Lab In-Charge']);
+        $labUser = User::firstOrCreate(
+            ['email' => 'labincharge@cids.edu'],
+            [
+                'name' => 'Engr. Marco Torres (Lab In-Charge)',
+                'password' => Hash::make('password'),
+            ]
+        );
+
+        if (! $labUser->roles()->where('role_id', $labRole->id)->exists()) {
+            $labUser->roles()->attach($labRole->id);
+        }
+
+        // Attach default Computer Laboratories to this Lab In-Charge if assignments exist
+        if (class_exists(LabInChargeAssignment::class) && class_exists(Room::class)) {
+            $labs = Room::where('room_name', 'like', '%CLR%')
+                ->orWhere('room_name', 'like', '%Lab%')
+                ->orWhere('room_name', 'like', '%COM%')
+                ->get();
+
+            foreach ($labs as $lab) {
+                LabInChargeAssignment::firstOrCreate(
+                    [
+                        'user_id' => $labUser->id,
+                        'room_id' => $lab->id,
+                    ],
+                    [
+                        'shift_name' => 'Full Day Shift',
+                        'shift_start_time' => '07:30:00',
+                        'shift_end_time' => '17:30:00',
+                        'is_active' => true,
+                    ]
+                );
+            }
         }
     }
 }

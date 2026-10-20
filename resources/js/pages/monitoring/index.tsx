@@ -17,6 +17,7 @@ import {
     User,
     Users,
     ExternalLink,
+    LayoutGrid,
     Link2,
     Search,
     Building2,
@@ -215,7 +216,7 @@ export default function MonitoringIndex({ rooms = [], schedules = [], faculties 
                     (current.course_title && current.course_title.toLowerCase().includes(q)) ||
                     (current.faculty && `${current.faculty.first_name} ${current.faculty.last_name}`.toLowerCase().includes(q))
                 );
-                const matchesAnyBlock = blocks.some(b => 
+                const matchesAnyBlock = blocks.some(b =>
                     (b.instructor && b.instructor.toLowerCase().includes(q)) ||
                     (b.course_code && b.course_code.toLowerCase().includes(q)) ||
                     (b.section && b.section.toLowerCase().includes(q))
@@ -235,7 +236,7 @@ export default function MonitoringIndex({ rooms = [], schedules = [], faculties 
             <Head title="Classroom & Laboratory Monitoring" />
 
             <div className="flex flex-col gap-5 p-6 select-none bg-slate-50/50 dark:bg-slate-950/20 min-h-full">
-                
+
                 {/* 1. Header Row */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">

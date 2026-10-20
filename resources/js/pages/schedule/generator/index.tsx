@@ -263,6 +263,14 @@ export default function ScheduleGeneratorDashboard({
 
                     <div className="flex flex-wrap items-center gap-2.5">
                         <Button
+                            variant={activeSection === 'constraints' ? 'default' : 'outline'}
+                            className="text-xs font-semibold gap-1.5 h-9"
+                            onClick={() => setActiveSection(activeSection === 'constraints' ? 'dashboard' : 'constraints')}
+                        >
+                            <SlidersHorizontal className="size-3.5 text-blue-500" />
+                            Constraints &amp; Rules
+                        </Button>
+                        <Button
                             variant={activeSection === 'candidates' ? 'default' : 'outline'}
                             className="text-xs font-semibold gap-1.5 h-9"
                             onClick={() => setActiveSection(activeSection === 'candidates' ? 'dashboard' : 'candidates')}
@@ -591,6 +599,161 @@ export default function ScheduleGeneratorDashboard({
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                ) : activeSection === 'constraints' ? (
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                                        OR-Tools CP-SAT Rule Center
+                                    </Badge>
+                                    <span className="text-xs text-gray-500">11 Hard · 8 Soft · 4 Custom</span>
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-900 mt-1 flex items-center gap-2">
+                                    <SlidersHorizontal className="size-5 text-blue-600" />
+                                    Timetable Generation Constraints & Objectives
+                                </h2>
+                                <p className="text-xs text-gray-500 max-w-2xl mt-0.5">
+                                    Configure institutional scheduling policies into mathematical conditions enforced by OR-Tools CP-SAT.
+                                    Hard constraints are non-negotiable; soft constraints guide solver optimization trade-offs.
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setActiveSection('dashboard')}
+                                >
+                                    Back to Generator Dashboard
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Constraints Metrics KPI */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="p-4 rounded-xl border border-red-200 bg-red-50/50">
+                                <span className="text-xs font-bold text-red-900 block">Hard Constraints</span>
+                                <div className="text-2xl font-black text-red-950 mt-1">11</div>
+                                <span className="text-[11px] text-red-700">Strictly mandatory (0 violations allowed)</span>
+                            </div>
+                            <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/50">
+                                <span className="text-xs font-bold text-blue-900 block">Soft Objectives</span>
+                                <div className="text-2xl font-black text-blue-950 mt-1">8</div>
+                                <span className="text-[11px] text-blue-700">Weighted penalty optimization</span>
+                            </div>
+                            <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/50">
+                                <span className="text-xs font-bold text-purple-900 block">Custom Admin Rules</span>
+                                <div className="text-2xl font-black text-purple-950 mt-1">4</div>
+                                <span className="text-[11px] text-purple-700">Department-specific policy rules</span>
+                            </div>
+                            <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50">
+                                <span className="text-xs font-bold text-emerald-900 block">Validation Status</span>
+                                <div className="text-2xl font-black text-emerald-950 mt-1">Passed</div>
+                                <span className="text-[11px] text-emerald-700">Zero contradictory rule logic</span>
+                            </div>
+                        </div>
+
+                        {/* Active Constraints Table */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2 space-y-4">
+                                <h3 className="text-sm font-bold text-gray-900">Active Solver Rules</h3>
+                                <div className="border border-gray-200 rounded-xl overflow-hidden text-xs">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 font-bold uppercase text-[10.5px]">
+                                                <th className="py-2.5 px-3">Rule Definition</th>
+                                                <th className="py-2.5 px-3">Type</th>
+                                                <th className="py-2.5 px-3">Scope</th>
+                                                <th className="py-2.5 px-3">Priority / Weight</th>
+                                                <th className="py-2.5 px-3 text-right">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {[
+                                                { name: 'No faculty schedule overlap', desc: 'Faculty cannot teach simultaneous sessions.', type: 'Hard', scope: 'All Faculty', weight: 'Mandatory', active: true },
+                                                { name: 'No section schedule overlap', desc: 'Cohorts cannot have simultaneous lectures.', type: 'Hard', scope: 'All Sections', weight: 'Mandatory', active: true },
+                                                { name: 'No room schedule overlap', desc: 'Room can only hold 1 active session at any slot.', type: 'Hard', scope: 'All Rooms', weight: 'Mandatory', active: true },
+                                                { name: 'Room capacity ≥ Section cohort size', desc: 'Assigned space must fit student head count.', type: 'Hard', scope: 'All Spaces', weight: 'Mandatory', active: true },
+                                                { name: 'Room type compatibility (Laboratory vs Lecture)', desc: 'Lab subjects strictly routed to ComLab/Physics lab.', type: 'Hard', scope: 'Curriculum', weight: 'Mandatory', active: true },
+                                                { name: 'Faculty unavailable periods respected', desc: 'Locked administrative or graduate study hours.', type: 'Hard', scope: 'All Faculty', weight: 'Mandatory', active: true },
+                                                { name: 'Required contact minutes per course', desc: '90-min standard session blocks delivered in full.', type: 'Hard', scope: 'All Offerings', weight: 'Mandatory', active: true },
+                                                { name: 'Minimize faculty idle gaps', desc: 'Group teaching hours to avoid fragmented days.', type: 'Soft', scope: 'All Faculty', weight: 'Weight: 85', active: true },
+                                                { name: 'Minimize student cohort gaps', desc: 'Prevent 3+ hour idle breaks between lectures.', type: 'Soft', scope: 'All Sections', weight: 'Weight: 80', active: true },
+                                                { name: 'Avoid late classes after 5:00 PM', desc: 'Prefer morning and early afternoon slots.', type: 'Soft', scope: 'Undergraduate', weight: 'Weight: 65', active: true },
+                                                { name: 'Program Heads avoid Friday after 4:00 PM', desc: 'Reserved for administrative dean meetings.', type: 'Soft', scope: 'Officials', weight: 'Weight: 60', active: true },
+                                            ].map((rule, idx) => (
+                                                <tr key={idx} className="hover:bg-blue-50/20">
+                                                    <td className="py-2.5 px-3">
+                                                        <span className="font-bold text-gray-900 block">{rule.name}</span>
+                                                        <span className="text-[10px] text-gray-500">{rule.desc}</span>
+                                                    </td>
+                                                    <td className="py-2.5 px-3">
+                                                        <Badge className={rule.type === 'Hard' ? 'bg-red-100 text-red-800 border-red-200 text-[10px]' : 'bg-blue-100 text-blue-800 border-blue-200 text-[10px]'}>
+                                                            {rule.type}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="py-2.5 px-3 text-gray-700">{rule.scope}</td>
+                                                    <td className="py-2.5 px-3 font-mono text-gray-600">{rule.weight}</td>
+                                                    <td className="py-2.5 px-3 text-right">
+                                                        <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200 text-[10px]">
+                                                            Active
+                                                        </Badge>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Add Structured Constraint + Gemini Assistant */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold text-gray-900">Add or Propose Constraint</h3>
+                                <div className="p-4 rounded-xl border border-gray-200 bg-gray-50/60 space-y-3">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-gray-700">Constraint Scope</label>
+                                        <select className="w-full text-xs rounded-lg border border-gray-200 bg-white p-2">
+                                            <option>Faculty / Official Category</option>
+                                            <option>Course / Subject Group</option>
+                                            <option>Cohort / Section</option>
+                                            <option>Room & Facility</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-gray-700">Constraint Classification</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button type="button" className="py-1.5 px-2 rounded-lg text-xs font-semibold border border-red-300 bg-red-50 text-red-800 text-center">
+                                                Hard Constraint
+                                            </button>
+                                            <button type="button" className="py-1.5 px-2 rounded-lg text-xs font-semibold border border-blue-300 bg-blue-50 text-blue-800 text-center">
+                                                Soft Objective
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-gray-700">Natural-Language Rule Input (Gemini-Assisted)</label>
+                                        <textarea
+                                            rows={3}
+                                            defaultValue="Avoid scheduling 4th year capstone sections on Friday mornings to accommodate off-campus industry practicum."
+                                            className="w-full text-xs rounded-lg border border-gray-200 bg-white p-2 text-gray-800 focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+
+                                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
+                                        <Sparkles className="size-3.5 text-amber-600 inline mr-1" />
+                                        <strong>Gemini Translation:</strong> Proposes soft constraint with weight 70 on Section tags [BSIT-4A, BSIS-4A] covering Friday 07:30–12:00. Requires Super Admin validation before active solving.
+                                    </div>
+
+                                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs">
+                                        Validate &amp; Save Constraint
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 ) : (

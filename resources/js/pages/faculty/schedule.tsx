@@ -160,7 +160,7 @@ export default function FacultySchedulePage({
         const fileName = `Class_Timetable_${faculty?.last_name || 'Faculty'}_${academic_year.replace(/[\s–—-]+/g, '_')}.pdf`;
 
         try {
-            const html2canvasModule = await import('html2canvas');
+            const html2canvasModule = await import('html2canvas-pro');
             const html2canvas = html2canvasModule.default || html2canvasModule;
             const { jsPDF } = await import('jspdf');
 

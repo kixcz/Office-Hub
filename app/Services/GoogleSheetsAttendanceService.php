@@ -285,24 +285,38 @@ class GoogleSheetsAttendanceService
                             'synced_at' => Carbon::now(),
                         ];
 
-                        // Compute defensible instructional hours (e.g., standard 1.5h per scheduled session)
-                        $scheduledHours = round($totalScheduled * 1.5, 2);
-                        $leaveHours = round($onLeave * 1.5, 2);
-                        $eligibleHours = max(0, round(($totalScheduled - $onLeave) * 1.5, 2));
-                        $attendedHours = round($present * 1.5, 2);
-                        $unexcusedAbsentHours = round($absent * 1.5, 2);
+                        // Compute minute-based metrics as primary baseline (90 mins per standard session)
+                        $scheduledMinutes = $totalScheduled * 90;
+                        $leaveMinutes = $onLeave * 90;
+                        $excludedMinutes = $leaveMinutes;
+                        $eligibleMinutes = max(0, $scheduledMinutes - $excludedMinutes);
+                        $attendedMinutes = $present * 90;
+                        $unexcusedAbsentMinutes = $absent * 90;
+                        $makeUpReqMinutes = $unexcusedAbsentMinutes + $leaveMinutes;
+                        $makeUpCompMinutes = 0;
 
-                        $attendanceCoverage = $eligibleHours > 0
-                            ? min(100.0, round(($attendedHours / $eligibleHours) * 100, 2))
-                            : 100.0;
+                        $scheduledHours = round($scheduledMinutes / 60, 2);
+                        $leaveHours = round($leaveMinutes / 60, 2);
+                        $eligibleHours = round($eligibleMinutes / 60, 2);
+                        $attendedHours = round($attendedMinutes / 60, 2);
+                        $unexcusedAbsentHours = round($unexcusedAbsentMinutes / 60, 2);
+
+                        // Denominator-safe rates
+                        $attendanceCoverage = $eligibleMinutes > 0
+                            ? min(100.0, round(($attendedMinutes / $eligibleMinutes) * 100, 2))
+                            : null;
 
                         $onTimeRate = $present > 0
                             ? min(100.0, round((($present - $late) / $present) * 100, 2))
-                            : 100.0;
+                            : null;
 
-                        $instructionalCompletion = $eligibleHours > 0
-                            ? min(100.0, round(($attendedHours / $eligibleHours) * 100, 2))
-                            : 100.0;
+                        $instructionalCompletion = $scheduledMinutes > 0
+                            ? min(100.0, round((($attendedMinutes + $makeUpCompMinutes) / $scheduledMinutes) * 100, 2))
+                            : null;
+
+                        $makeUpCompletion = $makeUpReqMinutes > 0
+                            ? min(100.0, round(($makeUpCompMinutes / $makeUpReqMinutes) * 100, 2))
+                            : null;
 
                         // Key by tabName and periodLabel to avoid duplicates across months
                         $key = $tabName.'_'.$periodLabel;
@@ -321,17 +335,27 @@ class GoogleSheetsAttendanceService
                             'total_late_minutes' => $totalLateMins,
                             'scheduled_sessions' => $totalScheduled,
                             'attendance_rate' => $rate,
+                            'scheduled_minutes' => $scheduledMinutes,
+                            'excluded_minutes' => $excludedMinutes,
+                            'eligible_minutes' => $eligibleMinutes,
+                            'attended_minutes' => $attendedMinutes,
+                            'approved_leave_minutes' => $leaveMinutes,
+                            'unexcused_absent_minutes' => $unexcusedAbsentMinutes,
+                            'late_sessions_count' => $late,
+                            'make_up_required_minutes' => $makeUpReqMinutes,
+                            'make_up_completed_minutes' => $makeUpCompMinutes,
                             'total_scheduled_hours' => $scheduledHours,
                             'eligible_scheduled_hours' => $eligibleHours,
                             'attended_hours' => $attendedHours,
                             'approved_leave_hours' => $leaveHours,
                             'unexcused_absent_hours' => $unexcusedAbsentHours,
-                            'make_up_required_hours' => $unexcusedAbsentHours + $leaveHours,
+                            'make_up_required_hours' => round($makeUpReqMinutes / 60, 2),
                             'make_up_completed_hours' => 0,
                             'attendance_coverage_rate' => $attendanceCoverage,
                             'on_time_rate' => $onTimeRate,
+                            'make_up_completion_rate' => $makeUpCompletion,
                             'instructional_completion_rate' => $instructionalCompletion,
-                            'is_rank_eligible' => $eligibleHours >= 12.0,
+                            'is_rank_eligible' => $eligibleMinutes >= 720,
                             'academic_year' => 'AY 2026–2027',
                             'semester' => '1st Semester',
                         ];
@@ -358,23 +382,36 @@ class GoogleSheetsAttendanceService
                         $wScheduled = $wPresent + $wAbsent + $wOnline + $wOthers + $wOnLeave;
                         $wRate = $wScheduled > 0 ? round(($wPresent / $wScheduled) * 100, 2) : 100.0;
 
-                        $wScheduledHours = round($wScheduled * 1.5, 2);
-                        $wLeaveHours = round($wOnLeave * 1.5, 2);
-                        $wEligibleHours = max(0, round(($wScheduled - $wOnLeave) * 1.5, 2));
-                        $wAttendedHours = round($wPresent * 1.5, 2);
-                        $wAbsentHours = round($wAbsent * 1.5, 2);
+                        $wScheduledMins = $wScheduled * 90;
+                        $wLeaveMins = $wOnLeave * 90;
+                        $wExcludedMins = $wLeaveMins;
+                        $wEligibleMins = max(0, $wScheduledMins - $wExcludedMins);
+                        $wAttendedMins = $wPresent * 90;
+                        $wAbsentMins = $wAbsent * 90;
+                        $wMakeUpReqMins = $wAbsentMins + $wLeaveMins;
+                        $wMakeUpCompMins = 0;
 
-                        $wCoverage = $wEligibleHours > 0
-                            ? min(100.0, round(($wAttendedHours / $wEligibleHours) * 100, 2))
-                            : 100.0;
+                        $wScheduledHours = round($wScheduledMins / 60, 2);
+                        $wLeaveHours = round($wLeaveMins / 60, 2);
+                        $wEligibleHours = round($wEligibleMins / 60, 2);
+                        $wAttendedHours = round($wAttendedMins / 60, 2);
+                        $wAbsentHours = round($wAbsentMins / 60, 2);
+
+                        $wCoverage = $wEligibleMins > 0
+                            ? min(100.0, round(($wAttendedMins / $wEligibleMins) * 100, 2))
+                            : null;
 
                         $wOnTime = $wPresent > 0
                             ? min(100.0, round((($wPresent - $wLate) / $wPresent) * 100, 2))
-                            : 100.0;
+                            : null;
 
-                        $wCompletion = $wEligibleHours > 0
-                            ? min(100.0, round(($wAttendedHours / $wEligibleHours) * 100, 2))
-                            : 100.0;
+                        $wCompletion = $wScheduledMins > 0
+                            ? min(100.0, round((($wAttendedMins + $wMakeUpCompMins) / $wScheduledMins) * 100, 2))
+                            : null;
+
+                        $wMakeUpComp = $wMakeUpReqMins > 0
+                            ? min(100.0, round(($wMakeUpCompMins / $wMakeUpReqMins) * 100, 2))
+                            : null;
 
                         $wKey = $tabName.'_'.$weekLabel;
                         $parsedMonthlySummaries[$wKey] = [
@@ -392,17 +429,27 @@ class GoogleSheetsAttendanceService
                             'total_late_minutes' => $wLateMins,
                             'scheduled_sessions' => $wScheduled,
                             'attendance_rate' => $wRate,
+                            'scheduled_minutes' => $wScheduledMins,
+                            'excluded_minutes' => $wExcludedMins,
+                            'eligible_minutes' => $wEligibleMins,
+                            'attended_minutes' => $wAttendedMins,
+                            'approved_leave_minutes' => $wLeaveMins,
+                            'unexcused_absent_minutes' => $wAbsentMins,
+                            'late_sessions_count' => $wLate,
+                            'make_up_required_minutes' => $wMakeUpReqMins,
+                            'make_up_completed_minutes' => $wMakeUpCompMins,
                             'total_scheduled_hours' => $wScheduledHours,
                             'eligible_scheduled_hours' => $wEligibleHours,
                             'attended_hours' => $wAttendedHours,
                             'approved_leave_hours' => $wLeaveHours,
                             'unexcused_absent_hours' => $wAbsentHours,
-                            'make_up_required_hours' => $wAbsentHours + $wLeaveHours,
+                            'make_up_required_hours' => round($wMakeUpReqMins / 60, 2),
                             'make_up_completed_hours' => 0,
                             'attendance_coverage_rate' => $wCoverage,
                             'on_time_rate' => $wOnTime,
+                            'make_up_completion_rate' => $wMakeUpComp,
                             'instructional_completion_rate' => $wCompletion,
-                            'is_rank_eligible' => $wEligibleHours >= 3.0,
+                            'is_rank_eligible' => $wEligibleMins >= 180,
                             'academic_year' => 'AY 2026–2027',
                             'semester' => '1st Semester',
                         ];

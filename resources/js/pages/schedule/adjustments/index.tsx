@@ -111,7 +111,14 @@ export default function AdjustmentsHub({
     faculties = [],
     offerings = [],
 }: Props) {
-    const [activeTab, setActiveTab] = useState<'windows' | 'swaps' | 'batches' | 'publication'>('swaps');
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const tabParam = urlParams?.get('tab');
+    const initialTab: 'windows' | 'swaps' | 'batches' | 'publication' =
+        tabParam === 'windows' ? 'windows' :
+        tabParam === 'batches' ? 'batches' :
+        (tabParam === 'solver' || tabParam === 'publication') ? 'publication' : 'swaps';
+
+    const [activeTab, setActiveTab] = useState<'windows' | 'swaps' | 'batches' | 'publication'>(initialTab);
     const [isNewSwapOpen, setIsNewSwapOpen] = useState(false);
     const [isConsolidating, setIsConsolidating] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);

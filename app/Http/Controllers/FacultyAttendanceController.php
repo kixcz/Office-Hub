@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicPeriod;
 use App\Models\AttendanceSourceSnapshot;
 use App\Models\Faculty;
 use App\Models\FacultyAttendance;
@@ -282,6 +283,10 @@ class FacultyAttendanceController extends Controller
 
         $lastSync = Cache::get('faculty_attendance_last_sync');
 
+        $activePeriod = AcademicPeriod::where('is_current', true)->first()
+            ?? AcademicPeriod::where('status', 'Active')->first()
+            ?? AcademicPeriod::find(1);
+
         return Inertia::render('attendance/report', [
             'programs' => $programs,
             'faculties' => $faculties,
@@ -292,8 +297,18 @@ class FacultyAttendanceController extends Controller
             'weekly_periods' => $weeklyPeriods,
             'selected_period' => $selectedPeriod,
             'last_synced_at' => $lastSync ? Carbon::parse($lastSync)->format('M d, Y h:i A') : 'Oct 13, 2026 06:07 AM',
-            'academic_year' => 'AY 2026–2027',
-            'semester' => '1st Semester',
+            'academic_year' => $activePeriod?->academic_year ?? 'AY 2026–2027',
+            'semester' => $activePeriod?->semester ?? '1st Semester',
+            'academic_period' => $activePeriod ? [
+                'id' => $activePeriod->id,
+                'academic_year' => $activePeriod->academic_year,
+                'semester' => $activePeriod->semester,
+                'official_start_of_classes' => $activePeriod->class_start_date ? $activePeriod->class_start_date->format('M d, Y') : 'Aug 10, 2026',
+                'official_end_of_classes' => $activePeriod->class_end_date ? $activePeriod->class_end_date->format('M d, Y') : 'Dec 18, 2026',
+                'semester_start_date' => $activePeriod->start_date ? $activePeriod->start_date->format('M d, Y') : 'Aug 01, 2026',
+                'semester_end_date' => $activePeriod->end_date ? $activePeriod->end_date->format('M d, Y') : 'Dec 18, 2026',
+                'status' => $activePeriod->status,
+            ] : null,
         ]);
     }
 

@@ -27,12 +27,29 @@ class Faculty extends Model
         'phone',
         'office_room',
         'employment_date',
+        'employment_start_date',
+        'employment_end_date',
+        'teaching_assignment_effective_from',
+        'teaching_assignment_effective_until',
+        'appointment_status',
         'birth_date',
         'profile_picture',
         'bio',
         'quote',
         'program_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'employment_date' => 'date',
+            'employment_start_date' => 'date',
+            'employment_end_date' => 'date',
+            'teaching_assignment_effective_from' => 'date',
+            'teaching_assignment_effective_until' => 'date',
+            'birth_date' => 'date',
+        ];
+    }
 
     protected $appends = [
         'photo_url',
@@ -197,11 +214,13 @@ class Faculty extends Model
         return $this->hasMany(FacultyWorkload::class);
     }
 
-    protected function casts(): array
+    public function teachingAssignments()
     {
-        return [
-            'employment_date' => 'date',
-            'birth_date' => 'date',
-        ];
+        return $this->hasMany(FacultyTeachingAssignment::class);
+    }
+
+    public function approvedLeaves()
+    {
+        return $this->hasMany(FacultyApprovedLeave::class);
     }
 }

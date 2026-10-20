@@ -13,6 +13,7 @@ use App\Http\Controllers\DocumentRouteController;
 use App\Http\Controllers\Faculty\FacultyPortalController;
 use App\Http\Controllers\FacultyAttendanceController;
 use App\Http\Controllers\FacultyController;
+use App\Http\Controllers\LabInChargeMonitoringController;
 use App\Http\Controllers\OfficeRequestController;
 use App\Http\Controllers\Operations\ExamMonitoringController;
 use App\Http\Controllers\Operations\FacultyWorkloadManagementController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\Schedule\ActivityController;
 use App\Http\Controllers\Schedule\CalendarController;
 use App\Http\Controllers\Schedule\MeetingController;
 use App\Http\Controllers\Schedule\SemesterScheduleController;
+use App\Http\Controllers\ScheduleReconciliationController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\Tv\CustomSlideController;
 use App\Http\Controllers\Tv\PlaylistController;
@@ -196,6 +198,25 @@ Route::middleware(['auth'])->group(function () {
         Route::post('adjustments/publish-revision', [SemesterScheduleController::class, 'publishRevision'])->name('adjustments.publish-revision');
         Route::get('gemini', [SemesterScheduleController::class, 'geminiAssistant'])->name('gemini');
         Route::post('gemini/ask', [SemesterScheduleController::class, 'askGeminiAssistant'])->name('gemini.ask');
+
+        // Schedule Sync & Reconciliation
+        Route::prefix('reconciliation')->name('reconciliation.')->group(function () {
+            Route::get('/', [ScheduleReconciliationController::class, 'index'])->name('index');
+            Route::post('/sync', [ScheduleReconciliationController::class, 'sync'])->name('sync');
+            Route::post('/records/{record}', [ScheduleReconciliationController::class, 'updateRecord'])->name('update-record');
+            Route::post('/batches/{batch}/bulk-approve', [ScheduleReconciliationController::class, 'bulkApprove'])->name('bulk-approve');
+            Route::post('/batches/{batch}/commit', [ScheduleReconciliationController::class, 'commit'])->name('commit');
+        });
+    });
+
+    // Lab In-Charge Operational Monitoring
+    Route::prefix('monitoring/lab-in-charge')->name('lab-in-charge.')->group(function () {
+        Route::get('/', [LabInChargeMonitoringController::class, 'index'])->name('index');
+        Route::post('/observation', [LabInChargeMonitoringController::class, 'recordObservation'])->name('observation');
+        Route::post('/request-correction', [LabInChargeMonitoringController::class, 'requestCorrection'])->name('request-correction');
+        Route::post('/disruption', [LabInChargeMonitoringController::class, 'reportDisruption'])->name('disruption');
+        Route::post('/discrepancies/{discrepancy}/status', [LabInChargeMonitoringController::class, 'updateDiscrepancyStatus'])->name('discrepancy.status');
+        Route::post('/discrepancies/{discrepancy}/resolve', [LabInChargeMonitoringController::class, 'resolveDiscrepancy'])->name('discrepancy.resolve');
     });
 
     // Performance Section

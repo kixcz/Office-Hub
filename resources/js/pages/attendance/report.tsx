@@ -64,6 +64,11 @@ interface Faculty {
     academic_rank?: string;
     program_id?: number;
     program?: Program;
+    employment_start_date?: string | null;
+    employment_end_date?: string | null;
+    teaching_assignment_effective_from?: string | null;
+    teaching_assignment_effective_until?: string | null;
+    appointment_status?: string | null;
 }
 
 interface FacultyAttendanceRecord {
@@ -109,6 +114,15 @@ interface FacultyAttendanceSummary {
     on_leave_count: number;
     total_late_minutes: number;
     scheduled_sessions: number;
+    scheduled_minutes?: number;
+    excluded_minutes?: number;
+    eligible_minutes?: number;
+    attended_minutes?: number;
+    approved_leave_minutes?: number;
+    unexcused_absent_minutes?: number;
+    late_sessions_count?: number;
+    make_up_required_minutes?: number;
+    make_up_completed_minutes?: number;
     total_scheduled_hours?: number;
     eligible_scheduled_hours?: number;
     attended_hours?: number;
@@ -117,9 +131,10 @@ interface FacultyAttendanceSummary {
     make_up_required_hours?: number;
     make_up_completed_hours?: number;
     attendance_rate: number;
-    attendance_coverage_rate?: number;
-    on_time_rate?: number;
-    instructional_completion_rate?: number;
+    attendance_coverage_rate?: number | null;
+    on_time_rate?: number | null;
+    make_up_completion_rate?: number | null;
+    instructional_completion_rate?: number | null;
     is_rank_eligible?: boolean;
     faculty?: Faculty | null;
 }
@@ -144,6 +159,110 @@ interface Props {
     last_synced_at: string;
     academic_year: string;
     semester: string;
+    academic_period?: {
+        id: number;
+        academic_year: string;
+        semester: string;
+        official_start_of_classes: string;
+        official_end_of_classes: string;
+        semester_start_date: string;
+        semester_end_date: string;
+        status: string;
+    } | null;
+}
+
+/**
+ * Format raw integer minutes into human-readable duration
+ * e.g., 630 -> "10h 30m", 90 -> "1h 30m", 15 -> "15m", 0 -> "0m"
+ */
+function formatDuration(minutes: number | null | undefined): string {
+    if (minutes === null || minutes === undefined || isNaN(minutes)) {
+        return '—';
+    }
+    const mins = Math.max(0, Math.round(minutes));
+    if (mins === 0) return '0m';
+
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+}
+
+/**
+ * Format weekly/monthly period label to clearly show the start and end dates
+ * e.g., "August Week 5 (8/31/2026)" -> "August Week 5 (Aug 31, 2026 – Sep 06, 2026)"
+ * e.g., "August 2026" -> "August 2026 (Aug 01, 2026 – Aug 31, 2026)"
+ * e.g., "September Week 1 (9/7/2026)" -> "September Week 1 (Sep 07, 2026 – Sep 13, 2026)"
+ */
+function formatPeriodWithDateRange(periodLabel: string, periodType: 'week' | 'month' | 'custom' = 'week'): string {
+    if (!periodLabel) return '';
+
+    // If already has a full date range with hyphen/dash (e.g., Aug 31, 2026 – Sep 06, 2026), keep it clean
+    if (periodLabel.includes('–') || periodLabel.includes(' - ')) {
+        return periodLabel;
+    }
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const fullMonthMap: Record<string, number> = {
+        january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+        july: 6, august: 7, september: 8, october: 9, november: 10, december: 11
+    };
+
+    // Check for serial date pattern like "October Week 1 (46300)"
+    const serialMatch = periodLabel.match(/^(.*?Week\s*\d+)\s*\((\d{5})\)/i);
+    if (serialMatch) {
+        const prefix = serialMatch[1].trim();
+        const serial = parseInt(serialMatch[2], 10);
+        // Excel serial date starting Jan 1, 1900
+        const excelEpoch = new Date(1899, 11, 30);
+        const startDate = new Date(excelEpoch.getTime() + serial * 86400000);
+        if (!isNaN(startDate.getTime())) {
+            const endDate = new Date(startDate.getTime() + 6 * 86400000);
+            const startFormatted = `${monthNames[startDate.getMonth()]} ${String(startDate.getDate()).padStart(2, '0')}, ${startDate.getFullYear()}`;
+            const endFormatted = `${monthNames[endDate.getMonth()]} ${String(endDate.getDate()).padStart(2, '0')}, ${endDate.getFullYear()}`;
+            return `${prefix} (${startFormatted} – ${endFormatted})`;
+        }
+    }
+
+    // Check for weekly pattern: "August Week 5 (8/31/2026)" or "Week 1 (9/7/2026)"
+    const weekMatch = periodLabel.match(/^(.*?Week\s*\d+)\s*\((.*?)\)/i) || periodLabel.match(/\((\d{1,2}\/\d{1,2}\/\d{4})\)/);
+    if (weekMatch) {
+        const prefix = weekMatch[1] ? weekMatch[1].trim() : periodLabel.replace(/\s*\(.*?\)/, '').trim();
+        const dateStr = weekMatch[2] || weekMatch[1];
+        const dateParts = dateStr.split('/');
+        if (dateParts.length === 3) {
+            const m = parseInt(dateParts[0], 10) - 1;
+            const d = parseInt(dateParts[1], 10);
+            const y = parseInt(dateParts[2], 10);
+
+            const startDate = new Date(y, m, d);
+            if (!isNaN(startDate.getTime())) {
+                const endDate = new Date(y, m, d + 6); // 7-day academic week (Mon-Sun)
+                const startFormatted = `${monthNames[startDate.getMonth()]} ${String(startDate.getDate()).padStart(2, '0')}, ${startDate.getFullYear()}`;
+                const endFormatted = `${monthNames[endDate.getMonth()]} ${String(endDate.getDate()).padStart(2, '0')}, ${endDate.getFullYear()}`;
+                return `${prefix} (${startFormatted} – ${endFormatted})`;
+            }
+        }
+    }
+
+    // Check for monthly pattern: "August 2026", "September 2026", etc.
+    const monthYearMatch = periodLabel.match(/^([a-zA-Z]+)\s+(\d{4})$/);
+    if (monthYearMatch) {
+        const monthName = monthYearMatch[1].toLowerCase();
+        const year = parseInt(monthYearMatch[2], 10);
+        if (fullMonthMap[monthName] !== undefined && !isNaN(year)) {
+            const m = fullMonthMap[monthName];
+            const startDate = new Date(year, m, 1);
+            const endDate = new Date(year, m + 1, 0); // Last day of month
+            const startFormatted = `${monthNames[startDate.getMonth()]} 01, ${year}`;
+            const endFormatted = `${monthNames[endDate.getMonth()]} ${String(endDate.getDate()).padStart(2, '0')}, ${year}`;
+            return `${periodLabel} (${startFormatted} – ${endFormatted})`;
+        }
+    }
+
+    return periodLabel;
 }
 
 export default function GenerateReportPage({
@@ -156,6 +275,7 @@ export default function GenerateReportPage({
     last_synced_at = 'Oct 13, 2026 06:23 AM',
     academic_year = 'AY 2026–2027',
     semester = '1st Semester',
+    academic_period = null,
 }: Props) {
     // 1. Report Format
     const [reportFormat, setReportFormat] = useState<'weekly' | 'monthly' | 'individual' | 'consolidated'>('weekly');
@@ -367,6 +487,27 @@ export default function GenerateReportPage({
         showToast('Signatories reset to default template.');
     };
 
+    // 8. Specific Faculty Row Exclusion state for Preview & Report
+    const [excludedFacultyKeys, setExcludedFacultyKeys] = useState<string[]>([]);
+
+    const handleExcludeFacultyRow = (key: string, facultyName: string) => {
+        setExcludedFacultyKeys(prev => {
+            if (prev.includes(key)) return prev;
+            return [...prev, key];
+        });
+        showToast(`Removed "${facultyName}" from report view.`);
+    };
+
+    const handleRestoreFacultyRow = (key: string, facultyName?: string) => {
+        setExcludedFacultyKeys(prev => prev.filter(k => k !== key));
+        showToast(facultyName ? `Restored "${facultyName}" to report view.` : 'Restored faculty row.');
+    };
+
+    const handleRestoreAllFacultyRows = () => {
+        setExcludedFacultyKeys([]);
+        showToast('All removed faculty rows restored to report view.');
+    };
+
     // Save full template (signatories + summaries toggles)
     const handleSaveTemplate = () => {
         try {
@@ -441,7 +582,7 @@ export default function GenerateReportPage({
             return true;
         });
 
-        // Base rows from matching summaries with instructional hours & multi-indicator performance
+        // Base rows from matching summaries with minute-based baseline & multi-indicator performance
         let rows = uniqueSummaries.map(s => {
             let facultyName = s.faculty ? `${s.faculty.first_name} ${s.faculty.last_name}` : s.instructor_name;
             // Check if user customized the faculty name
@@ -459,46 +600,121 @@ export default function GenerateReportPage({
             const onLeave = s.on_leave_count ?? 0;
             const lateMinutes = s.total_late_minutes ?? (late * 15);
 
-            // Compute or read instructional hours
-            // Default 1.5 hrs (90 mins) per session if not set on summary
-            const scheduledHours = s.total_scheduled_hours || (scheduledSessions * 1.5);
-            const leaveHours = s.approved_leave_hours || (onLeave * 1.5);
-            const eligibleHours = s.eligible_scheduled_hours || Math.max(0, scheduledHours - leaveHours);
-            const attendedHours = s.attended_hours || (present * 1.5);
-            const unexcusedAbsentHours = s.unexcused_absent_hours || (absent * 1.5);
+            // Compute atomic minute baselines
+            const scheduledMin = s.scheduled_minutes || (s.total_scheduled_hours ? Math.round(s.total_scheduled_hours * 60) : scheduledSessions * 90);
+            const leaveMin = s.approved_leave_minutes || (s.approved_leave_hours ? Math.round(s.approved_leave_hours * 60) : onLeave * 90);
+            const absentMin = s.unexcused_absent_minutes || (s.unexcused_absent_hours ? Math.round(s.unexcused_absent_hours * 60) : absent * 90);
+            const eligibleMin = s.eligible_minutes ?? (s.eligible_scheduled_hours ? Math.round(s.eligible_scheduled_hours * 60) : Math.max(0, scheduledMin - leaveMin));
+            const attendedMin = s.attended_minutes || (s.attended_hours ? Math.round(s.attended_hours * 60) : present * 90);
 
-            // Fetch matched make-up completed hours
-            const makeUpRequiredHours = s.make_up_required_hours || (unexcusedAbsentHours + leaveHours);
-            let makeUpCompletedHours = s.make_up_completed_hours || 0;
+            // Fetch matched make-up completed minutes
+            let makeUpReqMin = s.make_up_required_minutes ?? (s.make_up_required_hours ? Math.round(s.make_up_required_hours * 60) : absentMin + leaveMin);
+            let makeUpDoneMin = s.make_up_completed_minutes || (s.make_up_completed_hours ? Math.round(s.make_up_completed_hours * 60) : 0);
             if (s.faculty_id) {
                 const completedMUs = (weekly_sessions as any[]).filter(ws => ws.faculty_id === s.faculty_id && ws.make_up_request_id);
-                if (completedMUs.length > 0 && makeUpCompletedHours === 0) {
-                    makeUpCompletedHours = completedMUs.length * 1.5;
+                if (completedMUs.length > 0 && makeUpDoneMin === 0) {
+                    makeUpDoneMin = completedMUs.length * 90;
                 }
             }
 
-            // Rates
-            const attendanceCoverage = eligibleHours > 0
-                ? Math.min(100, Math.round((attendedHours / eligibleHours) * 100))
-                : 100;
+            // Rates: null on zero denominator to ensure mathematical truth (never show 100% when 0 eligible)
+            const attendanceCoverage = eligibleMin > 0
+                ? Number(((attendedMin / eligibleMin) * 100).toFixed(2))
+                : null;
 
             const onTimeRate = present > 0
-                ? Math.min(100, Math.round(((present - late) / present) * 100))
-                : 100;
+                ? Number((((present - late) / present) * 100).toFixed(2))
+                : null;
 
-            const instructionalCompletion = eligibleHours > 0
-                ? Math.min(100, Math.round(((attendedHours + makeUpCompletedHours) / eligibleHours) * 100))
-                : 100;
+            const instructionalCompletion = scheduledMin > 0
+                ? Math.min(100, Number((((attendedMin + makeUpDoneMin) / scheduledMin) * 100).toFixed(2)))
+                : null;
 
-            const isRankEligible = s.is_rank_eligible ?? (eligibleHours >= (periodTab === 'week' ? 3.0 : 12.0));
+            const isRankEligible = s.is_rank_eligible ?? (eligibleMin >= (periodTab === 'week' ? 180 : 720));
 
-            // Associated individual session meetings for audit trail
+            // Associated individual session meetings for audit trail, scoped to selected reporting period
             const facultySessions = weekly_sessions.filter(ws => {
-                if (s.faculty_id && ws.faculty_id === s.faculty_id) return true;
-                const nameLower = (ws.instructor_name || '').toLowerCase();
-                const targetLower = (s.instructor_name || '').toLowerCase();
-                return nameLower.includes(targetLower) || targetLower.includes(nameLower);
+                // 1. Strict faculty match
+                const facultyMatches = s.faculty_id
+                    ? ws.faculty_id === s.faculty_id
+                    : (ws.instructor_name || '').trim().toLowerCase() === (s.instructor_name || '').trim().toLowerCase();
+                if (!facultyMatches) return false;
+
+                // 2. Period scoping
+                const periodLower = (selectedPeriod || '').toLowerCase();
+                const wsWeek = (ws.week_label || '').toLowerCase();
+
+                // Individual or consolidated all-periods view shows all sessions
+                if (reportFormat === 'individual' && !selectedPeriod) return true;
+
+                if (periodTab === 'week') {
+                    // Extract week identifier e.g. "august week 5" or "september week 1"
+                    const weekPrefixMatch = periodLower.match(/^(.*?\bweek\s*\d+)/i);
+                    const weekPrefix = weekPrefixMatch ? weekPrefixMatch[1].trim() : periodLower;
+                    if (wsWeek && (wsWeek.includes(weekPrefix) || weekPrefix.includes(wsWeek))) {
+                        return true;
+                    }
+                    // Or match by date if available
+                    if (ws.session_date && periodLower.includes('/')) {
+                        const dateMatch = periodLower.match(/\((\d{1,2}\/\d{1,2}\/\d{4})\)/);
+                        if (dateMatch) {
+                            const [m, d, y] = dateMatch[1].split('/').map(Number);
+                            const start = new Date(y, m - 1, d);
+                            const end = new Date(y, m - 1, d + 6, 23, 59, 59);
+                            const sDate = new Date(ws.session_date);
+                            if (sDate >= start && sDate <= end) return true;
+                        }
+                    }
+                    return false;
+                } else if (periodTab === 'month') {
+                    // Filter by month name
+                    const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+                    const matchedMonth = monthNames.find(m => periodLower.includes(m));
+                    if (matchedMonth) {
+                        if (wsWeek.includes(matchedMonth)) return true;
+                        if (ws.session_date) {
+                            const sDate = new Date(ws.session_date);
+                            if (monthNames[sDate.getMonth()] === matchedMonth) return true;
+                        }
+                    }
+                    return false;
+                }
+
+                return true;
             });
+
+            // Check if reporting period is before faculty employment or assignment start
+            const facultyObj = s.faculty || faculties.find(f => f.id === s.faculty_id);
+            const empStart = facultyObj?.teaching_assignment_effective_from || facultyObj?.employment_start_date;
+            let isNotYetEmployed = false;
+            let effectiveDateNote: string | null = null;
+
+            if (empStart) {
+                const empStartObj = new Date(empStart);
+                // Approximate start of currently selected period
+                const periodLower = selectedPeriod.toLowerCase();
+                let periodStartDate = new Date('2026-08-10'); // Default official class start
+
+                if (periodLower.includes('august')) periodStartDate = new Date('2026-08-10');
+                else if (periodLower.includes('september')) periodStartDate = new Date('2026-09-01');
+                else if (periodLower.includes('october')) periodStartDate = new Date('2026-10-01');
+                else if (periodLower.includes('november')) periodStartDate = new Date('2026-11-01');
+                else if (periodLower.includes('december')) periodStartDate = new Date('2026-12-01');
+
+                let periodEndDate = new Date('2026-08-31');
+                if (periodLower.includes('september')) periodEndDate = new Date('2026-09-30');
+                else if (periodLower.includes('october')) periodEndDate = new Date('2026-10-31');
+                else if (periodLower.includes('november')) periodEndDate = new Date('2026-11-30');
+                else if (periodLower.includes('december')) periodEndDate = new Date('2026-12-18');
+
+                // If reporting period ends before faculty joined
+                if (periodEndDate < empStartObj) {
+                    isNotYetEmployed = true;
+                } else if (empStartObj > periodStartDate && empStartObj <= periodEndDate) {
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    effectiveDateNote = `Attendance evaluated from ${monthNames[empStartObj.getMonth()]} ${empStartObj.getDate()}, ${empStartObj.getFullYear()} – employment/teaching assignment effective date`;
+                }
+            }
 
             return {
                 id: s.id,
@@ -506,24 +722,33 @@ export default function GenerateReportPage({
                 original_instructor_name: s.instructor_name,
                 instructor_name: facultyName,
                 program: programCode,
-                scheduledSessions,
-                present,
-                late,
-                absent,
-                onLeave,
-                lateMinutes,
-                scheduledHours,
-                eligibleHours,
-                attendedHours,
-                leaveHours,
-                unexcusedAbsentHours,
-                makeUpRequiredHours,
-                makeUpCompletedHours,
-                attendanceCoverage,
-                onTimeRate,
-                instructionalCompletion,
-                isRankEligible,
-                sessions: facultySessions,
+                scheduledSessions: isNotYetEmployed ? 0 : scheduledSessions,
+                present: isNotYetEmployed ? 0 : present,
+                late: isNotYetEmployed ? 0 : late,
+                absent: isNotYetEmployed ? 0 : absent,
+                onLeave: isNotYetEmployed ? 0 : onLeave,
+                lateMinutes: isNotYetEmployed ? 0 : lateMinutes,
+                scheduledMin: isNotYetEmployed ? 0 : scheduledMin,
+                eligibleMin: isNotYetEmployed ? 0 : eligibleMin,
+                attendedMin: isNotYetEmployed ? 0 : attendedMin,
+                leaveMin: isNotYetEmployed ? 0 : leaveMin,
+                absentMin: isNotYetEmployed ? 0 : absentMin,
+                makeUpReqMin: isNotYetEmployed ? 0 : makeUpReqMin,
+                makeUpDoneMin: isNotYetEmployed ? 0 : makeUpDoneMin,
+                scheduledHours: isNotYetEmployed ? 0 : Number((scheduledMin / 60).toFixed(1)),
+                eligibleHours: isNotYetEmployed ? 0 : Number((eligibleMin / 60).toFixed(1)),
+                attendedHours: isNotYetEmployed ? 0 : Number((attendedMin / 60).toFixed(1)),
+                leaveHours: isNotYetEmployed ? 0 : Number((leaveMin / 60).toFixed(1)),
+                unexcusedAbsentHours: isNotYetEmployed ? 0 : Number((absentMin / 60).toFixed(1)),
+                makeUpRequiredHours: isNotYetEmployed ? 0 : Number((makeUpReqMin / 60).toFixed(1)),
+                makeUpCompletedHours: isNotYetEmployed ? 0 : Number((makeUpDoneMin / 60).toFixed(1)),
+                attendanceCoverage: isNotYetEmployed ? null : attendanceCoverage,
+                onTimeRate: isNotYetEmployed ? null : onTimeRate,
+                instructionalCompletion: isNotYetEmployed ? null : instructionalCompletion,
+                isRankEligible: isNotYetEmployed ? false : isRankEligible,
+                isNotYetEmployed,
+                effectiveDateNote,
+                sessions: isNotYetEmployed ? [] : facultySessions,
             };
         });
 
@@ -532,226 +757,193 @@ export default function GenerateReportPage({
             rows = [
                 {
                     id: 1,
-                    faculty_id: 35,
-                    original_instructor_name: 'Razel Ann Aguilar',
-                    instructor_name: 'Razel Ann Aguilar',
-                    program: 'BSIT',
-                    scheduledSessions: 3,
-                    present: 3,
-                    late: 0,
-                    absent: 0,
-                    onLeave: 0,
-                    lateMinutes: 0,
-                    scheduledHours: 4.5,
-                    eligibleHours: 4.5,
-                    attendedHours: 4.5,
-                    leaveHours: 0,
-                    unexcusedAbsentHours: 0,
-                    makeUpRequiredHours: 0,
+                    faculty_id: 12,
+                    original_instructor_name: 'Kaye Panaligan',
+                    instructor_name: 'Kaye Panaligan',
+                    program: 'BSIS',
+                    scheduledSessions: 12,
+                    present: 7,
+                    late: 1,
+                    absent: 1,
+                    onLeave: 4,
+                    lateMinutes: 12,
+                    scheduledMin: 1080,
+                    eligibleMin: 720,
+                    attendedMin: 618,
+                    leaveMin: 360,
+                    absentMin: 90,
+                    makeUpReqMin: 462,
+                    makeUpDoneMin: 0,
+                    scheduledHours: 18.0,
+                    eligibleHours: 12.0,
+                    attendedHours: 10.3,
+                    leaveHours: 6.0,
+                    unexcusedAbsentHours: 1.5,
+                    makeUpRequiredHours: 7.7,
                     makeUpCompletedHours: 0,
-                    attendanceCoverage: 100,
-                    onTimeRate: 100,
-                    instructionalCompletion: 100,
+                    attendanceCoverage: 85.83,
+                    onTimeRate: 85.71,
+                    instructionalCompletion: 57.22,
                     isRankEligible: true,
                     sessions: [],
                 },
                 {
                     id: 2,
-                    faculty_id: 14,
-                    original_instructor_name: 'Felomino Alba',
-                    instructor_name: 'Felomino Alba',
+                    faculty_id: 35,
+                    original_instructor_name: 'Razel Ann Aguilar',
+                    instructor_name: 'Razel Ann Aguilar',
                     program: 'BSIT',
-                    scheduledSessions: 2,
-                    present: 2,
+                    scheduledSessions: 6,
+                    present: 0,
                     late: 0,
                     absent: 0,
-                    onLeave: 0,
+                    onLeave: 6,
                     lateMinutes: 0,
-                    scheduledHours: 3.0,
-                    eligibleHours: 3.0,
-                    attendedHours: 3.0,
-                    leaveHours: 0,
-                    unexcusedAbsentHours: 0,
-                    makeUpRequiredHours: 0,
-                    makeUpCompletedHours: 0,
-                    attendanceCoverage: 100,
-                    onTimeRate: 100,
-                    instructionalCompletion: 100,
-                    isRankEligible: true,
+                    scheduledMin: 540,
+                    eligibleMin: 0,
+                    attendedMin: 0,
+                    leaveMin: 540,
+                    absentMin: 0,
+                    makeUpReqMin: 540,
+                    makeUpDoneMin: 0,
+                    scheduledHours: 9.0,
+                    eligibleHours: 0.0,
+                    attendedHours: 0.0,
+                    leaveHours: 9.0,
+                    unexcusedAbsentHours: 0.0,
+                    makeUpRequiredHours: 9.0,
+                    makeUpCompletedHours: 0.0,
+                    attendanceCoverage: null,
+                    onTimeRate: null,
+                    instructionalCompletion: 0.0,
+                    isRankEligible: false,
                     sessions: [],
                 },
                 {
                     id: 3,
-                    faculty_id: 18,
-                    original_instructor_name: 'Dhominic Arendain',
-                    instructor_name: 'Dhominic Arendain',
-                    program: 'BSIS',
-                    scheduledSessions: 3,
-                    present: 3,
+                    faculty_id: 14,
+                    original_instructor_name: 'Felomino Alba',
+                    instructor_name: 'Felomino Alba',
+                    program: 'BSIT',
+                    scheduledSessions: 10,
+                    present: 10,
                     late: 0,
                     absent: 0,
                     onLeave: 0,
                     lateMinutes: 0,
-                    scheduledHours: 4.5,
-                    eligibleHours: 4.5,
-                    attendedHours: 4.5,
+                    scheduledMin: 900,
+                    eligibleMin: 900,
+                    attendedMin: 900,
+                    leaveMin: 0,
+                    absentMin: 0,
+                    makeUpReqMin: 0,
+                    makeUpDoneMin: 0,
+                    scheduledHours: 15.0,
+                    eligibleHours: 15.0,
+                    attendedHours: 15.0,
                     leaveHours: 0,
                     unexcusedAbsentHours: 0,
                     makeUpRequiredHours: 0,
                     makeUpCompletedHours: 0,
-                    attendanceCoverage: 100,
-                    onTimeRate: 100,
-                    instructionalCompletion: 100,
+                    attendanceCoverage: 100.0,
+                    onTimeRate: 100.0,
+                    instructionalCompletion: 100.0,
                     isRankEligible: true,
                     sessions: [],
                 },
                 {
                     id: 4,
-                    faculty_id: null,
-                    original_instructor_name: 'Bacalso',
-                    instructor_name: 'Bacalso',
+                    faculty_id: 18,
+                    original_instructor_name: 'Dhominic Arendain',
+                    instructor_name: 'Dhominic Arendain',
                     program: 'BSIS',
-                    scheduledSessions: 3,
-                    present: 3,
-                    late: 0,
+                    scheduledSessions: 8,
+                    present: 7,
+                    late: 2,
                     absent: 0,
-                    onLeave: 0,
-                    lateMinutes: 0,
-                    scheduledHours: 4.5,
-                    eligibleHours: 4.5,
-                    attendedHours: 4.5,
-                    leaveHours: 0,
+                    onLeave: 1,
+                    lateMinutes: 20,
+                    scheduledMin: 720,
+                    eligibleMin: 630,
+                    attendedMin: 630,
+                    leaveMin: 90,
+                    absentMin: 0,
+                    makeUpReqMin: 90,
+                    makeUpDoneMin: 90,
+                    scheduledHours: 12.0,
+                    eligibleHours: 10.5,
+                    attendedHours: 10.5,
+                    leaveHours: 1.5,
                     unexcusedAbsentHours: 0,
-                    makeUpRequiredHours: 0,
-                    makeUpCompletedHours: 0,
-                    attendanceCoverage: 100,
-                    onTimeRate: 100,
-                    instructionalCompletion: 100,
+                    makeUpRequiredHours: 1.5,
+                    makeUpCompletedHours: 1.5,
+                    attendanceCoverage: 100.0,
+                    onTimeRate: 66.67,
+                    instructionalCompletion: 100.0,
                     isRankEligible: true,
                     sessions: [],
                 },
                 {
                     id: 5,
-                    faculty_id: 36,
-                    original_instructor_name: 'Kris Bahaya',
-                    instructor_name: 'Kris Bahaya',
+                    faculty_id: 11,
+                    original_instructor_name: 'Amzel Menoza',
+                    instructor_name: 'Amzel Menoza',
                     program: 'BSIT',
-                    scheduledSessions: 3,
-                    present: 2,
-                    late: 1,
-                    absent: 0,
+                    scheduledSessions: 8,
+                    present: 4,
+                    late: 0,
+                    absent: 4,
                     onLeave: 0,
-                    lateMinutes: 15,
-                    scheduledHours: 4.5,
-                    eligibleHours: 4.5,
-                    attendedHours: 3.0,
+                    lateMinutes: 0,
+                    scheduledMin: 720,
+                    eligibleMin: 720,
+                    attendedMin: 360,
+                    leaveMin: 0,
+                    absentMin: 360,
+                    makeUpReqMin: 360,
+                    makeUpDoneMin: 0,
+                    scheduledHours: 12.0,
+                    eligibleHours: 12.0,
+                    attendedHours: 6.0,
                     leaveHours: 0,
-                    unexcusedAbsentHours: 0,
-                    makeUpRequiredHours: 0,
+                    unexcusedAbsentHours: 6.0,
+                    makeUpRequiredHours: 6.0,
                     makeUpCompletedHours: 0,
-                    attendanceCoverage: 100,
-                    onTimeRate: 50,
-                    instructionalCompletion: 100,
+                    attendanceCoverage: 50.0,
+                    onTimeRate: 100.0,
+                    instructionalCompletion: 50.0,
                     isRankEligible: true,
                     sessions: [],
                 },
                 {
                     id: 6,
-                    faculty_id: 9,
-                    original_instructor_name: 'Mardalyn Caniban',
-                    instructor_name: 'Mardalyn Caniban',
+                    faculty_id: 23,
+                    original_instructor_name: 'Carl Ohmar Montoya',
+                    instructor_name: 'Carl Ohmar Montoya',
                     program: 'BSIS',
-                    scheduledSessions: 3,
-                    present: 3,
+                    scheduledSessions: 6,
+                    present: 4,
                     late: 0,
-                    absent: 0,
-                    onLeave: 0,
+                    absent: 1,
+                    onLeave: 1,
                     lateMinutes: 0,
-                    scheduledHours: 4.5,
-                    eligibleHours: 4.5,
-                    attendedHours: 4.5,
-                    leaveHours: 0,
-                    unexcusedAbsentHours: 0,
-                    makeUpRequiredHours: 0,
+                    scheduledMin: 540,
+                    eligibleMin: 450,
+                    attendedMin: 360,
+                    leaveMin: 90,
+                    absentMin: 90,
+                    makeUpReqMin: 180,
+                    makeUpDoneMin: 0,
+                    scheduledHours: 9.0,
+                    eligibleHours: 7.5,
+                    attendedHours: 6.0,
+                    leaveHours: 1.5,
+                    unexcusedAbsentHours: 1.5,
+                    makeUpRequiredHours: 3.0,
                     makeUpCompletedHours: 0,
-                    attendanceCoverage: 100,
-                    onTimeRate: 100,
-                    instructionalCompletion: 100,
-                    isRankEligible: true,
-                    sessions: [],
-                },
-                {
-                    id: 7,
-                    faculty_id: 15,
-                    original_instructor_name: 'Jamaica Estrebello',
-                    instructor_name: 'Jamaica Estrebello',
-                    program: 'BSIT',
-                    scheduledSessions: 10,
-                    present: 6,
-                    late: 4,
-                    absent: 0,
-                    onLeave: 0,
-                    lateMinutes: 50,
-                    scheduledHours: 15.0,
-                    eligibleHours: 15.0,
-                    attendedHours: 9.0,
-                    leaveHours: 0,
-                    unexcusedAbsentHours: 0,
-                    makeUpRequiredHours: 0,
-                    makeUpCompletedHours: 0,
-                    attendanceCoverage: 100,
-                    onTimeRate: 33,
-                    instructionalCompletion: 100,
-                    isRankEligible: true,
-                    sessions: [],
-                },
-                {
-                    id: 8,
-                    faculty_id: 11,
-                    original_instructor_name: 'Amzel Menoza',
-                    instructor_name: 'Amzel Menoza',
-                    program: 'BSIT',
-                    scheduledSessions: 54,
-                    present: 42,
-                    late: 8,
-                    absent: 4,
-                    onLeave: 8,
-                    lateMinutes: 120,
-                    scheduledHours: 81.0,
-                    eligibleHours: 69.0,
-                    attendedHours: 63.0,
-                    leaveHours: 12.0,
-                    unexcusedAbsentHours: 6.0,
-                    makeUpRequiredHours: 18.0,
-                    makeUpCompletedHours: 6.0,
-                    attendanceCoverage: 91,
-                    onTimeRate: 81,
-                    instructionalCompletion: 100,
-                    isRankEligible: true,
-                    sessions: [],
-                },
-                {
-                    id: 9,
-                    faculty_id: 1,
-                    original_instructor_name: 'Domingo Origines',
-                    instructor_name: 'Domingo Origines',
-                    program: 'BSIT',
-                    scheduledSessions: 12,
-                    present: 11,
-                    late: 1,
-                    absent: 0,
-                    onLeave: 0,
-                    lateMinutes: 10,
-                    scheduledHours: 18.0,
-                    eligibleHours: 18.0,
-                    attendedHours: 16.5,
-                    leaveHours: 0,
-                    unexcusedAbsentHours: 0,
-                    makeUpRequiredHours: 0,
-                    makeUpCompletedHours: 0,
-                    attendanceCoverage: 100,
-                    onTimeRate: 91,
-                    instructionalCompletion: 100,
+                    attendanceCoverage: 80.0,
+                    onTimeRate: 100.0,
+                    instructionalCompletion: 66.67,
                     isRankEligible: true,
                     sessions: [],
                 },
@@ -785,60 +977,93 @@ export default function GenerateReportPage({
         }
 
         if (selectedStatus === 'present') {
-            rows = rows.filter(r => r.attendanceCoverage >= 100);
+            rows = rows.filter(r => r.attendanceCoverage !== null && r.attendanceCoverage >= 100);
         } else if (selectedStatus === 'late') {
             rows = rows.filter(r => r.late > 0);
         } else if (selectedStatus === 'absent') {
             rows = rows.filter(r => r.absent > 0);
         }
 
+        // Filter out specifically removed / excluded faculty rows
+        const excludedList: { key: string; name: string }[] = [];
+        if (excludedFacultyKeys.length > 0) {
+            rows = rows.filter(r => {
+                const key = r.faculty_id ? `fid_${r.faculty_id}` : `name_${(r.original_instructor_name || r.instructor_name).toLowerCase().trim()}`;
+                if (excludedFacultyKeys.includes(key)) {
+                    excludedList.push({ key, name: r.instructor_name });
+                    return false;
+                }
+                return true;
+            });
+        }
+
         // Sort
         if (sortBy === 'rate') {
-            rows.sort((a, b) => b.attendanceCoverage - a.attendanceCoverage);
+            rows.sort((a, b) => (b.attendanceCoverage ?? -1) - (a.attendanceCoverage ?? -1));
         } else if (sortBy === 'completion') {
-            rows.sort((a, b) => b.instructionalCompletion - a.instructionalCompletion);
-        } else if (sortBy === 'hours') {
-            rows.sort((a, b) => b.eligibleHours - a.eligibleHours);
+            rows.sort((a, b) => (b.instructionalCompletion ?? -1) - (a.instructionalCompletion ?? -1));
+        } else if (sortBy === 'minutes' || sortBy === 'hours') {
+            rows.sort((a, b) => b.eligibleMin - a.eligibleMin);
         } else {
             rows.sort((a, b) => a.instructor_name.localeCompare(b.instructor_name));
         }
 
-        // Aggregate Totals across instructional hours & percentages
-        const totalEligibleHours = rows.reduce((acc, r) => acc + r.eligibleHours, 0);
-        const totalAttendedHours = rows.reduce((acc, r) => acc + r.attendedHours, 0);
-        const totalLeaveHours = rows.reduce((acc, r) => acc + r.leaveHours, 0);
-        const totalAbsentHours = rows.reduce((acc, r) => acc + r.unexcusedAbsentHours, 0);
+        // Aggregate Totals strictly in minutes as the primary baseline
+        const totalScheduledMin = rows.reduce((acc, r) => acc + r.scheduledMin, 0);
+        const totalEligibleMin = rows.reduce((acc, r) => acc + r.eligibleMin, 0);
+        const totalAttendedMin = rows.reduce((acc, r) => acc + r.attendedMin, 0);
+        const totalLeaveMin = rows.reduce((acc, r) => acc + r.leaveMin, 0);
+        const totalAbsentMin = rows.reduce((acc, r) => acc + r.absentMin, 0);
         const totalLateSessions = rows.reduce((acc, r) => acc + r.late, 0);
         const totalLateMinutes = rows.reduce((acc, r) => acc + r.lateMinutes, 0);
-        const totalMakeUpRequired = rows.reduce((acc, r) => acc + r.makeUpRequiredHours, 0);
-        const totalMakeUpCompleted = rows.reduce((acc, r) => acc + r.makeUpCompletedHours, 0);
+        const totalMakeUpReqMin = rows.reduce((acc, r) => acc + r.makeUpReqMin, 0);
+        const totalMakeUpDoneMin = rows.reduce((acc, r) => acc + r.makeUpDoneMin, 0);
+        const totalPresentSessions = rows.reduce((acc, r) => acc + r.present, 0);
+        const totalScheduledSessions = rows.reduce((acc, r) => acc + r.scheduledSessions, 0);
         const facultyCount = rows.length;
 
-        const overallCoverage = totalEligibleHours > 0
-            ? Math.round((totalAttendedHours / totalEligibleHours) * 100)
-            : 100;
+        // Overall performance rates computed from aggregate minutes
+        const overallCoverage = totalEligibleMin > 0
+            ? Number(((totalAttendedMin / totalEligibleMin) * 100).toFixed(1))
+            : null;
 
-        const overallCompletion = totalEligibleHours > 0
-            ? Math.min(100, Math.round(((totalAttendedHours + totalMakeUpCompleted) / totalEligibleHours) * 100))
-            : 100;
+        const overallOnTime = totalPresentSessions > 0
+            ? Number((((totalPresentSessions - totalLateSessions) / totalPresentSessions) * 100).toFixed(1))
+            : null;
+
+        const overallCompletion = totalScheduledMin > 0
+            ? Math.min(100, Number((((totalAttendedMin + totalMakeUpDoneMin) / totalScheduledMin) * 100).toFixed(1)))
+            : null;
 
         return {
             rows,
+            excludedList,
             totals: {
                 facultyCount,
-                totalEligibleHours: Number(totalEligibleHours.toFixed(1)),
-                totalAttendedHours: Number(totalAttendedHours.toFixed(1)),
-                totalLeaveHours: Number(totalLeaveHours.toFixed(1)),
-                totalAbsentHours: Number(totalAbsentHours.toFixed(1)),
+                totalScheduledMin,
+                totalEligibleMin,
+                totalAttendedMin,
+                totalLeaveMin,
+                totalAbsentMin,
                 totalLateSessions,
                 totalLateMinutes,
-                totalMakeUpRequired: Number(totalMakeUpRequired.toFixed(1)),
-                totalMakeUpCompleted: Number(totalMakeUpCompleted.toFixed(1)),
+                totalMakeUpReqMin,
+                totalMakeUpDoneMin,
+                totalPresentSessions,
+                totalScheduledSessions,
+                // Legacy hours for display
+                totalEligibleHours: Number((totalEligibleMin / 60).toFixed(1)),
+                totalAttendedHours: Number((totalAttendedMin / 60).toFixed(1)),
+                totalLeaveHours: Number((totalLeaveMin / 60).toFixed(1)),
+                totalAbsentHours: Number((totalAbsentMin / 60).toFixed(1)),
+                totalMakeUpRequired: Number((totalMakeUpReqMin / 60).toFixed(1)),
+                totalMakeUpCompleted: Number((totalMakeUpDoneMin / 60).toFixed(1)),
                 overallCoverage,
+                overallOnTime,
                 overallCompletion,
             },
         };
-    }, [summaries, weekly_sessions, faculties, customFacultyNames, selectedPeriod, periodTab, reportFormat, selectedProgram, selectedFaculty, selectedStatus, sortBy]);
+    }, [summaries, weekly_sessions, faculties, customFacultyNames, excludedFacultyKeys, selectedPeriod, periodTab, reportFormat, selectedProgram, selectedFaculty, selectedStatus, sortBy]);
 
     // State for PDF downloading status
     const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
@@ -895,8 +1120,13 @@ export default function GenerateReportPage({
         clonedSheet.style.maxWidth = '100%';
         clonedSheet.style.minHeight = 'auto';
 
-        // Remove any interactive UI elements from clone
-        clonedSheet.querySelectorAll('.no-print').forEach(el => el.remove());
+        // Remove any interactive UI elements or scroll wrappers from clone
+        clonedSheet.querySelectorAll('.no-print, .no-pdf').forEach(el => el.remove());
+        clonedSheet.querySelectorAll('.overflow-x-auto, .overflow-hidden').forEach(el => {
+            (el as HTMLElement).style.overflow = 'visible';
+            (el as HTMLElement).style.width = '100%';
+            (el as HTMLElement).style.maxWidth = '100%';
+        });
 
         iframeDoc.open();
         iframeDoc.write(`
@@ -908,8 +1138,8 @@ export default function GenerateReportPage({
                 ${styles}
                 <style>
                     @page {
-                        size: A4 portrait;
-                        margin: 0.5in;
+                        size: A4 landscape;
+                        margin: 0.35in;
                     }
                     html, body {
                         background: #ffffff !important;
@@ -921,11 +1151,15 @@ export default function GenerateReportPage({
                         overflow: visible !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
-                        font-family: inherit;
+                        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
                     }
                     * {
                         box-shadow: none !important;
                         text-shadow: none !important;
+                        scrollbar-width: none !important;
+                    }
+                    ::-webkit-scrollbar {
+                        display: none !important;
                     }
                     #pdf-preview-sheet {
                         border: none !important;
@@ -935,6 +1169,10 @@ export default function GenerateReportPage({
                         width: 100% !important;
                         max-width: 100% !important;
                         min-height: auto !important;
+                    }
+                    .overflow-x-auto, .overflow-hidden {
+                        overflow: visible !important;
+                        width: 100% !important;
                     }
                     table {
                         width: 100% !important;
@@ -975,7 +1213,7 @@ export default function GenerateReportPage({
         }, 350);
     };
 
-    // Handle Direct PDF Generation / Download
+    // Handle Direct PDF Generation / Download (Formal Landscape Document)
     const handleGeneratePdf = async () => {
         const sheetElement = document.getElementById('pdf-preview-sheet');
         if (!sheetElement || isGeneratingPdf) return;
@@ -984,16 +1222,33 @@ export default function GenerateReportPage({
 
         const fileName = `CIDS_Faculty_Attendance_Report_${selectedAY.replace(/[\s–—-]+/g, '_')}_${selectedSemester.replace(/[\s–—-]+/g, '_')}.pdf`;
 
-        // Temporarily reset preview transform/scale and ensure no scrollbars during capture
+        // Save original styling
         const originalTransform = sheetElement.style.transform;
         const originalBoxShadow = sheetElement.style.boxShadow;
         const originalBorder = sheetElement.style.border;
+        const originalWidth = sheetElement.style.width;
+        const originalMaxWidth = sheetElement.style.maxWidth;
+        const originalPadding = sheetElement.style.padding;
+
+        // Find all overflow containers in sheet and temporarily force overflow: visible
+        const overflowContainers = sheetElement.querySelectorAll('.overflow-x-auto, .overflow-hidden');
+        const originalOverflows: string[] = [];
+        overflowContainers.forEach((el, i) => {
+            originalOverflows[i] = (el as HTMLElement).style.overflow;
+            (el as HTMLElement).style.overflow = 'visible';
+            (el as HTMLElement).style.width = '100%';
+        });
+
+        // Set clean landscape canvas width (1122px is standard 96DPI for 297mm landscape A4)
         sheetElement.style.transform = 'none';
         sheetElement.style.boxShadow = 'none';
         sheetElement.style.border = 'none';
+        sheetElement.style.width = '1120px';
+        sheetElement.style.maxWidth = '1120px';
+        sheetElement.style.padding = '20px 24px';
 
         try {
-            const html2canvasModule = await import('html2canvas');
+            const html2canvasModule = await import('html2canvas-pro');
             const html2canvas = html2canvasModule.default || html2canvasModule;
             const { jsPDF } = await import('jspdf');
 
@@ -1003,36 +1258,118 @@ export default function GenerateReportPage({
                 allowTaint: true,
                 logging: false,
                 backgroundColor: '#ffffff',
-                windowWidth: 1024,
+                windowWidth: 1150,
+                ignoreElements: (element) => {
+                    return (
+                        element.classList.contains('no-print') ||
+                        element.classList.contains('no-pdf') ||
+                        element.getAttribute('data-no-pdf') === 'true'
+                    );
+                },
             });
 
-            const imgData = canvas.toDataURL('image/jpeg', 0.98);
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
-            const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+            // Formal Landscape PDF: 'l', 'mm', 'a4' (297mm x 210mm)
+            const pdf = new jsPDF('l', 'mm', 'a4');
+            const pageWidth = pdf.internal.pageSize.getWidth(); // 297mm
+            const pageHeight = pdf.internal.pageSize.getHeight(); // 210mm
 
-            const margin = 12.7; // 0.5 in
-            const printableWidth = pageWidth - (margin * 2);
-            const printableHeight = pageHeight - (margin * 2);
+            const margin = 8.0; // 8mm margin
+            const printableWidth = pageWidth - (margin * 2); // 281mm
+            const printableHeight = pageHeight - (margin * 2); // 194mm
 
-            const imgWidth = printableWidth;
-            const imgHeight = (canvas.height * printableWidth) / canvas.width;
+            // Convert canvas pixels to PDF mm scale
+            const pxToMm = printableWidth / canvas.width;
+            const totalContentHeightMm = canvas.height * pxToMm;
 
-            let heightLeft = imgHeight;
-            let position = margin;
+            // If the content fits on a single page, add directly
+            if (totalContentHeightMm <= printableHeight) {
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                pdf.addImage(imgData, 'JPEG', margin, margin, printableWidth, totalContentHeightMm, undefined, 'FAST');
+            } else {
+                // Multi-page export with row-aware break detection
+                // Identify tr and section elements inside sheetElement to find non-cutting cut points
+                const sheetRect = sheetElement.getBoundingClientRect();
+                const scale = canvas.width / sheetElement.offsetWidth;
 
-            pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight, undefined, 'FAST');
-            heightLeft -= printableHeight;
+                // Find candidate break points (in canvas px)
+                const trElements = sheetElement.querySelectorAll('tr, .page-break-inside-avoid');
+                const slicePointsPx: number[] = [0];
 
-            while (heightLeft > 0) {
-                position = heightLeft - imgHeight + margin;
-                pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight, undefined, 'FAST');
-                heightLeft -= printableHeight;
+                const maxPageHeightPx = (printableHeight / printableWidth) * canvas.width;
+                let currentStartPx = 0;
+
+                while (currentStartPx < canvas.height) {
+                    const targetEndPx = currentStartPx + maxPageHeightPx;
+                    if (targetEndPx >= canvas.height) {
+                        slicePointsPx.push(canvas.height);
+                        break;
+                    }
+
+                    // Find the best element boundary before targetEndPx
+                    let bestCutPx = targetEndPx;
+                    let foundSafeCut = false;
+
+                    for (let i = 0; i < trElements.length; i++) {
+                        const el = trElements[i] as HTMLElement;
+                        const elRect = el.getBoundingClientRect();
+                        const elBottomPx = (elRect.bottom - sheetRect.top) * scale;
+                        const elTopPx = (elRect.top - sheetRect.top) * scale;
+
+                        // Check if an element starts before the cut and ends after it (straddling)
+                        if (elTopPx < targetEndPx && elBottomPx > targetEndPx) {
+                            // Split right before this row
+                            if (elTopPx > currentStartPx + (maxPageHeightPx * 0.4)) {
+                                bestCutPx = elTopPx;
+                                foundSafeCut = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!foundSafeCut) {
+                        bestCutPx = targetEndPx;
+                    }
+
+                    slicePointsPx.push(bestCutPx);
+                    currentStartPx = bestCutPx;
+                }
+
+                // Render each page slice to canvas and add to PDF
+                for (let i = 0; i < slicePointsPx.length - 1; i++) {
+                    const startY = Math.round(slicePointsPx[i]);
+                    const endY = Math.round(slicePointsPx[i + 1]);
+                    const sliceHeightPx = endY - startY;
+
+                    if (sliceHeightPx <= 0) continue;
+
+                    if (i > 0) {
+                        pdf.addPage();
+                    }
+
+                    // Create sub-canvas for slice
+                    const pageCanvas = document.createElement('canvas');
+                    pageCanvas.width = canvas.width;
+                    pageCanvas.height = sliceHeightPx;
+                    const ctx = pageCanvas.getContext('2d');
+
+                    if (ctx) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+                        ctx.drawImage(
+                            canvas,
+                            0, startY, canvas.width, sliceHeightPx,
+                            0, 0, canvas.width, sliceHeightPx
+                        );
+
+                        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.98);
+                        const sliceHeightMm = sliceHeightPx * pxToMm;
+                        pdf.addImage(pageImgData, 'JPEG', margin, margin, printableWidth, sliceHeightMm, undefined, 'FAST');
+                    }
+                }
             }
 
             pdf.save(fileName);
-            showToast('PDF downloaded successfully!');
+            showToast('PDF downloaded successfully in landscape format!');
         } catch (error) {
             console.error('PDF export error:', error);
             showToast('Failed to generate PDF, launching print preview...');
@@ -1041,6 +1378,12 @@ export default function GenerateReportPage({
             sheetElement.style.transform = originalTransform;
             sheetElement.style.boxShadow = originalBoxShadow;
             sheetElement.style.border = originalBorder;
+            sheetElement.style.width = originalWidth;
+            sheetElement.style.maxWidth = originalMaxWidth;
+            sheetElement.style.padding = originalPadding;
+            overflowContainers.forEach((el, i) => {
+                (el as HTMLElement).style.overflow = originalOverflows[i] || '';
+            });
             setIsGeneratingPdf(false);
         }
     };
@@ -1049,11 +1392,11 @@ export default function GenerateReportPage({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Generate Faculty Attendance Report" />
 
-            {/* Print Stylesheet (Formal document formatting, no scrollbars, proper table headers) */}
+            {/* Print Stylesheet (Formal document formatting, landscape, no scrollbars, proper table headers) */}
             <style>{`
                 @page {
-                    size: A4 portrait;
-                    margin: 0.5in;
+                    size: A4 landscape;
+                    margin: 0.35in;
                 }
                 @media print {
                     /* Hide everything outside of the sheet */
@@ -1078,7 +1421,7 @@ export default function GenerateReportPage({
                         transform: none !important;
                         box-sizing: border-box !important;
                     }
-                    .no-print, header, nav, aside, [data-sidebar="sidebar"], .viewer-bar {
+                    .no-print, .no-pdf, header, nav, aside, [data-sidebar="sidebar"], .viewer-bar {
                         display: none !important;
                     }
                     html, body {
@@ -1088,14 +1431,23 @@ export default function GenerateReportPage({
                         margin: 0 !important;
                         height: auto !important;
                         overflow: visible !important;
+                        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
                     }
                     /* Remove all scrollbars, shadows and web backgrounds */
                     * {
                         overflow: visible !important;
                         box-shadow: none !important;
                         text-shadow: none !important;
+                        scrollbar-width: none !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
+                    }
+                    ::-webkit-scrollbar {
+                        display: none !important;
+                    }
+                    .overflow-x-auto, .overflow-hidden {
+                        overflow: visible !important;
+                        width: 100% !important;
                     }
                     table {
                         width: 100% !important;
@@ -1405,8 +1757,8 @@ export default function GenerateReportPage({
                                             <span className="text-[10px] text-muted-foreground block leading-none">
                                                 Selected Period
                                             </span>
-                                            <span className="font-bold text-xs text-foreground block truncate mt-0.5">
-                                                {selectedPeriod}
+                                            <span className="font-bold text-xs text-foreground block truncate mt-0.5" title={formatPeriodWithDateRange(selectedPeriod, periodTab)}>
+                                                {formatPeriodWithDateRange(selectedPeriod, periodTab)}
                                             </span>
                                             <span className="text-[9px] text-muted-foreground block">
                                                 {selectedAY} · {selectedSemester}
@@ -1436,7 +1788,7 @@ export default function GenerateReportPage({
                                             className="w-full h-10 px-3.5 pr-8 rounded-xl border border-border bg-card text-xs font-semibold text-foreground focus-visible:outline-none appearance-none cursor-pointer shadow-2xs hover:border-amber-400 transition-colors"
                                         >
                                             {(periodTab === 'week' ? weekly_periods : monthly_periods).map(p => (
-                                                <option key={p} value={p}>{p}</option>
+                                                <option key={p} value={p}>{formatPeriodWithDateRange(p, periodTab)}</option>
                                             ))}
                                         </select>
                                         <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -1680,22 +2032,34 @@ export default function GenerateReportPage({
                                                         <td className="py-1.5 px-2.5 text-right font-black text-foreground">{previewData.totals.facultyCount}</td>
                                                     </tr>
                                                     <tr>
-                                                        <td className="py-1.5 px-2.5 text-muted-foreground font-medium">Scheduled Sessions</td>
-                                                        <td className="py-1.5 px-2.5 text-right font-black text-foreground">{previewData.totals.totalScheduled}</td>
+                                                        <td className="py-1.5 px-2.5 text-muted-foreground font-medium">Scheduled Minutes</td>
+                                                        <td className="py-1.5 px-2.5 text-right font-mono font-bold text-foreground">
+                                                            {previewData.totals.totalScheduledMin.toLocaleString()} min <span className="text-[10px] font-normal text-muted-foreground">({(previewData.totals.totalScheduledMin / 60).toFixed(1)}h)</span>
+                                                        </td>
                                                     </tr>
                                                     <tr className="bg-muted/20">
-                                                        <td className="py-1.5 px-2.5 text-muted-foreground font-medium">Present Sessions</td>
-                                                        <td className="py-1.5 px-2.5 text-right font-black text-foreground">
-                                                            {previewData.totals.totalPresent} <span className="text-[10px] font-bold text-muted-foreground">({previewData.totals.overallRate}%)</span>
+                                                        <td className="py-1.5 px-2.5 text-muted-foreground font-medium">Attended Minutes</td>
+                                                        <td className="py-1.5 px-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                                            {previewData.totals.totalAttendedMin.toLocaleString()} min <span className="text-[10px] font-normal text-muted-foreground">({previewData.totals.overallCoverage !== null ? `${previewData.totals.overallCoverage}%` : 'N/A'})</span>
                                                         </td>
                                                     </tr>
                                                     <tr>
-                                                        <td className="py-1.5 px-2.5 text-muted-foreground font-medium">Absent Sessions</td>
-                                                        <td className="py-1.5 px-2.5 text-right font-black text-foreground">{previewData.totals.totalAbsent}</td>
+                                                        <td className="py-1.5 px-2.5 text-muted-foreground font-medium">Approved Leave Minutes</td>
+                                                        <td className="py-1.5 px-2.5 text-right font-mono font-bold text-blue-600 dark:text-blue-400">
+                                                            {previewData.totals.totalLeaveMin.toLocaleString()} min <span className="text-[10px] font-normal text-muted-foreground">({(previewData.totals.totalLeaveMin / 60).toFixed(1)}h)</span>
+                                                        </td>
                                                     </tr>
                                                     <tr className="bg-muted/20">
-                                                        <td className="py-1.5 px-2.5 text-muted-foreground font-medium">Late Sessions</td>
-                                                        <td className="py-1.5 px-2.5 text-right font-black text-foreground">{previewData.totals.totalLate}</td>
+                                                        <td className="py-1.5 px-2.5 text-muted-foreground font-medium">Unexcused Absent Minutes</td>
+                                                        <td className="py-1.5 px-2.5 text-right font-mono font-bold text-red-600 dark:text-red-400">
+                                                            {previewData.totals.totalAbsentMin.toLocaleString()} min <span className="text-[10px] font-normal text-muted-foreground">({(previewData.totals.totalAbsentMin / 60).toFixed(1)}h)</span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td className="py-1.5 px-2.5 text-muted-foreground font-medium">Late Sessions & Minutes</td>
+                                                        <td className="py-1.5 px-2.5 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                                                            {previewData.totals.totalLateSessions} sess <span className="text-[10px] font-normal text-muted-foreground">({previewData.totals.totalLateMinutes} min)</span>
+                                                        </td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -1838,7 +2202,8 @@ export default function GenerateReportPage({
                                             setSelectedProgram('all');
                                             setSelectedFaculty('all');
                                             setSelectedStatus('all');
-                                            showToast('Form filters reset to defaults.');
+                                            setExcludedFacultyKeys([]);
+                                            showToast('Form filters and exclusions reset to defaults.');
                                         }}
                                         className="h-9 px-3 text-xs font-semibold rounded-xl border-border bg-card flex items-center gap-1.5 hover:border-amber-400/60 cursor-pointer"
                                     >
@@ -1879,13 +2244,13 @@ export default function GenerateReportPage({
                         {/* Dark PDF Viewer Bar */}
                         <div className={cn(
                             "no-print w-full h-11 bg-slate-900 text-slate-200 rounded-t-2xl px-4 flex items-center justify-between text-xs font-semibold shadow-md border-b border-slate-800",
-                            isMaximized ? "max-w-[1050px]" : "max-w-[850px]"
+                            isMaximized ? "max-w-[1240px]" : "max-w-[1050px]"
                         )}>
                             {/* Status Pill */}
                             <div className="flex items-center gap-2">
                                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    Live Preview
+                                    Live Preview (Landscape A4)
                                 </span>
                             </div>
 
@@ -1957,8 +2322,8 @@ export default function GenerateReportPage({
                             <div
                                 id="pdf-preview-sheet"
                                 className={cn(
-                                    "print-only-sheet w-full min-h-[1080px] bg-white text-slate-900 border border-slate-300 shadow-xl p-[0.5in] transition-transform origin-top flex flex-col justify-between box-border",
-                                    isMaximized ? "max-w-[1050px]" : "max-w-[850px]"
+                                    "print-only-sheet w-full min-h-[750px] bg-white text-slate-900 border border-slate-300 shadow-xl p-[0.35in] transition-transform origin-top flex flex-col justify-between box-border",
+                                    isMaximized ? "max-w-[1240px]" : "max-w-[1050px]"
                                 )}
                                 style={{ transform: `scale(${zoomLevel / 100})` }}
                             >
@@ -1990,71 +2355,102 @@ export default function GenerateReportPage({
                                     </div>
 
                                     {/* 2. REPORT TITLE BANNER (Monochrome Professional Header) */}
-                                    <div className="bg-slate-50 border border-slate-300 py-2.5 text-center rounded-xs">
+                                    <div className="bg-slate-50 border border-slate-300 py-2.5 px-3 text-center rounded-xs space-y-1">
                                         <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
                                             {reportFormat === 'weekly' ? 'WEEKLY' : reportFormat === 'monthly' ? 'MONTHLY' : 'COLLEGE'} FACULTY ATTENDANCE SUMMARY
                                         </h3>
-                                        <p className="text-[10px] font-bold text-slate-800 mt-0.5">
-                                            {selectedPeriod}
+                                        <p className="text-[10px] font-bold text-slate-800">
+                                            {formatPeriodWithDateRange(selectedPeriod, periodTab)} · {selectedAY} · {selectedSemester}
                                         </p>
-                                        <p className="text-[9px] text-slate-600">
-                                            {selectedAY} · {selectedSemester}
-                                        </p>
+                                        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[8.5px] text-slate-600 font-medium border-t border-slate-200 pt-1.5 mt-1">
+                                            <span>Official Start of Classes: <strong className="text-slate-900">{academic_period?.official_start_of_classes || 'Aug 10, 2026'}</strong></span>
+                                            <span>·</span>
+                                            <span>Official End of Classes: <strong className="text-slate-900">{academic_period?.official_end_of_classes || 'Dec 18, 2026'}</strong></span>
+                                            <span>·</span>
+                                            <span>Schedule: <strong className="text-indigo-900">Verified Published Master Timetable</strong></span>
+                                            <span>·</span>
+                                            <span>Sync: <strong className="text-slate-900">{last_synced_at}</strong></span>
+                                            <span>·</span>
+                                            <span>Data Baseline: <strong className="text-slate-900">Atomic Minutes</strong></span>
+                                        </div>
                                     </div>
 
                                     {/* 3. KEY SUMMARIES (PROFESSIONAL TABLE VIEW - MONOCHROME, NO COLORS) */}
                                     {keySummaries.attendanceTotals && (
                                         <div className="space-y-1.5">
                                             <div className="flex items-center gap-1.5 text-slate-900 font-bold text-xs uppercase tracking-wider">
-                                                <span>KEY SUMMARIES (INSTRUCTIONAL HOURS & COVERAGE)</span>
+                                                <span>KEY SUMMARIES (MINUTE BASELINE & INSTRUCTIONAL COMPLETION)</span>
                                             </div>
 
                                             <div className="border border-slate-300 rounded overflow-hidden">
-                                                <table className="w-full text-[9.5px] text-center border-collapse">
+                                                <table className="w-full text-[9px] text-center border-collapse font-sans">
                                                     <thead>
                                                         <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-900 uppercase">
-                                                            <th className="py-2 px-2 border-r border-slate-300">FACULTY</th>
-                                                            <th className="py-2 px-2 border-r border-slate-300">ELIGIBLE HRS</th>
-                                                            <th className="py-2 px-2 border-r border-slate-300">ATTENDED HRS</th>
-                                                            <th className="py-2 px-2 border-r border-slate-300">LEAVE HRS</th>
-                                                            <th className="py-2 px-2 border-r border-slate-300">ABSENT HRS</th>
-                                                            <th className="py-2 px-2 border-r border-slate-300">LATE SESSIONS (MINS)</th>
-                                                            <th className="py-2 px-2 border-r border-slate-300">MAKE-UP (REQ / DONE)</th>
-                                                            <th className="py-2 px-2 border-r border-slate-300">ATTENDANCE COVERAGE</th>
-                                                            <th className="py-2 px-2">INSTR COMPLETION</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">FACULTY</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">SCHEDULED TIME</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">ELIGIBLE TIME</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">ATTENDED TIME</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">APPROVED LEAVE</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">UNEXCUSED ABSENCE</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">LATE SESS</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">LATE TIME</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">MAKE-UP REQ.</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">MAKE-UP COMP.</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">ATTENDANCE COV</th>
+                                                            <th className="py-2 px-1 border-r border-slate-300">ON-TIME</th>
+                                                            <th className="py-2 px-1">INSTR COMPLETION</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-200">
-                                                        <tr className="bg-white font-mono">
-                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
+                                                        <tr className="bg-white font-mono text-[9px]">
+                                                            <td className="py-2 px-1.5 border-r border-slate-300 font-bold text-slate-900 text-[11px]">
                                                                 {previewData.totals.facultyCount}
                                                             </td>
-                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
-                                                                {previewData.totals.totalEligibleHours}h
+                                                            <td className="py-2 px-1 border-r border-slate-300 font-bold text-slate-900">
+                                                                {formatDuration(previewData.totals.totalScheduledMin)}
+                                                                <span className="text-[7.5px] font-normal text-slate-500 block">({previewData.totals.totalScheduledMin.toLocaleString()}m)</span>
                                                             </td>
-                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
-                                                                {previewData.totals.totalAttendedHours}h
+                                                            <td className="py-2 px-1 border-r border-slate-300 font-bold text-slate-900">
+                                                                {formatDuration(previewData.totals.totalEligibleMin)}
+                                                                <span className="text-[7.5px] font-normal text-slate-500 block">({previewData.totals.totalEligibleMin.toLocaleString()}m)</span>
                                                             </td>
-                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
-                                                                {previewData.totals.totalLeaveHours}h
+                                                            <td className="py-2 px-1 border-r border-slate-300 font-bold text-slate-900">
+                                                                {formatDuration(previewData.totals.totalAttendedMin)}
+                                                                <span className="text-[7.5px] font-normal text-slate-500 block">({previewData.totals.totalAttendedMin.toLocaleString()}m)</span>
                                                             </td>
-                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
-                                                                {previewData.totals.totalAbsentHours}h
+                                                            <td className="py-2 px-1 border-r border-slate-300 font-bold text-slate-900">
+                                                                {formatDuration(previewData.totals.totalLeaveMin)}
+                                                                <span className="text-[7.5px] font-normal text-slate-500 block">({previewData.totals.totalLeaveMin.toLocaleString()}m)</span>
                                                             </td>
-                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
-                                                                {previewData.totals.totalLateSessions} <span className="text-[9px] font-normal text-slate-600">({previewData.totals.totalLateMinutes}m)</span>
+                                                            <td className="py-2 px-1 border-r border-slate-300 font-bold text-slate-900">
+                                                                {formatDuration(previewData.totals.totalAbsentMin)}
+                                                                <span className="text-[7.5px] font-normal text-slate-500 block">({previewData.totals.totalAbsentMin.toLocaleString()}m)</span>
                                                             </td>
-                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
-                                                                {previewData.totals.totalMakeUpRequired}h / {previewData.totals.totalMakeUpCompleted}h
+                                                            <td className="py-2 px-1 border-r border-slate-300 font-bold text-slate-900">
+                                                                {previewData.totals.totalLateSessions}
                                                             </td>
-                                                            <td className="py-2 px-2 border-r border-slate-300 font-bold text-slate-900 text-xs">
-                                                                <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-900 font-bold border border-slate-300">
-                                                                    {previewData.totals.overallCoverage}%
+                                                            <td className="py-2 px-1 border-r border-slate-300 font-bold text-slate-900">
+                                                                {formatDuration(previewData.totals.totalLateMinutes)}
+                                                            </td>
+                                                            <td className="py-2 px-1 border-r border-slate-300 font-bold text-slate-900">
+                                                                {formatDuration(previewData.totals.totalMakeUpReqMin)}
+                                                            </td>
+                                                            <td className="py-2 px-1 border-r border-slate-300 font-bold text-slate-900">
+                                                                {formatDuration(previewData.totals.totalMakeUpDoneMin)}
+                                                            </td>
+                                                            <td className="py-2 px-1 border-r border-slate-300 font-bold text-slate-900">
+                                                                <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-slate-100 text-slate-900 font-bold border border-slate-300">
+                                                                    {previewData.totals.overallCoverage !== null ? `${previewData.totals.overallCoverage}%` : 'N/A'}
                                                                 </span>
                                                             </td>
-                                                            <td className="py-2 px-2 font-bold text-slate-900 text-xs">
-                                                                <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-900 font-bold border border-slate-300">
-                                                                    {previewData.totals.overallCompletion}%
+                                                            <td className="py-2 px-1 border-r border-slate-300 font-bold text-slate-900">
+                                                                <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-slate-100 text-slate-900 font-bold border border-slate-300">
+                                                                    {previewData.totals.overallOnTime !== null ? `${previewData.totals.overallOnTime}%` : 'N/A'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-2 px-1 font-bold text-slate-900">
+                                                                <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-slate-100 text-slate-900 font-bold border border-slate-300">
+                                                                    {previewData.totals.overallCompletion !== null ? `${previewData.totals.overallCompletion}%` : 'N/A'}
                                                                 </span>
                                                             </td>
                                                         </tr>
@@ -2066,113 +2462,281 @@ export default function GenerateReportPage({
 
                                     {/* 4. FACULTY ATTENDANCE DETAILS (TABLE - MONOCHROME, NO COLORS) */}
                                     <div className="space-y-1.5 pt-1">
-                                        <div className="flex items-center justify-between text-slate-900 font-bold text-xs uppercase tracking-wider">
-                                            <span>FACULTY ATTENDANCE & INSTRUCTIONAL COMPLETION DETAILS</span>
-                                            <span className="no-print text-[9px] font-normal normal-case text-slate-500">
-                                                Click any faculty row to inspect session-by-session timetable audit trail
+                                        <div className="flex flex-wrap items-center justify-between gap-1 text-slate-900 font-bold text-xs uppercase tracking-wider">
+                                            <div className="flex items-center gap-2">
+                                                <span>FACULTY ATTENDANCE & INSTRUCTIONAL COMPLETION DETAILS (MINUTE BASELINE)</span>
+                                                {previewData.excludedList.length > 0 && (
+                                                    <span className="no-print no-pdf inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 normal-case tracking-normal">
+                                                        <span>{previewData.excludedList.length} faculty excluded</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleRestoreAllFacultyRows}
+                                                            className="text-amber-700 hover:text-amber-950 underline font-semibold cursor-pointer ml-1"
+                                                            title="Restore all removed faculty rows"
+                                                        >
+                                                            Restore All
+                                                        </button>
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span className="no-print no-pdf text-[9px] font-normal normal-case text-slate-500">
+                                                Hover faculty row to edit name or exclude • Click to view timetable audit trail
                                             </span>
                                         </div>
 
+                                        {/* Excluded faculty restore chips banner */}
+                                        {previewData.excludedList.length > 0 && (
+                                            <div className="no-print no-pdf flex flex-wrap items-center gap-1.5 p-1.5 rounded-lg bg-amber-50/80 border border-amber-200 text-[8.5px] text-amber-900">
+                                                <span className="font-bold flex items-center gap-1 text-amber-950">
+                                                    Excluded from preview:
+                                                </span>
+                                                {previewData.excludedList.map(item => (
+                                                    <span
+                                                        key={item.key}
+                                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white text-slate-800 border border-amber-300 font-medium shadow-2xs"
+                                                    >
+                                                        <span className="truncate max-w-[140px]">{item.name}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRestoreFacultyRow(item.key, item.name)}
+                                                            className="text-slate-400 hover:text-rose-600 font-bold text-[10px] leading-none cursor-pointer"
+                                                            title={`Restore ${item.name}`}
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRestoreAllFacultyRows}
+                                                    className="text-[8px] font-bold text-amber-800 hover:text-amber-950 hover:underline cursor-pointer ml-auto"
+                                                >
+                                                    Reset All Exclusions
+                                                </button>
+                                            </div>
+                                        )}
+
                                         <div className="border border-slate-300 rounded overflow-x-auto print:overflow-visible print:border-slate-400">
-                                            <table className="w-full text-[9px] text-left border-collapse print:text-[8.5px]">
+                                            <table className="w-full text-[8px] text-left border-collapse print:text-[7.5px] table-auto">
                                                 <thead>
                                                     <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-900 uppercase print:bg-slate-100">
-                                                        <th className="py-1.5 px-1.5 text-center w-6 border-r border-slate-300">#</th>
-                                                        <th className="py-1.5 px-2 border-r border-slate-300">FACULTY NAME</th>
-                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap">PROG</th>
-                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Eligible Scheduled Hours">ELIGIBLE HRS</th>
-                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Attended Instructional Hours">ATTENDED HRS</th>
-                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Approved Leave Hours">LEAVE HRS</th>
-                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Unexcused Absent Hours">ABSENT HRS</th>
-                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Late Sessions (Total Late Minutes)">LATE (MINS)</th>
-                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Make-Up Hours Required vs Completed">MAKE-UP (REQ/DONE)</th>
-                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Attendance Coverage Rate %">ATTENDANCE COV</th>
-                                                        <th className="py-1.5 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="On-Time Arrival Rate %">ON-TIME</th>
-                                                        <th className="py-1.5 px-1.5 text-center whitespace-nowrap" title="Instructional Completion Rate %">INSTR COMPLETION</th>
+                                                        <th className="py-1 px-1 text-center w-5 border-r border-slate-300">#</th>
+                                                        <th className="py-1 px-1.5 border-r border-slate-300 min-w-[125px]">FACULTY NAME</th>
+                                                        <th className="py-1 px-1 text-center border-r border-slate-300 whitespace-nowrap">PROG</th>
+                                                        <th className="py-1 px-1 text-right border-r border-slate-300 whitespace-nowrap" title="Total Scheduled Teaching Time">SCHEDULED</th>
+                                                        <th className="py-1 px-1 text-right border-r border-slate-300 whitespace-nowrap" title="Eligible Scheduled Time = Scheduled - Approved Exclusions">ELIGIBLE</th>
+                                                        <th className="py-1 px-1 text-right border-r border-slate-300 whitespace-nowrap" title="Attended Instructional Time">ATTENDED</th>
+                                                        <th className="py-1 px-1 text-right border-r border-slate-300 whitespace-nowrap" title="Approved Leave Time (Excluded from eligible denominator)">LEAVE</th>
+                                                        <th className="py-1 px-1 text-right border-r border-slate-300 whitespace-nowrap" title="Unexcused Absence Time">ABSENCE</th>
+                                                        <th className="py-1 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Late Attended Sessions Count">LATE SESS</th>
+                                                        <th className="py-1 px-1 text-right border-r border-slate-300 whitespace-nowrap" title="Cumulative Late Time">LATE TIME</th>
+                                                        <th className="py-1 px-1 text-right border-r border-slate-300 whitespace-nowrap" title="Make-Up Time Required">MAKE-UP REQ.</th>
+                                                        <th className="py-1 px-1 text-right border-r border-slate-300 whitespace-nowrap" title="Make-Up Time Completed">MAKE-UP COMP.</th>
+                                                        <th className="py-1 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Attendance Coverage = Attended Eligible Min ÷ Eligible Scheduled Min × 100">ATTENDANCE COV</th>
+                                                        <th className="py-1 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="On-Time Arrival Rate %">ON-TIME</th>
+                                                        <th className="py-1 px-1 text-center border-r border-slate-300 whitespace-nowrap" title="Instructional Completion Rate = (Attended Min + Make-Up Done) ÷ Required Scheduled Min × 100">COMPLETION</th>
+                                                        <th className="py-1 px-1 text-center whitespace-nowrap" title="Evaluated Attendance Remarks">REMARKS</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-200 font-medium">
                                                     {previewData.rows.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={12} className="py-6 text-center text-slate-500 italic">
+                                                            <td colSpan={16} className="py-6 text-center text-slate-500 italic">
                                                                 No attendance records match the selected faculty or filter criteria.
                                                             </td>
                                                         </tr>
                                                     ) : (
-                                                        previewData.rows.map((row, idx) => (
-                                                            <tr
-                                                                key={row.id || idx}
-                                                                onClick={() => setSelectedAuditFaculty(row)}
-                                                                className="hover:bg-amber-50/50 cursor-pointer transition-colors"
-                                                                title="Click to view detailed session audit trail"
-                                                            >
-                                                                <td className="py-1 px-1.5 text-center border-r border-slate-200 text-slate-500 font-mono text-[8.5px]">
-                                                                    {idx + 1}
-                                                                </td>
-                                                                <td className="py-1 px-2 font-semibold border-r border-slate-200 text-slate-900 group/cell">
-                                                                    <div className="flex items-center justify-between gap-1">
-                                                                        <span className="truncate hover:text-amber-700 underline-offset-2 hover:underline">
-                                                                            {row.instructor_name}
-                                                                        </span>
-                                                                        <button
-                                                                            type="button"
-                                                                            title={`Edit name for ${row.instructor_name}`}
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                setEditingFaculty({
-                                                                                    id: row.id,
-                                                                                    faculty_id: row.faculty_id,
-                                                                                    oldName: row.original_instructor_name || row.instructor_name,
-                                                                                    currentName: row.instructor_name,
-                                                                                });
-                                                                            }}
-                                                                            className="no-print opacity-0 group-hover/cell:opacity-100 hover:opacity-100 p-0.5 rounded hover:bg-amber-100 text-slate-400 hover:text-amber-700 transition-all cursor-pointer shrink-0"
-                                                                        >
-                                                                            <Pencil className="w-2.5 h-2.5" />
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-bold text-slate-800 text-[8.5px]">
-                                                                    {row.program}
-                                                                </td>
-                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-800 font-semibold">
-                                                                    {row.eligibleHours.toFixed(1)}h
-                                                                </td>
-                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono font-bold text-slate-900">
-                                                                    {row.attendedHours.toFixed(1)}h
-                                                                </td>
-                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-600">
-                                                                    {row.leaveHours > 0 ? `${row.leaveHours.toFixed(1)}h` : '—'}
-                                                                </td>
-                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-700">
-                                                                    {row.unexcusedAbsentHours > 0 ? `${row.unexcusedAbsentHours.toFixed(1)}h` : '—'}
-                                                                </td>
-                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-700">
-                                                                    {row.late > 0 ? `${row.late} (${row.lateMinutes}m)` : '0 (0m)'}
-                                                                </td>
-                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-[8.5px] text-slate-700">
-                                                                    {row.makeUpRequiredHours > 0
-                                                                        ? `${row.makeUpRequiredHours.toFixed(1)}h / ${row.makeUpCompletedHours.toFixed(1)}h`
-                                                                        : 'None'}
-                                                                </td>
-                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-bold font-mono text-slate-900">
-                                                                    <span className="px-1 py-0.5 rounded text-[8.5px] bg-slate-100 text-slate-900 font-semibold border border-slate-200 whitespace-nowrap">
-                                                                        {row.attendanceCoverage}%
-                                                                    </span>
-                                                                </td>
-                                                                <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-700">
-                                                                    {row.onTimeRate}%
-                                                                </td>
-                                                                <td className="py-1 px-1.5 text-center font-bold font-mono text-slate-900">
-                                                                    <span className="px-1.5 py-0.5 rounded text-[9px] bg-slate-100 text-slate-900 font-bold border border-slate-300 whitespace-nowrap">
-                                                                        {row.instructionalCompletion}%
-                                                                    </span>
-                                                                </td>
-                                                            </tr>
-                                                        ))
+                                                        previewData.rows.map((row, idx) => {
+                                                            // Monitoring Legend Band for Attendance Coverage
+                                                            let covBadge = { text: 'N/A', cls: 'bg-slate-100 text-slate-600 border-slate-300' };
+                                                            if (row.attendanceCoverage !== null) {
+                                                                if (row.attendanceCoverage >= 95) {
+                                                                    covBadge = { text: 'Excellent', cls: 'bg-emerald-50 text-emerald-800 border-emerald-300' };
+                                                                } else if (row.attendanceCoverage >= 90) {
+                                                                    covBadge = { text: 'Good', cls: 'bg-blue-50 text-blue-800 border-blue-300' };
+                                                                } else if (row.attendanceCoverage >= 80) {
+                                                                    covBadge = { text: 'Needs Monitoring', cls: 'bg-amber-50 text-amber-800 border-amber-300' };
+                                                                } else {
+                                                                    covBadge = { text: 'Needs Attention', cls: 'bg-red-50 text-red-800 border-red-300' };
+                                                                }
+                                                            }
+
+                                                            return (
+                                                                <tr
+                                                                    key={row.id || idx}
+                                                                    onClick={() => setSelectedAuditFaculty(row)}
+                                                                    className="hover:bg-amber-50/50 cursor-pointer transition-colors"
+                                                                    title="Click to view detailed session audit trail"
+                                                                >
+                                                                    <td className="py-1 px-1 text-center border-r border-slate-200 text-slate-500 font-mono text-[8px]">
+                                                                        {idx + 1}
+                                                                    </td>
+                                                                    <td className="py-1 px-2 font-semibold border-r border-slate-200 text-slate-900 group/cell">
+                                                                        <div className="flex items-center justify-between gap-1">
+                                                                            <span className="truncate hover:text-amber-700 underline-offset-2 hover:underline">
+                                                                                {row.instructor_name}
+                                                                            </span>
+                                                                            <div className="flex items-center gap-0.5 no-print no-pdf shrink-0">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    title={`Edit name for ${row.instructor_name}`}
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        setEditingFaculty({
+                                                                                            id: row.id,
+                                                                                            faculty_id: row.faculty_id,
+                                                                                            oldName: row.original_instructor_name || row.instructor_name,
+                                                                                            currentName: row.instructor_name,
+                                                                                        });
+                                                                                    }}
+                                                                                    className="opacity-0 group-hover/cell:opacity-100 hover:opacity-100 p-0.5 rounded hover:bg-amber-100 text-slate-400 hover:text-amber-700 transition-all cursor-pointer"
+                                                                                >
+                                                                                    <Pencil className="w-2.5 h-2.5" />
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    title={`Remove ${row.instructor_name} from this report preview`}
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        const rowKey = row.faculty_id ? `fid_${row.faculty_id}` : `name_${(row.original_instructor_name || row.instructor_name).toLowerCase().trim()}`;
+                                                                                        handleExcludeFacultyRow(rowKey, row.instructor_name);
+                                                                                    }}
+                                                                                    className="opacity-0 group-hover/cell:opacity-100 hover:opacity-100 p-0.5 rounded hover:bg-rose-100 text-slate-400 hover:text-rose-600 transition-all cursor-pointer"
+                                                                                >
+                                                                                    <Trash2 className="w-2.5 h-2.5" />
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                        {row.effectiveDateNote && (
+                                                                            <span className="text-[7px] text-amber-700 font-sans font-normal block leading-tight mt-0.5">
+                                                                                {row.effectiveDateNote}
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="py-1 px-1 text-center border-r border-slate-200 font-bold text-slate-800 text-[8px]">
+                                                                        {row.program}
+                                                                    </td>
+                                                                    <td className="py-1 px-1.5 text-right border-r border-slate-200 font-mono text-slate-800">
+                                                                        {row.isNotYetEmployed ? 'N/A' : (
+                                                                            <>
+                                                                                {formatDuration(row.scheduledMin)}
+                                                                                <span className="text-[7px] text-slate-400 block font-sans">({row.scheduledMin}m)</span>
+                                                                            </>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="py-1 px-1.5 text-right border-r border-slate-200 font-mono text-slate-800 font-semibold">
+                                                                        {row.isNotYetEmployed ? 'N/A' : (
+                                                                            <>
+                                                                                {formatDuration(row.eligibleMin)}
+                                                                                <span className="text-[7px] text-slate-400 block font-sans">({row.eligibleMin}m)</span>
+                                                                            </>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="py-1 px-1.5 text-right border-r border-slate-200 font-mono font-bold text-slate-900">
+                                                                        {row.isNotYetEmployed ? 'N/A' : (
+                                                                            <>
+                                                                                {formatDuration(row.attendedMin)}
+                                                                                <span className="text-[7px] text-slate-400 block font-sans">({row.attendedMin}m)</span>
+                                                                            </>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="py-1 px-1.5 text-right border-r border-slate-200 font-mono text-slate-600">
+                                                                        {row.isNotYetEmployed ? 'N/A' : row.leaveMin > 0 ? (
+                                                                            <>
+                                                                                {formatDuration(row.leaveMin)}
+                                                                                <span className="text-[7px] text-slate-400 block font-sans">({row.leaveMin}m)</span>
+                                                                            </>
+                                                                        ) : '0m'}
+                                                                    </td>
+                                                                    <td className="py-1 px-1.5 text-right border-r border-slate-200 font-mono text-slate-700">
+                                                                        {row.isNotYetEmployed ? 'N/A' : row.absentMin > 0 ? (
+                                                                            <>
+                                                                                {formatDuration(row.absentMin)}
+                                                                                <span className="text-[7px] text-red-500 block font-sans">({row.absentMin}m)</span>
+                                                                            </>
+                                                                        ) : '0m'}
+                                                                    </td>
+                                                                    <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-700">
+                                                                        {row.isNotYetEmployed ? 'N/A' : row.late}
+                                                                    </td>
+                                                                    <td className="py-1 px-1.5 text-right border-r border-slate-200 font-mono text-slate-700">
+                                                                        {row.isNotYetEmployed ? 'N/A' : formatDuration(row.lateMinutes)}
+                                                                    </td>
+                                                                    <td className="py-1 px-1.5 text-right border-r border-slate-200 font-mono text-slate-700">
+                                                                        {row.isNotYetEmployed ? 'N/A' : row.makeUpReqMin > 0 ? formatDuration(row.makeUpReqMin) : '0m'}
+                                                                    </td>
+                                                                    <td className="py-1 px-1.5 text-right border-r border-slate-200 font-mono text-slate-700">
+                                                                        {row.isNotYetEmployed ? 'N/A' : row.makeUpDoneMin > 0 ? formatDuration(row.makeUpDoneMin) : '0m'}
+                                                                    </td>
+                                                                    <td className="py-1 px-1 text-center border-r border-slate-200 font-bold font-mono text-slate-900 whitespace-nowrap">
+                                                                        {!row.isNotYetEmployed && row.eligibleMin > 0 && row.attendanceCoverage !== null ? (
+                                                                            <span className="font-semibold text-slate-900">
+                                                                                {row.attendanceCoverage}%
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-slate-400 font-normal">
+                                                                                N/A
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="py-1 px-1 text-center border-r border-slate-200 font-mono text-slate-700 whitespace-nowrap">
+                                                                        {!row.isNotYetEmployed && row.attendedMin > 0 && row.onTimeRate !== null ? `${row.onTimeRate}%` : 'N/A'}
+                                                                    </td>
+                                                                    <td className="py-1 px-1.5 text-center border-r border-slate-200 font-bold font-mono text-slate-900 whitespace-nowrap">
+                                                                        {!row.isNotYetEmployed && row.eligibleMin > 0 && row.instructionalCompletion !== null ? (
+                                                                            <span>{row.instructionalCompletion}%</span>
+                                                                        ) : (
+                                                                            <span className="text-slate-400 font-normal">N/A</span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="py-1 px-1.5 text-center whitespace-nowrap font-sans">
+                                                                        {row.isNotYetEmployed ? (
+                                                                            <span className="text-[8px] text-slate-900 font-medium block">
+                                                                                Not Yet Employed
+                                                                            </span>
+                                                                        ) : row.scheduledMin === 0 ? (
+                                                                            <span className="text-[8px] text-slate-900 block font-normal">
+                                                                                N/A – No Classes
+                                                                            </span>
+                                                                        ) : row.leaveMin === row.scheduledMin ? (
+                                                                            <span className="text-[8px] text-slate-900 font-medium block">
+                                                                                On Approved Leave
+                                                                            </span>
+                                                                        ) : row.eligibleMin === 0 ? (
+                                                                            <span className="text-[8px] text-slate-900 block font-normal">
+                                                                                N/A – Excluded
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-[8px] text-slate-900 font-semibold block">
+                                                                                {covBadge.text}
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })
                                                     )}
                                                 </tbody>
                                             </table>
+                                        </div>
+                                    </div>
+
+                                    {/* Administrative Attendance Coverage Legend & Monitoring Formula Guide */}
+                                    <div className="mt-3 p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-[8.5px] leading-tight space-y-1.5 text-slate-700">
+                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-1.5">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="font-bold text-slate-900 uppercase tracking-wider text-[9px]">Attendance Coverage Monitoring Legend:</span>
+                                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">≥95.0% Excellent</span>
+                                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-blue-100 text-blue-800 border border-blue-300">90.0–94.99% Good</span>
+                                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-100 text-amber-800 border border-amber-300">80.0–89.99% Needs Monitoring</span>
+                                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-rose-100 text-rose-800 border border-rose-300">&lt;80.0% Needs Attention</span>
+                                            </div>
+                                            <span className="text-slate-500 italic">Atomic Baseline: <strong>Minutes</strong> (e.g. 1.5h = 90 min / 3.0h = 180 min)</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[8px] text-slate-600">
+                                            <p><strong>Eligible Mins</strong> = Scheduled Mins − Approved Excluded Mins (Approved Leave, Suspensions, Institutional Holidays).</p>
+                                            <p><strong>Attendance Coverage</strong> = (Attended Eligible Mins ÷ Eligible Mins) × 100. (N/A when Eligible Mins = 0).</p>
+                                            <p><strong>Instructional Completion</strong> = ((Attended Mins + Make-Up Completed Mins) ÷ Required Scheduled Mins) × 100.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -2332,34 +2896,34 @@ export default function GenerateReportPage({
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                                 <div className="p-3 rounded-xl border border-border bg-card/60">
                                     <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
-                                        Eligible Scheduled Hours
+                                        Eligible Scheduled Mins
                                     </span>
                                     <span className="text-lg font-black text-foreground font-mono block mt-0.5">
-                                        {selectedAuditFaculty.eligibleHours.toFixed(1)}h
+                                        {(selectedAuditFaculty.eligibleMin ?? Math.round(selectedAuditFaculty.eligibleHours * 60)).toLocaleString()} min
                                     </span>
                                     <span className="text-[10px] text-muted-foreground block mt-0.5">
-                                        Total: {selectedAuditFaculty.scheduledHours.toFixed(1)}h (Excl. {selectedAuditFaculty.leaveHours.toFixed(1)}h leave)
+                                        Total: {(selectedAuditFaculty.scheduledMin ?? Math.round(selectedAuditFaculty.scheduledHours * 60)).toLocaleString()}m (Excl. {(selectedAuditFaculty.leaveMin ?? Math.round(selectedAuditFaculty.leaveHours * 60)).toLocaleString()}m leave)
                                     </span>
                                 </div>
 
                                 <div className="p-3 rounded-xl border border-border bg-card/60">
                                     <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
-                                        Attended Instructional Hours
+                                        Attended Delivery Mins
                                     </span>
                                     <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono block mt-0.5">
-                                        {selectedAuditFaculty.attendedHours.toFixed(1)}h
+                                        {(selectedAuditFaculty.attendedMin ?? Math.round(selectedAuditFaculty.attendedHours * 60)).toLocaleString()} min
                                     </span>
                                     <span className="text-[10px] text-muted-foreground block mt-0.5">
-                                        Coverage: <strong className="text-foreground">{selectedAuditFaculty.attendanceCoverage}%</strong>
+                                        Coverage: <strong className="text-foreground">{selectedAuditFaculty.attendanceCoverage !== null ? `${selectedAuditFaculty.attendanceCoverage}%` : 'N/A'}</strong>
                                     </span>
                                 </div>
 
                                 <div className="p-3 rounded-xl border border-border bg-card/60">
                                     <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
-                                        Punctuality & Late Minutes
+                                        Punctuality & Late Mins
                                     </span>
                                     <span className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono block mt-0.5">
-                                        {selectedAuditFaculty.onTimeRate}%
+                                        {selectedAuditFaculty.onTimeRate !== null ? `${selectedAuditFaculty.onTimeRate}%` : 'N/A'}
                                     </span>
                                     <span className="text-[10px] text-muted-foreground block mt-0.5">
                                         {selectedAuditFaculty.late} late session(s) · {selectedAuditFaculty.lateMinutes} min(s)
@@ -2371,10 +2935,10 @@ export default function GenerateReportPage({
                                         Instructional Completion
                                     </span>
                                     <span className="text-lg font-black text-indigo-600 dark:text-indigo-400 font-mono block mt-0.5">
-                                        {selectedAuditFaculty.instructionalCompletion}%
+                                        {selectedAuditFaculty.instructionalCompletion !== null ? `${selectedAuditFaculty.instructionalCompletion}%` : 'N/A'}
                                     </span>
                                     <span className="text-[10px] text-muted-foreground block mt-0.5">
-                                        Make-Up Done: {selectedAuditFaculty.makeUpCompletedHours.toFixed(1)}h / {selectedAuditFaculty.makeUpRequiredHours.toFixed(1)}h req
+                                        Make-Up: {(selectedAuditFaculty.makeUpDoneMin ?? Math.round(selectedAuditFaculty.makeUpCompletedHours * 60)).toLocaleString()}m / {(selectedAuditFaculty.makeUpReqMin ?? Math.round(selectedAuditFaculty.makeUpRequiredHours * 60)).toLocaleString()}m req
                                     </span>
                                 </div>
                             </div>
@@ -2386,9 +2950,9 @@ export default function GenerateReportPage({
                                     Fairness Calculation Rules Applied:
                                 </p>
                                 <ul className="list-disc pl-5 space-y-0.5 text-[10.5px]">
-                                    <li><strong>Attendance Coverage:</strong> (Attended Eligible Mins ÷ Eligible Scheduled Mins) × 100. Approved leaves are excluded from the denominator.</li>
+                                    <li><strong>Attendance Coverage:</strong> (Attended Eligible Mins ÷ Eligible Scheduled Mins) × 100. Approved leaves are excluded from the denominator. Returns N/A if eligible scheduled mins are zero.</li>
                                     <li><strong>Punctuality:</strong> Recorded as an attribute of attendance (arrival time & late minutes), not mixed into attendance rate totals.</li>
-                                    <li><strong>Instructional Completion:</strong> Incorporates completed, verified make-up classes so faculty who deliver missed classes achieve 100% completion.</li>
+                                    <li><strong>Instructional Completion:</strong> Incorporates completed, verified make-up classes so faculty who deliver missed classes achieve 100% completion against original required schedule.</li>
                                 </ul>
                             </div>
 

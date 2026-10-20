@@ -41,7 +41,8 @@ import {
     ArrowLeftRight,
     ShieldAlert,
     Send,
-    Award
+    Award,
+    History,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -258,6 +259,35 @@ const facultyNavGroups: NavGroup[] = [
     },
 ];
 
+// Lab In-Charge Navigation Groups (Operational Workspace)
+const labInChargeNavGroups: NavGroup[] = [
+    {
+        title: 'LAB OPERATIONS',
+        items: [
+            { title: 'Operational Dashboard', url: '/monitoring/lab-in-charge?tab=dashboard', icon: LayoutGrid },
+            { title: "Today's Lab Schedule", url: '/monitoring/lab-in-charge?tab=today', icon: CalendarDays },
+            { title: 'Room Status Board', url: '/monitoring/lab-in-charge?tab=rooms', icon: Monitor },
+            { title: 'Lab Timetables', url: '/monitoring/lab-in-charge?tab=timetables', icon: Calendar },
+        ],
+    },
+    {
+        title: 'MONITORING & INCIDENTS',
+        items: [
+            { title: 'Discrepancies & Incidents', url: '/monitoring/lab-in-charge?tab=discrepancies', icon: AlertTriangle },
+            { title: 'Action Required', url: '/monitoring/lab-in-charge?tab=action_required', icon: Bell },
+            { title: 'Historical Monitoring', url: '/monitoring/lab-in-charge?tab=historical', icon: History },
+            { title: 'Monitoring Audit History', url: '/monitoring/lab-in-charge?tab=history', icon: ClipboardCheck },
+            { title: 'My Assigned Labs', url: '/monitoring/lab-in-charge?tab=assigned_labs', icon: Building2 },
+        ],
+    },
+    {
+        title: 'COMMUNICATION',
+        items: [
+            { title: 'Announcements', url: '/announcements', icon: Megaphone },
+        ],
+    },
+];
+
 const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
@@ -269,6 +299,7 @@ export function AppSidebar() {
     const isProgramHead = roles.includes('Program Head');
     const isDean = roles.includes('Dean');
     const isSuperAdmin = roles.includes('System Administrator') || roles.includes('Super Admin');
+    const isLabInCharge = roles.includes('Lab In-Charge');
     const isFaculty = user?.is_faculty || roles.includes('Faculty Member');
 
     const canSwitchWorkspace = (isProgramHead || isDean || isSuperAdmin) && isFaculty;
@@ -319,6 +350,8 @@ export function AppSidebar() {
         groups = programHeadNavGroups;
     } else if (isDean) {
         groups = deanNavGroups;
+    } else if (isLabInCharge && !isSuperAdmin) {
+        groups = labInChargeNavGroups;
     } else if (isFaculty && !isSuperAdmin) {
         groups = facultyNavGroups;
     } else {

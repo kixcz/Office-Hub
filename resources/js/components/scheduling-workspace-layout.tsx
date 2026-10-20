@@ -29,6 +29,7 @@ import {
     ShieldCheck,
     BarChart3,
     Send,
+    RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -98,6 +99,13 @@ export const SCHEDULING_NAV_GROUPS: SchedulingNavGroup[] = [
             { id: 'section-schedule', title: 'Section Schedule', url: '/schedule/master-timetable?view=section', icon: BookOpen },
             { id: 'faculty-schedule', title: 'Faculty Schedule', url: '/schedule/master-timetable?view=faculty', icon: Users },
             { id: 'room-lab-schedule', title: 'Room / Laboratory Schedule', url: '/schedule/master-timetable?view=room', icon: Building2 },
+            { id: 'schedule-reconciliation', title: 'Sync & Reconciliation', url: '/schedule/reconciliation', icon: RefreshCw },
+        ],
+    },
+    {
+        title: 'Operations & Monitoring',
+        items: [
+            { id: 'lab-in-charge-monitoring', title: 'Lab In-Charge Portal', url: '/monitoring/lab-in-charge', icon: ShieldCheck },
         ],
     },
     {
