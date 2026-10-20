@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class LabMonitoringDiscrepancy extends Model
 {
@@ -18,11 +19,21 @@ class LabMonitoringDiscrepancy extends Model
         'observed_state',
         'remarks',
         'evidence_details',
+        'photo_path',
         'resolution_status',
         'resolution_notes',
         'resolved_by_user_id',
         'resolved_at',
     ];
+
+    protected $appends = [
+        'photo_url',
+    ];
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photo_path ? Storage::url($this->photo_path) : null;
+    }
 
     protected function casts(): array
     {

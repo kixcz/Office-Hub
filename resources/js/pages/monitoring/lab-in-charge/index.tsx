@@ -75,6 +75,15 @@ import {
     Play,
     Monitor,
     ChevronRight,
+    GraduationCap,
+    Flame,
+    ArrowUpRight,
+    ArrowDownRight,
+    Camera,
+    Image as ImageIcon,
+    Trash2,
+    ZoomIn,
+    Upload,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -107,6 +116,7 @@ export interface ExpectedSession {
     session_outcome: string;
     has_discrepancy: boolean;
     remarks?: string | null;
+    photo_url?: string | null;
     monitoring_session_id?: number | null;
     can_edit?: boolean;
 }
@@ -124,6 +134,8 @@ export interface RoomStatusItem {
     minutes_remaining?: number | null;
     active_session?: ExpectedSession | null;
     next_session?: ExpectedSession | null;
+    expected_peak_hours?: string;
+    peak_status?: string;
 }
 
 export interface ActionRequiredItem {
@@ -147,6 +159,7 @@ export interface DiscrepancyItem {
     observed_state: string;
     remarks?: string;
     evidence_details?: string;
+    photo_url?: string | null;
     resolution_status: 'Reported' | 'Under Review' | 'Clarification Required' | 'Resolved' | 'Verified' | string;
     resolution_notes?: string;
     reporter: { name: string };
@@ -170,6 +183,7 @@ export interface HistoricalSessionItem {
     is_historical_reconciliation: boolean;
     monitored_by: string;
     remarks?: string;
+    photo_url?: string | null;
     correction_requested?: boolean;
     has_discrepancy?: boolean;
 }
@@ -202,6 +216,13 @@ export interface TimetableEntry {
     room_name: string;
 }
 
+export interface TimeSlotOption {
+    id: string;
+    label: string;
+    start: string;
+    end: string;
+}
+
 interface Props {
     labInChargeUser: {
         name: string;
@@ -232,6 +253,9 @@ interface Props {
     timetablesByRoom: Record<string, TimetableEntry[]>;
     myAssignedLabs: AssignedLabItem[];
     allFaculty: { id: number; first_name: string; last_name: string }[];
+    overallLabPeak?: string;
+    availableTimeSlots?: TimeSlotOption[];
+    endOfDayReport?: any;
 }
 
 export default function LabInChargeMonitoring({
@@ -251,8 +275,11 @@ export default function LabInChargeMonitoring({
     timetablesByRoom = {},
     myAssignedLabs = [],
     allFaculty = [],
+    overallLabPeak = '2 PM – 3 PM',
+    availableTimeSlots = [],
+    endOfDayReport,
 }: Props) {
-    // Top-Level Module Navigation (10 dedicated operational modules)
+    // Top-Level Module Navigation (11 dedicated operational modules)
     const [activeModule, setActiveModule] = useState<
         | 'dashboard'
         | 'today'
@@ -264,6 +291,7 @@ export default function LabInChargeMonitoring({
         | 'assigned_labs'
         | 'action_required'
         | 'timetables'
+        | 'end_of_day'
     >(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
@@ -273,11 +301,25 @@ export default function LabInChargeMonitoring({
         return 'dashboard';
     });
 
+    // Listen to URL search param changes (e.g. when clicking sidebar navigation links)
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const tabParam = params.get('tab') as any;
+            if (tabParam && tabParam !== activeModule) {
+                setActiveModule(tabParam);
+            }
+        }
+    }, [window.location.search]);
+
     // Schedule Filters
     const [scheduleViewMode, setScheduleViewMode] = useState<'day' | 'timeline'>('day');
     const [filterRoom, setFilterRoom] = useState<string>('all');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterSearch, setFilterSearch] = useState<string>('');
+
+    // Time Frame Selector for Lab In-Charge Live/Timeframe Room Status
+    const [selectedTimeFrame, setSelectedTimeFrame] = useState<string>('live');
 
     // Selected Room for Lab Timetables module
     const [selectedTimetableRoomId, setSelectedTimetableRoomId] = useState<string>(() => {
@@ -304,6 +346,8 @@ export default function LabInChargeMonitoring({
     const [obsCourseCode, setObsCourseCode] = useState('');
     const [obsSectionName, setObsSectionName] = useState('');
     const [obsRemarks, setObsRemarks] = useState('');
+    const [obsPhoto, setObsPhoto] = useState<File | null>(null);
+    const [obsPhotoPreview, setObsPhotoPreview] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Immediate Disruption Report Modal State
@@ -313,6 +357,12 @@ export default function LabInChargeMonitoring({
     const [disruptSeverity, setDisruptSeverity] = useState('Needs Attention');
     const [disruptObservedState, setDisruptObservedState] = useState('');
     const [disruptRemarks, setDisruptRemarks] = useState('');
+    const [disruptPhoto, setDisruptPhoto] = useState<File | null>(null);
+    const [disruptPhotoPreview, setDisruptPhotoPreview] = useState<string | null>(null);
+
+    // Lightbox / Image Preview Modal
+    const [viewPhotoUrl, setViewPhotoUrl] = useState<string | null>(null);
+    const [viewPhotoTitle, setViewPhotoTitle] = useState<string>('');
 
     // Correction Request Modal
     const [correctionModalOpen, setCorrectionModalOpen] = useState(false);
@@ -336,6 +386,8 @@ export default function LabInChargeMonitoring({
         setObsCourseCode('');
         setObsSectionName('');
         setObsRemarks(session.remarks || '');
+        setObsPhoto(null);
+        setObsPhotoPreview(session.photo_url || null);
         setMonitoringModalOpen(true);
     };
 
@@ -359,29 +411,38 @@ export default function LabInChargeMonitoring({
         if (!targetSession) return;
         setIsSubmitting(true);
 
+        const payload: Record<string, any> = {
+            verified_schedule_id: targetSession.verified_schedule_id,
+            room_id: targetSession.room_id,
+            actual_start_time: obsActualStart,
+            actual_end_time: obsActualEnd,
+            observation_status: obsStatus,
+            room_condition: obsRoomCondition,
+            session_outcome: obsSessionOutcome,
+            alternative_room_id: obsAlternativeRoomId ? Number(obsAlternativeRoomId) : null,
+            student_headcount: obsHeadcount ? Number(obsHeadcount) : null,
+            observed_faculty_id: obsFacultyId && Number(obsFacultyId) !== targetSession.faculty_id ? Number(obsFacultyId) : null,
+            observed_course_code: obsCourseCode || null,
+            observed_section_name: obsSectionName || null,
+            remarks: obsRemarks,
+            is_historical_reconciliation: isHistoricalMode,
+        };
+
+        if (obsPhoto) {
+            payload.photo = obsPhoto;
+        }
+
         router.post(
             route('lab-in-charge.observation'),
-            {
-                verified_schedule_id: targetSession.verified_schedule_id,
-                room_id: targetSession.room_id,
-                actual_start_time: obsActualStart,
-                actual_end_time: obsActualEnd,
-                observation_status: obsStatus,
-                room_condition: obsRoomCondition,
-                session_outcome: obsSessionOutcome,
-                alternative_room_id: obsAlternativeRoomId ? Number(obsAlternativeRoomId) : null,
-                student_headcount: obsHeadcount ? Number(obsHeadcount) : null,
-                observed_faculty_id: obsFacultyId && Number(obsFacultyId) !== targetSession.faculty_id ? Number(obsFacultyId) : null,
-                observed_course_code: obsCourseCode || null,
-                observed_section_name: obsSectionName || null,
-                remarks: obsRemarks,
-                is_historical_reconciliation: isHistoricalMode,
-            },
+            payload,
             {
                 preserveScroll: true,
+                forceFormData: true,
                 onSuccess: () => {
                     setMonitoringModalOpen(false);
                     setTargetSession(null);
+                    setObsPhoto(null);
+                    setObsPhotoPreview(null);
                 },
                 onFinish: () => setIsSubmitting(false),
             }
@@ -394,21 +455,30 @@ export default function LabInChargeMonitoring({
         if (!disruptRoomId) return;
         setIsSubmitting(true);
 
+        const payload: Record<string, any> = {
+            room_id: Number(disruptRoomId),
+            discrepancy_type: disruptType,
+            severity: disruptSeverity,
+            observed_state: disruptObservedState,
+            remarks: disruptRemarks,
+        };
+
+        if (disruptPhoto) {
+            payload.photo = disruptPhoto;
+        }
+
         router.post(
             route('lab-in-charge.disruption'),
-            {
-                room_id: Number(disruptRoomId),
-                discrepancy_type: disruptType,
-                severity: disruptSeverity,
-                observed_state: disruptObservedState,
-                remarks: disruptRemarks,
-            },
+            payload,
             {
                 preserveScroll: true,
+                forceFormData: true,
                 onSuccess: () => {
                     setDisruptionModalOpen(false);
                     setDisruptObservedState('');
                     setDisruptRemarks('');
+                    setDisruptPhoto(null);
+                    setDisruptPhotoPreview(null);
                 },
                 onFinish: () => setIsSubmitting(false),
             }
@@ -509,6 +579,99 @@ export default function LabInChargeMonitoring({
         });
     }, [sessionsList, filterRoom, filterStatus, filterSearch]);
 
+    // Calculate dynamic room status based on the selected time frame (e.g. 'live' vs '07:30', '09:00', etc.)
+    const dynamicDisplayRooms = useMemo(() => {
+        return roomStatusBoard.map((room) => {
+            const roomSessions = sessionsList.filter((s) => s.room_id === room.room_id);
+
+            if (selectedTimeFrame === 'live') {
+                return {
+                    ...room,
+                    active_session: room.active_session,
+                    next_session: room.next_session,
+                    is_in_use: Boolean(room.active_session),
+                };
+            }
+
+            // A specific time slot is selected (e.g. '07:30', '09:00', '10:30')
+            // Match sessions whose time interval overlaps with this slot
+            const slotStartStr = selectedTimeFrame.length === 5 ? `${selectedTimeFrame}:00` : selectedTimeFrame;
+            const slotOption = availableTimeSlots.find((t) => t.id === selectedTimeFrame);
+            const slotEndStr = slotOption ? (slotOption.end.length === 5 ? `${slotOption.end}:00` : slotOption.end) : '23:59:00';
+
+            const matchingSession = roomSessions.find((s) => {
+                const sStart = `${s.scheduled_start}:00`;
+                const sEnd = `${s.scheduled_end}:00`;
+                return sStart < slotEndStr && sEnd > slotStartStr;
+            });
+
+            // Find next session after this slot
+            const nextSession = roomSessions.find((s) => {
+                const sStart = `${s.scheduled_start}:00`;
+                return sStart >= slotEndStr;
+            });
+
+            return {
+                ...room,
+                active_session: matchingSession ?? null,
+                next_session: nextSession ?? null,
+                is_in_use: Boolean(matchingSession),
+            };
+        });
+    }, [roomStatusBoard, sessionsList, selectedTimeFrame, availableTimeSlots]);
+
+    // Sessions that are currently in session or ready to monitor for the active time frame
+    const currentSessionsInLaboratories = useMemo(() => {
+        const fromRooms = dynamicDisplayRooms
+            .filter((r) => r.active_session)
+            .map((r) => ({
+                session: r.active_session!,
+                roomName: r.room_name,
+                building: r.building,
+                minutesRemaining: r.minutes_remaining,
+                operationalBadge: r.operational_badge,
+                expected_peak_hours: r.expected_peak_hours,
+                peak_status: r.peak_status,
+            }));
+
+        if (fromRooms.length > 0) return fromRooms;
+
+        if (selectedTimeFrame === 'live') {
+            return sessionsList
+                .filter(
+                    (s) =>
+                        s.observation_status === 'Ready to Monitor' ||
+                        s.observation_status === 'In Progress' ||
+                        s.observation_status === 'Started On Time' ||
+                        s.observation_status === 'Late Start'
+                )
+                .map((s) => ({
+                    session: s,
+                    roomName: s.room_name,
+                    building: '',
+                    minutesRemaining: null,
+                    operationalBadge: s.observation_status,
+                    expected_peak_hours: '7:00 AM – 6:00 PM',
+                    peak_status: 'Normal',
+                }));
+        }
+
+        return [];
+    }, [dynamicDisplayRooms, selectedTimeFrame, sessionsList]);
+
+    // Active KPI calculations dynamically reflecting the selected time frame
+    const dynamicRoomsInUseCount = useMemo(() => {
+        return dynamicDisplayRooms.filter((r) => r.is_in_use).length;
+    }, [dynamicDisplayRooms]);
+
+    const dynamicRoomsAvailableCount = useMemo(() => {
+        return dynamicDisplayRooms.filter((r) => !r.is_in_use).length;
+    }, [dynamicDisplayRooms]);
+
+    const dynamicFacultyInLabsCount = useMemo(() => {
+        return dynamicDisplayRooms.filter((r) => r.is_in_use && r.active_session?.expected_faculty).length;
+    }, [dynamicDisplayRooms]);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Lab In-Charge Operational Workspace" />
@@ -544,6 +707,14 @@ export default function LabInChargeMonitoring({
                         <div className="flex items-center gap-2 flex-wrap">
                             <Button
                                 variant="outline"
+                                className="border-amber-400 text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/20 font-bold gap-1.5"
+                                onClick={() => router.get('/monitoring/lab-in-charge/end-of-day')}
+                            >
+                                <FileCheck className="h-4 w-4 text-amber-600" />
+                                End-of-Day Closing Report
+                            </Button>
+                            <Button
+                                variant="outline"
                                 className="border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 font-bold gap-1.5"
                                 onClick={() => {
                                     setDisruptRoomId(String(assignedRooms[0]?.id ?? ''));
@@ -556,7 +727,7 @@ export default function LabInChargeMonitoring({
                             <Button
                                 className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black gap-1.5 shadow-xs"
                                 onClick={() => {
-                                    const readySession = sessionsList.find(s => s.observation_status === 'Ready to Monitor' || s.observation_status === 'In Progress') || sessionsList[0];
+                                    const readySession = currentSessionsInLaboratories[0]?.session || sessionsList.find(s => s.observation_status === 'Ready to Monitor' || s.observation_status === 'In Progress') || sessionsList[0];
                                     if (readySession) {
                                         openObservationModal(readySession);
                                     } else {
@@ -571,55 +742,291 @@ export default function LabInChargeMonitoring({
                     </div>
                 </div>
 
-                {/* 2. OPERATIONAL MODULE TABS (All 10 required modules) */}
-                <div className="border-b border-border/80 pb-1">
-                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-                        {[
-                            { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid, count: null },
-                            { id: 'today', label: "Today's Schedule", icon: CalendarDays, count: sessionsList.length },
-                            { id: 'rooms', label: 'Room Status', icon: MonitorPlay, count: assignedRooms.length },
-                            { id: 'action_required', label: 'Action Required', icon: Bell, count: actionRequired.length, highlight: actionRequired.length > 0 },
-                            { id: 'timetables', label: 'Lab Timetables', icon: Calendar, count: (timetablesByRoom[selectedTimetableRoomId] || []).length || 14 },
-                            { id: 'historical', label: 'Historical Monitoring', icon: History, count: unmonitoredHistoricalCount, badgeColor: 'bg-amber-500' },
-                            { id: 'discrepancies', label: 'Discrepancies', icon: AlertTriangle, count: openDiscrepancies.length },
-                            { id: 'history', label: 'Audit History', icon: ClipboardCheck, count: historicalSessions.length },
-                            { id: 'assigned_labs', label: 'Assigned Labs', icon: Building2, count: myAssignedLabs.length },
-                        ].map((tab) => {
-                            const Icon = tab.icon;
-                            const isActive = activeModule === tab.id;
+                {/* 2. TV SLIDE 5 STYLE LAB MONITORING & TIME FRAME SELECTOR */}
+                <div className="space-y-4 rounded-2xl border border-amber-500/25 bg-amber-500/[0.02] dark:bg-amber-500/[0.03] p-4 shadow-sm">
+                    {/* Time Frame Selector Header */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border/60">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <span className="relative flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                                </span>
+                                <h2 className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
+                                    Laboratory Session Monitoring
+                                </h2>
+                                <Badge variant="outline" className="text-[10px] bg-background font-mono py-0 h-5 border-amber-500/40 text-amber-800 dark:text-amber-300">
+                                    {selectedTimeFrame === 'live' ? 'Live Now' : `${selectedTimeFrame} Session`}
+                                </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Select a scheduled time window below to verify which faculty members are currently in session across computer laboratories.
+                            </p>
+                        </div>
+
+                        {/* Quick Time Frame Pills */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1 mr-1">
+                                <Clock className="h-3.5 w-3.5 text-amber-500" />
+                                Time Window:
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedTimeFrame('live')}
+                                className={cn(
+                                    "px-3 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs",
+                                    selectedTimeFrame === 'live'
+                                        ? "bg-amber-500 text-slate-950 border-amber-500 ring-2 ring-amber-500/20 font-black"
+                                        : "bg-card text-muted-foreground border-border hover:bg-accent hover:text-foreground"
+                                )}
+                            >
+                                <span className={cn("h-1.5 w-1.5 rounded-full", selectedTimeFrame === 'live' ? "bg-slate-950 animate-pulse" : "bg-emerald-500")} />
+                                Live (Now)
+                            </button>
+
+                            {(availableTimeSlots || [
+                                { id: '07:30', label: '07:30 – 09:00 AM', start: '07:30', end: '09:00' },
+                                { id: '09:00', label: '09:00 – 10:30 AM', start: '09:00', end: '10:30' },
+                                { id: '10:30', label: '10:30 – 12:00 PM', start: '10:30', end: '12:00' },
+                                { id: '13:00', label: '01:00 – 02:30 PM', start: '13:00', end: '14:30' },
+                                { id: '14:30', label: '02:30 – 04:00 PM', start: '14:30', end: '16:00' },
+                                { id: '16:00', label: '04:00 – 05:30 PM', start: '16:00', end: '17:30' },
+                            ]).map((slot) => {
+                                const isSelected = selectedTimeFrame === slot.id;
+                                return (
+                                    <button
+                                        key={slot.id}
+                                        type="button"
+                                        onClick={() => setSelectedTimeFrame(slot.id)}
+                                        className={cn(
+                                            "px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer whitespace-nowrap shadow-2xs",
+                                            isSelected
+                                                ? "bg-amber-500 text-slate-950 border-amber-500 ring-2 ring-amber-500/20 font-black"
+                                                : "bg-card text-muted-foreground border-border hover:bg-accent hover:text-foreground"
+                                        )}
+                                    >
+                                        {slot.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Top 4 KPI Cards (Slide 5 Style) */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        {/* 1. Rooms in use */}
+                        <div className="rounded-xl p-3.5 flex items-center justify-between gap-3 bg-amber-500/10 border border-amber-400/40 dark:bg-amber-500/15 text-foreground shadow-2xs">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                                    <Monitor className="h-5 w-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-semibold truncate text-muted-foreground">Rooms in use</p>
+                                    <p className="text-2xl font-extrabold tracking-tight tabular-nums text-foreground">{dynamicRoomsInUseCount}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-end gap-1 h-6 text-amber-500 opacity-75 shrink-0">
+                                <span className="w-1 h-2 rounded-full bg-current opacity-40" />
+                                <span className="w-1 h-5 rounded-full bg-current opacity-90" />
+                                <span className="w-1 h-3 rounded-full bg-current opacity-60" />
+                                <span className="w-1 h-6 rounded-full bg-current opacity-100" />
+                            </div>
+                        </div>
+
+                        {/* 2. Available rooms */}
+                        <div className="rounded-xl p-3.5 flex items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-400/30 dark:bg-emerald-500/15 text-foreground shadow-2xs">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle2 className="h-5 w-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-semibold truncate text-muted-foreground">Available rooms</p>
+                                    <p className="text-2xl font-extrabold tracking-tight tabular-nums text-foreground">{dynamicRoomsAvailableCount}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-end gap-1 h-6 text-emerald-500 opacity-75 shrink-0">
+                                <span className="w-1 h-2 rounded-full bg-current opacity-40" />
+                                <span className="w-1 h-5 rounded-full bg-current opacity-90" />
+                                <span className="w-1 h-3 rounded-full bg-current opacity-60" />
+                                <span className="w-1 h-6 rounded-full bg-current opacity-100" />
+                            </div>
+                        </div>
+
+                        {/* 3. Peak Lab Hours */}
+                        <div className="rounded-xl p-3.5 flex items-center justify-between gap-3 bg-orange-500/10 border border-orange-400/30 dark:bg-orange-500/15 text-foreground shadow-2xs">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-orange-500/20 text-orange-600 dark:text-orange-400">
+                                    <Flame className="h-5 w-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-semibold truncate text-muted-foreground">Peak Lab Hours · {todayName}</p>
+                                    <p className="text-lg font-extrabold tracking-tight truncate text-foreground">{overallLabPeak || '2 PM – 3 PM'}</p>
+                                    <p className="text-[10px] text-muted-foreground truncate">Highest simultaneous lab usage</p>
+                                </div>
+                            </div>
+                            <div className="flex items-end gap-1 h-6 text-orange-500 opacity-75 shrink-0">
+                                <span className="w-1 h-2 rounded-full bg-current opacity-40" />
+                                <span className="w-1 h-5 rounded-full bg-current opacity-90" />
+                                <span className="w-1 h-3 rounded-full bg-current opacity-60" />
+                                <span className="w-1 h-6 rounded-full bg-current opacity-100" />
+                            </div>
+                        </div>
+
+                        {/* 4. Faculty in labs */}
+                        <div className="rounded-xl p-3.5 flex items-center justify-between gap-3 bg-purple-500/10 border border-purple-400/30 dark:bg-purple-500/15 text-foreground shadow-2xs">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-purple-500/20 text-purple-600 dark:text-purple-400">
+                                    <Users className="h-5 w-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-semibold truncate text-muted-foreground">Faculty in labs</p>
+                                    <p className="text-2xl font-extrabold tracking-tight tabular-nums text-foreground">{dynamicFacultyInLabsCount}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-end gap-1 h-6 text-purple-500 opacity-75 shrink-0">
+                                <span className="w-1 h-2 rounded-full bg-current opacity-40" />
+                                <span className="w-1 h-5 rounded-full bg-current opacity-90" />
+                                <span className="w-1 h-3 rounded-full bg-current opacity-60" />
+                                <span className="w-1 h-6 rounded-full bg-current opacity-100" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bento Grid of Laboratories (Exact 4-column layout as in TV Slide 5 screenshot) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                        {dynamicDisplayRooms.map((room) => {
+                            const isOccupied = room.is_in_use;
+                            const active = room.active_session;
+                            const next = room.next_session;
+                            const expectedPeak = room.expected_peak_hours || '7:00 AM – 6:00 PM';
+                            const peakStatus = room.peak_status || 'Heavy Traffic';
+
                             return (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => setActiveModule(tab.id as any)}
+                                <div
+                                    key={room.room_id}
                                     className={cn(
-                                        'flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 whitespace-nowrap',
-                                        isActive
-                                            ? 'bg-amber-500 text-slate-950 shadow-2xs font-bold'
-                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                                        "flex flex-col justify-between rounded-2xl p-4 transition-all border",
+                                        isOccupied
+                                            ? "border-amber-400 bg-amber-500/[0.04] shadow-[0_0_0_1px_rgba(251,191,36,0.5),0_4px_16px_rgba(245,158,11,0.12)]"
+                                            : "bg-card border-border/80 shadow-2xs"
                                     )}
                                 >
-                                    <Icon className="h-3.5 w-3.5" />
-                                    <span>{tab.label}</span>
-                                    {tab.count !== null && (
-                                        <span
-                                            className={cn(
-                                                'px-1.5 py-0.2 rounded-full text-[10px] font-bold',
-                                                isActive
-                                                    ? 'bg-slate-950 text-white'
-                                                    : tab.highlight
-                                                        ? 'bg-rose-500 text-white animate-pulse'
-                                                        : 'bg-muted-foreground/20 text-muted-foreground'
-                                            )}
+                                    <div>
+                                        {/* Room Header */}
+                                        <div className="flex items-start justify-between gap-2.5">
+                                            <div className="min-w-0">
+                                                <h3 className="truncate text-base font-bold text-foreground">{room.room_name}</h3>
+                                                <p className="truncate text-xs text-muted-foreground">{room.type || 'Laboratory'}</p>
+                                            </div>
+                                            <span
+                                                className={cn(
+                                                    "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold",
+                                                    isOccupied
+                                                        ? "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
+                                                        : "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                                )}
+                                            >
+                                                <span className={cn("h-1.5 w-1.5 rounded-full", isOccupied ? "bg-amber-500 animate-pulse" : "bg-emerald-500")} />
+                                                {isOccupied ? 'In Use' : 'Available'}
+                                            </span>
+                                        </div>
+
+                                        {/* Instructor and Session Details */}
+                                        {active ? (
+                                            <div className="mt-2.5 rounded-xl p-2.5 bg-muted/40 dark:bg-card/60 border border-border/60">
+                                                <div className="flex items-center gap-1.5">
+                                                    <GraduationCap className="h-4 w-4 shrink-0 text-amber-500" />
+                                                    <p className="line-clamp-1 text-sm font-bold text-foreground">
+                                                        {active.expected_faculty || 'Instructor'}
+                                                    </p>
+                                                </div>
+                                                <p className="mt-0.5 line-clamp-1 text-xs font-semibold text-foreground/90">
+                                                    {active.course_code} {active.course_title ? `${active.course_title}` : ''}
+                                                </p>
+                                                <p className="line-clamp-1 text-[11px] text-muted-foreground">
+                                                    {active.section}
+                                                </p>
+                                                <div className="mt-1 flex items-center justify-between text-xs font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                                                    <span>{active.scheduled_time || `${active.scheduled_start} - ${active.scheduled_end}`}</span>
+                                                    {active.observation_status && (
+                                                        <span className="text-[10px] font-semibold text-muted-foreground">
+                                                            {active.observation_status}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-2.5 flex min-h-[92px] items-center justify-center rounded-xl p-2.5 text-center bg-muted/20 border border-border/40 text-muted-foreground">
+                                                <p className="text-xs font-medium">Ready for next session</p>
+                                            </div>
+                                        )}
+
+                                        {/* Expected Peak Hours Badge */}
+                                        {expectedPeak && (
+                                            <div className="mt-2 rounded-lg px-2.5 py-1.5 bg-amber-500/10 dark:bg-amber-400/10 border border-amber-400/25 flex items-center justify-between text-[11px]">
+                                                <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold truncate">
+                                                    <Flame className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                                    <span className="truncate">Peak: <strong className="font-bold">{expectedPeak}</strong></span>
+                                                </div>
+                                                {peakStatus && (
+                                                    <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded text-amber-700 dark:text-amber-400 bg-amber-400/20">
+                                                        {peakStatus}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Up Next Preview */}
+                                        {next && (
+                                            <p className="mt-2 line-clamp-1 border-t border-border/40 pt-1.5 text-[11px] text-muted-foreground">
+                                                <strong className="font-bold text-foreground">Up next:</strong> {next.expected_faculty || next.course_code} at {next.scheduled_start?.substring(0, 5)}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Action Button: Monitor or View Timetable */}
+                                    <div className="mt-3 pt-2 border-t border-border/40 flex items-center justify-between gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedTimetableRoomId(String(room.room_id));
+                                                setActiveModule('timetables');
+                                            }}
+                                            className="text-[11px] font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
                                         >
-                                            {tab.count}
-                                        </span>
-                                    )}
-                                </button>
+                                            Timetable <ChevronRight className="h-3 w-3" />
+                                        </button>
+
+                                        {active ? (
+                                            <Button
+                                                size="sm"
+                                                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs h-7 px-2.5 shadow-2xs gap-1"
+                                                onClick={() => openObservationModal(active)}
+                                            >
+                                                <MonitorPlay className="h-3 w-3" />
+                                                Monitor Now
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="text-xs h-7 px-2.5 font-medium"
+                                                onClick={() => {
+                                                    setSelectedTimetableRoomId(String(room.room_id));
+                                                    setActiveModule('timetables');
+                                                }}
+                                            >
+                                                View Schedule
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
                             );
                         })}
                     </div>
                 </div>
+
+
 
                 {/* 3. MODULE CONTENT ROUTING */}
 
@@ -1056,13 +1463,30 @@ export default function LabInChargeMonitoring({
                                                 </TableCell>
                                                 <TableCell className="text-xs py-2 px-3 whitespace-nowrap">{getBadgeForSession(s.observation_status)}</TableCell>
                                                 <TableCell className="text-right py-2 px-3 sticky right-0 bg-card sm:bg-transparent shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)] sm:shadow-none whitespace-nowrap">
-                                                    <Button
-                                                        size="sm"
-                                                        className="h-7 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-3 shadow-2xs"
-                                                        onClick={() => openObservationModal(s)}
-                                                    >
-                                                        Monitor
-                                                    </Button>
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        {s.photo_url && (
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="h-7 text-xs px-2 gap-1 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 font-bold"
+                                                                onClick={() => {
+                                                                    setViewPhotoUrl(s.photo_url!);
+                                                                    setViewPhotoTitle(`${s.room_name} · ${s.course_code}`);
+                                                                }}
+                                                            >
+                                                                <ImageIcon className="h-3.5 w-3.5" />
+                                                                Photo
+                                                            </Button>
+                                                        )}
+                                                        <Button
+                                                            size="sm"
+                                                            className="h-7 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-3 shadow-2xs"
+                                                            onClick={() => openObservationModal(s)}
+                                                        >
+                                                            Monitor
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))
@@ -1340,6 +1764,23 @@ export default function LabInChargeMonitoring({
                                                 </div>
                                             </div>
 
+                                            {disc.photo_url && (
+                                                <div className="flex items-center gap-2 pt-1">
+                                                    <span className="text-[11px] text-muted-foreground font-semibold">Attached Evidence:</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setViewPhotoUrl(disc.photo_url!);
+                                                            setViewPhotoTitle(`Discrepancy #${disc.id} Evidence Photo`);
+                                                        }}
+                                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-md transition-colors"
+                                                    >
+                                                        <ImageIcon className="h-3.5 w-3.5" />
+                                                        View Incident Photo
+                                                    </button>
+                                                </div>
+                                            )}
+
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-muted-foreground pt-1">
                                                 <div>
                                                     Reported by: <strong>{disc.reporter.name}</strong> · {disc.created_at}
@@ -1389,6 +1830,7 @@ export default function LabInChargeMonitoring({
                                         <TableHead className="font-bold text-xs">Late Mins</TableHead>
                                         <TableHead className="font-bold text-xs">Observed Mins</TableHead>
                                         <TableHead className="font-bold text-xs">Outcome</TableHead>
+                                        <TableHead className="font-bold text-xs text-center">Photo</TableHead>
                                         <TableHead className="text-right font-bold text-xs">Audit Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -1418,6 +1860,23 @@ export default function LabInChargeMonitoring({
                                             <TableCell className="text-xs font-bold">{item.observed_minutes}m</TableCell>
                                             <TableCell className="text-xs">
                                                 <Badge variant="outline" className="text-[10px]">{item.session_outcome}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                {item.photo_url ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setViewPhotoUrl(item.photo_url!);
+                                                            setViewPhotoTitle(`${item.room_name} · ${item.monitoring_date}`);
+                                                        }}
+                                                        className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline bg-amber-500/10 px-2 py-1 rounded"
+                                                    >
+                                                        <ImageIcon className="h-3 w-3" />
+                                                        View
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-[10px] text-muted-foreground/60">—</span>
+                                                )}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Button
@@ -1984,6 +2443,124 @@ export default function LabInChargeMonitoring({
                         </div>
                     );
                 })()}
+
+                {/* MODULE 11: END-OF-DAY CLOSING REPORT */}
+                {activeModule === 'end_of_day' && (
+                    <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-xl font-black text-foreground flex items-center gap-2">
+                                        <FileCheck className="h-5 w-5 text-amber-500" />
+                                        End-of-Day Monitoring Report & Reconciliation
+                                    </h2>
+                                    <Badge className="bg-amber-500 text-slate-950 font-bold text-xs">
+                                        Daily Closing
+                                    </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Compiles all expected sessions for assigned rooms, performs reconciliation against monitoring observations, and closes the day for attendance analytics.
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    onClick={() => router.get('/monitoring/lab-in-charge/end-of-day')}
+                                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black gap-1.5 text-xs shadow-xs"
+                                >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                    Open Full Report & Print View
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Summary Metrics & Completeness Banner */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <Card className="border shadow-2xs bg-amber-500/5 border-amber-500/30">
+                                <CardHeader className="p-3 pb-1">
+                                    <CardTitle className="text-xs font-bold text-muted-foreground uppercase">
+                                        Completeness Rate
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-3 pt-0">
+                                    <div className="text-2xl font-black text-amber-600 font-mono">
+                                        {endOfDayReport?.completeness_rate ?? 100}%
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                                        {endOfDayReport?.monitored_sessions_count ?? 0} of {endOfDayReport?.expected_sessions_count ?? 0} expected monitored
+                                    </p>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border shadow-2xs">
+                                <CardHeader className="p-3 pb-1">
+                                    <CardTitle className="text-xs font-bold text-muted-foreground uppercase">
+                                        Report Status
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-3 pt-0">
+                                    <div className="text-base font-bold text-foreground">
+                                        {endOfDayReport?.status ?? 'Draft'}
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                                        {endOfDayReport?.can_clean_close ? 'Eligible for clean close' : 'Closed with exceptions'}
+                                    </p>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border shadow-2xs">
+                                <CardHeader className="p-3 pb-1">
+                                    <CardTitle className="text-xs font-bold text-muted-foreground uppercase">
+                                        Recorded Exceptions
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-3 pt-0">
+                                    <div className={cn("text-2xl font-black font-mono", (endOfDayReport?.discrepancies_count ?? 0) > 0 ? "text-rose-600" : "text-emerald-600")}>
+                                        {endOfDayReport?.discrepancies_count ?? 0}
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                                        Flagged variances / disruptions
+                                    </p>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border shadow-2xs">
+                                <CardHeader className="p-3 pb-1">
+                                    <CardTitle className="text-xs font-bold text-muted-foreground uppercase">
+                                        Assigned Shift
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-3 pt-0">
+                                    <div className="text-base font-bold text-foreground truncate">
+                                        {endOfDayReport?.shift_name ?? currentShift}
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                        {endOfDayReport?.covered_labs ?? 'Assigned Laboratories'}
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Interactive Guidance Box */}
+                        <div className="p-4 rounded-xl border border-border bg-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+                            <div className="space-y-1">
+                                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                    <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                                    Daily Reconciliation & Audit Lock Ready
+                                </h3>
+                                <p className="text-xs text-muted-foreground">
+                                    View the 4 consolidated matrices (Daily Summary, Faculty/Class, Room Utilization, Exceptions), verify checklist items, and submit the frozen report for administrative review.
+                                </p>
+                            </div>
+                            <Button
+                                onClick={() => router.get('/monitoring/lab-in-charge/end-of-day')}
+                                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shrink-0 shadow-xs"
+                            >
+                                Proceed to End-of-Day Workspace <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* 4. MODALS & DIALOGS */}
@@ -2173,6 +2750,81 @@ export default function LabInChargeMonitoring({
                                             onChange={(e) => setObsRemarks(e.target.value)}
                                         />
                                     </div>
+
+                                    {/* Photo Evidence Upload */}
+                                    <div className="space-y-1.5 pt-1 border-t">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-xs font-bold flex items-center gap-1.5">
+                                                <Camera className="h-3.5 w-3.5 text-amber-500" />
+                                                Laboratory Photo Evidence
+                                            </Label>
+                                            <span className="text-[10px] text-muted-foreground">PNG, JPG, WebP up to 5MB</span>
+                                        </div>
+
+                                        {obsPhotoPreview ? (
+                                            <div className="relative group rounded-lg overflow-hidden border bg-muted/30">
+                                                <img
+                                                    src={obsPhotoPreview}
+                                                    alt="Observation preview"
+                                                    className="w-full h-36 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                                                    onClick={() => {
+                                                        setViewPhotoUrl(obsPhotoPreview);
+                                                        setViewPhotoTitle(`${targetSession.room_name} · Observation Photo`);
+                                                    }}
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="secondary"
+                                                        className="h-7 text-xs gap-1 font-bold shadow-md"
+                                                        onClick={() => {
+                                                            setViewPhotoUrl(obsPhotoPreview);
+                                                            setViewPhotoTitle(`${targetSession.room_name} · Observation Photo`);
+                                                        }}
+                                                    >
+                                                        <ZoomIn className="h-3.5 w-3.5" /> View
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        className="h-7 text-xs gap-1 font-bold shadow-md"
+                                                        onClick={() => {
+                                                            setObsPhoto(null);
+                                                            setObsPhotoPreview(null);
+                                                        }}
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" /> Remove
+                                                    </Button>
+                                                </div>
+                                                <div className="p-1.5 bg-background/90 text-[10px] flex items-center justify-between px-2 text-muted-foreground border-t">
+                                                    <span>{obsPhoto ? obsPhoto.name : 'Saved photo attached'}</span>
+                                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">Ready</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <label className="flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/30 hover:border-amber-500 rounded-lg p-4 cursor-pointer hover:bg-muted/30 transition-all text-center">
+                                                <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center mb-1 text-amber-500">
+                                                    <Upload className="h-4 w-4" />
+                                                </div>
+                                                <span className="text-xs font-bold text-foreground">Click to upload room / board photo</span>
+                                                <span className="text-[10px] text-muted-foreground mt-0.5">Capture occupancy, classroom whiteboard, or equipment condition</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            setObsPhoto(file);
+                                                            setObsPhotoPreview(URL.createObjectURL(file));
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -2270,6 +2922,77 @@ export default function LabInChargeMonitoring({
                             />
                         </div>
 
+                        {/* Disruption Photo Evidence */}
+                        <div className="space-y-1.5 pt-1 border-t">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-bold flex items-center gap-1.5">
+                                    <Camera className="h-3.5 w-3.5 text-rose-600" />
+                                    Disruption Incident Photo (Optional)
+                                </Label>
+                                <span className="text-[10px] text-muted-foreground">PNG, JPG, WebP</span>
+                            </div>
+
+                            {disruptPhotoPreview ? (
+                                <div className="relative group rounded-lg overflow-hidden border bg-muted/30">
+                                    <img
+                                        src={disruptPhotoPreview}
+                                        alt="Disruption preview"
+                                        className="w-full h-28 object-cover cursor-pointer"
+                                        onClick={() => {
+                                            setViewPhotoUrl(disruptPhotoPreview);
+                                            setViewPhotoTitle('Disruption Incident Photo');
+                                        }}
+                                    />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="secondary"
+                                            className="h-7 text-xs gap-1 font-bold shadow-md"
+                                            onClick={() => {
+                                                setViewPhotoUrl(disruptPhotoPreview);
+                                                setViewPhotoTitle('Disruption Incident Photo');
+                                            }}
+                                        >
+                                            <ZoomIn className="h-3.5 w-3.5" /> View
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="destructive"
+                                            className="h-7 text-xs gap-1 font-bold shadow-md"
+                                            onClick={() => {
+                                                setDisruptPhoto(null);
+                                                setDisruptPhotoPreview(null);
+                                            }}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" /> Remove
+                                        </Button>
+                                    </div>
+                                    <div className="p-1 bg-background/90 text-[10px] px-2 text-muted-foreground border-t truncate">
+                                        {disruptPhoto?.name}
+                                    </div>
+                                </div>
+                            ) : (
+                                <label className="flex items-center justify-center gap-2 border-2 border-dashed border-muted-foreground/30 hover:border-rose-500 rounded-lg p-2.5 cursor-pointer hover:bg-muted/30 transition-all text-xs font-semibold text-muted-foreground hover:text-foreground">
+                                    <Upload className="h-4 w-4 text-rose-500" />
+                                    <span>Attach equipment/room photo evidence</span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                setDisruptPhoto(file);
+                                                setDisruptPhotoPreview(URL.createObjectURL(file));
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            )}
+                        </div>
+
                         <DialogFooter className="pt-2">
                             <Button
                                 type="button"
@@ -2290,6 +3013,30 @@ export default function LabInChargeMonitoring({
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* FULLSCREEN PHOTO PREVIEW LIGHTBOX */}
+            <Dialog open={!!viewPhotoUrl} onOpenChange={(open) => !open && setViewPhotoUrl(null)}>
+                <DialogContent className="max-w-3xl p-2 bg-slate-950 text-white border-slate-800">
+                    <DialogHeader className="p-2 pb-0">
+                        <DialogTitle className="text-sm font-bold flex items-center gap-2 text-slate-200">
+                            <ImageIcon className="h-4 w-4 text-amber-500" />
+                            {viewPhotoTitle || 'Laboratory Evidence Photo'}
+                        </DialogTitle>
+                    </DialogHeader>
+                    {viewPhotoUrl && (
+                        <div className="flex flex-col items-center justify-center p-2">
+                            <img
+                                src={viewPhotoUrl}
+                                alt="Laboratory evidence full view"
+                                className="max-h-[75vh] w-auto max-w-full rounded-md object-contain shadow-2xl"
+                            />
+                            <div className="pt-2 text-center text-xs text-slate-400">
+                                Monitored physical laboratory evidence record
+                            </div>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
 

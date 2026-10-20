@@ -209,7 +209,7 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    // Lab In-Charge Operational Monitoring
+    // Lab In-Charge Operational Monitoring & End-of-Day Reconciliation
     Route::prefix('monitoring/lab-in-charge')->name('lab-in-charge.')->group(function () {
         Route::get('/', [LabInChargeMonitoringController::class, 'index'])->name('index');
         Route::post('/observation', [LabInChargeMonitoringController::class, 'recordObservation'])->name('observation');
@@ -217,6 +217,16 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/disruption', [LabInChargeMonitoringController::class, 'reportDisruption'])->name('disruption');
         Route::post('/discrepancies/{discrepancy}/status', [LabInChargeMonitoringController::class, 'updateDiscrepancyStatus'])->name('discrepancy.status');
         Route::post('/discrepancies/{discrepancy}/resolve', [LabInChargeMonitoringController::class, 'resolveDiscrepancy'])->name('discrepancy.resolve');
+
+        // Reassign / Map Faculty on Schedule
+        Route::post('/schedules/{schedule}/reassign-faculty', [LabInChargeMonitoringController::class, 'reassignScheduleFaculty'])->name('schedules.reassign-faculty');
+
+        // End-of-Day Reconciliation & Closing
+        Route::get('/end-of-day', [LabInChargeMonitoringController::class, 'endOfDayReport'])->name('end-of-day');
+        Route::post('/end-of-day/submit', [LabInChargeMonitoringController::class, 'submitEndOfDayReport'])->name('end-of-day.submit');
+        Route::post('/end-of-day/{report}/review', [LabInChargeMonitoringController::class, 'reviewEndOfDayReport'])->name('end-of-day.review');
+        Route::post('/end-of-day/{report}/finalize', [LabInChargeMonitoringController::class, 'finalizeEndOfDayReport'])->name('end-of-day.finalize');
+        Route::post('/end-of-day/{report}/reopen', [LabInChargeMonitoringController::class, 'reopenEndOfDayReport'])->name('end-of-day.reopen');
     });
 
     // Performance Section

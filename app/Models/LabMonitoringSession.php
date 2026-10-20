@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class LabMonitoringSession extends Model
 {
@@ -33,9 +34,19 @@ class LabMonitoringSession extends Model
         'observed_course_code',
         'observed_section_name',
         'remarks',
+        'photo_path',
         'has_discrepancy',
         'is_locked',
     ];
+
+    protected $appends = [
+        'photo_url',
+    ];
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photo_path ? Storage::url($this->photo_path) : null;
+    }
 
     protected function casts(): array
     {

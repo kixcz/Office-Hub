@@ -1138,8 +1138,8 @@ export default function GenerateReportPage({
                 ${styles}
                 <style>
                     @page {
-                        size: A4 landscape;
-                        margin: 0.35in;
+                        size: A3 landscape;
+                        margin: 12mm;
                     }
                     html, body {
                         background: #ffffff !important;
@@ -1181,10 +1181,14 @@ export default function GenerateReportPage({
                     }
                     tr {
                         page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                         page-break-after: auto !important;
                     }
                     thead {
                         display: table-header-group !important;
+                    }
+                    tfoot {
+                        display: table-footer-group !important;
                     }
                     .page-break-inside-avoid {
                         break-inside: avoid !important;
@@ -1213,177 +1217,378 @@ export default function GenerateReportPage({
         }, 350);
     };
 
-    // Handle Direct PDF Generation / Download (Formal Landscape Document)
+    // Handle Direct PDF Generation / Download (A3 Landscape Document with Strict Row Boundaries & Repeated Headers)
     const handleGeneratePdf = async () => {
-        const sheetElement = document.getElementById('pdf-preview-sheet');
-        if (!sheetElement || isGeneratingPdf) return;
-
+        if (isGeneratingPdf) return;
         setIsGeneratingPdf(true);
 
         const fileName = `CIDS_Faculty_Attendance_Report_${selectedAY.replace(/[\s–—-]+/g, '_')}_${selectedSemester.replace(/[\s–—-]+/g, '_')}.pdf`;
 
-        // Save original styling
-        const originalTransform = sheetElement.style.transform;
-        const originalBoxShadow = sheetElement.style.boxShadow;
-        const originalBorder = sheetElement.style.border;
-        const originalWidth = sheetElement.style.width;
-        const originalMaxWidth = sheetElement.style.maxWidth;
-        const originalPadding = sheetElement.style.padding;
-
-        // Find all overflow containers in sheet and temporarily force overflow: visible
-        const overflowContainers = sheetElement.querySelectorAll('.overflow-x-auto, .overflow-hidden');
-        const originalOverflows: string[] = [];
-        overflowContainers.forEach((el, i) => {
-            originalOverflows[i] = (el as HTMLElement).style.overflow;
-            (el as HTMLElement).style.overflow = 'visible';
-            (el as HTMLElement).style.width = '100%';
-        });
-
-        // Set clean landscape canvas width (1122px is standard 96DPI for 297mm landscape A4)
-        sheetElement.style.transform = 'none';
-        sheetElement.style.boxShadow = 'none';
-        sheetElement.style.border = 'none';
-        sheetElement.style.width = '1120px';
-        sheetElement.style.maxWidth = '1120px';
-        sheetElement.style.padding = '20px 24px';
-
         try {
-            const html2canvasModule = await import('html2canvas-pro');
-            const html2canvas = html2canvasModule.default || html2canvasModule;
             const { jsPDF } = await import('jspdf');
+            const autoTableModule = await import('jspdf-autotable');
+            const autoTable = (autoTableModule as any).default || autoTableModule;
 
-            const canvas = await html2canvas(sheetElement, {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-                backgroundColor: '#ffffff',
-                windowWidth: 1150,
-                ignoreElements: (element) => {
-                    return (
-                        element.classList.contains('no-print') ||
-                        element.classList.contains('no-pdf') ||
-                        element.getAttribute('data-no-pdf') === 'true'
-                    );
+            // 1. Configure Document: A3 Landscape (420mm x 297mm) with 12mm margins
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a3',
+                compress: true,
+            });
+
+            const pageWidth = doc.internal.pageSize.getWidth(); // 420mm
+            const pageHeight = doc.internal.pageSize.getHeight(); // 297mm
+            const margin = 12.0; // 12mm consistent margin
+            let currentY = margin;
+
+            // Load CIDS Logo as Data URL if available
+            let logoDataUrl: string | null = null;
+            try {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.src = '/CIDS_Logo.jpg';
+                await new Promise((resolve) => {
+                    img.onload = () => resolve(true);
+                    img.onerror = () => resolve(false);
+                });
+                if (img.width && img.height) {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = img.width;
+                    tempCanvas.height = img.height;
+                    const ctx = tempCanvas.getContext('2d');
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0);
+                        logoDataUrl = tempCanvas.toDataURL('image/jpeg', 0.95);
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not load logo for PDF header:', err);
+            }
+
+            // Function to render official DSSC header
+            const renderDocHeader = (yPos: number) => {
+                let y = yPos;
+                if (logoDataUrl) {
+                    const logoSize = 18;
+                    const logoX = (pageWidth - logoSize) / 2;
+                    doc.addImage(logoDataUrl, 'JPEG', logoX, y, logoSize, logoSize);
+                    y += logoSize + 2;
+                }
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8.5);
+                doc.setTextColor(80, 80, 80);
+                doc.text('REPUBLIC OF THE PHILIPPINES', pageWidth / 2, y, { align: 'center' });
+                y += 4;
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(13);
+                doc.setTextColor(15, 23, 42);
+                doc.text('DAVAO DEL SUR STATE COLLEGE', pageWidth / 2, y, { align: 'center' });
+                y += 5;
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10);
+                doc.setTextColor(30, 41, 59);
+                doc.text('COLLEGE OF INFORMATION AND DIGITAL SCIENCES', pageWidth / 2, y, { align: 'center' });
+                y += 4;
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.setTextColor(100, 116, 139);
+                doc.text('Brgy. Matti, Digos City, Davao del Sur', pageWidth / 2, y, { align: 'center' });
+                y += 6;
+
+                // Report Title Box
+                doc.setDrawColor(203, 213, 225);
+                doc.setFillColor(248, 250, 252);
+                doc.roundedRect(margin, y, pageWidth - (margin * 2), 16, 1.5, 1.5, 'FD');
+
+                const titleText = `${reportFormat === 'weekly' ? 'WEEKLY' : reportFormat === 'monthly' ? 'MONTHLY' : 'COLLEGE'} FACULTY ATTENDANCE SUMMARY`;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(11);
+                doc.setTextColor(15, 23, 42);
+                doc.text(titleText, pageWidth / 2, y + 5.5, { align: 'center' });
+
+                const periodStr = `${formatPeriodWithDateRange(selectedPeriod, periodTab)} · Academic Year ${selectedAY} · ${selectedSemester}`;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8.5);
+                doc.setTextColor(51, 65, 85);
+                doc.text(periodStr, pageWidth / 2, y + 10, { align: 'center' });
+
+                const metaStr = `Classes Start: ${academic_period?.official_start_of_classes || 'Aug 10, 2026'}   |   Classes End: ${academic_period?.official_end_of_classes || 'Dec 18, 2026'}   |   Schedule: Verified Published Master Timetable   |   Sync: ${last_synced_at}   |   Baseline: Atomic Minutes`;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(100, 116, 139);
+                doc.text(metaStr, pageWidth / 2, y + 14, { align: 'center' });
+
+                return y + 20;
+            };
+
+            currentY = renderDocHeader(currentY);
+
+            // 2. Render Key Summaries Table (if enabled)
+            if (keySummaries.attendanceTotals && previewData.totals) {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8.5);
+                doc.setTextColor(15, 23, 42);
+                doc.text('KEY SUMMARIES (MINUTE BASELINE & INSTRUCTIONAL COMPLETION)', margin, currentY);
+                currentY += 2;
+
+                const summaryHead = [
+                    ['FACULTY', 'SCHEDULED', 'ELIGIBLE', 'ATTENDED', 'APP. LEAVE', 'ABSENCE', 'LATE SESS', 'LATE TIME', 'MAKE-UP REQ', 'MAKE-UP COMP', 'ATTENDANCE COV', 'ON-TIME', 'COMPLETION']
+                ];
+
+                const summaryBody = [[
+                    String(previewData.totals.facultyCount || 0),
+                    `${formatDuration(previewData.totals.totalScheduledMin)}\n(${previewData.totals.totalScheduledMin}m)`,
+                    `${formatDuration(previewData.totals.totalEligibleMin)}\n(${previewData.totals.totalEligibleMin}m)`,
+                    `${formatDuration(previewData.totals.totalAttendedMin)}\n(${previewData.totals.totalAttendedMin}m)`,
+                    `${formatDuration(previewData.totals.totalLeaveMin)}\n(${previewData.totals.totalLeaveMin}m)`,
+                    `${formatDuration(previewData.totals.totalAbsentMin)}\n(${previewData.totals.totalAbsentMin}m)`,
+                    String(previewData.totals.totalLateSessions || 0),
+                    formatDuration(previewData.totals.totalLateMinutes),
+                    formatDuration(previewData.totals.totalMakeUpReqMin),
+                    formatDuration(previewData.totals.totalMakeUpDoneMin),
+                    previewData.totals.overallCoverage !== null ? `${previewData.totals.overallCoverage}%` : 'N/A',
+                    previewData.totals.overallOnTime !== null ? `${previewData.totals.overallOnTime}%` : 'N/A',
+                    previewData.totals.overallCompletion !== null ? `${previewData.totals.overallCompletion}%` : 'N/A',
+                ]];
+
+                autoTable(doc, {
+                    startY: currentY,
+                    head: summaryHead,
+                    body: summaryBody,
+                    margin: { left: margin, right: margin },
+                    theme: 'grid',
+                    styles: {
+                        font: 'helvetica',
+                        fontSize: 7.5,
+                        cellPadding: 2,
+                        halign: 'center',
+                        valign: 'middle',
+                        textColor: [15, 23, 42],
+                        lineColor: [203, 213, 225],
+                        lineWidth: 0.2,
+                    },
+                    headStyles: {
+                        fillColor: [241, 245, 249],
+                        textColor: [15, 23, 42],
+                        fontStyle: 'bold',
+                        fontSize: 7.5,
+                    },
+                    alternateRowStyles: {
+                        fillColor: [255, 255, 255],
+                    },
+                });
+
+                currentY = (doc as any).lastAutoTable.finalY + 6;
+            }
+
+            // 3. Render Main Detailed Faculty Table with Row Boundary Protection & Repeated Headers
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(15, 23, 42);
+            doc.text('FACULTY ATTENDANCE & INSTRUCTIONAL COMPLETION DETAILS (MINUTE BASELINE)', margin, currentY);
+            currentY += 2;
+
+            const mainHead = [[
+                '#',
+                'FACULTY NAME',
+                'PROG',
+                'SCHEDULED',
+                'ELIGIBLE',
+                'ATTENDED',
+                'LEAVE',
+                'ABSENCE',
+                'LATE SESS',
+                'LATE TIME',
+                'MAKE-UP REQ',
+                'MAKE-UP COMP',
+                'ATTENDANCE COV',
+                'ON-TIME',
+                'COMPLETION',
+                'REMARKS'
+            ]];
+
+            const mainRows = previewData.rows.map((row, idx) => {
+                let covBadgeText = 'N/A';
+                if (row.attendanceCoverage !== null) {
+                    if (row.attendanceCoverage >= 95) covBadgeText = 'Excellent';
+                    else if (row.attendanceCoverage >= 90) covBadgeText = 'Good';
+                    else if (row.attendanceCoverage >= 80) covBadgeText = 'Needs Monitoring';
+                    else covBadgeText = 'Needs Attention';
+                }
+
+                const remarksText = row.isNotYetEmployed
+                    ? 'Not Yet Employed'
+                    : row.scheduledMin === 0
+                        ? 'N/A – No Classes'
+                        : row.leaveMin === row.scheduledMin
+                            ? 'On Approved Leave'
+                            : row.eligibleMin === 0
+                                ? 'N/A – Excluded'
+                                : covBadgeText;
+
+                const facultyDisplayName = row.effectiveDateNote
+                    ? `${row.instructor_name}\n(${row.effectiveDateNote})`
+                    : row.instructor_name;
+
+                return [
+                    String(idx + 1),
+                    facultyDisplayName,
+                    row.program || '',
+                    row.isNotYetEmployed ? 'N/A' : `${formatDuration(row.scheduledMin)} (${row.scheduledMin}m)`,
+                    row.isNotYetEmployed ? 'N/A' : `${formatDuration(row.eligibleMin)} (${row.eligibleMin}m)`,
+                    row.isNotYetEmployed ? 'N/A' : `${formatDuration(row.attendedMin)} (${row.attendedMin}m)`,
+                    row.isNotYetEmployed ? 'N/A' : row.leaveMin > 0 ? `${formatDuration(row.leaveMin)} (${row.leaveMin}m)` : '0m',
+                    row.isNotYetEmployed ? 'N/A' : row.absentMin > 0 ? `${formatDuration(row.absentMin)} (${row.absentMin}m)` : '0m',
+                    row.isNotYetEmployed ? 'N/A' : String(row.late || 0),
+                    row.isNotYetEmployed ? 'N/A' : formatDuration(row.lateMinutes),
+                    row.isNotYetEmployed ? 'N/A' : row.makeUpReqMin > 0 ? formatDuration(row.makeUpReqMin) : '0m',
+                    row.isNotYetEmployed ? 'N/A' : row.makeUpDoneMin > 0 ? formatDuration(row.makeUpDoneMin) : '0m',
+                    !row.isNotYetEmployed && row.eligibleMin > 0 && row.attendanceCoverage !== null ? `${row.attendanceCoverage}%` : 'N/A',
+                    !row.isNotYetEmployed && row.attendedMin > 0 && row.onTimeRate !== null ? `${row.onTimeRate}%` : 'N/A',
+                    !row.isNotYetEmployed && row.eligibleMin > 0 && row.instructionalCompletion !== null ? `${row.instructionalCompletion}%` : 'N/A',
+                    remarksText,
+                ];
+            });
+
+            autoTable(doc, {
+                startY: currentY,
+                head: mainHead,
+                body: mainRows,
+                margin: { left: margin, right: margin, bottom: 20 },
+                theme: 'grid',
+                rowPageBreak: 'avoid',
+                showHead: 'everyPage',
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 7.5,
+                    cellPadding: 2,
+                    valign: 'middle',
+                    lineColor: [203, 213, 225],
+                    lineWidth: 0.2,
+                    textColor: [15, 23, 42],
+                    overflow: 'linebreak',
+                },
+                headStyles: {
+                    fillColor: [241, 245, 249],
+                    textColor: [15, 23, 42],
+                    fontStyle: 'bold',
+                    fontSize: 7.5,
+                    halign: 'center',
+                    valign: 'middle',
+                },
+                columnStyles: {
+                    0: { cellWidth: 8, halign: 'center' },      // #
+                    1: { cellWidth: 62, halign: 'left', fontStyle: 'bold' }, // Faculty Name
+                    2: { cellWidth: 14, halign: 'center' },     // Prog
+                    3: { cellWidth: 26, halign: 'right' },      // Scheduled
+                    4: { cellWidth: 26, halign: 'right' },      // Eligible
+                    5: { cellWidth: 26, halign: 'right' },      // Attended
+                    6: { cellWidth: 22, halign: 'right' },      // Leave
+                    7: { cellWidth: 22, halign: 'right' },      // Absence
+                    8: { cellWidth: 16, halign: 'center' },     // Late Sess
+                    9: { cellWidth: 20, halign: 'right' },      // Late Time
+                    10: { cellWidth: 24, halign: 'right' },     // Make-up req
+                    11: { cellWidth: 24, halign: 'right' },     // Make-up comp
+                    12: { cellWidth: 26, halign: 'center', fontStyle: 'bold' }, // Attendance Cov
+                    13: { cellWidth: 20, halign: 'center' },    // On-Time
+                    14: { cellWidth: 24, halign: 'center', fontStyle: 'bold' }, // Completion
+                    15: { cellWidth: 36, halign: 'center' },    // Remarks
+                },
+                alternateRowStyles: {
+                    fillColor: [255, 255, 255],
                 },
             });
 
-            // Formal Landscape PDF: 'l', 'mm', 'a4' (297mm x 210mm)
-            const pdf = new jsPDF('l', 'mm', 'a4');
-            const pageWidth = pdf.internal.pageSize.getWidth(); // 297mm
-            const pageHeight = pdf.internal.pageSize.getHeight(); // 210mm
+            currentY = (doc as any).lastAutoTable.finalY + 6;
 
-            const margin = 8.0; // 8mm margin
-            const printableWidth = pageWidth - (margin * 2); // 281mm
-            const printableHeight = pageHeight - (margin * 2); // 194mm
-
-            // Convert canvas pixels to PDF mm scale
-            const pxToMm = printableWidth / canvas.width;
-            const totalContentHeightMm = canvas.height * pxToMm;
-
-            // If the content fits on a single page, add directly
-            if (totalContentHeightMm <= printableHeight) {
-                const imgData = canvas.toDataURL('image/jpeg', 0.98);
-                pdf.addImage(imgData, 'JPEG', margin, margin, printableWidth, totalContentHeightMm, undefined, 'FAST');
-            } else {
-                // Multi-page export with row-aware break detection
-                // Identify tr and section elements inside sheetElement to find non-cutting cut points
-                const sheetRect = sheetElement.getBoundingClientRect();
-                const scale = canvas.width / sheetElement.offsetWidth;
-
-                // Find candidate break points (in canvas px)
-                const trElements = sheetElement.querySelectorAll('tr, .page-break-inside-avoid');
-                const slicePointsPx: number[] = [0];
-
-                const maxPageHeightPx = (printableHeight / printableWidth) * canvas.width;
-                let currentStartPx = 0;
-
-                while (currentStartPx < canvas.height) {
-                    const targetEndPx = currentStartPx + maxPageHeightPx;
-                    if (targetEndPx >= canvas.height) {
-                        slicePointsPx.push(canvas.height);
-                        break;
-                    }
-
-                    // Find the best element boundary before targetEndPx
-                    let bestCutPx = targetEndPx;
-                    let foundSafeCut = false;
-
-                    for (let i = 0; i < trElements.length; i++) {
-                        const el = trElements[i] as HTMLElement;
-                        const elRect = el.getBoundingClientRect();
-                        const elBottomPx = (elRect.bottom - sheetRect.top) * scale;
-                        const elTopPx = (elRect.top - sheetRect.top) * scale;
-
-                        // Check if an element starts before the cut and ends after it (straddling)
-                        if (elTopPx < targetEndPx && elBottomPx > targetEndPx) {
-                            // Split right before this row
-                            if (elTopPx > currentStartPx + (maxPageHeightPx * 0.4)) {
-                                bestCutPx = elTopPx;
-                                foundSafeCut = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!foundSafeCut) {
-                        bestCutPx = targetEndPx;
-                    }
-
-                    slicePointsPx.push(bestCutPx);
-                    currentStartPx = bestCutPx;
-                }
-
-                // Render each page slice to canvas and add to PDF
-                for (let i = 0; i < slicePointsPx.length - 1; i++) {
-                    const startY = Math.round(slicePointsPx[i]);
-                    const endY = Math.round(slicePointsPx[i + 1]);
-                    const sliceHeightPx = endY - startY;
-
-                    if (sliceHeightPx <= 0) continue;
-
-                    if (i > 0) {
-                        pdf.addPage();
-                    }
-
-                    // Create sub-canvas for slice
-                    const pageCanvas = document.createElement('canvas');
-                    pageCanvas.width = canvas.width;
-                    pageCanvas.height = sliceHeightPx;
-                    const ctx = pageCanvas.getContext('2d');
-
-                    if (ctx) {
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-                        ctx.drawImage(
-                            canvas,
-                            0, startY, canvas.width, sliceHeightPx,
-                            0, 0, canvas.width, sliceHeightPx
-                        );
-
-                        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.98);
-                        const sliceHeightMm = sliceHeightPx * pxToMm;
-                        pdf.addImage(pageImgData, 'JPEG', margin, margin, printableWidth, sliceHeightMm, undefined, 'FAST');
-                    }
-                }
+            // 4. Signatories Section (render on current page or start new page if space is insufficient)
+            const requiredSignatoryHeight = 35;
+            if (currentY + requiredSignatoryHeight > pageHeight - 20) {
+                doc.addPage();
+                currentY = margin + 5;
             }
 
-            pdf.save(fileName);
-            showToast('PDF downloaded successfully in landscape format!');
+            const sigCols = 3;
+            const sigWidth = (pageWidth - (margin * 2) - ((sigCols - 1) * 15)) / sigCols;
+
+            signatoriesList.forEach((sig, index) => {
+                const col = index % sigCols;
+                const row = Math.floor(index / sigCols);
+                const x = margin + (col * (sigWidth + 15));
+                const y = currentY + (row * 30);
+
+                if (y + 25 > pageHeight - 20) {
+                    doc.addPage();
+                    currentY = margin + 5;
+                }
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8.5);
+                doc.setTextColor(30, 41, 59);
+                doc.text(`${sig.label}:`, x, y);
+
+                const lineY = y + 14;
+                if (sig.showSignatureLine) {
+                    doc.setDrawColor(30, 41, 59);
+                    doc.setLineWidth(0.3);
+                    doc.line(x, lineY, x + sigWidth - 5, lineY);
+                }
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                doc.setTextColor(15, 23, 42);
+                doc.text((sig.name || '').toUpperCase(), x, lineY - 1);
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.setTextColor(71, 85, 105);
+                doc.text(sig.designation || '', x, lineY + 3.5);
+
+                doc.setFontSize(7.5);
+                doc.setTextColor(100, 116, 139);
+                doc.text(sig.department || '', x, lineY + 7);
+            });
+
+            // 5. Add Running Footers with Page Numbering & Document Identifiers across all pages
+            const totalPages = (doc as any).internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setDrawColor(226, 232, 240);
+                doc.setLineWidth(0.2);
+                doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(100, 116, 139);
+
+                // Left: Document tracking identifier
+                doc.text(
+                    `OfficeHub CIDS Faculty Monitoring Report · AY ${selectedAY} (${selectedSemester}) · ${new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}`,
+                    margin,
+                    pageHeight - 7
+                );
+
+                // Right: Page number
+                doc.text(
+                    `Page ${i} of ${totalPages}`,
+                    pageWidth - margin,
+                    pageHeight - 7,
+                    { align: 'right' }
+                );
+            }
+
+            doc.save(fileName);
+            showToast('PDF exported successfully in A3 Landscape with intact row boundaries!');
         } catch (error) {
             console.error('PDF export error:', error);
-            showToast('Failed to generate PDF, launching print preview...');
+            showToast('Failed to generate direct PDF, opening print preview...');
             handlePrintPreview();
         } finally {
-            sheetElement.style.transform = originalTransform;
-            sheetElement.style.boxShadow = originalBoxShadow;
-            sheetElement.style.border = originalBorder;
-            sheetElement.style.width = originalWidth;
-            sheetElement.style.maxWidth = originalMaxWidth;
-            sheetElement.style.padding = originalPadding;
-            overflowContainers.forEach((el, i) => {
-                (el as HTMLElement).style.overflow = originalOverflows[i] || '';
-            });
             setIsGeneratingPdf(false);
         }
     };
@@ -1395,8 +1600,8 @@ export default function GenerateReportPage({
             {/* Print Stylesheet (Formal document formatting, landscape, no scrollbars, proper table headers) */}
             <style>{`
                 @page {
-                    size: A4 landscape;
-                    margin: 0.35in;
+                    size: A3 landscape;
+                    margin: 12mm;
                 }
                 @media print {
                     /* Hide everything outside of the sheet */
@@ -1456,6 +1661,7 @@ export default function GenerateReportPage({
                     }
                     tr {
                         page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                         page-break-after: auto !important;
                     }
                     thead {
@@ -2250,7 +2456,7 @@ export default function GenerateReportPage({
                             <div className="flex items-center gap-2">
                                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    Live Preview (Landscape A4)
+                                    Live Preview (A3 Landscape)
                                 </span>
                             </div>
 
@@ -2722,7 +2928,7 @@ export default function GenerateReportPage({
                                     </div>
 
                                     {/* Administrative Attendance Coverage Legend & Monitoring Formula Guide */}
-                                    <div className="mt-3 p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-[8.5px] leading-tight space-y-1.5 text-slate-700">
+                                    <div className="mt-3 p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-[8.5px] leading-tight space-y-1.5 text-slate-700 page-break-inside-avoid break-inside-avoid">
                                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-1.5">
                                             <div className="flex items-center gap-1.5">
                                                 <span className="font-bold text-slate-900 uppercase tracking-wider text-[9px]">Attendance Coverage Monitoring Legend:</span>

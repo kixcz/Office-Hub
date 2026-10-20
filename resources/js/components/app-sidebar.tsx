@@ -268,6 +268,7 @@ const labInChargeNavGroups: NavGroup[] = [
             { title: "Today's Lab Schedule", url: '/monitoring/lab-in-charge?tab=today', icon: CalendarDays },
             { title: 'Room Status Board', url: '/monitoring/lab-in-charge?tab=rooms', icon: Monitor },
             { title: 'Lab Timetables', url: '/monitoring/lab-in-charge?tab=timetables', icon: Calendar },
+            { title: 'End-of-Day Closing Report', url: '/monitoring/lab-in-charge?tab=end_of_day', icon: FileCheck },
         ],
     },
     {
