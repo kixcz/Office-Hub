@@ -100,7 +100,7 @@ const STATUS_TABS = [
 ];
 
 export default function CustomSlideIndex({ slides, stats, playlists = [], filters = {} }: Props) {
-    const safeFilters = filters && typeof filters === 'object' ? filters : {};
+    const safeFilters: Props['filters'] = filters && typeof filters === 'object' && !Array.isArray(filters) ? filters : {};
     const [previewSlide, setPreviewSlide] = useState<CustomContentSlideData | null>(null);
     const [deleteSlide, setDeleteSlide] = useState<CustomContentSlideData | null>(null);
     const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');

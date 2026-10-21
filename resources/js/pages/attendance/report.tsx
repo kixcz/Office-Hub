@@ -1433,9 +1433,10 @@ export default function GenerateReportPage({
             const mainRows = previewData.rows.map((row, idx) => {
                 let covBadgeText = 'N/A';
                 if (row.attendanceCoverage !== null) {
-                    if (row.attendanceCoverage >= 95) covBadgeText = 'Excellent';
-                    else if (row.attendanceCoverage >= 90) covBadgeText = 'Good';
-                    else if (row.attendanceCoverage >= 80) covBadgeText = 'Needs Monitoring';
+                    if (row.attendanceCoverage >= 85) covBadgeText = 'Excellent';
+                    else if (row.attendanceCoverage >= 70) covBadgeText = 'Very Satisfactory';
+                    else if (row.attendanceCoverage >= 60) covBadgeText = 'Satisfactory';
+                    else if (row.attendanceCoverage >= 50) covBadgeText = 'Average';
                     else covBadgeText = 'Needs Attention';
                 }
 
@@ -1546,7 +1547,7 @@ export default function GenerateReportPage({
             // Tiers in B&W
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7);
-            doc.text('[ >=95.0% Excellent ]   [ 90.0-94.99% Good ]   [ 80.0-89.99% Needs Monitoring ]   [ <80.0% Needs Attention ]   [ N/A - Excluded ]', margin + 70, currentY + 4.5);
+            doc.text('[ 85-100 Excellent ]   [ 70-84 Very Satisfactory ]   [ 60-69 Satisfactory ]   [ 50-59 Average ]   [ 0-49 Needs Attention ]   [ N/A - Excluded ]', margin + 70, currentY + 4.5);
 
             doc.setFont('helvetica', 'italic');
             doc.setFontSize(6.5);
@@ -1569,12 +1570,13 @@ export default function GenerateReportPage({
             // Row 2: Status Definitions (Excellent, Good, Needs Monitoring, Needs Attention, N/A - Excluded)
             doc.setFontSize(6);
             doc.setTextColor(60, 60, 60);
-            const defColW = (legendWidth - 6) / 5;
-            doc.text('>=95.0% Excellent: Outstanding delivery; attended almost all eligible hours.', margin + 3, currentY + 14.5, { maxWidth: defColW - 2 });
-            doc.text('90.0-94.99% Good: Meets delivery standard; minor variances within threshold.', margin + 3 + defColW, currentY + 14.5, { maxWidth: defColW - 2 });
-            doc.text('80.0-89.99% Needs Mon.: Below ideal target; requires monitoring or make-up.', margin + 3 + (defColW * 2), currentY + 14.5, { maxWidth: defColW - 2 });
-            doc.text('<80.0% Needs Attn.: Critical gap; missed substantial hours requiring intervention.', margin + 3 + (defColW * 3), currentY + 14.5, { maxWidth: defColW - 2 });
-            doc.text('N/A - Excluded: Eligible scheduled minutes = 0 (100% approved leave, holidays).', margin + 3 + (defColW * 4), currentY + 14.5, { maxWidth: defColW - 2 });
+            const defColW6 = (legendWidth - 6) / 6;
+            doc.text('85-100 Excellent: Outstanding delivery; attended almost all eligible hours.', margin + 3, currentY + 14.5, { maxWidth: defColW6 - 2 });
+            doc.text('70-84 Very Satisfactory: Exceeds the delivery standard.', margin + 3 + defColW6, currentY + 14.5, { maxWidth: defColW6 - 2 });
+            doc.text('60-69 Satisfactory: Meets the minimum delivery standard.', margin + 3 + (defColW6 * 2), currentY + 14.5, { maxWidth: defColW6 - 2 });
+            doc.text('50-59 Average: Below standard; make-up classes advised.', margin + 3 + (defColW6 * 3), currentY + 14.5, { maxWidth: defColW6 - 2 });
+            doc.text('0-49 Needs Attention: Critical gap; requires intervention.', margin + 3 + (defColW6 * 4), currentY + 14.5, { maxWidth: defColW6 - 2 });
+            doc.text('N/A - Excluded: Eligible scheduled minutes = 0 (100% approved leave, holidays).', margin + 3 + (defColW6 * 5), currentY + 14.5, { maxWidth: defColW6 - 2 });
 
             currentY += 24;
 
@@ -2825,12 +2827,14 @@ export default function GenerateReportPage({
                                                             // Monitoring Legend Band for Attendance Coverage
                                                             let covBadge = { text: 'N/A', cls: 'bg-slate-100 text-slate-600 border-slate-300' };
                                                             if (row.attendanceCoverage !== null) {
-                                                                if (row.attendanceCoverage >= 95) {
+                                                                if (row.attendanceCoverage >= 85) {
                                                                     covBadge = { text: 'Excellent', cls: 'bg-emerald-50 text-emerald-800 border-emerald-300' };
-                                                                } else if (row.attendanceCoverage >= 90) {
-                                                                    covBadge = { text: 'Good', cls: 'bg-blue-50 text-blue-800 border-blue-300' };
-                                                                } else if (row.attendanceCoverage >= 80) {
-                                                                    covBadge = { text: 'Needs Monitoring', cls: 'bg-amber-50 text-amber-800 border-amber-300' };
+                                                                } else if (row.attendanceCoverage >= 70) {
+                                                                    covBadge = { text: 'Very Satisfactory', cls: 'bg-blue-50 text-blue-800 border-blue-300' };
+                                                                } else if (row.attendanceCoverage >= 60) {
+                                                                    covBadge = { text: 'Satisfactory', cls: 'bg-sky-50 text-sky-800 border-sky-300' };
+                                                                } else if (row.attendanceCoverage >= 50) {
+                                                                    covBadge = { text: 'Average', cls: 'bg-amber-50 text-amber-800 border-amber-300' };
                                                                 } else {
                                                                     covBadge = { text: 'Needs Attention', cls: 'bg-red-50 text-red-800 border-red-300' };
                                                                 }
@@ -3002,10 +3006,11 @@ export default function GenerateReportPage({
                                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-900 pb-2">
                                             <div className="flex flex-wrap items-center gap-1.5">
                                                 <span className="font-black text-slate-900 uppercase tracking-wider text-[9px]">ATTENDANCE COVERAGE MONITORING LEGEND:</span>
-                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">≥95.0% Excellent</span>
-                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">90.0–94.99% Good</span>
-                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">80.0–89.99% Needs Monitoring</span>
-                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">&lt;80.0% Needs Attention</span>
+                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">85–100 Excellent</span>
+                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">70–84 Very Satisfactory</span>
+                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">60–69 Satisfactory</span>
+                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">50–59 Average</span>
+                                                <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">0–49 Needs Attention</span>
                                                 <span className="px-1.5 py-0.5 rounded-xs text-[8px] font-bold border border-slate-900 bg-white text-slate-900">N/A – Excluded</span>
                                             </div>
                                             <span className="text-slate-700 italic text-[8px]">Atomic Baseline: <strong>Minutes</strong> (e.g. 1.5h = 90 min / 3.0h = 180 min)</span>
@@ -3025,21 +3030,25 @@ export default function GenerateReportPage({
                                         </div>
 
                                         {/* Row 2: Status Definitions & Meaning Guide */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 text-[8px] text-slate-800">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2 text-[8px] text-slate-800">
                                             <div>
-                                                <p className="font-bold text-slate-900">≥95.0% Excellent:</p>
+                                                <p className="font-bold text-slate-900">85–100 Excellent:</p>
                                                 <p className="text-[7.5px] text-slate-700">Outstanding delivery; faculty attended almost all eligible teaching hours on schedule.</p>
                                             </div>
                                             <div>
-                                                <p className="font-bold text-slate-900">90.0–94.99% Good:</p>
-                                                <p className="text-[7.5px] text-slate-700">Meets standard delivery target; minor variances or late arrivals within acceptable threshold.</p>
+                                                <p className="font-bold text-slate-900">70–84 Very Satisfactory:</p>
+                                                <p className="text-[7.5px] text-slate-700">Exceeds the standard delivery target.</p>
                                             </div>
                                             <div>
-                                                <p className="font-bold text-slate-900">80.0–89.99% Needs Monitoring:</p>
-                                                <p className="text-[7.5px] text-slate-700">Below ideal target; instructional delivery requires monitoring or scheduling of make-up classes.</p>
+                                                <p className="font-bold text-slate-900">60–69 Satisfactory:</p>
+                                                <p className="text-[7.5px] text-slate-700">Meets the minimum delivery standard.</p>
                                             </div>
                                             <div>
-                                                <p className="font-bold text-slate-900">&lt;80.0% Needs Attention:</p>
+                                                <p className="font-bold text-slate-900">50–59 Average:</p>
+                                                <p className="text-[7.5px] text-slate-700">Below standard; scheduling of make-up classes is advised.</p>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-900">0–49 Needs Attention:</p>
                                                 <p className="text-[7.5px] text-slate-700">Critical deficiency; faculty missed substantial contact hours requiring urgent make-up or intervention.</p>
                                             </div>
                                             <div>

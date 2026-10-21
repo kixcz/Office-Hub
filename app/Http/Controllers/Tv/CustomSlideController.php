@@ -94,7 +94,7 @@ class CustomSlideController extends Controller
             'slides' => $slides,
             'stats' => $stats,
             'playlists' => $playlists,
-            'filters' => $request->only(['layout', 'status', 'playlist', 'start_date', 'end_date', 'sort', 'search']),
+            'filters' => (object) $request->only(['layout', 'status', 'playlist', 'start_date', 'end_date', 'sort', 'search']),
         ]);
     }
 
