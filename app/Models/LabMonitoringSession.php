@@ -74,6 +74,11 @@ class LabMonitoringSession extends Model
         return $this->belongsTo(User::class, 'monitored_by_user_id');
     }
 
+    public function monitoredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'monitored_by_user_id');
+    }
+
     public function observedFaculty(): BelongsTo
     {
         return $this->belongsTo(Faculty::class, 'observed_faculty_id');
