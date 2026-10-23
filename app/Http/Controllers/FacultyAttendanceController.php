@@ -222,8 +222,11 @@ class FacultyAttendanceController extends Controller
 
         $selectedProgram = $request->query('program', 'all');
         $selectedFaculty = $request->query('faculty', 'all');
-        $selectedPeriod = $request->query('period', 'August 2026');
-        $selectedWeek = $request->query('week', 'October 13 – October 19, 2026');
+        $selectedPeriod = $request->query('period', now()->format('F Y'));
+        $selectedWeek = $request->query(
+            'week',
+            now()->startOfWeek()->format('F j').' – '.now()->endOfWeek()->format('F j, Y')
+        );
         // Chronological order for academic semester months
         $monthOrder = [
             'August 2026' => 1,

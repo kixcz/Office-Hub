@@ -135,7 +135,7 @@ class CalendarController extends Controller
             'events' => $events,
             'programs' => $programs,
             'venues' => array_values($venues),
-            'defaultDate' => '2026-10-13',
+            'defaultDate' => now()->toDateString(),
         ];
     }
 

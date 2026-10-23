@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { localDateString, longTodayLabel } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, useForm, router, Link } from '@inertiajs/react';
@@ -159,7 +160,7 @@ export default function MeetingsIndex({
 
     // Derive meeting status logic based on date
     const getMeetingStatusCategory = (meeting: MeetingItem): 'Today' | 'Upcoming' | 'Completed' => {
-        const todayStr = '2026-10-13'; // Context date
+        const todayStr = localDateString();
         if (meeting.date === todayStr) {
             return 'Today';
         }
@@ -959,7 +960,7 @@ export default function MeetingsIndex({
                                         Today's Agenda
                                     </h3>
                                     <p className="text-[11px] text-slate-400 mt-1">
-                                        Tuesday, October 13, 2026
+                                        {longTodayLabel()}
                                     </p>
                                 </div>
                             </div>

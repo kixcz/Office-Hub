@@ -53,7 +53,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import TvLayout from '@/layouts/tv-layout';
-import { cn } from '@/lib/utils';
+import { cn, localDateString, longTodayLabel } from '@/lib/utils';
 import { SpotlightSlideHero } from '@/components/spotlight-slide-hero';
 import { CustomContentSlideHero } from '@/components/custom-slide-hero';
 
@@ -2270,7 +2270,7 @@ function SlideSeven({ data, isDark = false }: { data: any; isDark?: boolean }) {
 function SlideEight({ data, isDark }: { data: any; isDark: boolean }) {
     const calendar = data?.calendar || {};
     const events: any[] = calendar.events || [];
-    const todayStr = '2026-10-13';
+    const todayStr = localDateString();
 
     // Categorized event counts
     const meetingsCount = events.filter((e) => e.type === 'meeting').length;
@@ -2576,7 +2576,7 @@ function SlideEight({ data, isDark }: { data: any; isDark: boolean }) {
                         {/* Today banner */}
                         <div className="mt-2 flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[9.5px] font-bold">
                             <Calendar className="w-3 h-3" />
-                            <span>Today: Tuesday, October 13, 2026</span>
+                            <span>Today: {longTodayLabel()}</span>
                         </div>
                     </div>
 

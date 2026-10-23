@@ -12,7 +12,7 @@ import {
     Layers,
     CalendarDays
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, localDateString } from '@/lib/utils';
 
 export interface CalendarEvent {
     id: string;
@@ -77,7 +77,7 @@ export function ConsolidatedCalendarModal({
     events: initialEvents,
     programs: initialPrograms,
     venues: initialVenues,
-    initialDate = '2026-10-13',
+    initialDate = localDateString(),
 }: ConsolidatedCalendarModalProps) {
     const [events, setEvents] = useState<CalendarEvent[]>(initialEvents || []);
     const [programs, setPrograms] = useState(initialPrograms || []);
@@ -162,8 +162,8 @@ export function ConsolidatedCalendarModal({
     };
 
     const handleToday = () => {
-        const todayStr = '2026-10-13'; // Project demo anchor date
-        const d = new Date(todayStr);
+        const d = new Date();
+        const todayStr = localDateString(d);
         setCurrentYear(d.getFullYear());
         setCurrentMonth(d.getMonth());
         setSelectedDate(todayStr);

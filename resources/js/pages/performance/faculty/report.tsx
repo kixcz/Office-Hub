@@ -793,7 +793,7 @@ export default function GenerateFacultyPerformanceReport({
                                             </div>
                                             <div className="flex">
                                                 <span className="w-28 font-bold text-slate-900">Generated On</span>
-                                                <span>: October 13, 2026 03:08 PM</span>
+                                                <span>: {new Date().toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                             </div>
                                             <div className="flex">
                                                 <span className="w-28 font-bold text-slate-900">Reporting Period</span>
