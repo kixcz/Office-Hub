@@ -108,8 +108,8 @@ const adminNavGroups: NavGroup[] = [
         title: 'TV DISPLAY STUDIO',
         items: [
             { title: 'TV Workspace', url: '/tv-config/dashboard', icon: Tv },
-            { title: 'Spotlight Slides', url: '/tv-config/spotlight', icon: Sparkles },
-            { title: 'Custom Manual Slides', url: '/tv-config/custom', icon: FileText },
+            // { title: 'Spotlight Slides', url: '/tv-config/spotlight', icon: Sparkles },
+            // { title: 'Custom Manual Slides', url: '/tv-config/custom', icon: FileText },
         ],
     },
 ];
