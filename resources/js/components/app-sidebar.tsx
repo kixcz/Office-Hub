@@ -70,7 +70,7 @@ const adminNavGroups: NavGroup[] = [
             { title: 'Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },
             { title: 'Faculty Workload', url: '/operations/faculty-workload', icon: Briefcase },
             { title: 'Make-Up Classes', url: '/operations/make-up-classes', icon: RefreshCw },
-            { title: 'Rooms & Laboratories', url: '/schedule/master-data/rooms', icon: Building2 },
+            // { title: 'Rooms & Laboratories', url: '/schedule/master-data/rooms', icon: Building2 },
             { title: 'Room Utilization', url: '/operations/room-utilization', icon: BarChart3 },
             { title: 'Faculty Attendance', url: '/faculty-attendance', icon: ClipboardCheck },
             { title: 'Facility Reports', url: '/operations/facility-reports', icon: AlertTriangle },
