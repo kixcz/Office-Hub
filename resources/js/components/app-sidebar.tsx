@@ -367,7 +367,7 @@ export function AppSidebar() {
         <Sidebar collapsible="icon" variant="sidebar" className="top-16 h-[calc(100svh-4rem)] border-r border-border/80 bg-sidebar">
             {/* Seamless Dual-Role Workspace Switcher for Program Heads & Deans */}
             {canSwitchWorkspace && (
-                <div className="p-3 border-b border-border/60 group-data-[collapsible=icon]:p-1 shrink-0 bg-muted/30">
+                <div scroll-region="true" className="p-3 border-b border-border/60 group-data-[collapsible=icon]:p-1 shrink-0 bg-muted/30">
                     <div className="flex flex-col gap-1.5 group-data-[collapsible=icon]:items-center">
                         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-data-[collapsible=icon]:hidden">
                             <span>Workspace View</span>

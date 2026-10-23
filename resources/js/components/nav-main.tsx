@@ -46,7 +46,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                                         return (
                                                             <SidebarMenuSubItem key={subItem.title}>
                                                                  <SidebarMenuSubButton asChild isActive={isSubActive} className={`text-[13px] py-1.5 px-2 rounded-lg transition-colors ${isSubActive ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}>
-                                                                    <Link href={subItem.url} prefetch preserveScroll className="flex items-center gap-2.5 w-full">
+                                                                    <Link href={subItem.url} prefetch className="flex items-center gap-2.5 w-full">
                                                                         <span className={`size-1.5 rounded-full shrink-0 ${isSubActive ? 'bg-blue-600' : 'bg-gray-300'}`} />
                                                                         <span className="truncate">{subItem.title}</span>
                                                                         {subItem.badge !== undefined && (
