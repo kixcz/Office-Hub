@@ -157,6 +157,10 @@ export default function FacultyAttendancePage({
         }
     };
 
+    // Pagination State for Weekly Sessions Table
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
+
     // Filter sessions locally based on search term
     const filteredSessions = useMemo(() => {
         return sessions.filter(s => {
@@ -171,6 +175,12 @@ export default function FacultyAttendancePage({
             return matchesSearch && matchesStatus;
         });
     }, [sessions, searchTerm, selectedStatus]);
+
+    const totalPages = Math.ceil(filteredSessions.length / pageSize) || 1;
+    const paginatedSessions = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return filteredSessions.slice(start, start + pageSize);
+    }, [filteredSessions, currentPage, pageSize]);
 
     // Printable / Downloadable PDF action using html2canvas & jsPDF
     const handleGeneratePdf = async () => {
@@ -480,8 +490,8 @@ export default function FacultyAttendancePage({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border font-medium">
-                                    {filteredSessions.length > 0 ? (
-                                        filteredSessions.map((r) => (
+                                    {paginatedSessions.length > 0 ? (
+                                        paginatedSessions.map((r) => (
                                             <tr key={r.id} className="hover:bg-muted/30 transition-colors">
                                                 <td className="p-3.5 whitespace-nowrap font-bold text-foreground">
                                                     <div>{r.day_of_week || 'Mon'}</div>
@@ -534,6 +544,55 @@ export default function FacultyAttendancePage({
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination footer */}
+                        {filteredSessions.length > 0 && (
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border text-xs text-muted-foreground">
+                                <div>
+                                    Showing <span className="font-bold text-foreground">{Math.min((currentPage - 1) * pageSize + 1, filteredSessions.length)}</span> to{' '}
+                                    <span className="font-bold text-foreground">{Math.min(currentPage * pageSize, filteredSessions.length)}</span> of{' '}
+                                    <span className="font-bold text-foreground">{filteredSessions.length}</span> sessions
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="h-8 px-2.5 rounded-lg border border-border text-xs font-semibold bg-background hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Previous
+                                    </button>
+                                    <div className="flex items-center gap-1 px-1">
+                                        {Array.from({ length: totalPages }).map((_, idx) => {
+                                            const page = idx + 1;
+                                            return (
+                                                <button
+                                                    key={page}
+                                                    type="button"
+                                                    onClick={() => setCurrentPage(page)}
+                                                    className={cn(
+                                                        "h-8 min-w-8 px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer",
+                                                        currentPage === page
+                                                            ? "bg-amber-500 text-slate-950 shadow-xs"
+                                                            : "border border-border bg-background text-foreground hover:bg-muted/50"
+                                                    )}
+                                                >
+                                                    {page}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="h-8 px-2.5 rounded-lg border border-border text-xs font-semibold bg-background hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

@@ -556,6 +556,88 @@ export default function ConsolidatedCalendarIndex({
                     </div>
                 </div>
 
+                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* 1. Deadlines (Red Card) */}
+                    <div className="rounded-2xl border border-red-500/20 bg-red-500/5 dark:bg-red-950/20 p-5 shadow-2xs flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-2xl bg-red-500/15 text-red-600 dark:text-red-400 shrink-0">
+                                <FileText className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-xs font-bold text-muted-foreground block leading-tight">
+                                    Deadlines
+                                </span>
+                                <div className="text-2xl sm:text-3xl font-extrabold text-foreground tabular-nums mt-0.5">
+                                    {kpiDeadlines}
+                                </div>
+                                <span className="text-[11px] text-muted-foreground block mt-0.5">
+                                    this month
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 2. Meetings (Blue Card) */}
+                    <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 dark:bg-blue-950/20 p-5 shadow-2xs flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-2xl bg-blue-500/15 text-blue-600 dark:text-blue-400 shrink-0">
+                                <Users className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-xs font-bold text-muted-foreground block leading-tight">
+                                    Meetings
+                                </span>
+                                <div className="text-2xl sm:text-3xl font-extrabold text-foreground tabular-nums mt-0.5">
+                                    {kpiMeetings}
+                                </div>
+                                <span className="text-[11px] text-muted-foreground block mt-0.5">
+                                    this month
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 3. Activities (Purple Card) */}
+                    <div className="rounded-2xl border border-purple-500/20 bg-purple-500/5 dark:bg-purple-950/20 p-5 shadow-2xs flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-2xl bg-purple-500/15 text-purple-600 dark:text-purple-400 shrink-0">
+                                <CalendarIcon className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-xs font-bold text-muted-foreground block leading-tight">
+                                    Activities
+                                </span>
+                                <div className="text-2xl sm:text-3xl font-extrabold text-foreground tabular-nums mt-0.5">
+                                    {kpiActivities}
+                                </div>
+                                <span className="text-[11px] text-muted-foreground block mt-0.5">
+                                    this month
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 4. Examinations (Green Card) */}
+                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20 p-5 shadow-2xs flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
+                                <GraduationCap className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="text-xs font-bold text-muted-foreground block leading-tight">
+                                    Examinations
+                                </span>
+                                <div className="text-2xl sm:text-3xl font-extrabold text-foreground tabular-nums mt-0.5">
+                                    {kpiExaminations}
+                                </div>
+                                <span className="text-[11px] text-muted-foreground block mt-0.5">
+                                    this month
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* ========================================================================= */}
                 {/* 3. MAIN BENTO GRID (CALENDAR & DAILY EVENTS)                              */}
                 {/* ========================================================================= */}
@@ -804,91 +886,7 @@ export default function ConsolidatedCalendarIndex({
                         </div>
                     </div>
                 </div>
-
-                {/* ========================================================================= */}
-                {/* 4. BOTTOM SUMMARY KPI BENTO CARDS (EXACT MATCH TO ATTACHED SCREENSHOT)    */}
-                {/* ========================================================================= */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* 1. Deadlines (Red Card) */}
-                    <div className="rounded-2xl border border-red-500/20 bg-red-500/5 dark:bg-red-950/20 p-5 shadow-2xs flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-red-500/15 text-red-600 dark:text-red-400 shrink-0">
-                                <FileText className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <span className="text-xs font-bold text-muted-foreground block leading-tight">
-                                    Deadlines
-                                </span>
-                                <div className="text-2xl sm:text-3xl font-extrabold text-foreground tabular-nums mt-0.5">
-                                    {kpiDeadlines}
-                                </div>
-                                <span className="text-[11px] text-muted-foreground block mt-0.5">
-                                    this month
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 2. Meetings (Blue Card) */}
-                    <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 dark:bg-blue-950/20 p-5 shadow-2xs flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-blue-500/15 text-blue-600 dark:text-blue-400 shrink-0">
-                                <Users className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <span className="text-xs font-bold text-muted-foreground block leading-tight">
-                                    Meetings
-                                </span>
-                                <div className="text-2xl sm:text-3xl font-extrabold text-foreground tabular-nums mt-0.5">
-                                    {kpiMeetings}
-                                </div>
-                                <span className="text-[11px] text-muted-foreground block mt-0.5">
-                                    this month
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 3. Activities (Purple Card) */}
-                    <div className="rounded-2xl border border-purple-500/20 bg-purple-500/5 dark:bg-purple-950/20 p-5 shadow-2xs flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-purple-500/15 text-purple-600 dark:text-purple-400 shrink-0">
-                                <CalendarIcon className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <span className="text-xs font-bold text-muted-foreground block leading-tight">
-                                    Activities
-                                </span>
-                                <div className="text-2xl sm:text-3xl font-extrabold text-foreground tabular-nums mt-0.5">
-                                    {kpiActivities}
-                                </div>
-                                <span className="text-[11px] text-muted-foreground block mt-0.5">
-                                    this month
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 4. Examinations (Green Card) */}
-                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20 p-5 shadow-2xs flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
-                                <GraduationCap className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <span className="text-xs font-bold text-muted-foreground block leading-tight">
-                                    Examinations
-                                </span>
-                                <div className="text-2xl sm:text-3xl font-extrabold text-foreground tabular-nums mt-0.5">
-                                    {kpiExaminations}
-                                </div>
-                                <span className="text-[11px] text-muted-foreground block mt-0.5">
-                                    this month
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+               
             </div>
 
             {/* ========================================================================= */}

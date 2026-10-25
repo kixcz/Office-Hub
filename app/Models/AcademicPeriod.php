@@ -44,6 +44,21 @@ class AcademicPeriod extends Model
         ];
     }
 
+    protected $appends = [
+        'name',
+        'is_active',
+    ];
+
+    public function getNameAttribute(): string
+    {
+        return $this->code ?: ($this->academic_year.' '.$this->semester);
+    }
+
+    public function getIsActiveAttribute(): bool
+    {
+        return (bool) ($this->is_current || $this->status === 'Active');
+    }
+
     /**
      * Scope to find the single currently active academic period.
      */

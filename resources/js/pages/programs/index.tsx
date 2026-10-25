@@ -3,853 +3,1386 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, router } from '@inertiajs/react';
 import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
-import { 
-    GraduationCap, 
-    BookOpen, 
-    CheckCircle2, 
-    Layers, 
-    Clock, 
-    Search, 
-    Building2, 
-    Plus, 
-    MoreVertical, 
-    Eye, 
-    Edit, 
-    Trash2, 
-    ChevronLeft, 
-    ChevronRight,
+import {
+    GraduationCap,
+    BookOpen,
+    CheckCircle2,
+    Layers,
+    Clock,
+    Search,
+    Building2,
+    Plus,
+    MoreVertical,
+    Eye,
+    Edit,
+    Trash2,
+    Copy,
+    Check,
+    FileText,
     ArrowUpDown,
-    Monitor,
-    Laptop,
-    Share2,
+    AlertCircle,
+    Calendar,
+    ChevronRight,
+    ChevronDown,
     X,
-    Filter
+    Filter,
+    ShieldCheck,
+    Sparkles,
+    ArrowRightLeft,
+    SlidersHorizontal,
+    PlusCircle
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Programs Management',
+        title: 'Academic Structure',
+        href: '/programs',
+    },
+    {
+        title: 'Programs & Curriculum',
         href: '/programs',
     },
 ];
+
+interface Course {
+    id: number;
+    code: string;
+    title: string;
+    units: number;
+    lecture_hours: number;
+    lab_hours: number;
+    required_facility_type?: string;
+    category?: string;
+    prerequisites?: string;
+    corequisites?: string;
+}
+
+interface CurriculumCourse {
+    id: number;
+    curriculum_id: number;
+    course_id: number;
+    year_level: number;
+    semester_placement: string;
+    requirement_type: string;
+    prerequisite_override: string | null;
+    corequisite_override: string | null;
+    sequence_order: number;
+    course: Course;
+}
+
+interface Curriculum {
+    id: number;
+    program_id: number;
+    version_name: string;
+    effective_year: string;
+    total_units: number;
+    description: string | null;
+    status: 'Active' | 'Draft' | 'Archived';
+    is_active: boolean;
+    curriculum_courses_count?: number;
+    courses_count?: number;
+    curriculum_courses?: CurriculumCourse[];
+}
 
 interface Program {
     id: number;
     code: string;
     name: string;
+    degree_level: string;
+    department: string;
+    duration_years: number;
+    status: 'Active' | 'Inactive' | 'Phased Out';
     description: string | null;
-    department?: string;
-    status?: string;
-    created_at?: string;
-    updated_at?: string;
+    curricula: Curriculum[];
 }
 
 interface Props {
     programs: Program[];
-    stats?: {
-        total: number;
-        active: number;
-        degree_types: number;
-        last_updated_date: string;
-        last_updated_time: string;
+    coursesCatalog: Course[];
+    stats: {
+        total_programs: number;
+        active_programs: number;
+        total_curricula: number;
+        active_curricula: number;
+        degree_levels: string[];
     };
-    departments?: string[];
-    filters?: {
+    filters: {
         search?: string;
         department?: string;
+        degree_level?: string;
         status?: string;
     };
 }
 
-export default function ProgramsIndex({ 
-    programs, 
-    stats = {
-        total: 4,
-        active: 4,
-        degree_types: 2,
-        last_updated_date: 'Oct 13, 2026',
-        last_updated_time: '11:25 AM by System Admin',
-    },
-    departments = ['College of Information and Digital Sciences'],
-    filters = {}
+export default function ProgramsCurriculumIndex({
+    programs,
+    coursesCatalog = [],
+    stats,
+    filters = {},
 }: Props) {
-    const [searchTerm, setSearchTerm] = useState(filters.search || '');
-    const [selectedDepartment, setSelectedDepartment] = useState(filters.department || 'all');
-    const [selectedStatus, setSelectedStatus] = useState(filters.status || 'all');
-    
-    // Checkbox selections
-    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    // Left pane selection
+    const [selectedProgramId, setSelectedProgramId] = useState<number>(programs[0]?.id || 1);
+    const selectedProgram = useMemo(
+        () => programs.find((p) => p.id === selectedProgramId) || programs[0],
+        [programs, selectedProgramId]
+    );
 
-    // Modal dialogs state
-    const [isAdding, setIsAdding] = useState(false);
-    const [editingProgram, setEditingProgram] = useState<Program | null>(null);
-    const [viewingProgram, setViewingProgram] = useState<Program | null>(null);
-    const [deletingProgram, setDeletingProgram] = useState<Program | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+    // Active curriculum version tab for selected program
+    const [selectedCurriculumId, setSelectedCurriculumId] = useState<number | null>(null);
 
-    // Form for Add Program
-    const addForm = useForm({
-        code: '',
-        name: '',
-        description: '',
-    });
+    const activeCurriculum = useMemo(() => {
+        if (!selectedProgram || !selectedProgram.curricula || selectedProgram.curricula.length === 0) {
+            return null;
+        }
+        if (selectedCurriculumId) {
+            const found = selectedProgram.curricula.find((c) => c.id === selectedCurriculumId);
+            if (found) return found;
+        }
+        // Default to active curriculum or first
+        return selectedProgram.curricula.find((c) => c.is_active || c.status === 'Active') || selectedProgram.curricula[0];
+    }, [selectedProgram, selectedCurriculumId]);
 
-    // Form for Edit Program
-    const editForm = useForm({
-        code: '',
-        name: '',
-        description: '',
-    });
+    // Search and filter in left sidebar
+    const [programSearch, setProgramSearch] = useState(filters.search || '');
+    const [filterLevel, setFilterLevel] = useState(filters.degree_level || 'all');
 
-    const handleOpenEdit = (program: Program) => {
-        setEditingProgram(program);
-        editForm.setData({
-            code: program.code,
-            name: program.name,
-            description: program.description || '',
-        });
-    };
-
-    const submitAdd: FormEventHandler = (e) => {
-        e.preventDefault();
-        addForm.post('/programs', {
-            onSuccess: () => {
-                addForm.reset();
-                setIsAdding(false);
-            },
-        });
-    };
-
-    const submitEdit: FormEventHandler = (e) => {
-        e.preventDefault();
-        if (!editingProgram) return;
-        editForm.put(`/programs/${editingProgram.id}`, {
-            onSuccess: () => {
-                setEditingProgram(null);
-            },
-        });
-    };
-
-    const handleDelete = (program: Program) => {
-        setDeletingProgram(program);
-    };
-
-    const confirmDelete = () => {
-        if (!deletingProgram) return;
-        setIsDeleting(true);
-        router.delete(`/programs/${deletingProgram.id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setDeletingProgram(null);
-                setIsDeleting(false);
-                setSelectedIds((prev) => prev.filter((id) => id !== deletingProgram.id));
-            },
-            onError: () => {
-                setIsDeleting(false);
-            },
-            onFinish: () => {
-                setIsDeleting(false);
-            },
-        });
-    };
-
-    const [isBulkDeletingOpen, setIsBulkDeletingOpen] = useState(false);
-
-    const handleBulkDelete = () => {
-        if (selectedIds.length === 0) return;
-        setIsBulkDeletingOpen(true);
-    };
-
-    const confirmBulkDelete = () => {
-        setIsDeleting(true);
-        selectedIds.forEach((id) => {
-            router.delete(`/programs/${id}`, { preserveScroll: true });
-        });
-        setSelectedIds([]);
-        setIsDeleting(false);
-        setIsBulkDeletingOpen(false);
-    };
-
-    // Filter list client-side
     const filteredPrograms = useMemo(() => {
         return programs.filter((p) => {
-            const matchesSearch = searchTerm === '' || 
-                p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (p.department || 'College of Information and Digital Sciences').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase()));
+            const matchesSearch =
+                programSearch === '' ||
+                p.code.toLowerCase().includes(programSearch.toLowerCase()) ||
+                p.name.toLowerCase().includes(programSearch.toLowerCase()) ||
+                p.department.toLowerCase().includes(programSearch.toLowerCase());
 
-            const matchesDept = selectedDepartment === 'all' || 
-                (p.department || 'College of Information and Digital Sciences') === selectedDepartment;
+            const matchesLevel = filterLevel === 'all' || p.degree_level === filterLevel;
 
-            const matchesStatus = selectedStatus === 'all' || 
-                (p.status || 'active').toLowerCase() === selectedStatus.toLowerCase();
-
-            return matchesSearch && matchesDept && matchesStatus;
+            return matchesSearch && matchesLevel;
         });
-    }, [programs, searchTerm, selectedDepartment, selectedStatus]);
+    }, [programs, programSearch, filterLevel]);
 
-    // Checkbox selection handlers
-    const isAllSelected = filteredPrograms.length > 0 && selectedIds.length === filteredPrograms.length;
+    // Modals
+    const [isAddProgramOpen, setIsAddProgramOpen] = useState(false);
+    const [isEditProgramOpen, setIsEditProgramOpen] = useState(false);
+    const [isAddCurriculumOpen, setIsAddCurriculumOpen] = useState(false);
+    const [isCopyCurriculumOpen, setIsCopyCurriculumOpen] = useState(false);
+    const [isAddCourseOpen, setIsAddCourseOpen] = useState(false);
+    const [isCompareCurriculaOpen, setIsCompareCurriculaOpen] = useState(false);
+    const [compareTargetId, setCompareTargetId] = useState<number | null>(null);
 
-    const toggleSelectAll = () => {
-        if (isAllSelected) {
-            setSelectedIds([]);
-        } else {
-            setSelectedIds(filteredPrograms.map((p) => p.id));
-        }
+    // Delete dialog
+    const [deletingCoursePivot, setDeletingCoursePivot] = useState<{ curriculumId: number; course: Course } | null>(null);
+
+    // Forms
+    const addProgramForm = useForm({
+        code: '',
+        name: '',
+        degree_level: "Bachelor's Degree",
+        department: 'College of Information and Digital Sciences',
+        duration_years: 4,
+        status: 'Active',
+        description: '',
+        initial_curriculum_name: '',
+        effective_year: '2026',
+    });
+
+    const editProgramForm = useForm({
+        code: '',
+        name: '',
+        degree_level: "Bachelor's Degree",
+        department: 'College of Information and Digital Sciences',
+        duration_years: 4,
+        status: 'Active',
+        description: '',
+    });
+
+    const addCurriculumForm = useForm({
+        version_name: '',
+        effective_year: '2026',
+        total_units: 140,
+        status: 'Active',
+        description: '',
+    });
+
+    const copyCurriculumForm = useForm({
+        new_version_name: '',
+        effective_year: '2027',
+    });
+
+    const addCourseForm = useForm({
+        course_id: coursesCatalog[0]?.id || '',
+        year_level: 1,
+        semester_placement: '1st Semester',
+        requirement_type: 'Required',
+        prerequisite_override: '',
+        corequisite_override: '',
+    });
+
+    const handleOpenEditProgram = (prog: Program) => {
+        editProgramForm.setData({
+            code: prog.code,
+            name: prog.name,
+            degree_level: prog.degree_level,
+            department: prog.department,
+            duration_years: prog.duration_years,
+            status: prog.status,
+            description: prog.description || '',
+        });
+        setIsEditProgramOpen(true);
     };
 
-    const toggleSelectOne = (id: number) => {
-        if (selectedIds.includes(id)) {
-            setSelectedIds(selectedIds.filter((item) => item !== id));
-        } else {
-            setSelectedIds([...selectedIds, id]);
-        }
+    const submitAddProgram: FormEventHandler = (e) => {
+        e.preventDefault();
+        addProgramForm.post('/programs', {
+            onSuccess: () => {
+                setIsAddProgramOpen(false);
+                addProgramForm.reset();
+            },
+        });
     };
 
-    // Helper for visual program code badges matching attached mockup
-    const getProgramIcon = (code: string) => {
-        const c = code.toUpperCase();
-        if (c === 'BLIS') {
-            return (
-                <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/80 flex items-center justify-center shrink-0 shadow-2xs">
-                    <BookOpen className="w-4 h-4" />
-                </div>
-            );
-        }
-        if (c === 'BSCS') {
-            return (
-                <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800/80 flex items-center justify-center shrink-0 shadow-2xs">
-                    <Monitor className="w-4 h-4" />
-                </div>
-            );
-        }
-        if (c === 'BSIT') {
-            return (
-                <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/80 dark:border-purple-800/80 flex items-center justify-center shrink-0 shadow-2xs">
-                    <Laptop className="w-4 h-4" />
-                </div>
-            );
-        }
-        if (c === 'BSIS') {
-            return (
-                <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800/80 flex items-center justify-center shrink-0 shadow-2xs">
-                    <Share2 className="w-4 h-4" />
-                </div>
-            );
-        }
-        return (
-            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center shrink-0">
-                <GraduationCap className="w-4 h-4" />
-            </div>
+    const submitEditProgram: FormEventHandler = (e) => {
+        e.preventDefault();
+        if (!selectedProgram) return;
+        editProgramForm.put(`/programs/${selectedProgram.id}`, {
+            onSuccess: () => {
+                setIsEditProgramOpen(false);
+            },
+        });
+    };
+
+    const submitAddCurriculum: FormEventHandler = (e) => {
+        e.preventDefault();
+        if (!selectedProgram) return;
+        addCurriculumForm.post(`/programs/${selectedProgram.id}/curricula`, {
+            onSuccess: () => {
+                setIsAddCurriculumOpen(false);
+                addCurriculumForm.reset();
+            },
+        });
+    };
+
+    const submitCopyCurriculum: FormEventHandler = (e) => {
+        e.preventDefault();
+        if (!activeCurriculum) return;
+        copyCurriculumForm.post(`/curricula/${activeCurriculum.id}/copy`, {
+            onSuccess: () => {
+                setIsCopyCurriculumOpen(false);
+                copyCurriculumForm.reset();
+            },
+        });
+    };
+
+    const handleCurriculumStatusChange = (status: 'Active' | 'Draft' | 'Archived') => {
+        if (!activeCurriculum) return;
+        router.patch(
+            `/curricula/${activeCurriculum.id}/status`,
+            { status },
+            { preserveScroll: true }
         );
     };
 
+    const submitAddCourse: FormEventHandler = (e) => {
+        e.preventDefault();
+        if (!activeCurriculum) return;
+        addCourseForm.post(`/curricula/${activeCurriculum.id}/courses`, {
+            onSuccess: () => {
+                setIsAddCourseOpen(false);
+                addCourseForm.reset({
+                    course_id: coursesCatalog[0]?.id || '',
+                    year_level: 1,
+                    semester_placement: '1st Semester',
+                    requirement_type: 'Required',
+                    prerequisite_override: '',
+                    corequisite_override: '',
+                });
+            },
+        });
+    };
+
+    const confirmRemoveCourse = () => {
+        if (!deletingCoursePivot) return;
+        router.delete(`/curricula/${deletingCoursePivot.curriculumId}/courses/${deletingCoursePivot.course.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeletingCoursePivot(null);
+            },
+        });
+    };
+
+    // Matrix Grouping: Group curriculumCourses by Year Level -> Semester Placement
+    const matrixGroups = useMemo(() => {
+        if (!activeCurriculum || !activeCurriculum.curriculum_courses) {
+            return [];
+        }
+
+        const years = selectedProgram?.duration_years || 4;
+        const semesters = ['1st Semester', '2nd Semester'];
+
+        const groups = [];
+
+        for (let y = 1; y <= years; y++) {
+            for (const sem of semesters) {
+                const coursesInSem = activeCurriculum.curriculum_courses.filter(
+                    (cc) => cc.year_level === y && cc.semester_placement === sem
+                );
+
+                const semUnits = coursesInSem.reduce((sum, cc) => sum + Number(cc.course?.units || 0), 0);
+                const semLec = coursesInSem.reduce((sum, cc) => sum + Number(cc.course?.lecture_hours || 0), 0);
+                const semLab = coursesInSem.reduce((sum, cc) => sum + Number(cc.course?.lab_hours || 0), 0);
+
+                groups.push({
+                    year: y,
+                    semester: sem,
+                    courses: coursesInSem,
+                    totalUnits: semUnits,
+                    totalLec: semLec,
+                    totalLab: semLab,
+                });
+            }
+        }
+
+        return groups;
+    }, [activeCurriculum, selectedProgram]);
+
+    // Validation checks for the curriculum
+    const validationIssues = useMemo(() => {
+        if (!activeCurriculum || !activeCurriculum.curriculum_courses) return [];
+        const issues: string[] = [];
+        const seenCourses = new Map<number, string>();
+
+        activeCurriculum.curriculum_courses.forEach((cc) => {
+            const loc = `Year ${cc.year_level} - ${cc.semester_placement}`;
+            if (seenCourses.has(cc.course_id)) {
+                issues.push(`Duplicate course placement: ${cc.course.code} is placed in ${loc} and ${seenCourses.get(cc.course_id)}`);
+            } else {
+                seenCourses.set(cc.course_id, loc);
+            }
+        });
+
+        return issues;
+    }, [activeCurriculum]);
+
+    // Comparison logic
+    const compareTarget = useMemo(() => {
+        if (!selectedProgram || !compareTargetId) return null;
+        return selectedProgram.curricula.find((c) => c.id === compareTargetId) || null;
+    }, [selectedProgram, compareTargetId]);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Programs Management" />
+            <Head title="Programs & Curriculum Blueprint" />
 
-            <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-7xl mx-auto w-full transition-colors">
-                
+            <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-[1600px] mx-auto w-full transition-colors">
                 {/* 1. Hero Header Banner */}
-                <div className="rounded-2xl border border-amber-200/60 dark:border-amber-900/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-950/30 dark:via-amber-950/10 dark:to-transparent p-6 sm:p-7 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-2xs">
-                    {/* Left Info: Amber Graduation Cap + Title */}
+                <div className="rounded-2xl border border-amber-200/60 dark:border-amber-900/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-950/30 dark:via-amber-950/10 dark:to-transparent p-6 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-2xs">
                     <div className="flex items-center gap-4 z-10">
                         <div className="w-13 h-13 rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-200/90 dark:border-amber-800/80 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-2xs p-3">
                             <GraduationCap className="w-7 h-7" />
                         </div>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                                Programs Management
-                            </h1>
-                            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                                Manage academic programs in the system.
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                                    Programs & Curriculum
+                                </h1>
+                                <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                    Academic Blueprint
+                                </span>
+                            </div>
+                            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
+                                Define degree blueprints, versioned curricula, year-level sequencing rules, and prerequisite chains for cohort graduation requirements.
                             </p>
                         </div>
                     </div>
 
-                    {/* Subtle campus illustration in background */}
-                    <div className="absolute inset-y-0 right-48 hidden lg:flex items-center opacity-15 pointer-events-none select-none">
-                        <svg className="w-56 h-28 text-slate-600 dark:text-slate-300" viewBox="0 0 240 100" fill="currentColor">
-                            <rect x="20" y="30" width="70" height="60" rx="3" fillOpacity="0.4" />
-                            <polygon points="15,30 55,10 95,30" fillOpacity="0.6" />
-                            <rect x="35" y="45" width="12" height="15" rx="1" fill="#fff" />
-                            <rect x="58" y="45" width="12" height="15" rx="1" fill="#fff" />
-                            <rect x="47" y="70" width="16" height="20" fill="#fff" />
-                            <rect x="105" y="40" width="85" height="50" rx="2" fillOpacity="0.3" />
-                            <polygon points="100,40 147,20 195,40" fillOpacity="0.5" />
-                            <circle cx="147.5" cy="55" r="7" fill="#fff" fillOpacity="0.8" />
-                            <circle cx="210" cy="50" r="14" fillOpacity="0.25" />
-                            <rect x="208" y="50" width="4" height="40" fillOpacity="0.4" />
-                        </svg>
-                    </div>
-
-                    {/* Right CIDS Department Identity Block */}
-                    <div className="hidden md:flex flex-col items-start pl-6 border-l border-slate-200 dark:border-slate-800 z-10 shrink-0">
-                        <span className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
-                            CIDS
-                        </span>
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 max-w-[170px] leading-tight">
-                            College of Information and Digital Sciences
-                        </span>
-                        <div className="w-10 h-0.75 bg-amber-500 rounded-full mt-2" />
-                    </div>
-                </div>
-
-                {/* 2. Bento Metric Cards (4 Cards) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Total Programs */}
-                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-all flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50 flex items-center justify-center shrink-0">
-                            <BookOpen className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Programs</span>
-                            <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
-                                {stats.total}
-                            </p>
-                            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1">
-                                Academic programs in the system
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Active Programs */}
-                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-all flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Active Programs</span>
-                            <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
-                                {stats.active}
-                            </p>
-                            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1">
-                                Currently active and offered
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Degree Types */}
-                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-all flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/50 flex items-center justify-center shrink-0">
-                            <Layers className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Degree Types</span>
-                            <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
-                                {stats.degree_types}
-                            </p>
-                            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1">
-                                Bachelor's programs
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Last Updated */}
-                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-all flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center shrink-0">
-                            <Clock className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Last Updated</span>
-                            <p className="text-xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
-                                {stats.last_updated_date}
-                            </p>
-                            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1">
-                                {stats.last_updated_time}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 3. Search & Filter Bar */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    {/* Search Input */}
-                    <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Search programs by code, name, or department..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 text-sm bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-2xs focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all text-slate-800 dark:text-slate-200"
-                        />
-                    </div>
-
-                    {/* Filters & Add Program */}
-                    <div className="flex flex-wrap items-center gap-3">
-                        {/* Department Filter */}
-                        <div className="relative">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
-                                        <Building2 className="w-3.5 h-3.5 text-slate-500" />
-                                        <span>
-                                            {selectedDepartment === 'all' ? 'All Departments' : selectedDepartment}
-                                        </span>
-                                        <span className="text-slate-400 ml-1">⌄</span>
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-64">
-                                    <DropdownMenuItem onClick={() => setSelectedDepartment('all')}>
-                                        All Departments
-                                    </DropdownMenuItem>
-                                    {departments.map((dept) => (
-                                        <DropdownMenuItem key={dept} onClick={() => setSelectedDepartment(dept)}>
-                                            {dept}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-
-                        {/* Status Filter */}
-                        <div className="relative">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
-                                        <Layers className="w-3.5 h-3.5 text-slate-500" />
-                                        <span className="capitalize">
-                                            {selectedStatus === 'all' ? 'All Status' : selectedStatus}
-                                        </span>
-                                        <span className="text-slate-400 ml-1">⌄</span>
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-36">
-                                    <DropdownMenuItem onClick={() => setSelectedStatus('all')}>
-                                        All Status
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSelectedStatus('active')}>
-                                        Active
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSelectedStatus('inactive')}>
-                                        Inactive
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-
-                        {/* Bulk Delete Button when items selected */}
-                        {selectedIds.length > 0 && (
-                            <button
-                                onClick={handleBulkDelete}
-                                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 rounded-xl border border-red-200 dark:border-red-800 shadow-2xs transition-all cursor-pointer"
-                            >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                <span>Delete ({selectedIds.length})</span>
-                            </button>
-                        )}
-
-                        {/* Add Program Button */}
+                    <div className="flex items-center gap-3 z-10">
                         <button
-                            onClick={() => setIsAdding(true)}
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 rounded-xl shadow-xs transition-all cursor-pointer"
+                            onClick={() => setIsAddProgramOpen(true)}
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400 rounded-xl shadow-xs transition-all cursor-pointer"
                         >
                             <Plus className="w-4 h-4 stroke-[2.5]" />
-                            <span>Add Program</span>
+                            <span>Create Degree Program</span>
                         </button>
                     </div>
                 </div>
 
-                {/* 4. Programs Table Card */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-[11px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-                                    <th className="py-3.5 px-4 w-12 text-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={isAllSelected}
-                                            onChange={toggleSelectAll}
-                                            className="rounded border-slate-300 text-amber-600 focus:ring-amber-500/20 w-4 h-4 cursor-pointer"
-                                        />
-                                    </th>
-                                    <th className="py-3.5 px-4 font-bold">
-                                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">
-                                            <span>CODE</span>
-                                            <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                                        </div>
-                                    </th>
-                                    <th className="py-3.5 px-4 font-bold">
-                                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">
-                                            <span>PROGRAM NAME</span>
-                                            <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                                        </div>
-                                    </th>
-                                    <th className="py-3.5 px-4 font-bold">
-                                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">
-                                            <span>DEPARTMENT / COLLEGE</span>
-                                            <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                                        </div>
-                                    </th>
-                                    <th className="py-3.5 px-4 font-bold">
-                                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">
-                                            <span>DESCRIPTION</span>
-                                            <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                                        </div>
-                                    </th>
-                                    <th className="py-3.5 px-4 font-bold">
-                                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">
-                                            <span>STATUS</span>
-                                            <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                                        </div>
-                                    </th>
-                                    <th className="py-3.5 px-4 font-bold text-right pr-6">
-                                        ACTIONS
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-sm">
-                                {filteredPrograms.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="py-12 text-center text-slate-500 dark:text-slate-400">
-                                            No programs found matching the criteria.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredPrograms.map((program) => {
-                                        const isSelected = selectedIds.includes(program.id);
-                                        const department = program.department || 'College of Information and Digital Sciences';
-                                        const status = program.status || 'Active';
-
-                                        return (
-                                            <tr 
-                                                key={program.id}
-                                                className={cn(
-                                                    "hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors group",
-                                                    isSelected && "bg-amber-50/30 dark:bg-amber-950/10"
-                                                )}
-                                            >
-                                                {/* Checkbox */}
-                                                <td className="py-4 px-4 text-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={() => toggleSelectOne(program.id)}
-                                                        className="rounded border-slate-300 text-amber-600 focus:ring-amber-500/20 w-4 h-4 cursor-pointer"
-                                                    />
-                                                </td>
-
-                                                {/* Code with Icon Badge */}
-                                                <td className="py-4 px-4">
-                                                    <div className="flex items-center gap-3">
-                                                        {getProgramIcon(program.code)}
-                                                        <span className="font-bold text-slate-900 dark:text-white tracking-tight">
-                                                            {program.code}
-                                                        </span>
-                                                    </div>
-                                                </td>
-
-                                                {/* Program Name */}
-                                                <td className="py-4 px-4 font-medium text-slate-800 dark:text-slate-200 max-w-xs">
-                                                    {program.name}
-                                                </td>
-
-                                                {/* Department / College */}
-                                                <td className="py-4 px-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                                    {department}
-                                                </td>
-
-                                                {/* Description */}
-                                                <td className="py-4 px-4 text-xs text-slate-500 dark:text-slate-400">
-                                                    {program.description ? program.description : '-'}
-                                                </td>
-
-                                                {/* Status Badge */}
-                                                <td className="py-4 px-4">
-                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                        {status}
-                                                    </span>
-                                                </td>
-
-                                                {/* Actions */}
-                                                <td className="py-4 px-4 text-right pr-6">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                                                                <MoreVertical className="w-4 h-4" />
-                                                            </button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-36">
-                                                            <DropdownMenuItem onClick={() => setViewingProgram(program)}>
-                                                                <Eye className="w-3.5 h-3.5 mr-2 text-slate-500" />
-                                                                View
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleOpenEdit(program)}>
-                                                                <Edit className="w-3.5 h-3.5 mr-2 text-slate-500" />
-                                                                Edit
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem 
-                                                                onClick={() => handleDelete(program)}
-                                                                className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/40"
-                                                            >
-                                                                <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
-                                                                Delete
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
+                {/* 2. Top Metric Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50 flex items-center justify-center shrink-0">
+                            <GraduationCap className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Programs</span>
+                            <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-0.5">
+                                {stats.total_programs}
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Degree & tech offerings</p>
+                        </div>
                     </div>
 
-                    {/* Pagination Footer */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-4 border-t border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900">
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                            Showing 1 to {filteredPrograms.length} of {filteredPrograms.length} programs
-                        </span>
-                        <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                            <button
-                                disabled
-                                className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-                            <button
-                                className="w-8 h-8 rounded-lg bg-amber-500 text-white font-bold text-xs flex items-center justify-center shadow-2xs hover:bg-amber-600 transition-colors"
-                            >
-                                1
-                            </button>
-                            <button
-                                disabled
-                                className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
+                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Active Curricula</span>
+                            <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-0.5">
+                                {stats.active_curricula} / {stats.total_curricula}
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">In-effect versions</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/50 flex items-center justify-center shrink-0">
+                            <BookOpen className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Canonical Subjects</span>
+                            <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-0.5">
+                                {coursesCatalog.length}
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Catalog master items</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center shrink-0">
+                            <Clock className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Duration Range</span>
+                            <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-0.5">
+                                2 - 4 Years
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Ladderized & Degree</p>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Modal: Add Program */}
-            <Dialog open={isAdding} onOpenChange={setIsAdding}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold">Add Academic Program</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={submitAdd} className="flex flex-col gap-4 mt-2">
-                        <div className="space-y-1.5">
-                            <label htmlFor="add-code" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                Program Code
-                            </label>
-                            <input
-                                id="add-code"
-                                value={addForm.data.code}
-                                onChange={(e) => addForm.setData('code', e.target.value)}
-                                className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                                placeholder="e.g. BSCS, BSIT, BLIS"
-                                required
-                            />
-                            {addForm.errors.code && <p className="text-xs text-red-500">{addForm.errors.code}</p>}
+                {/* 3. Main Workspace Split: Programs List on Left, Curriculum Matrix on Right */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    {/* LEFT PANE: Program List (4 cols) */}
+                    <div className="lg:col-span-4 flex flex-col gap-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs">
+                            <div className="flex items-center justify-between gap-2 mb-3">
+                                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                    <Building2 className="w-4 h-4 text-amber-500" />
+                                    <span>Academic Programs</span>
+                                </h2>
+                                <span className="text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                    {filteredPrograms.length}
+                                </span>
+                            </div>
+
+                            {/* Search */}
+                            <div className="relative mb-3">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Filter by code or name..."
+                                    value={programSearch}
+                                    onChange={(e) => setProgramSearch(e.target.value)}
+                                    className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                                />
+                            </div>
+
+                            {/* List of Programs */}
+                            <div className="flex flex-col gap-2 max-h-[680px] overflow-y-auto pr-1">
+                                {filteredPrograms.map((prog) => {
+                                    const isSelected = prog.id === selectedProgram?.id;
+                                    const activeCurricCount = prog.curricula?.filter((c) => c.status === 'Active').length || 0;
+
+                                    return (
+                                        <div
+                                            key={prog.id}
+                                            onClick={() => {
+                                                setSelectedProgramId(prog.id);
+                                                setSelectedCurriculumId(null);
+                                            }}
+                                            className={cn(
+                                                'p-3.5 rounded-xl border transition-all cursor-pointer text-left relative group',
+                                                isSelected
+                                                    ? 'bg-amber-50/70 border-amber-300 dark:bg-amber-950/30 dark:border-amber-700/80 shadow-xs ring-1 ring-amber-400/30'
+                                                    : 'bg-white dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                                            )}
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className={cn(
+                                                        'font-extrabold text-sm px-2.5 py-1 rounded-lg tracking-tight',
+                                                        isSelected
+                                                            ? 'bg-amber-500 text-white'
+                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 group-hover:bg-amber-100 group-hover:text-amber-800 dark:group-hover:bg-amber-900/40'
+                                                    )}>
+                                                        {prog.code}
+                                                    </span>
+                                                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                                        {prog.duration_years} yrs • {prog.degree_level}
+                                                    </span>
+                                                </div>
+
+                                                <span className={cn(
+                                                    'text-[10px] font-bold px-2 py-0.5 rounded-full border',
+                                                    prog.status === 'Active'
+                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                                                        : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                                                )}>
+                                                    {prog.status}
+                                                </span>
+                                            </div>
+
+                                            <h3 className="text-xs font-bold text-slate-900 dark:text-white mt-2 line-clamp-1">
+                                                {prog.name}
+                                            </h3>
+
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                                                {prog.department}
+                                            </p>
+
+                                            <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
+                                                <span>Curricula: <strong className="text-slate-700 dark:text-slate-300">{prog.curricula?.length || 0}</strong> ({activeCurricCount} active)</span>
+                                                <ChevronRight className={cn(
+                                                    'w-4 h-4 transition-transform',
+                                                    isSelected ? 'text-amber-500 translate-x-1' : 'opacity-40'
+                                                )} />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
+                    </div>
 
-                        <div className="space-y-1.5">
-                            <label htmlFor="add-name" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                Program Name
-                            </label>
-                            <input
-                                id="add-name"
-                                value={addForm.data.name}
-                                onChange={(e) => addForm.setData('name', e.target.value)}
-                                className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                                placeholder="e.g. Bachelor of Science in Computer Science"
-                                required
-                            />
-                            {addForm.errors.name && <p className="text-xs text-red-500">{addForm.errors.name}</p>}
-                        </div>
+                    {/* RIGHT PANE: Curriculum Version Bar & Matrix Table (8 cols) */}
+                    <div className="lg:col-span-8 flex flex-col gap-4">
+                        {selectedProgram ? (
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-5">
+                                
+                                {/* Program Header & Edit button */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-lg font-black text-amber-600 dark:text-amber-400">
+                                                {selectedProgram.code}
+                                            </span>
+                                            <span className="text-slate-300 dark:text-slate-700">•</span>
+                                            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                                                {selectedProgram.name}
+                                            </h2>
+                                        </div>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                            {selectedProgram.department} • Normal Duration: {selectedProgram.duration_years} Years
+                                        </p>
+                                    </div>
 
-                        <div className="space-y-1.5">
-                            <label htmlFor="add-desc" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                Description (Optional)
-                            </label>
-                            <textarea
-                                id="add-desc"
-                                value={addForm.data.description}
-                                onChange={(e) => addForm.setData('description', e.target.value)}
-                                rows={3}
-                                className="flex w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                                placeholder="Program overview or description..."
-                            />
-                            {addForm.errors.description && <p className="text-xs text-red-500">{addForm.errors.description}</p>}
-                        </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <button
+                                            onClick={() => handleOpenEditProgram(selectedProgram)}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer"
+                                        >
+                                            <Edit className="w-3.5 h-3.5" />
+                                            <span>Edit Program</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setIsAddCurriculumOpen(true)}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white dark:text-slate-950 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            <span>New Curriculum Version</span>
+                                        </button>
+                                    </div>
+                                </div>
 
-                        <DialogFooter className="mt-4 gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setIsAdding(false)}
-                                className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={addForm.processing}
-                                className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 transition-colors disabled:opacity-50"
-                            >
-                                Save Program
-                            </button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                                {/* Curriculum Version Tabs */}
+                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2">
+                                            Versions:
+                                        </span>
+                                        {selectedProgram.curricula && selectedProgram.curricula.length > 0 ? (
+                                            selectedProgram.curricula.map((curric) => {
+                                                const isCurrent = curric.id === activeCurriculum?.id;
+                                                return (
+                                                    <button
+                                                        key={curric.id}
+                                                        onClick={() => setSelectedCurriculumId(curric.id)}
+                                                        className={cn(
+                                                            'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer',
+                                                            isCurrent
+                                                                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200 dark:border-slate-700'
+                                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                                        )}
+                                                    >
+                                                        <span>{curric.version_name}</span>
+                                                        <span className={cn(
+                                                            'w-2 h-2 rounded-full',
+                                                            curric.status === 'Active'
+                                                                ? 'bg-emerald-500'
+                                                                : curric.status === 'Draft'
+                                                                ? 'bg-amber-400'
+                                                                : 'bg-slate-400'
+                                                        )} />
+                                                    </button>
+                                                );
+                                            })
+                                        ) : (
+                                            <span className="text-xs text-slate-400 italic px-2">No curriculum versions yet.</span>
+                                        )}
+                                    </div>
 
-            {/* Modal: Edit Program */}
-            <Dialog open={!!editingProgram} onOpenChange={(open) => !open && setEditingProgram(null)}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold">Edit Academic Program</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={submitEdit} className="flex flex-col gap-4 mt-2">
-                        <div className="space-y-1.5">
-                            <label htmlFor="edit-code" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                Program Code
-                            </label>
-                            <input
-                                id="edit-code"
-                                value={editForm.data.code}
-                                onChange={(e) => editForm.setData('code', e.target.value)}
-                                className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                                required
-                            />
-                            {editForm.errors.code && <p className="text-xs text-red-500">{editForm.errors.code}</p>}
-                        </div>
+                                    {/* Action buttons for active curriculum */}
+                                    {activeCurriculum && (
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setIsCopyCurriculumOpen(true)}
+                                                className="px-2.5 py-1 text-xs font-semibold rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-1 cursor-pointer"
+                                                title="Clone this curriculum into a new version"
+                                            >
+                                                <Copy className="w-3.5 h-3.5 text-slate-500" />
+                                                <span>Clone</span>
+                                            </button>
 
-                        <div className="space-y-1.5">
-                            <label htmlFor="edit-name" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                Program Name
-                            </label>
-                            <input
-                                id="edit-name"
-                                value={editForm.data.name}
-                                onChange={(e) => editForm.setData('name', e.target.value)}
-                                className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                                required
-                            />
-                            {editForm.errors.name && <p className="text-xs text-red-500">{editForm.errors.name}</p>}
-                        </div>
+                                            {/* Activate / Archive Dropdown */}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button className="px-2.5 py-1 text-xs font-semibold rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-1 cursor-pointer">
+                                                        <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                                                        <span>Status: {activeCurriculum.status}</span>
+                                                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-36">
+                                                    <DropdownMenuItem onClick={() => handleCurriculumStatusChange('Active')}>
+                                                        <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-emerald-500" />
+                                                        Activate
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleCurriculumStatusChange('Draft')}>
+                                                        <SlidersHorizontal className="w-3.5 h-3.5 mr-2 text-amber-500" />
+                                                        Set Draft
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleCurriculumStatusChange('Archived')}>
+                                                        <Clock className="w-3.5 h-3.5 mr-2 text-slate-400" />
+                                                        Archive
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
 
-                        <div className="space-y-1.5">
-                            <label htmlFor="edit-desc" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                Description
-                            </label>
-                            <textarea
-                                id="edit-desc"
-                                value={editForm.data.description}
-                                onChange={(e) => editForm.setData('description', e.target.value)}
-                                rows={3}
-                                className="flex w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                            />
-                            {editForm.errors.description && <p className="text-xs text-red-500">{editForm.errors.description}</p>}
-                        </div>
+                                            {/* Compare button */}
+                                            {selectedProgram.curricula && selectedProgram.curricula.length > 1 && (
+                                                <button
+                                                    onClick={() => setIsCompareCurriculaOpen(true)}
+                                                    className="px-2.5 py-1 text-xs font-semibold rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-1 cursor-pointer"
+                                                >
+                                                    <ArrowRightLeft className="w-3.5 h-3.5 text-blue-500" />
+                                                    <span>Compare</span>
+                                                </button>
+                                            )}
 
-                        <DialogFooter className="mt-4 gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setEditingProgram(null)}
-                                className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={editForm.processing}
-                                className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 transition-colors disabled:opacity-50"
-                            >
-                                Update Program
-                            </button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                                            <button
+                                                onClick={() => setIsAddCourseOpen(true)}
+                                                className="px-3 py-1 text-xs font-bold rounded-md bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 flex items-center gap-1 cursor-pointer"
+                                            >
+                                                <PlusCircle className="w-3.5 h-3.5" />
+                                                <span>Add Course</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
 
-            {/* Modal: View Program Details */}
-            <Dialog open={!!viewingProgram} onOpenChange={(open) => !open && setViewingProgram(null)}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold flex items-center gap-3">
-                            {viewingProgram && getProgramIcon(viewingProgram.code)}
-                            <span>{viewingProgram?.code} Details</span>
-                        </DialogTitle>
-                    </DialogHeader>
-                    {viewingProgram && (
-                        <div className="flex flex-col gap-4 mt-2">
-                            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Full Title</span>
-                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">
-                                    {viewingProgram.name}
-                                </p>
+                                {/* Active Curriculum Metadata Bar */}
+                                {activeCurriculum && (
+                                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-3 py-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 text-xs">
+                                        <div className="flex items-center gap-4">
+                                            <span>Effective Year: <strong>{activeCurriculum.effective_year}</strong></span>
+                                            <span>Total Required Units: <strong>{activeCurriculum.total_units} units</strong></span>
+                                            <span>Courses Enrolled: <strong>{activeCurriculum.curriculum_courses?.length || 0} subjects</strong></span>
+                                        </div>
+
+                                        {validationIssues.length > 0 && (
+                                            <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-semibold">
+                                                <AlertCircle className="w-4 h-4 shrink-0" />
+                                                <span>{validationIssues.length} Placement Warning(s)</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Curriculum Matrix grouped by Year Level & Semester */}
+                                <div className="mt-5 flex flex-col gap-6">
+                                    {matrixGroups.map((group) => (
+                                        <div
+                                            key={`y${group.year}-s${group.semester}`}
+                                            className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 shadow-2xs"
+                                        >
+                                            {/* Subheader banner */}
+                                            <div className="px-4 py-2.5 bg-slate-100/70 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-100">
+                                                        Year {group.year} • {group.semester}
+                                                    </h3>
+                                                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                                        ({group.courses.length} subjects)
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center gap-3 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                                    <span>Lec: <strong className="text-slate-900 dark:text-white">{group.totalLec}h</strong></span>
+                                                    <span>Lab: <strong className="text-slate-900 dark:text-white">{group.totalLab}h</strong></span>
+                                                    <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold">
+                                                        {group.totalUnits} Units
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Courses Table */}
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left text-xs">
+                                                    <thead>
+                                                        <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40">
+                                                            <th className="py-2.5 px-4 font-bold">Course Code</th>
+                                                            <th className="py-2.5 px-4 font-bold">Course Title</th>
+                                                            <th className="py-2.5 px-3 font-bold text-center">Units</th>
+                                                            <th className="py-2.5 px-3 font-bold text-center">Lec / Lab</th>
+                                                            <th className="py-2.5 px-4 font-bold">Prerequisite / Co-requisite</th>
+                                                            <th className="py-2.5 px-3 font-bold">Requirement Type</th>
+                                                            <th className="py-2.5 px-3 font-bold text-right pr-4">Action</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                        {group.courses.length === 0 ? (
+                                                            <tr>
+                                                                <td colSpan={7} className="py-6 text-center text-slate-400 italic">
+                                                                    No courses sequenced for this term yet. Click "+ Add Course" to place subjects.
+                                                                </td>
+                                                            </tr>
+                                                        ) : (
+                                                            group.courses.map((cc) => (
+                                                                <tr
+                                                                    key={cc.id}
+                                                                    className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
+                                                                >
+                                                                    <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span>{cc.course?.code}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">
+                                                                        {cc.course?.title}
+                                                                    </td>
+                                                                    <td className="py-3 px-3 text-center font-bold text-slate-900 dark:text-white">
+                                                                        {cc.course?.units}
+                                                                    </td>
+                                                                    <td className="py-3 px-3 text-center text-slate-500 dark:text-slate-400">
+                                                                        {cc.course?.lecture_hours}h / {cc.course?.lab_hours}h
+                                                                    </td>
+                                                                    <td className="py-3 px-4">
+                                                                        {cc.prerequisite_override || cc.course?.prerequisites ? (
+                                                                            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/40">
+                                                                                {cc.prerequisite_override || cc.course?.prerequisites}
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-slate-400 text-[11px]">None</span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="py-3 px-3">
+                                                                        <span className={cn(
+                                                                            'px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                                                                            cc.requirement_type === 'Required' || cc.requirement_type === 'Major'
+                                                                                ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+                                                                                : cc.requirement_type === 'Elective'
+                                                                                ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+                                                                                : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                                                                        )}>
+                                                                            {cc.requirement_type}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="py-3 px-3 text-right pr-4">
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                if (!activeCurriculum) return;
+                                                                                setDeletingCoursePivot({
+                                                                                    curriculumId: activeCurriculum.id,
+                                                                                    course: cc.course,
+                                                                                });
+                                                                            }}
+                                                                            className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                                                                            title="Remove from curriculum"
+                                                                        >
+                                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-12 text-center text-slate-400">
+                                Select an academic program from the left pane to view its curriculum blueprints.
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* MODAL: Create Program */}
+                <Dialog open={isAddProgramOpen} onOpenChange={setIsAddProgramOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Create Academic Program</DialogTitle>
+                            <DialogDescription>
+                                Add a new degree offering to the institutional blueprint catalog.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={submitAddProgram} className="space-y-4 py-2">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Program Code</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="e.g. BSIT"
+                                        value={addProgramForm.data.code}
+                                        onChange={(e) => addProgramForm.setData('code', e.target.value.toUpperCase())}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Duration (Years)</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={8}
+                                        required
+                                        value={addProgramForm.data.duration_years}
+                                        onChange={(e) => addProgramForm.setData('duration_years', Number(e.target.value))}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Degree Program Full Title</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Bachelor of Science in Information Technology"
+                                    value={addProgramForm.data.name}
+                                    onChange={(e) => addProgramForm.setData('name', e.target.value)}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                />
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                                    <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Department</span>
-                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-1">
-                                        {viewingProgram.department || 'College of Information and Digital Sciences'}
-                                    </p>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Degree Level</label>
+                                    <select
+                                        value={addProgramForm.data.degree_level}
+                                        onChange={(e) => addProgramForm.setData('degree_level', e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none"
+                                    >
+                                        <option value="Bachelor's Degree">Bachelor's Degree</option>
+                                        <option value="Associate Degree">Associate Degree</option>
+                                        <option value="Master's Degree">Master's Degree</option>
+                                        <option value="Doctoral Degree">Doctoral Degree</option>
+                                        <option value="Diploma / Certificate">Diploma / Certificate</option>
+                                    </select>
                                 </div>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                                    <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Status</span>
-                                    <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                        {viewingProgram.status || 'Active'}
-                                    </p>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Department / College</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={addProgramForm.data.department}
+                                        onChange={(e) => addProgramForm.setData('department', e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none"
+                                    />
                                 </div>
                             </div>
 
-                            <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Description</span>
-                                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-                                    {viewingProgram.description || 'No additional description provided.'}
-                                </p>
+                            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <label className="text-xs font-bold text-amber-700 dark:text-amber-400">Baseline Curriculum Version</label>
+                                <div className="grid grid-cols-2 gap-3 mt-1.5">
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. BSIT Curriculum 2026"
+                                        value={addProgramForm.data.initial_curriculum_name}
+                                        onChange={(e) => addProgramForm.setData('initial_curriculum_name', e.target.value)}
+                                        className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Effective Year: 2026"
+                                        value={addProgramForm.data.effective_year}
+                                        onChange={(e) => addProgramForm.setData('effective_year', e.target.value)}
+                                        className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    />
+                                </div>
                             </div>
 
-                            <DialogFooter className="mt-2">
+                            <DialogFooter className="mt-4">
                                 <button
                                     type="button"
-                                    onClick={() => setViewingProgram(null)}
-                                    className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 transition-colors w-full"
+                                    onClick={() => setIsAddProgramOpen(false)}
+                                    className="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700"
                                 >
-                                    Close
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={addProgramForm.processing}
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                >
+                                    Save Program Blueprint
                                 </button>
                             </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* MODAL: Edit Program */}
+                <Dialog open={isEditProgramOpen} onOpenChange={setIsEditProgramOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Edit Program Definition</DialogTitle>
+                            <DialogDescription>
+                                Modify degree metadata and offering parameters.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={submitEditProgram} className="space-y-4 py-2">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Program Code</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={editProgramForm.data.code}
+                                        onChange={(e) => editProgramForm.setData('code', e.target.value.toUpperCase())}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Duration (Years)</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={8}
+                                        required
+                                        value={editProgramForm.data.duration_years}
+                                        onChange={(e) => editProgramForm.setData('duration_years', Number(e.target.value))}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Full Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editProgramForm.data.name}
+                                    onChange={(e) => editProgramForm.setData('name', e.target.value)}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Status</label>
+                                    <select
+                                        value={editProgramForm.data.status}
+                                        onChange={(e) => editProgramForm.setData('status', e.target.value as any)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    >
+                                        <option value="Active">Active</option>
+                                        <option value="Inactive">Inactive</option>
+                                        <option value="Phased Out">Phased Out</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Department</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={editProgramForm.data.department}
+                                        onChange={(e) => editProgramForm.setData('department', e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    />
+                                </div>
+                            </div>
+
+                            <DialogFooter className="mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditProgramOpen(false)}
+                                    className="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={editProgramForm.processing}
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                >
+                                    Update Program
+                                </button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* MODAL: New Curriculum Version */}
+                <Dialog open={isAddCurriculumOpen} onOpenChange={setIsAddCurriculumOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>New Curriculum Version</DialogTitle>
+                            <DialogDescription>
+                                Create a new cohort curriculum version for {selectedProgram?.code}.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={submitAddCurriculum} className="space-y-4 py-2">
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Version Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. BSIT Curriculum 2026"
+                                    value={addCurriculumForm.data.version_name}
+                                    onChange={(e) => addCurriculumForm.setData('version_name', e.target.value)}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Effective Academic Year</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="2026"
+                                        value={addCurriculumForm.data.effective_year}
+                                        onChange={(e) => addCurriculumForm.setData('effective_year', e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Total Required Units</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        value={addCurriculumForm.data.total_units}
+                                        onChange={(e) => addCurriculumForm.setData('total_units', Number(e.target.value))}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Status</label>
+                                <select
+                                    value={addCurriculumForm.data.status}
+                                    onChange={(e) => addCurriculumForm.setData('status', e.target.value as any)}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                >
+                                    <option value="Active">Active (Cohort Default)</option>
+                                    <option value="Draft">Draft (In Review)</option>
+                                    <option value="Archived">Archived</option>
+                                </select>
+                            </div>
+
+                            <DialogFooter className="mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddCurriculumOpen(false)}
+                                    className="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={addCurriculumForm.processing}
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                >
+                                    Create Version
+                                </button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* MODAL: Copy / Clone Previous Curriculum */}
+                <Dialog open={isCopyCurriculumOpen} onOpenChange={setIsCopyCurriculumOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Clone Previous Curriculum</DialogTitle>
+                            <DialogDescription>
+                                Copy all subjects, sequence placement, and rules from "{activeCurriculum?.version_name}".
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={submitCopyCurriculum} className="space-y-4 py-2">
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">New Version Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. BSIT Curriculum 2027 Revision"
+                                    value={copyCurriculumForm.data.new_version_name}
+                                    onChange={(e) => copyCurriculumForm.setData('new_version_name', e.target.value)}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Effective Year</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="2027"
+                                    value={copyCurriculumForm.data.effective_year}
+                                    onChange={(e) => copyCurriculumForm.setData('effective_year', e.target.value)}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                />
+                            </div>
+
+                            <DialogFooter className="mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCopyCurriculumOpen(false)}
+                                    className="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={copyCurriculumForm.processing}
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                >
+                                    Clone Sequence Matrix
+                                </button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* MODAL: Add Course to Curriculum */}
+                <Dialog open={isAddCourseOpen} onOpenChange={setIsAddCourseOpen}>
+                    <DialogContent className="sm:max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>Add Course to Curriculum</DialogTitle>
+                            <DialogDescription>
+                                Place a canonical catalog subject into Year Level & Semester of {activeCurriculum?.version_name}.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={submitAddCourse} className="space-y-4 py-2">
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Select Canonical Course</label>
+                                <select
+                                    required
+                                    value={addCourseForm.data.course_id}
+                                    onChange={(e) => addCourseForm.setData('course_id', Number(e.target.value))}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                >
+                                    {coursesCatalog.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.code} - {c.title} ({c.units} units)
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Year Level</label>
+                                    <select
+                                        value={addCourseForm.data.year_level}
+                                        onChange={(e) => addCourseForm.setData('year_level', Number(e.target.value))}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    >
+                                        <option value={1}>1st Year</option>
+                                        <option value={2}>2nd Year</option>
+                                        <option value={3}>3rd Year</option>
+                                        <option value={4}>4th Year</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Semester Placement</label>
+                                    <select
+                                        value={addCourseForm.data.semester_placement}
+                                        onChange={(e) => addCourseForm.setData('semester_placement', e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    >
+                                        <option value="1st Semester">1st Semester</option>
+                                        <option value="2nd Semester">2nd Semester</option>
+                                        <option value="Summer">Summer Term</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Requirement Classification</label>
+                                <select
+                                    value={addCourseForm.data.requirement_type}
+                                    onChange={(e) => addCourseForm.setData('requirement_type', e.target.value)}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                >
+                                    <option value="Required">Required Major</option>
+                                    <option value="Major">Professional Core</option>
+                                    <option value="Elective">Professional Elective</option>
+                                    <option value="Specialization">Specialization Track</option>
+                                    <option value="General Education">General Education (GE)</option>
+                                    <option value="Institutional">Institutional Mandated</option>
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Prerequisite Override</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. IT 111, MATH 101"
+                                        value={addCourseForm.data.prerequisite_override}
+                                        onChange={(e) => addCourseForm.setData('prerequisite_override', e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Co-requisite Override</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. IT 112 Lab"
+                                        value={addCourseForm.data.corequisite_override}
+                                        onChange={(e) => addCourseForm.setData('corequisite_override', e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    />
+                                </div>
+                            </div>
+
+                            <DialogFooter className="mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddCourseOpen(false)}
+                                    className="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={addCourseForm.processing}
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                >
+                                    Place in Matrix
+                                </button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* MODAL: Compare Curriculum Versions */}
+                <Dialog open={isCompareCurriculaOpen} onOpenChange={setIsCompareCurriculaOpen}>
+                    <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <ArrowRightLeft className="w-5 h-5 text-blue-500" />
+                                <span>Curriculum Version Comparison</span>
+                            </DialogTitle>
+                            <DialogDescription>
+                                Compare "{activeCurriculum?.version_name}" side-by-side with another revision.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="py-2 space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Compare With:</label>
+                                <select
+                                    value={compareTargetId || ''}
+                                    onChange={(e) => setCompareTargetId(Number(e.target.value))}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                >
+                                    <option value="">Select target curriculum version...</option>
+                                    {selectedProgram?.curricula
+                                        ?.filter((c) => c.id !== activeCurriculum?.id)
+                                        .map((c) => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.version_name} ({c.status})
+                                            </option>
+                                        ))}
+                                </select>
+                            </div>
+
+                            {activeCurriculum && compareTarget ? (
+                                <div className="grid grid-cols-2 gap-4 text-xs">
+                                    {/* Left Version */}
+                                    <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                                        <h4 className="font-extrabold text-sm text-slate-900 dark:text-white pb-2 border-b">
+                                            {activeCurriculum.version_name} (Current)
+                                        </h4>
+                                        <p className="mt-2 text-slate-500">Total Units: <strong>{activeCurriculum.total_units}</strong></p>
+                                        <p className="text-slate-500">Subjects: <strong>{activeCurriculum.curriculum_courses?.length || 0}</strong></p>
+                                        <div className="mt-3 space-y-1.5 max-h-60 overflow-y-auto">
+                                            {activeCurriculum.curriculum_courses?.map((cc) => (
+                                                <div key={cc.id} className="p-1.5 rounded bg-white dark:bg-slate-800 border text-[11px] flex justify-between">
+                                                    <span><strong>{cc.course.code}</strong> - Y{cc.year_level} Sem{cc.semester_placement.includes('1') ? 1 : 2}</span>
+                                                    <span>{cc.course.units}u</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Right Version */}
+                                    <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                                        <h4 className="font-extrabold text-sm text-slate-900 dark:text-white pb-2 border-b">
+                                            {compareTarget.version_name}
+                                        </h4>
+                                        <p className="mt-2 text-slate-500">Total Units: <strong>{compareTarget.total_units}</strong></p>
+                                        <p className="text-slate-500">Subjects: <strong>{compareTarget.curriculum_courses?.length || 0}</strong></p>
+                                        <div className="mt-3 space-y-1.5 max-h-60 overflow-y-auto">
+                                            {compareTarget.curriculum_courses?.map((cc) => (
+                                                <div key={cc.id} className="p-1.5 rounded bg-white dark:bg-slate-800 border text-[11px] flex justify-between">
+                                                    <span><strong>{cc.course.code}</strong> - Y{cc.year_level} Sem{cc.semester_placement.includes('1') ? 1 : 2}</span>
+                                                    <span>{cc.course.units}u</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-xs text-slate-400 italic text-center py-6">
+                                    Please pick a target curriculum from the dropdown to compare subject placements.
+                                </p>
+                            )}
                         </div>
-                    )}
-                </DialogContent>
-            </Dialog>
 
-            {/* Modal: Delete Single Program Confirmation */}
-            <DeleteConfirmDialog
-                open={!!deletingProgram}
-                onOpenChange={(open) => !open && setDeletingProgram(null)}
-                title="Delete Academic Program"
-                description="Are you sure you want to permanently delete this academic program? Any faculty members or schedules associated with this program will be unlinked."
-                itemName={deletingProgram ? `${deletingProgram.code} (${deletingProgram.name})` : undefined}
-                confirmLabel="Delete Program"
-                isDeleting={isDeleting}
-                onConfirm={confirmDelete}
-            />
+                        <DialogFooter>
+                            <button
+                                type="button"
+                                onClick={() => setIsCompareCurriculaOpen(false)}
+                                className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                            >
+                                Close Comparison
+                            </button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
-            {/* Modal: Bulk Delete Programs Confirmation */}
-            <DeleteConfirmDialog
-                open={isBulkDeletingOpen}
-                onOpenChange={setIsBulkDeletingOpen}
-                title="Delete Selected Programs"
-                description={`Are you sure you want to permanently delete ${selectedIds.length} selected academic program(s)? This action cannot be undone.`}
-                confirmLabel={`Delete ${selectedIds.length} Programs`}
-                isDeleting={isDeleting}
-                onConfirm={confirmBulkDelete}
-            />
+                {/* DELETE CONFIRM DIALOG */}
+                <DeleteConfirmDialog
+                    isOpen={!!deletingCoursePivot}
+                    onClose={() => setDeletingCoursePivot(null)}
+                    onConfirm={confirmRemoveCourse}
+                    title="Remove Course from Curriculum"
+                    description={`Are you sure you want to remove "${deletingCoursePivot?.course.code} - ${deletingCoursePivot?.course.title}" from this curriculum matrix?`}
+                />
+            </div>
         </AppLayout>
     );
 }

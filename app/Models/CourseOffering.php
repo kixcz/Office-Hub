@@ -10,6 +10,8 @@ class CourseOffering extends Model
 {
     protected $fillable = [
         'academic_period_id',
+        'program_id',
+        'curriculum_id',
         'course_id',
         'section_id',
         'faculty_id',
@@ -17,11 +19,18 @@ class CourseOffering extends Model
         'course_code',
         'course_title',
         'section_name',
+        'year_level',
+        'expected_enrollment',
+        'offering_type',
         'units',
         'lecture_hours',
         'lab_hours',
         'room_type_required',
         'status',
+        'loading_status',
+        'timetable_status',
+        'publication_status',
+        'special_notes',
         'is_locked',
     ];
 
@@ -31,6 +40,8 @@ class CourseOffering extends Model
             'units' => 'decimal:1',
             'lecture_hours' => 'decimal:1',
             'lab_hours' => 'decimal:1',
+            'year_level' => 'integer',
+            'expected_enrollment' => 'integer',
             'is_locked' => 'boolean',
         ];
     }
@@ -38,6 +49,16 @@ class CourseOffering extends Model
     public function academicPeriod(): BelongsTo
     {
         return $this->belongsTo(AcademicPeriod::class);
+    }
+
+    public function program(): BelongsTo
+    {
+        return $this->belongsTo(Program::class);
+    }
+
+    public function curriculum(): BelongsTo
+    {
+        return $this->belongsTo(Curriculum::class);
     }
 
     public function course(): BelongsTo

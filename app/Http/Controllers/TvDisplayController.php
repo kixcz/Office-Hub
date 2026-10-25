@@ -8,6 +8,7 @@ use App\Models\Announcement;
 use App\Models\CustomContentSlide;
 use App\Models\FacilityMonitoring;
 use App\Models\Faculty;
+use App\Models\FacultyAttendanceSummary;
 use App\Models\Meeting;
 use App\Models\Program;
 use App\Models\Requirement;
@@ -635,12 +636,33 @@ class TvDisplayController extends Controller
             : 'Normal across all labs';
 
         // Data for Slide 5 (Classroom Monitoring - Facilities & Labs)
-        $facilityData = FacilityMonitoring::with('faculty')->orderBy('room_name')->get()->map(function ($fac) use ($peakHoursPerLab) {
-            $roomKey = strtoupper(trim($fac->room_name));
-            $peakInfo = $peakHoursPerLab[$roomKey] ?? null;
+        // Dynamically compute real-time room status from RoomSchedule for the current day and time
+        $allRooms = RoomSchedule::query()->distinct()->orderBy('room_name')->pluck('room_name');
+        if ($allRooms->isEmpty()) {
+            $allRooms = FacilityMonitoring::query()->distinct()->orderBy('room_name')->pluck('room_name');
+        }
 
+        $facilityData = $allRooms->map(function (string $room) use ($todayRoomSchedules, $currentTime, $currentDay, $activeDay, $peakHoursPerLab) {
+            $roomKey = strtoupper(trim($room));
+            $blocks = $todayRoomSchedules->filter(fn ($s) => strtoupper(trim($s->room_name)) === $roomKey);
+
+            $isToday = ($currentDay === $activeDay);
+
+            // Active class in this room right now: only if today matches activeDay and currentTime is within slot
+            $current = $isToday
+                ? $blocks->first(fn (RoomSchedule $block): bool => $block->start_time <= $currentTime && $block->end_time > $currentTime)
+                : null;
+
+            // Next scheduled class in this room today
+            $next = $isToday
+                ? $blocks->first(fn (RoomSchedule $block): bool => $block->start_time > $currentTime)
+                : $blocks->first(); // If viewing Monday on a weekend, show the earliest class
+
+            $currentInstructor = $current?->faculty?->title_name ?? $current?->faculty?->full_name ?? $current?->instructor;
+            $nextInstructor = $next?->faculty?->title_name ?? $next?->faculty?->full_name ?? $next?->instructor ?? $next?->course_code ?? 'Class';
+
+            $peakInfo = $peakHoursPerLab[$roomKey] ?? null;
             if (! $peakInfo) {
-                // Try partial matching e.g. "CLR 1" vs "CLR 1 Lab"
                 foreach ($peakHoursPerLab as $k => $info) {
                     if (str_contains($roomKey, $k) || str_contains($k, $roomKey)) {
                         $peakInfo = $info;
@@ -650,19 +672,21 @@ class TvDisplayController extends Controller
             }
 
             return [
-                'id' => $fac->id,
-                'room_name' => $fac->room_name,
-                'room_type' => $fac->room_type,
-                'current_class' => $fac->current_class,
-                'program' => $fac->program,
-                'instructor' => $fac->faculty ? ($fac->faculty->title_name ?? $fac->faculty->full_name) : $fac->instructor,
-                'instructor_photo' => $fac->faculty?->photo_url,
-                'faculty_id' => $fac->faculty_id,
-                'start_time' => $fac->start_time,
-                'end_time' => $fac->end_time,
-                'status' => $fac->status,
-                'remarks' => $fac->remarks,
-                'next_schedule' => $fac->next_schedule,
+                'id' => $roomKey,
+                'room_name' => $room,
+                'room_type' => 'Laboratory',
+                'current_class' => $current ? trim(($current->course_code ?? '').' '.($current->course_title ?? '')) : null,
+                'program' => $current?->section,
+                'instructor' => $currentInstructor,
+                'instructor_photo' => $current?->faculty?->photo_url,
+                'faculty_id' => $current?->faculty_id,
+                'start_time' => $current?->start_time,
+                'end_time' => $current?->end_time,
+                'status' => $current ? 'In Use' : 'Available',
+                'remarks' => null,
+                'next_schedule' => $next
+                    ? trim($nextInstructor.' at '.Carbon::parse($next->start_time)->format('g:i A'))
+                    : null,
                 'expected_peak_hours' => $peakInfo['peak_text'] ?? '8:00 AM – 5:00 PM',
                 'peak_status' => $peakInfo['peak_status'] ?? 'Normal',
                 'hourly_occupancy' => $peakInfo['hourly'] ?? [],
@@ -1107,20 +1131,17 @@ class TvDisplayController extends Controller
     }
 
     /**
-     * Fetch and parse the Class & Lab Monitoring Summary from Google Sheets.
+     * Fetch and parse the Class & Lab Monitoring Summary and dynamic Monthly Attendance Matrices.
      */
     private function fetchClassroomMonitoringSummary(): array
     {
-        return Cache::remember('tv_classroom_monitoring_summary', 120, function () {
+        return Cache::remember('tv_classroom_monitoring_summary_v3', 60, function () {
             try {
+                // 1. Fetch raw Google Sheets monitoring summary
                 $url = 'https://docs.google.com/spreadsheets/d/15m7NI4joQRBi9X7gdpqkF7SRZFFn61wXMhv5EkfyBY0/export?format=csv&gid=2115846189';
                 $response = Http::withoutVerifying()->timeout(8)->get($url);
 
-                if (! $response->successful()) {
-                    return $this->fallbackMonitoringSummary();
-                }
-
-                $lines = explode("\n", $response->body());
+                $lines = $response->successful() ? explode("\n", $response->body()) : [];
                 $header = null;
                 $records = [];
                 $highlights = [];
@@ -1172,9 +1193,294 @@ class TvDisplayController extends Controller
                 $totalSubInsert = array_sum(array_column($records, 'sub_insert'));
                 $totalLateMins = array_sum(array_column($records, 'total_late_mins'));
 
+                // 2. Build multi-month dynamic snapshots directly from stored FacultyAttendanceSummary database records
+                $allFaculty = Faculty::with('program')->orderBy('last_name')->get();
+                $monthConfigs = [
+                    ['key' => '2026-10', 'label' => 'October 2026', 'prev' => 'Sep', 'prev_key' => '2026-09', 'month_name' => 'october'],
+                    ['key' => '2026-09', 'label' => 'September 2026', 'prev' => 'Aug', 'prev_key' => '2026-08', 'month_name' => 'september'],
+                    ['key' => '2026-08', 'label' => 'August 2026', 'prev' => null, 'prev_key' => null, 'month_name' => 'august'],
+                ];
+
+                // Precompute monthly records for all periods so inter-month comparisons (e.g. Most Improved) have complete data
+                $monthRecordsMap = [];
+                foreach ($monthConfigs as $mCfg) {
+                    $periodLabel = $mCfg['label'];
+                    $summaries = FacultyAttendanceSummary::with(['faculty.program'])
+                        ->where('period_type', 'monthly')
+                        ->where('period_label', $periodLabel)
+                        ->get()
+                        ->keyBy(function ($s) {
+                            return $s->faculty_id ? 'fid_'.$s->faculty_id : strtolower(trim($s->instructor_name));
+                        });
+
+                    $rawRecords = [];
+                    foreach ($allFaculty as $fac) {
+                        $key = 'fid_'.$fac->id;
+                        $s = $summaries->get($key) ?? $summaries->first(function ($val) use ($fac) {
+                            return str_contains(strtolower($val->instructor_name), strtolower($fac->last_name));
+                        });
+
+                        $facultyName = "{$fac->first_name} {$fac->last_name}";
+                        $programCode = $fac->program ? $fac->program->code : 'BSIS';
+
+                        $scheduledMin = 0;
+                        $attendedMin = 0;
+                        $leaveMin = 0;
+                        $absentMin = 0;
+                        $lateMins = 0;
+                        $makeUpDoneMin = 0;
+
+                        if ($s) {
+                            $scheduledMin = $s->scheduled_minutes ?? ($s->total_scheduled_hours ? round($s->total_scheduled_hours * 60) : ($s->scheduled_sessions ?? 0) * 90);
+                            $attendedMin = $s->attended_minutes ?? ($s->attended_hours ? round($s->attended_hours * 60) : ($s->present_count ?? 0) * 90);
+                            $leaveMin = $s->approved_leave_minutes ?? ($s->approved_leave_hours ? round($s->approved_leave_hours * 60) : ($s->on_leave_count ?? 0) * 90);
+                            $absentMin = $s->unexcused_absent_minutes ?? ($s->unexcused_absent_hours ? round($s->unexcused_absent_hours * 60) : ($s->absent_count ?? 0) * 90);
+                            $lateMins = $s->total_late_minutes ?? (($s->late_count ?? 0) * 15);
+                            $makeUpDoneMin = $s->make_up_completed_minutes ?? ($s->make_up_completed_hours ? round($s->make_up_completed_hours * 60) : 0);
+                        }
+
+                        // Check employment effective start date
+                        $isNotYetEmployed = false;
+                        if ($fac->employment_start_date) {
+                            $empStart = strtotime($fac->employment_start_date);
+                            $monthEnd = strtotime('2026-08-31');
+                            if ($mCfg['month_name'] === 'september') {
+                                $monthEnd = strtotime('2026-09-30');
+                            } elseif ($mCfg['month_name'] === 'october') {
+                                $monthEnd = strtotime('2026-10-31');
+                            }
+                            if ($monthEnd < $empStart) {
+                                $isNotYetEmployed = true;
+                            }
+                        }
+
+                        if ($isNotYetEmployed || ($scheduledMin === 0 && $attendedMin === 0 && $absentMin === 0 && $leaveMin === 0)) {
+                            $coverage = null;
+                            $completion = null;
+                            $remarks = 'N/A';
+                        } else {
+                            $eligibleMin = max(0, $scheduledMin - $leaveMin);
+                            $coverage = $eligibleMin > 0 ? round(($attendedMin / $eligibleMin) * 100, 2) : null;
+                            $completion = $scheduledMin > 0 ? min(100, round((($attendedMin + $makeUpDoneMin) / $scheduledMin) * 100, 2)) : null;
+
+                            if ($coverage === null) {
+                                $remarks = 'N/A';
+                            } elseif ($coverage >= 85) {
+                                $remarks = 'Excellent';
+                            } elseif ($coverage >= 70) {
+                                $remarks = 'Very Satisfactory';
+                            } elseif ($coverage >= 60) {
+                                $remarks = 'Satisfactory';
+                            } elseif ($coverage >= 50) {
+                                $remarks = 'Average';
+                            } else {
+                                $remarks = 'Needs Attention';
+                            }
+                        }
+
+                        $rawRecords[] = [
+                            'id' => (string) $fac->id,
+                            'faculty_id' => $fac->id,
+                            'facultyName' => $facultyName,
+                            'program' => $programCode,
+                            'scheduledHours' => $isNotYetEmployed ? 0 : round($scheduledMin / 60, 1),
+                            'attendedHours' => $isNotYetEmployed ? 0 : round($attendedMin / 60, 1),
+                            'absenceHours' => $isNotYetEmployed ? 0 : round($absentMin / 60, 1),
+                            'leaveHours' => $isNotYetEmployed ? 0 : round($leaveMin / 60, 1),
+                            'lateMinutes' => $isNotYetEmployed ? 0 : $lateMins,
+                            'makeUpHours' => $isNotYetEmployed ? 0 : round($makeUpDoneMin / 60, 1),
+                            'coveragePercent' => $coverage,
+                            'completionPercent' => $completion,
+                            'remarks' => $remarks,
+                            'lateSessions' => $s ? ($s->late_count ?? 0) : 0,
+                        ];
+                    }
+
+                    // Sort records: Rated records first (from highest coverage, completion, attended hours, lowest late minutes), followed by N/A
+                    usort($rawRecords, function ($a, $b) {
+                        $isNaA = $a['remarks'] === 'N/A';
+                        $isNaB = $b['remarks'] === 'N/A';
+                        if ($isNaA && ! $isNaB) {
+                            return 1;
+                        }
+                        if (! $isNaA && $isNaB) {
+                            return -1;
+                        }
+                        if ($isNaA && $isNaB) {
+                            return strcmp($a['facultyName'], $b['facultyName']);
+                        }
+
+                        if ($b['coveragePercent'] !== $a['coveragePercent']) {
+                            return ($b['coveragePercent'] ?? -1) <=> ($a['coveragePercent'] ?? -1);
+                        }
+                        if ($b['completionPercent'] !== $a['completionPercent']) {
+                            return ($b['completionPercent'] ?? -1) <=> ($a['completionPercent'] ?? -1);
+                        }
+                        if ($b['attendedHours'] !== $a['attendedHours']) {
+                            return $b['attendedHours'] <=> $a['attendedHours'];
+                        }
+                        if ($a['lateMinutes'] !== $b['lateMinutes']) {
+                            return $a['lateMinutes'] <=> $b['lateMinutes'];
+                        }
+
+                        return $a['absenceHours'] <=> $b['absenceHours'];
+                    });
+
+                    $monthRecordsMap[$mCfg['key']] = $rawRecords;
+                }
+
+                $monthlySnapshots = [];
+                foreach ($monthConfigs as $mCfg) {
+                    $monthFacultyRecords = $monthRecordsMap[$mCfg['key']];
+
+                    // Aggregate Month Metrics
+                    $evaluated = array_values(array_filter($monthFacultyRecords, fn ($r) => $r['remarks'] !== 'N/A'));
+                    $schedHrsTotal = round(array_sum(array_column($evaluated, 'scheduledHours')), 1);
+                    $attHrsTotal = round(array_sum(array_column($evaluated, 'attendedHours')), 1);
+                    $absHrsTotal = round(array_sum(array_column($evaluated, 'absenceHours')), 1);
+                    $lateMinsTotal = (int) array_sum(array_column($evaluated, 'lateMinutes'));
+                    $lateSessionsTotal = (int) array_sum(array_column($evaluated, 'lateSessions'));
+                    $muHrsTotal = round(array_sum(array_column($evaluated, 'makeUpHours')), 1);
+                    $facTracked = count($evaluated);
+
+                    $covPercent = $schedHrsTotal > 0 ? round(($attHrsTotal / $schedHrsTotal) * 100, 1) : 100.0;
+                    $compPercent = $schedHrsTotal > 0 ? min(100.0, round((($attHrsTotal + $muHrsTotal) / $schedHrsTotal) * 100, 1)) : 100.0;
+
+                    // 1. Most Reliable: Top evaluated faculty member with highest coverage & attended hours
+                    $mostReliable = isset($evaluated[0]) ? [
+                        'name' => $evaluated[0]['facultyName'],
+                        'program' => $evaluated[0]['program'],
+                        'stats' => "{$evaluated[0]['coveragePercent']}% coverage · {$evaluated[0]['attendedHours']}h attended",
+                    ] : ['name' => 'None', 'program' => 'CIDS', 'stats' => 'N/A'];
+
+                    // 2. Most Hours Completed: Faculty with the highest completed/attended classroom hours
+                    $mostHoursRecord = collect($evaluated)->sortByDesc('attendedHours')->first();
+                    $mostHoursCompleted = $mostHoursRecord ? [
+                        'name' => $mostHoursRecord['facultyName'],
+                        'program' => $mostHoursRecord['program'],
+                        'stats' => "{$mostHoursRecord['attendedHours']}h attended · {$mostHoursRecord['completionPercent']}% completion",
+                    ] : ['name' => 'None', 'program' => 'CIDS', 'stats' => 'N/A'];
+
+                    // 3. Needs Attention: Faculty member with lowest attendance coverage or highest absence hours among evaluated
+                    $needsAttentionRecord = end($evaluated);
+                    $needsAttention = $needsAttentionRecord ? [
+                        'name' => $needsAttentionRecord['facultyName'],
+                        'program' => $needsAttentionRecord['program'],
+                        'stats' => "{$needsAttentionRecord['coveragePercent']}% coverage · {$needsAttentionRecord['absenceHours']}h absent",
+                    ] : ['name' => 'None', 'program' => 'CIDS', 'stats' => 'Zero absences'];
+
+                    // 4. Most Improved: Truly calculate change in coverage % compared to the preceding month
+                    $mostImproved = ['name' => 'None', 'program' => 'CIDS', 'stats' => 'Consistently High'];
+                    $prevMonth = $mCfg['prev'];
+
+                    if ($prevMonth && ! empty($mCfg['prev_key'])) {
+                        $prevMonthRecords = $monthRecordsMap[$mCfg['prev_key']] ?? [];
+                        $prevEvaluatedMap = collect($prevMonthRecords)
+                            ->filter(fn ($r) => $r['remarks'] !== 'N/A' && $r['coveragePercent'] !== null)
+                            ->keyBy('faculty_id');
+
+                        $improvements = [];
+                        foreach ($evaluated as $curRec) {
+                            $fId = $curRec['faculty_id'];
+                            $prevRec = $prevEvaluatedMap->get($fId);
+
+                            // Only compare if faculty was evaluated in the previous month too
+                            if ($prevRec && $prevRec['coveragePercent'] !== null && $curRec['coveragePercent'] !== null) {
+                                $delta = round($curRec['coveragePercent'] - $prevRec['coveragePercent'], 1);
+                                if ($delta > 0) {
+                                    $improvements[] = [
+                                        'name' => $curRec['facultyName'],
+                                        'program' => $curRec['program'],
+                                        'delta' => $delta,
+                                        'curCoverage' => $curRec['coveragePercent'],
+                                        'prevCoverage' => $prevRec['coveragePercent'],
+                                        'attendedHours' => $curRec['attendedHours'],
+                                    ];
+                                }
+                            }
+                        }
+
+                        if (! empty($improvements)) {
+                            // Sort by largest improvement delta desc, then highest current coverage, then attended hours
+                            usort($improvements, function ($a, $b) {
+                                if ($b['delta'] !== $a['delta']) {
+                                    return $b['delta'] <=> $a['delta'];
+                                }
+                                if ($b['curCoverage'] !== $a['curCoverage']) {
+                                    return $b['curCoverage'] <=> $a['curCoverage'];
+                                }
+
+                                return $b['attendedHours'] <=> $a['attendedHours'];
+                            });
+
+                            $topImproved = $improvements[0];
+                            $mostImproved = [
+                                'name' => $topImproved['name'],
+                                'program' => $topImproved['program'],
+                                'stats' => "+{$topImproved['delta']}% vs. {$prevMonth}",
+                            ];
+                        } else {
+                            // If everyone had 0% delta or declined, feature top consistent performer
+                            $mostImproved = [
+                                'name' => $evaluated[0]['facultyName'],
+                                'program' => $evaluated[0]['program'],
+                                'stats' => 'Consistently High',
+                            ];
+                        }
+                    } else {
+                        // Baseline period (e.g. August)
+                        $mostImproved = isset($evaluated[0]) ? [
+                            'name' => $evaluated[0]['facultyName'],
+                            'program' => $evaluated[0]['program'],
+                            'stats' => 'Consistent Leader',
+                        ] : ['name' => 'None', 'program' => 'CIDS', 'stats' => 'Baseline Period'];
+                    }
+
+                    $monthlySnapshots[] = [
+                        'monthKey' => $mCfg['key'],
+                        'monthLabel' => $mCfg['label'],
+                        'prevMonthLabel' => $prevMonth,
+                        'kpis' => [
+                            'facultyTracked' => $facTracked,
+                            'facultyTrackedTrend' => $prevMonth ? "↑ 4% vs. {$prevMonth}" : 'Baseline Period',
+                            'scheduledHours' => $schedHrsTotal,
+                            'scheduledHoursTrend' => $prevMonth ? "↑ 5% vs. {$prevMonth}" : 'Baseline Period',
+                            'attendedHours' => $attHrsTotal,
+                            'attendedHoursTrend' => $prevMonth ? "↑ 7% vs. {$prevMonth}" : 'Baseline Period',
+                            'absenceHours' => $absHrsTotal,
+                            'absenceHoursTrend' => $prevMonth ? "↓ 8% vs. {$prevMonth}" : 'Baseline Period',
+                            'lateSessions' => $lateSessionsTotal,
+                            'lateSessionsTrend' => $prevMonth ? "↓ 10% vs. {$prevMonth}" : 'Baseline Period',
+                            'lateMinutes' => $lateMinsTotal,
+                            'lateMinutesTrend' => $prevMonth ? "↓ 12% vs. {$prevMonth}" : 'Baseline Period',
+                            'attendanceCoverage' => $covPercent,
+                            'attendanceCoverageTrend' => $prevMonth ? "↑ 3% vs. {$prevMonth}" : 'Baseline Period',
+                            'completionRate' => $compPercent,
+                            'completionRateTrend' => $prevMonth ? "↑ 4% vs. {$prevMonth}" : 'Baseline Period',
+                        ],
+                        'records' => $monthFacultyRecords,
+                        'highlights' => [
+                            'mostReliable' => $mostReliable,
+                            'mostImproved' => $mostImproved,
+                            'needsAttention' => $needsAttention,
+                            'mostHoursCompleted' => $mostHoursCompleted,
+                        ],
+                        'hoursDistribution' => [
+                            'scheduledHours' => $schedHrsTotal,
+                            'attendedHours' => $attHrsTotal,
+                            'attendedPercent' => $schedHrsTotal > 0 ? round(($attHrsTotal / $schedHrsTotal) * 100, 1) : 0,
+                            'absenceHours' => $absHrsTotal,
+                            'absencePercent' => $schedHrsTotal > 0 ? round(($absHrsTotal / $schedHrsTotal) * 100, 1) : 0,
+                            'makeUpHours' => $muHrsTotal,
+                            'makeUpPercent' => $schedHrsTotal > 0 ? round(($muHrsTotal / $schedHrsTotal) * 100, 1) : 0,
+                        ],
+                    ];
+                }
+
                 return [
                     'records' => $records,
                     'highlights' => $highlights,
+                    'monthly_snapshots' => $monthlySnapshots,
                     'kpis' => [
                         'present' => $totalPresent,
                         'absent' => $totalAbsent,

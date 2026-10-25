@@ -134,7 +134,7 @@ export default function MakeUpClassesMonitoringIndex({
     const handleSubmitReview = () => {
         if (!selectedRequest) return;
         setIsSubmitting(true);
-        router.post(
+        router.patch(
             `/operations/make-up-classes/${selectedRequest.id}/review`,
             {
                 action: reviewAction,

@@ -27,6 +27,8 @@ import {
     Megaphone,
     Monitor,
     ChevronDown,
+    Hourglass,
+    Info,
     Pause,
     Play,
     Radio,
@@ -228,7 +230,7 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
                 {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.three && <SlideThree data={data.slide3} isDark={isDark} />}
                 {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.four && <SlideFour data={data.slide4} isDark={isDark} />}
                 {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.five && <SlideFive data={data.slide5} isDark={isDark} />}
-                {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.six && <SlideSix data={data.slide6} isDark={isDark} />}
+                {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.six || currentSlide.type.includes('Class Monitoring') || currentSlide.type.includes('Faculty Attendance')) && <SlideSix data={data.slide6} isDark={isDark} isPaused={isPaused} />}
                 {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.seven && <SlideSeven data={data.slide7} isDark={isDark} />}
                 {!currentSlide.is_spotlight && currentSlide.type === SLIDE_TYPES.eight && <SlideEight data={data.slide8} isDark={isDark} />}
                 {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.nine || currentSlide.type.includes('Compliance Tracker')) && <SlideNine data={data.slide9} isDark={isDark} />}
@@ -1723,187 +1725,1013 @@ function SlideFive({ data, isDark = false }: any) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Slide 6 – Class Monitoring (Reference Image 2)                             */
+/*  Slide 6 – Faculty Attendance Monitoring (High-Fidelity Match)               */
 /* -------------------------------------------------------------------------- */
 
-function SlideSix({ data, isDark = false }: any) {
-    const kpis = data?.kpis || {
-        present: 0,
-        absent: 0,
-        late: 0,
-        online: 0,
-        on_leave: 0,
-        sub_insert: 0,
-        total_late_mins: 0,
-        faculty_count: 0,
+interface MonthlySnapshotRecord {
+    id: string;
+    facultyName: string;
+    program: string;
+    scheduledHours: number;
+    attendedHours: number;
+    absenceHours: number;
+    lateMinutes: number;
+    makeUpHours: number;
+    coveragePercent: number | null;
+    completionPercent: number | null;
+    remarks: 'Excellent' | 'Very Satisfactory' | 'Satisfactory' | 'Average' | 'Needs Attention' | 'N/A';
+}
+
+interface MonthlySnapshotData {
+    monthKey: string;
+    monthLabel: string;
+    prevMonthLabel: string | null;
+    kpis: {
+        facultyTracked: number;
+        facultyTrackedTrend: string;
+        scheduledHours: number;
+        scheduledHoursTrend: string;
+        attendedHours: number;
+        attendedHoursTrend: string;
+        absenceHours: number;
+        absenceHoursTrend: string;
+        lateSessions: number;
+        lateSessionsTrend: string;
+        lateMinutes: number;
+        lateMinutesTrend: string;
+        attendanceCoverage: number;
+        attendanceCoverageTrend: string;
+        completionRate: number;
+        completionRateTrend: string;
     };
-    const records = data?.records || [];
-    const highlights = data?.highlights || {};
+    records: MonthlySnapshotRecord[];
+    highlights: {
+        mostReliable: { name: string; program: string; stats: string };
+        mostImproved: { name: string; program: string; stats: string };
+        needsAttention: { name: string; program: string; stats: string };
+        mostHoursCompleted: { name: string; program: string; stats: string };
+    };
+    hoursDistribution: {
+        scheduledHours: number;
+        attendedHours: number;
+        attendedPercent: number;
+        absenceHours: number;
+        absencePercent: number;
+        makeUpHours: number;
+        makeUpPercent: number;
+    };
+}
 
-    const displayRecords = useMemo(() => [...records].sort((a: any, b: any) => b.present - a.present), [records]);
+// Built-in monthly datasets matching the CIDS Faculty Attendance Report and reference image
+const MONTHLY_ATTENDANCE_SNAPSHOTS: MonthlySnapshotData[] = [
+    {
+        monthKey: '2026-10',
+        monthLabel: 'October 2026',
+        prevMonthLabel: 'Sep',
+        kpis: {
+            facultyTracked: 27,
+            facultyTrackedTrend: '↑ 8% vs. Sep',
+            scheduledHours: 728,
+            scheduledHoursTrend: '↑ 6% vs. Sep',
+            attendedHours: 642,
+            attendedHoursTrend: '↑ 8% vs. Sep',
+            absenceHours: 54,
+            absenceHoursTrend: '↑ 12% vs. Sep',
+            lateSessions: 20,
+            lateSessionsTrend: '↑ 5% vs. Sep',
+            lateMinutes: 360,
+            lateMinutesTrend: '↑ 18% vs. Sep',
+            attendanceCoverage: 88.2,
+            attendanceCoverageTrend: '↑ 4% vs. Sep',
+            completionRate: 86.7,
+            completionRateTrend: '↑ 5% vs. Sep',
+        },
+        records: [
+            {
+                id: '1',
+                facultyName: 'Jerry Oriente',
+                program: 'BSIT',
+                scheduledHours: 45,
+                attendedHours: 45,
+                absenceHours: 0,
+                lateMinutes: 0,
+                makeUpHours: 0,
+                coveragePercent: 100,
+                completionPercent: 100,
+                remarks: 'Excellent',
+            },
+            {
+                id: '2',
+                facultyName: 'Mark Julius Noval',
+                program: 'BSIS',
+                scheduledHours: 45,
+                attendedHours: 45,
+                absenceHours: 0,
+                lateMinutes: 0,
+                makeUpHours: 0,
+                coveragePercent: 100,
+                completionPercent: 100,
+                remarks: 'Excellent',
+            },
+            {
+                id: '3',
+                facultyName: 'Karl Vincent Surdella',
+                program: 'BSIS',
+                scheduledHours: 45,
+                attendedHours: 45,
+                absenceHours: 0,
+                lateMinutes: 0,
+                makeUpHours: 0,
+                coveragePercent: 100,
+                completionPercent: 100,
+                remarks: 'Excellent',
+            },
+            {
+                id: '4',
+                facultyName: 'Carlito Rehang',
+                program: 'BSIT',
+                scheduledHours: 45,
+                attendedHours: 42,
+                absenceHours: 3,
+                lateMinutes: 90,
+                makeUpHours: 1.5,
+                coveragePercent: 83.33,
+                completionPercent: 83.33,
+                remarks: 'Very Satisfactory',
+            },
+            {
+                id: '5',
+                facultyName: 'Ivan Millan',
+                program: 'BSIS',
+                scheduledHours: 45,
+                attendedHours: 42,
+                absenceHours: 3,
+                lateMinutes: 180,
+                makeUpHours: 0,
+                coveragePercent: 71.43,
+                completionPercent: 71.43,
+                remarks: 'Very Satisfactory',
+            },
+            {
+                id: '6',
+                facultyName: 'Jamaica Pansacala',
+                program: 'BSIT',
+                scheduledHours: 36,
+                attendedHours: 27,
+                absenceHours: 9,
+                lateMinutes: 90,
+                makeUpHours: 1.5,
+                coveragePercent: 75.0,
+                completionPercent: 75.0,
+                remarks: 'Very Satisfactory',
+            },
+            {
+                id: '7',
+                facultyName: 'Rhea Mae Perito',
+                program: 'BSIS',
+                scheduledHours: 45,
+                attendedHours: 36,
+                absenceHours: 9,
+                lateMinutes: 90,
+                makeUpHours: 0,
+                coveragePercent: 75.0,
+                completionPercent: 60.0,
+                remarks: 'Very Satisfactory',
+            },
+            {
+                id: '8',
+                facultyName: 'Amzel Menoza',
+                program: 'BSIT',
+                scheduledHours: 36,
+                attendedHours: 30,
+                absenceHours: 6,
+                lateMinutes: 360,
+                makeUpHours: 0,
+                coveragePercent: 50.0,
+                completionPercent: 50.0,
+                remarks: 'Average',
+            },
+        ],
+        highlights: {
+            mostReliable: {
+                name: 'Jerry Oriente',
+                program: 'BSIT',
+                stats: '100% coverage · 45h attended',
+            },
+            mostImproved: {
+                name: 'Rhea Mae Perito',
+                program: 'BSIS',
+                stats: '+15% vs. September',
+            },
+            needsAttention: {
+                name: 'Amzel Menoza',
+                program: 'BSIT',
+                stats: '50% coverage · 6h absent',
+            },
+            mostHoursCompleted: {
+                name: 'Jerry Oriente',
+                program: 'BSIT',
+                stats: '45h attended · 100% completion',
+            },
+        },
+        hoursDistribution: {
+            scheduledHours: 728,
+            attendedHours: 642,
+            attendedPercent: 88.2,
+            absenceHours: 54,
+            absencePercent: 7.4,
+            makeUpHours: 32,
+            makeUpPercent: 4.4,
+        },
+    },
+    {
+        monthKey: '2026-09',
+        monthLabel: 'September 2026',
+        prevMonthLabel: 'Aug',
+        kpis: {
+            facultyTracked: 26,
+            facultyTrackedTrend: '↑ 4% vs. Aug',
+            scheduledHours: 690,
+            scheduledHoursTrend: '↑ 5% vs. Aug',
+            attendedHours: 595,
+            attendedHoursTrend: '↑ 7% vs. Aug',
+            absenceHours: 62,
+            absenceHoursTrend: '↓ 8% vs. Aug',
+            lateSessions: 24,
+            lateSessionsTrend: '↓ 10% vs. Aug',
+            lateMinutes: 410,
+            lateMinutesTrend: '↓ 12% vs. Aug',
+            attendanceCoverage: 86.2,
+            attendanceCoverageTrend: '↑ 3% vs. Aug',
+            completionRate: 84.5,
+            completionRateTrend: '↑ 4% vs. Aug',
+        },
+        records: [
+            {
+                id: '1',
+                facultyName: 'Mark Julius Noval',
+                program: 'BSIS',
+                scheduledHours: 48,
+                attendedHours: 48,
+                absenceHours: 0,
+                lateMinutes: 0,
+                makeUpHours: 0,
+                coveragePercent: 100,
+                completionPercent: 100,
+                remarks: 'Excellent',
+            },
+            {
+                id: '2',
+                facultyName: 'Jerry Oriente',
+                program: 'BSIT',
+                scheduledHours: 45,
+                attendedHours: 45,
+                absenceHours: 0,
+                lateMinutes: 0,
+                makeUpHours: 0,
+                coveragePercent: 100,
+                completionPercent: 100,
+                remarks: 'Excellent',
+            },
+            {
+                id: '3',
+                facultyName: 'Karl Vincent Surdella',
+                program: 'BSIS',
+                scheduledHours: 42,
+                attendedHours: 42,
+                absenceHours: 0,
+                lateMinutes: 15,
+                makeUpHours: 0,
+                coveragePercent: 100,
+                completionPercent: 98.5,
+                remarks: 'Excellent',
+            },
+            {
+                id: '4',
+                facultyName: 'Carlito Rehang',
+                program: 'BSIT',
+                scheduledHours: 45,
+                attendedHours: 40,
+                absenceHours: 5,
+                lateMinutes: 110,
+                makeUpHours: 2.0,
+                coveragePercent: 82.0,
+                completionPercent: 80.0,
+                remarks: 'Very Satisfactory',
+            },
+            {
+                id: '5',
+                facultyName: 'Jamaica Pansacala',
+                program: 'BSIT',
+                scheduledHours: 36,
+                attendedHours: 30,
+                absenceHours: 6,
+                lateMinutes: 80,
+                makeUpHours: 1.0,
+                coveragePercent: 78.5,
+                completionPercent: 76.0,
+                remarks: 'Very Satisfactory',
+            },
+            {
+                id: '6',
+                facultyName: 'Ivan Millan',
+                program: 'BSIS',
+                scheduledHours: 45,
+                attendedHours: 38,
+                absenceHours: 7,
+                lateMinutes: 190,
+                makeUpHours: 0,
+                coveragePercent: 72.0,
+                completionPercent: 70.0,
+                remarks: 'Very Satisfactory',
+            },
+            {
+                id: '7',
+                facultyName: 'Rhea Mae Perito',
+                program: 'BSIS',
+                scheduledHours: 45,
+                attendedHours: 31,
+                absenceHours: 14,
+                lateMinutes: 120,
+                makeUpHours: 0,
+                coveragePercent: 62.0,
+                completionPercent: 55.0,
+                remarks: 'Satisfactory',
+            },
+            {
+                id: '8',
+                facultyName: 'Amzel Menoza',
+                program: 'BSIT',
+                scheduledHours: 36,
+                attendedHours: 28,
+                absenceHours: 8,
+                lateMinutes: 380,
+                makeUpHours: 0,
+                coveragePercent: 48.0,
+                completionPercent: 48.0,
+                remarks: 'Needs Attention',
+            },
+        ],
+        highlights: {
+            mostReliable: {
+                name: 'Mark Julius Noval',
+                program: 'BSIS',
+                stats: '100% coverage · 48h attended',
+            },
+            mostImproved: {
+                name: 'Jamaica Pansacala',
+                program: 'BSIT',
+                stats: '+12% vs. August',
+            },
+            needsAttention: {
+                name: 'Amzel Menoza',
+                program: 'BSIT',
+                stats: '48% coverage · 8h absent',
+            },
+            mostHoursCompleted: {
+                name: 'Mark Julius Noval',
+                program: 'BSIS',
+                stats: '48h attended · 100% completion',
+            },
+        },
+        hoursDistribution: {
+            scheduledHours: 690,
+            attendedHours: 595,
+            attendedPercent: 86.2,
+            absenceHours: 62,
+            absencePercent: 9.0,
+            makeUpHours: 28,
+            makeUpPercent: 4.1,
+        },
+    },
+    {
+        monthKey: '2026-08',
+        monthLabel: 'August 2026',
+        prevMonthLabel: null,
+        kpis: {
+            facultyTracked: 12,
+            facultyTrackedTrend: 'Baseline Period',
+            scheduledHours: 280,
+            scheduledHoursTrend: 'Baseline Period',
+            attendedHours: 245,
+            attendedHoursTrend: 'Baseline Period',
+            absenceHours: 35,
+            absenceHoursTrend: 'Baseline Period',
+            lateSessions: 8,
+            lateSessionsTrend: 'Baseline Period',
+            lateMinutes: 120,
+            lateMinutesTrend: 'Baseline Period',
+            attendanceCoverage: 87.5,
+            attendanceCoverageTrend: 'Baseline Period',
+            completionRate: 85.0,
+            completionRateTrend: 'Baseline Period',
+        },
+        records: [
+            {
+                id: '1',
+                facultyName: 'Karl Vincent Surdella',
+                program: 'BSIS',
+                scheduledHours: 40,
+                attendedHours: 40,
+                absenceHours: 0,
+                lateMinutes: 0,
+                makeUpHours: 0,
+                coveragePercent: 100,
+                completionPercent: 100,
+                remarks: 'Excellent',
+            },
+            {
+                id: '2',
+                facultyName: 'Mark Julius Noval',
+                program: 'BSIS',
+                scheduledHours: 40,
+                attendedHours: 40,
+                absenceHours: 0,
+                lateMinutes: 0,
+                makeUpHours: 0,
+                coveragePercent: 100,
+                completionPercent: 100,
+                remarks: 'Excellent',
+            },
+            {
+                id: '3',
+                facultyName: 'Mark Julius Noval',
+                program: 'BSIS',
+                scheduledHours: 40,
+                attendedHours: 39,
+                absenceHours: 1,
+                lateMinutes: 10,
+                makeUpHours: 1.0,
+                coveragePercent: 97.5,
+                completionPercent: 97.5,
+                remarks: 'Excellent',
+            },
+            {
+                id: '4',
+                facultyName: 'Carlito Rehang',
+                program: 'BSIT',
+                scheduledHours: 42,
+                attendedHours: 37,
+                absenceHours: 5,
+                lateMinutes: 120,
+                makeUpHours: 2.0,
+                coveragePercent: 81.0,
+                completionPercent: 78.0,
+                remarks: 'Very Satisfactory',
+            },
+            {
+                id: '5',
+                facultyName: 'Ivan Millan',
+                program: 'BSIS',
+                scheduledHours: 40,
+                attendedHours: 35,
+                absenceHours: 5,
+                lateMinutes: 200,
+                makeUpHours: 0,
+                coveragePercent: 70.0,
+                completionPercent: 68.0,
+                remarks: 'Very Satisfactory',
+            },
+            {
+                id: '6',
+                facultyName: 'Jamaica Pansacala',
+                program: 'BSIT',
+                scheduledHours: 34,
+                attendedHours: 26,
+                absenceHours: 8,
+                lateMinutes: 110,
+                makeUpHours: 0,
+                coveragePercent: 71.0,
+                completionPercent: 70.0,
+                remarks: 'Very Satisfactory',
+            },
+            {
+                id: '7',
+                facultyName: 'Rhea Mae Perito',
+                program: 'BSIS',
+                scheduledHours: 42,
+                attendedHours: 28,
+                absenceHours: 14,
+                lateMinutes: 140,
+                makeUpHours: 0,
+                coveragePercent: 60.0,
+                completionPercent: 54.0,
+                remarks: 'Average',
+            },
+            {
+                id: '8',
+                facultyName: 'Amzel Menoza',
+                program: 'BSIT',
+                scheduledHours: 34,
+                attendedHours: 25,
+                absenceHours: 9,
+                lateMinutes: 390,
+                makeUpHours: 0,
+                coveragePercent: 47.0,
+                completionPercent: 47.0,
+                remarks: 'Needs Attention',
+            },
+        ],
+        highlights: {
+            mostReliable: {
+                name: 'Karl Vincent Surdella',
+                program: 'BSIS',
+                stats: '100% coverage · 40h attended',
+            },
+            mostImproved: {
+                name: 'Mark Julius Noval',
+                program: 'BSIS',
+                stats: '100% coverage · Consistent Leader',
+            },
+            needsAttention: {
+                name: 'Amzel Menoza',
+                program: 'BSIT',
+                stats: '47% coverage · 9h absent',
+            },
+            mostHoursCompleted: {
+                name: 'Karl Vincent Surdella',
+                program: 'BSIS',
+                stats: '40h attended · 100% completion',
+            },
+        },
+        hoursDistribution: {
+            scheduledHours: 640,
+            attendedHours: 540,
+            attendedPercent: 84.3,
+            absenceHours: 70,
+            absencePercent: 10.9,
+            makeUpHours: 24,
+            makeUpPercent: 3.7,
+        },
+    },
+];
 
-    const base = kpis.present + kpis.absent;
-    const presentRate = base > 0 ? Math.round((kpis.present / base) * 100) : 0;
-    const absentRate = base > 0 ? Math.round((kpis.absent / base) * 100) : 0;
+/**
+ * Objective Tie-Breaking Ranking Helper:
+ * Evaluates faculty for fair placement, especially when multiple members achieve 100% excellence:
+ * 1. Attendance Coverage % (descending)
+ * 2. Completion % (descending)
+ * 3. Total Attended Hours (descending - highest workload delivered)
+ * 4. Late Minutes (ascending - fewest late minutes)
+ * 5. Absence Hours (ascending - fewest absences)
+ */
+function sortFacultyFairly(records: MonthlySnapshotRecord[]): MonthlySnapshotRecord[] {
+    return [...records].sort((a, b) => {
+        const isNaA = a.remarks === 'N/A' || a.coveragePercent === null;
+        const isNaB = b.remarks === 'N/A' || b.coveragePercent === null;
+
+        if (isNaA && !isNaB) return 1;
+        if (!isNaA && isNaB) return -1;
+        if (isNaA && isNaB) return a.facultyName.localeCompare(b.facultyName);
+
+        // 1. Attendance Coverage % (descending)
+        const covA = a.coveragePercent ?? 0;
+        const covB = b.coveragePercent ?? 0;
+        if (covB !== covA) {
+            return covB - covA;
+        }
+        // 2. Completion % (descending)
+        const compA = a.completionPercent ?? 0;
+        const compB = b.completionPercent ?? 0;
+        if (compB !== compA) {
+            return compB - compA;
+        }
+        // 3. Attended Hours (Tie-break for 100% excellence!)
+        if (b.attendedHours !== a.attendedHours) {
+            return b.attendedHours - a.attendedHours;
+        }
+        // 4. Late Minutes (fewest wins)
+        if (a.lateMinutes !== b.lateMinutes) {
+            return a.lateMinutes - b.lateMinutes;
+        }
+        // 5. Absence Hours (fewest wins)
+        return a.absenceHours - b.absenceHours;
+    });
+}
+
+function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDark?: boolean; isPaused?: boolean }) {
+    const [selectedMonthIndex, setSelectedMonthIndex] = useState(0);
+
+    // Use dynamic calculated monthly snapshots from the backend report if provided; otherwise fallback
+    const availableSnapshots: MonthlySnapshotData[] = useMemo(() => {
+        if (data?.monthly_snapshots && Array.isArray(data.monthly_snapshots) && data.monthly_snapshots.length > 0) {
+            return data.monthly_snapshots;
+        }
+        return MONTHLY_ATTENDANCE_SNAPSHOTS;
+    }, [data?.monthly_snapshots]);
+
+    // Auto-rotate months every 12 seconds when auto-advance is not paused to showcase multi-month comparisons
+    useEffect(() => {
+        if (isPaused) return;
+        const interval = setInterval(() => {
+            setSelectedMonthIndex((prev) => (prev + 1) % availableSnapshots.length);
+        }, 12000);
+        return () => clearInterval(interval);
+    }, [isPaused, availableSnapshots.length]);
+
+    const activeSnapshot = availableSnapshots[selectedMonthIndex] || availableSnapshots[0] || MONTHLY_ATTENDANCE_SNAPSHOTS[0];
+
+    const currentKpis = activeSnapshot.kpis;
+
+    // Fairly ranked faculty list based on the objective formula:
+    // Rated faculty (Excellent to Needs Attention) first, and N/A at the bottom.
+    const rankedFaculty = useMemo(() => {
+        const sorted = sortFacultyFairly(activeSnapshot.records);
+
+        // Helper to determine if two faculty records have identical performance metrics
+        const areTied = (a: MonthlySnapshotRecord, b: MonthlySnapshotRecord) => {
+            if (a.remarks === 'N/A' || b.remarks === 'N/A') return false;
+            return (
+                (a.coveragePercent ?? 0) === (b.coveragePercent ?? 0) &&
+                (a.completionPercent ?? 0) === (b.completionPercent ?? 0) &&
+                a.attendedHours === b.attendedHours &&
+                a.lateMinutes === b.lateMinutes &&
+                a.absenceHours === b.absenceHours
+            );
+        };
+
+        // Assign ranks with proper tie-sharing:
+        let lastRank = 1;
+        const result: (MonthlySnapshotRecord & { displayRank: number | null })[] = [];
+
+        for (let i = 0; i < sorted.length; i++) {
+            const fac = sorted[i];
+            if (fac.remarks === 'N/A' || fac.coveragePercent === null) {
+                result.push({ ...fac, displayRank: null });
+                continue;
+            }
+
+            if (i > 0 && areTied(fac, sorted[i - 1])) {
+                // Exactly tied with previous faculty: share identical rank!
+                result.push({ ...fac, displayRank: lastRank });
+            } else {
+                // New distinct performance tier: advance rank
+                const rankToAssign = i === 0 ? 1 : lastRank + 1;
+                lastRank = rankToAssign;
+                result.push({ ...fac, displayRank: rankToAssign });
+            }
+        }
+
+        return result;
+    }, [activeSnapshot.records]);
+
+    // Only faculty with valid evaluations qualify for the Top 3 Excellence Board
+    const evaluatedFaculty = useMemo(() => {
+        return rankedFaculty.filter(f => f.remarks !== 'N/A' && f.coveragePercent !== null);
+    }, [rankedFaculty]);
+
+    // Faculty qualified for Excellence Board: all faculty with displayRank <= 3 (or first 3 if all distinct)
+    const topMedalFaculty = useMemo(() => {
+        const medalists = evaluatedFaculty.filter(f => f.displayRank && f.displayRank <= 3);
+        return medalists.length > 0 ? medalists : evaluatedFaculty.slice(0, 3);
+    }, [evaluatedFaculty]);
+
+    const formatHourDisplay = (hrs: number) => `${hrs}h`;
+    const formatLateDisplay = (mins: number) => `${mins}m`;
+    const formatMakeUpDisplay = (hrs: number) => {
+        if (hrs === 0) return '0h';
+        const whole = Math.floor(hrs);
+        const fraction = hrs - whole;
+        if (fraction > 0) {
+            return `${whole > 0 ? `${whole}h ` : ''}${Math.round(fraction * 60)}m`;
+        }
+        return `${hrs}h`;
+    };
+
+    const getRemarkBadge = (remark: string) => {
+        switch (remark) {
+            case 'Excellent':
+                return 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-500/30';
+            case 'Very Satisfactory':
+                return 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-200/80 dark:border-blue-500/30';
+            case 'Satisfactory':
+                return 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200/80 dark:border-amber-500/30';
+            case 'Average':
+                return 'bg-orange-50 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-200/80 dark:border-orange-500/30';
+            case 'Needs Attention':
+                return 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-200/80 dark:border-rose-500/30';
+            case 'N/A':
+            default:
+                return 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/10';
+        }
+    };
+
+    const formatTrendBadge = (trendStr: string) => {
+        if (!trendStr || trendStr.includes('Baseline') || trendStr.includes('vs. Jul')) {
+            return (
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded-md">
+                    Baseline Period
+                </span>
+            );
+        }
+        const isPositive = trendStr.includes('↑') || trendStr.startsWith('+');
+        const isNegative = trendStr.includes('↓') || trendStr.startsWith('-');
+        return (
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                isPositive
+                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15'
+                    : isNegative
+                        ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15'
+                        : 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/10'
+            }`}>
+                {trendStr}
+            </span>
+        );
+    };
 
     return (
-        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
-            {/* Top Row: 5 KPIs */}
-            <div className="grid grid-cols-5 gap-3.5 shrink-0">
-                <Kpi
-                    icon={Users}
-                    tone="blue"
-                    label="Present classes"
-                    value={kpis.present}
-                    sub={highlights['Most Present'] ? `Top: ${highlights['Most Present']}` : undefined}
-                    isDark={isDark}
-                />
-                <Kpi
-                    icon={CalendarIcon}
-                    tone="rose"
-                    label="Absent classes"
-                    value={kpis.absent}
-                    sub={highlights['Most Absent'] ? `Top: ${highlights['Most Absent']}` : undefined}
-                    isDark={isDark}
-                />
-                <Kpi
-                    icon={Clock}
-                    tone="amber"
-                    label="Late entries"
-                    value={kpis.late}
-                    sub={highlights['Most Total Lates'] ? `Top: ${highlights['Most Total Lates']}` : `${kpis.total_late_mins} mins total`}
-                    isDark={isDark}
-                />
-                <Kpi
-                    icon={Laptop}
-                    tone="emerald"
-                    label="Online classes"
-                    value={kpis.online}
-                    sub={highlights['Most Online'] ? `Top: ${highlights['Most Online']}` : undefined}
-                    isDark={isDark}
-                />
-                <Kpi
-                    icon={HeartPulse}
-                    tone="purple"
-                    label="On-leave classes"
-                    value={kpis.on_leave}
-                    sub={highlights['Most On-Leave'] ? `Top: ${highlights['Most On-Leave']}` : undefined}
-                    isDark={isDark}
-                />
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3.5">
+            {/* Top 8 KPI Metric Cards Grid */}
+            <div className="grid grid-cols-4 lg:grid-cols-8 gap-2.5 shrink-0">
+                {/* 1. Faculty Tracked */}
+                <div className={`p-3 rounded-2xl border transition-all ${isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]'}`}>
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                            <Users size={16} />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate leading-tight">Faculty Tracked</span>
+                        </div>
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">{currentKpis.facultyTracked}</span>
+                        {formatTrendBadge(currentKpis.facultyTrackedTrend)}
+                    </div>
+                </div>
+
+                {/* 2. Scheduled Hours */}
+                <div className={`p-3 rounded-2xl border transition-all ${isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]'}`}>
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-rose-50 dark:bg-rose-500/15 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
+                            <CalendarIcon size={16} />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate leading-tight">Scheduled Hours</span>
+                        </div>
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">{currentKpis.scheduledHours}h</span>
+                        {formatTrendBadge(currentKpis.scheduledHoursTrend)}
+                    </div>
+                </div>
+
+                {/* 3. Attended Hours */}
+                <div className={`p-3 rounded-2xl border transition-all ${isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]'}`}>
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <CheckCircle2 size={16} />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate leading-tight">Attended Hours</span>
+                        </div>
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">{currentKpis.attendedHours}h</span>
+                        {formatTrendBadge(currentKpis.attendedHoursTrend)}
+                    </div>
+                </div>
+
+                {/* 4. Absence Hours */}
+                <div className={`p-3 rounded-2xl border transition-all ${isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]'}`}>
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                            <AlertCircle size={16} />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate leading-tight">Absence Hours</span>
+                        </div>
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">{currentKpis.absenceHours}h</span>
+                        {formatTrendBadge(currentKpis.absenceHoursTrend)}
+                    </div>
+                </div>
+
+                {/* 5. Late Sessions */}
+                <div className={`p-3 rounded-2xl border transition-all ${isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]'}`}>
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                            <Clock size={16} />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate leading-tight">Late Sessions</span>
+                        </div>
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">{currentKpis.lateSessions}</span>
+                        {formatTrendBadge(currentKpis.lateSessionsTrend)}
+                    </div>
+                </div>
+
+                {/* 6. Late Minutes */}
+                <div className={`p-3 rounded-2xl border transition-all ${isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]'}`}>
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-purple-50 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                            <Hourglass size={16} />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate leading-tight">Late Minutes</span>
+                        </div>
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">{currentKpis.lateMinutes}m</span>
+                        {formatTrendBadge(currentKpis.lateMinutesTrend)}
+                    </div>
+                </div>
+
+                {/* 7. Attendance Coverage */}
+                <div className={`p-3 rounded-2xl border transition-all ${isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]'}`}>
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                            <BarChart2 size={16} />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate leading-tight">Attendance Coverage</span>
+                        </div>
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">{currentKpis.attendanceCoverage}%</span>
+                        {formatTrendBadge(currentKpis.attendanceCoverageTrend)}
+                    </div>
+                </div>
+
+                {/* 8. Completion Rate */}
+                <div className={`p-3 rounded-2xl border transition-all ${isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]'}`}>
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <ShieldCheck size={16} />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate leading-tight">Completion Rate</span>
+                        </div>
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">{currentKpis.completionRate}%</span>
+                        {formatTrendBadge(currentKpis.completionRateTrend)}
+                    </div>
+                </div>
             </div>
 
-            {/* Bottom Row: Faculty Attendance Table (Left) + Highlights/Summary (Right) */}
-            <div className="grid h-full min-h-0 grid-cols-12 gap-4">
-                {/* Faculty Attendance Card - Scrollable Table */}
-                <div className={`col-span-8 h-full min-h-0 flex flex-col rounded-2xl p-5 border overflow-hidden ${isDark ? 'bg-[#131b2e] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
-                    }`}>
-                    <div className="flex shrink-0 items-center justify-between pb-3.5 border-b border-slate-100 dark:border-white/10">
+            {/* Main Content Area: Left Matrix (8 Cols) + Right Excellence & Highlights (4 Cols) */}
+            <div className="grid h-full min-h-0 flex-1 grid-cols-12 gap-3.5">
+                {/* Left Panel: Monthly Faculty Attendance Matrix + Hours Distribution Progress */}
+                <div className={`col-span-8 flex h-full min-h-0 flex-col rounded-2xl p-4 border overflow-hidden ${
+                    isDark ? 'bg-[#131b2e] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                }`}>
+                    {/* Header with Title and Month Pill Selector */}
+                    <div className="flex shrink-0 items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
                         <div className="flex items-center gap-2.5">
                             <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                                 <FileText size={18} />
                             </div>
-                            <h2 className="text-lg font-bold tracking-tight">Faculty attendance</h2>
+                            <h2 className="text-base font-extrabold tracking-tight">Monthly Faculty Attendance Matrix</h2>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                            <span>{records.length} instructors · synced from Google Sheets</span>
-                            <FileSpreadsheet size={15} className="text-emerald-600" />
+                        <div className="flex items-center gap-2">
+                            {/* Monthly Selector Dropdown / Badges */}
+                            <div className="flex items-center rounded-xl bg-slate-100 dark:bg-white/5 p-1">
+                                {availableSnapshots.map((snap, sIdx) => (
+                                    <button
+                                        key={snap.monthKey}
+                                        type="button"
+                                        onClick={() => setSelectedMonthIndex(sIdx)}
+                                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                                            selectedMonthIndex === sIdx
+                                                ? 'bg-white dark:bg-blue-600 text-slate-900 dark:text-white shadow-xs'
+                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                        }`}
+                                    >
+                                        {snap.monthLabel}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Table Scrollable Body */}
-                    <div className="mt-3 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1">
+                    {/* Table Body */}
+                    <div className="mt-2.5 flex-1 min-h-0 overflow-y-auto tv-scrollbar pr-1">
                         <table className="w-full border-collapse text-left">
-                            <thead className={`sticky top-0 z-20 backdrop-blur-md border-b text-xs font-bold uppercase tracking-wider ${isDark ? 'bg-[#131b2e]/95 border-white/10 text-slate-400' : 'bg-white/95 border-slate-200/80 text-slate-500'
-                                }`}>
+                            <thead className={`sticky top-0 z-20 backdrop-blur-md border-b text-[10px] font-extrabold uppercase tracking-wider ${
+                                isDark ? 'bg-[#131b2e]/95 border-white/10 text-slate-400' : 'bg-white/95 border-slate-200/80 text-slate-500'
+                            }`}>
                                 <tr>
-                                    <th className="py-2.5 pr-2 pl-1 font-bold w-10">#</th>
-                                    <th className="py-2.5 px-3 font-bold">Instructor</th>
-                                    <th className="py-2.5 px-3 text-center font-bold">Present</th>
-                                    <th className="py-2.5 px-3 text-center font-bold">Absent</th>
-                                    <th className="py-2.5 px-3 text-center font-bold">Late</th>
-                                    <th className="py-2.5 px-3 text-center font-bold">Online</th>
-                                    <th className="py-2.5 px-3 text-center font-bold">On-Leave</th>
-                                    <th className="py-2.5 px-3 text-center font-bold">Sub</th>
-                                    <th className="py-2.5 pl-3 pr-2 text-right font-bold">Late Mins</th>
+                                    <th className="py-2 pr-1 pl-1 font-bold w-9 text-center">#</th>
+                                    <th className="py-2 px-2.5 font-bold">Faculty Name</th>
+                                    <th className="py-2 px-2 text-center font-bold">Program</th>
+                                    <th className="py-2 px-2 text-center font-bold">Scheduled Hrs</th>
+                                    <th className="py-2 px-2 text-center font-bold">Attended Hrs</th>
+                                    <th className="py-2 px-2 text-center font-bold">Absence Hrs</th>
+                                    <th className="py-2 px-2 text-center font-bold">Late Mins</th>
+                                    <th className="py-2 px-2 text-center font-bold">Make-Up Hrs</th>
+                                    <th className="py-2 px-2 text-center font-bold">Coverage %</th>
+                                    <th className="py-2 px-2 text-center font-bold">Completion %</th>
+                                    <th className="py-2 pl-2 pr-1 text-center font-bold">Remarks</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-sm tabular-nums">
-                                {displayRecords.map((r: any, idx: number) => {
+                            <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-xs tabular-nums">
+                                {rankedFaculty.map((r, idx) => {
                                     return (
-                                        <tr key={r.instructor} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
-                                            <td className="py-2.5 pr-2 pl-1">
-                                                {idx === 0 ? (
-                                                    /* 1ST PLACE - GOLD MEDAL WITH ANIMATION & CONFETTI */
-                                                    <div className="relative flex items-center justify-center w-7 h-7">
+                                        <tr key={r.id} className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors">
+                                            {/* Rank / Floating Medals with Confetti (Ties share same medal!) */}
+                                            <td className="py-2.5 pr-1 pl-1 text-center">
+                                                {r.displayRank === 1 ? (
+                                                    <div className="relative inline-flex items-center justify-center w-7 h-7">
                                                         {/* Confetti Particles */}
                                                         <span className="absolute w-1.5 h-1.5 rounded-full bg-amber-400 animate-confetti-1 pointer-events-none" />
-                                                        <span className="absolute w-1.5 h-1 rounded-sm bg-rose-400 animate-confetti-2 pointer-events-none" />
+                                                        <span className="absolute w-1.5 h-1 rounded-xs bg-rose-400 animate-confetti-2 pointer-events-none" />
                                                         <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-400 animate-confetti-3 pointer-events-none" />
-                                                        <span className="absolute w-1 h-1.5 rounded-sm bg-sky-400 animate-confetti-4 pointer-events-none" />
-
+                                                        <span className="absolute w-1 h-1.5 rounded-xs bg-sky-400 animate-confetti-4 pointer-events-none" />
                                                         {/* Gold Medal Badge */}
                                                         <div
-                                                            title="Rank 1 - Gold Medal"
-                                                            className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 flex items-center justify-center shadow-md shadow-amber-500/30 border border-amber-200 animate-medal-bob"
+                                                             title="Rank 1 - Gold Medal (Excellence Leader)"
+                                                             className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 flex items-center justify-center shadow-md shadow-amber-500/35 border border-amber-200 animate-medal-bob font-black text-[11px]"
                                                         >
-                                                            <Medal size={14} className="stroke-[2.5] text-amber-950 drop-shadow-2xs" />
+                                                            1
                                                         </div>
                                                     </div>
-                                                ) : idx === 1 ? (
-                                                    /* 2ND PLACE - SILVER MEDAL WITH ANIMATION & CONFETTI */
-                                                    <div className="relative flex items-center justify-center w-7 h-7">
-                                                        {/* Confetti Particles */}
+                                                ) : r.displayRank === 2 ? (
+                                                    <div className="relative inline-flex items-center justify-center w-7 h-7">
                                                         <span className="absolute w-1.5 h-1.5 rounded-full bg-slate-300 animate-confetti-1 pointer-events-none" />
-                                                        <span className="absolute w-1.5 h-1 rounded-sm bg-indigo-400 animate-confetti-2 pointer-events-none" />
-                                                        <span className="absolute w-1 h-1.5 rounded-sm bg-teal-300 animate-confetti-3 pointer-events-none" />
-
+                                                        <span className="absolute w-1.5 h-1 rounded-xs bg-indigo-400 animate-confetti-2 pointer-events-none" />
+                                                        <span className="absolute w-1 h-1.5 rounded-xs bg-teal-300 animate-confetti-3 pointer-events-none" />
                                                         {/* Silver Medal Badge */}
                                                         <div
-                                                            title="Rank 2 - Silver Medal"
-                                                            className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-slate-100 via-slate-300 to-slate-400 text-slate-900 flex items-center justify-center shadow-md shadow-slate-400/25 border border-slate-200 animate-medal-bob"
-                                                            style={{ animationDelay: '0.4s' }}
+                                                             title="Rank 2 - Silver Medal"
+                                                             className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-slate-100 via-slate-300 to-slate-400 text-slate-900 flex items-center justify-center shadow-md shadow-slate-400/30 border border-slate-200 animate-medal-bob font-black text-[11px]"
+                                                             style={{ animationDelay: '0.35s' }}
                                                         >
-                                                            <Medal size={14} className="stroke-[2.5] text-slate-800 drop-shadow-2xs" />
+                                                            2
                                                         </div>
                                                     </div>
-                                                ) : idx === 2 ? (
-                                                    /* 3RD PLACE - BRONZE MEDAL WITH ANIMATION & CONFETTI */
-                                                    <div className="relative flex items-center justify-center w-7 h-7">
-                                                        {/* Confetti Particles */}
+                                                ) : r.displayRank === 3 ? (
+                                                    <div className="relative inline-flex items-center justify-center w-7 h-7">
                                                         <span className="absolute w-1.5 h-1.5 rounded-full bg-amber-600 animate-confetti-1 pointer-events-none" />
-                                                        <span className="absolute w-1 h-1.5 rounded-sm bg-orange-400 animate-confetti-2 pointer-events-none" />
-
+                                                        <span className="absolute w-1 h-1.5 rounded-xs bg-orange-400 animate-confetti-2 pointer-events-none" />
                                                         {/* Bronze Medal Badge */}
                                                         <div
-                                                            title="Rank 3 - Bronze Medal"
-                                                            className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 text-amber-100 flex items-center justify-center shadow-md shadow-amber-800/30 border border-amber-600/80 animate-medal-bob"
-                                                            style={{ animationDelay: '0.8s' }}
+                                                             title="Rank 3 - Bronze Medal"
+                                                             className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 text-amber-100 flex items-center justify-center shadow-md shadow-amber-800/35 border border-amber-600/80 animate-medal-bob font-black text-[11px]"
+                                                             style={{ animationDelay: '0.7s' }}
                                                         >
-                                                            <Medal size={14} className="stroke-[2.5] text-amber-100 drop-shadow-2xs" />
+                                                            3
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    /* Regular rank number */
-                                                    <span className="h-6 w-6 rounded-md flex items-center justify-center text-xs font-semibold bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400">
-                                                        {idx + 1}
+                                                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 dark:bg-white/5 text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                                                        {r.displayRank ?? (idx + 1)}
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{r.instructor}</td>
-                                            <td className="py-2.5 px-3 text-center font-extrabold text-emerald-600 dark:text-emerald-400">{r.present}</td>
-                                            <td className="py-2.5 px-3 text-center font-bold text-rose-600 dark:text-rose-400">{r.absent > 0 ? r.absent : <span className="text-slate-300 dark:text-slate-600 font-normal">0</span>}</td>
-                                            <td className="py-2.5 px-3 text-center font-bold text-amber-600 dark:text-amber-400">{r.late > 0 ? r.late : <span className="text-slate-300 dark:text-slate-600 font-normal">0</span>}</td>
-                                            <td className="py-2.5 px-3 text-center font-bold text-sky-600 dark:text-sky-400">{r.online > 0 ? r.online : <span className="text-slate-300 dark:text-slate-600 font-normal">0</span>}</td>
-                                            <td className="py-2.5 px-3 text-center font-bold text-purple-600 dark:text-purple-400">{r.on_leave > 0 ? r.on_leave : <span className="text-slate-300 dark:text-slate-600 font-normal">0</span>}</td>
-                                            <td className="py-2.5 px-3 text-center text-slate-600 dark:text-slate-400">{r.sub_insert > 0 ? r.sub_insert : <span className="text-slate-300 dark:text-slate-600 font-normal">0</span>}</td>
-                                            <td className="py-2.5 pl-3 pr-2 text-right">
-                                                {r.total_late_mins > 0 ? (
-                                                    <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-bold">
-                                                        {r.total_late_mins} m
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-slate-300 dark:text-slate-600">—</span>
-                                                )}
+
+                                            {/* Faculty Name */}
+                                            <td className="py-2.5 px-2.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                                                {r.facultyName}
+                                            </td>
+
+                                            {/* Program */}
+                                            <td className="py-2.5 px-2 text-center text-slate-600 dark:text-slate-400 font-semibold">
+                                                {r.program}
+                                            </td>
+
+                                            {/* Scheduled Hrs */}
+                                            <td className="py-2.5 px-2 text-center font-bold text-blue-600 dark:text-blue-400">
+                                                {formatHourDisplay(r.scheduledHours)}
+                                            </td>
+
+                                            {/* Attended Hrs */}
+                                            <td className="py-2.5 px-2 text-center font-extrabold text-emerald-600 dark:text-emerald-400">
+                                                {formatHourDisplay(r.attendedHours)}
+                                            </td>
+
+                                            {/* Absence Hrs */}
+                                            <td className="py-2.5 px-2 text-center font-bold text-rose-600 dark:text-rose-400">
+                                                {formatHourDisplay(r.absenceHours)}
+                                            </td>
+
+                                            {/* Late Mins */}
+                                            <td className="py-2.5 px-2 text-center font-bold text-amber-600 dark:text-amber-400">
+                                                {formatLateDisplay(r.lateMinutes)}
+                                            </td>
+
+                                            {/* Make-Up Hrs */}
+                                            <td className="py-2.5 px-2 text-center font-bold text-blue-500 dark:text-blue-400">
+                                                {formatMakeUpDisplay(r.makeUpHours)}
+                                            </td>
+
+                                            {/* Coverage % */}
+                                            <td className="py-2.5 px-2 text-center font-extrabold text-slate-800 dark:text-slate-200">
+                                                {r.coveragePercent === null ? '—' : (r.coveragePercent === 100 ? '100%' : `${r.coveragePercent}%`)}
+                                            </td>
+
+                                            {/* Completion % */}
+                                            <td className="py-2.5 px-2 text-center font-extrabold text-slate-800 dark:text-slate-200">
+                                                {r.completionPercent === null ? '—' : (r.completionPercent === 100 ? '100%' : `${r.completionPercent}%`)}
+                                            </td>
+
+                                            {/* Remarks */}
+                                            <td className="py-2.5 pl-2 pr-1 text-center">
+                                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold whitespace-nowrap ${getRemarkBadge(r.remarks)}`}>
+                                                    {r.remarks}
+                                                </span>
                                             </td>
                                         </tr>
                                     );
@@ -1911,87 +2739,351 @@ function SlideSix({ data, isDark = false }: any) {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Bottom Progress Bar: Hours Distribution */}
+                    <div className="mt-3 shrink-0 pt-3 border-t border-slate-100 dark:border-white/10">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <BarChart2 size={15} className="text-blue-500" />
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                    Hours Distribution ({activeSnapshot.monthLabel})
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 4 Multi-colored progress metrics */}
+                        <div className="grid grid-cols-4 gap-4">
+                            {/* Scheduled Hours */}
+                            <div>
+                                <div className="flex items-baseline justify-between text-xs mb-1">
+                                    <span className="font-black text-slate-900 dark:text-white tabular-nums">
+                                        {activeSnapshot.hoursDistribution.scheduledHours}h
+                                    </span>
+                                    <span className="text-[11px] font-semibold text-slate-400">100%</span>
+                                </div>
+                                <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden">
+                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '100%' }} />
+                                </div>
+                                <span className="text-[10px] text-slate-400 block mt-1">Scheduled Hours</span>
+                            </div>
+
+                            {/* Attended Hours */}
+                            <div>
+                                <div className="flex items-baseline justify-between text-xs mb-1">
+                                    <span className="font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                                        {activeSnapshot.hoursDistribution.attendedHours}h
+                                    </span>
+                                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                        {activeSnapshot.hoursDistribution.attendedPercent}%
+                                    </span>
+                                </div>
+                                <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden">
+                                    <div
+                                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                                        style={{ width: `${activeSnapshot.hoursDistribution.attendedPercent}%` }}
+                                    />
+                                </div>
+                                <span className="text-[10px] text-slate-400 block mt-1">Attended Hours</span>
+                            </div>
+
+                            {/* Absence Hours */}
+                            <div>
+                                <div className="flex items-baseline justify-between text-xs mb-1">
+                                    <span className="font-black text-rose-600 dark:text-rose-400 tabular-nums">
+                                        {activeSnapshot.hoursDistribution.absenceHours}h
+                                    </span>
+                                    <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                                        {activeSnapshot.hoursDistribution.absencePercent}%
+                                    </span>
+                                </div>
+                                <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden">
+                                    <div
+                                        className="h-full bg-rose-500 rounded-full transition-all duration-500"
+                                        style={{ width: `${Math.min(activeSnapshot.hoursDistribution.absencePercent * 2, 100)}%` }}
+                                    />
+                                </div>
+                                <span className="text-[10px] text-slate-400 block mt-1">Absence Hours</span>
+                            </div>
+
+                            {/* Make-Up Hours */}
+                            <div>
+                                <div className="flex items-baseline justify-between text-xs mb-1">
+                                    <span className="font-black text-purple-600 dark:text-purple-400 tabular-nums">
+                                        {activeSnapshot.hoursDistribution.makeUpHours}h
+                                    </span>
+                                    <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
+                                        {activeSnapshot.hoursDistribution.makeUpPercent}%
+                                    </span>
+                                </div>
+                                <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden">
+                                    <div
+                                        className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                                        style={{ width: `${Math.min(activeSnapshot.hoursDistribution.makeUpPercent * 3, 100)}%` }}
+                                    />
+                                </div>
+                                <span className="text-[10px] text-slate-400 block mt-1">Make-Up Hours</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Right Column: Highlights & Summary Cards */}
-                <div className="col-span-4 flex h-full min-h-0 flex-col gap-4">
-                    {/* Highlights Card */}
-                    <BentoTile title="Highlights" icon={Star} iconTone="amber" className="flex-1 min-h-0" isDark={isDark}>
-                        <div className="space-y-2.5">
-                            {Object.entries(highlights).map(([label, value]: any, i: number) => {
-                                const icons = [Users, CalendarIcon, Clock, Laptop, HeartPulse];
-                                const tones: Tone[] = ['amber', 'rose', 'amber', 'blue', 'purple'];
-                                const ItemIcon = icons[i % icons.length];
-                                const tone = tones[i % tones.length];
+                {/* Right Panel: Monthly Excellence Board + Ranking Basis + Monthly Highlights */}
+                <div className="col-span-4 flex h-full min-h-0 flex-col gap-3.5">
+                    {/* Monthly Excellence Board (Scrollable card list when there are multiple ties) */}
+                    <div className={`rounded-2xl p-3.5 border flex flex-col flex-1 min-h-0 ${
+                        isDark ? 'bg-[#131b2e] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                    }`}>
+                        <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-white/10 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <Trophy size={17} className="text-amber-500" />
+                                <h3 className="text-sm font-extrabold tracking-tight">Monthly Excellence Board</h3>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded-full">
+                                {activeSnapshot.monthLabel}
+                            </span>
+                        </div>
+
+                        {/* Top Excellence Cards Stack (Scrollable if many ties exist) */}
+                        <div className="mt-2.5 space-y-2 overflow-y-auto tv-scrollbar pr-1 flex-1 min-h-0 max-h-[220px]">
+                            {topMedalFaculty.map((fac, idx) => {
+                                const rankColors: Record<number, { border: string; bg: string; badge: string }> = {
+                                    1: {
+                                        border: 'border-amber-200/90 dark:border-amber-500/30',
+                                        bg: 'bg-gradient-to-r from-amber-50/70 via-white to-transparent dark:from-amber-950/20 dark:via-white/[0.01]',
+                                        badge: 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 shadow-md shadow-amber-500/20',
+                                    },
+                                    2: {
+                                        border: 'border-slate-200 dark:border-slate-700/60',
+                                        bg: 'bg-gradient-to-r from-slate-50/70 via-white to-transparent dark:from-slate-800/20 dark:via-white/[0.01]',
+                                        badge: 'bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400 text-slate-900 shadow-md shadow-slate-400/20',
+                                    },
+                                    3: {
+                                        border: 'border-amber-700/30 dark:border-amber-700/40',
+                                        bg: 'bg-gradient-to-r from-orange-50/70 via-white to-transparent dark:from-orange-950/20 dark:via-white/[0.01]',
+                                        badge: 'bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 text-amber-100 shadow-md shadow-amber-800/20',
+                                    },
+                                };
+                                const effectiveRank = fac.displayRank ?? (idx + 1);
+                                const style = rankColors[effectiveRank] || rankColors[3];
+
                                 return (
-                                    <div key={label} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                                    <div
+                                        key={fac.id}
+                                        className={`flex items-center justify-between p-2 rounded-xl border ${style.border} ${style.bg} transition-all`}
+                                    >
                                         <div className="flex items-center gap-2.5 min-w-0">
-                                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${TONE_BOX[tone][isDark ? 'dark' : 'light']}`}>
-                                                <ItemIcon size={16} />
+                                            {/* Animated Floating Trophy with Confetti */}
+                                            <div className="relative inline-flex items-center justify-center w-7 h-7 shrink-0">
+                                                {/* Confetti particles */}
+                                                {effectiveRank === 1 && (
+                                                    <>
+                                                        <span className="absolute w-1.5 h-1.5 rounded-full bg-amber-400 animate-confetti-1 pointer-events-none" />
+                                                        <span className="absolute w-1.5 h-1 rounded-xs bg-rose-400 animate-confetti-2 pointer-events-none" />
+                                                        <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-400 animate-confetti-3 pointer-events-none" />
+                                                        <span className="absolute w-1 h-1.5 rounded-xs bg-sky-400 animate-confetti-4 pointer-events-none" />
+                                                    </>
+                                                )}
+                                                {effectiveRank === 2 && (
+                                                    <>
+                                                        <span className="absolute w-1.5 h-1.5 rounded-full bg-slate-300 animate-confetti-1 pointer-events-none" />
+                                                        <span className="absolute w-1.5 h-1 rounded-xs bg-indigo-400 animate-confetti-2 pointer-events-none" />
+                                                        <span className="absolute w-1 h-1.5 rounded-xs bg-teal-300 animate-confetti-3 pointer-events-none" />
+                                                    </>
+                                                )}
+                                                {effectiveRank === 3 && (
+                                                    <>
+                                                        <span className="absolute w-1.5 h-1.5 rounded-full bg-amber-600 animate-confetti-1 pointer-events-none" />
+                                                        <span className="absolute w-1.5 h-1 rounded-xs bg-orange-400 animate-confetti-2 pointer-events-none" />
+                                                    </>
+                                                )}
+                                                {/* Floating Trophy Badge with Rank */}
+                                                <div
+                                                    title={`Rank ${effectiveRank} (${effectiveRank === 1 ? 'Gold Medal' : effectiveRank === 2 ? 'Silver Medal' : 'Bronze Medal'})`}
+                                                    className={`relative z-10 w-7 h-7 rounded-lg flex items-center justify-center animate-medal-bob shadow-sm ${style.badge}`}
+                                                    style={{ animationDelay: `${idx * 0.2}s` }}
+                                                >
+                                                    <Trophy size={13} className="stroke-[2.5]" />
+                                                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-[8px] font-black flex items-center justify-center border border-white/40 dark:border-slate-800">
+                                                        {effectiveRank}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{label}</span>
+                                            <div className="min-w-0">
+                                                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                    {fac.facultyName}
+                                                </div>
+                                                <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                                                    {fac.program}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{value}</span>
-                                            <ChevronRight size={14} className="text-slate-400" />
+
+                                        {/* Metric Chips */}
+                                        <div className="flex items-center gap-2.5 text-right shrink-0">
+                                            <div>
+                                                <div className="text-[11px] font-black text-emerald-600 dark:text-emerald-400">
+                                                    {fac.coveragePercent}%
+                                                </div>
+                                                <div className="text-[8px] text-slate-400 leading-none mt-0.5">Coverage</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[11px] font-black text-emerald-600 dark:text-emerald-400">
+                                                    {fac.completionPercent}%
+                                                </div>
+                                                <div className="text-[8px] text-slate-400 leading-none mt-0.5">Completion</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[11px] font-black text-blue-600 dark:text-blue-400">
+                                                    {fac.attendedHours}h
+                                                </div>
+                                                <div className="text-[8px] text-slate-400 leading-none mt-0.5">Attended</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[11px] font-black text-amber-600 dark:text-amber-400">
+                                                    {fac.lateMinutes}m
+                                                </div>
+                                                <div className="text-[8px] text-slate-400 leading-none mt-0.5">Late Mins</div>
+                                            </div>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                    </BentoTile>
 
-                    {/* Summary 2x2 Grid Card */}
-                    <BentoTile
-                        title="Summary"
-                        icon={BarChart2}
-                        iconTone="blue"
-                        className="flex-1 min-h-0"
-                        isDark={isDark}
-                        aside={
-                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/10 px-2.5 py-0.5 rounded-full">
-                                This Semester
+                        {/* Top 3 Ranking Basis Callout (Addresses fairness requirement when multiple faculty have 100%) */}
+                        <div className="mt-2.5 shrink-0 flex items-start gap-2 p-2 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/30">
+                            <div className="h-4 w-4 rounded-md bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                                <Info size={11} />
+                            </div>
+                            <div className="text-[10px] leading-snug text-amber-950 dark:text-amber-200/90">
+                                <strong className="font-extrabold text-amber-900 dark:text-amber-300">
+                                    Top 3 Ranking Basis:
+                                </strong>{' '}
+                                Ranked by highest Coverage %, Completion %, Attended Hours, and fewest Late Minutes. Tied faculty share identical medal placements.
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Monthly Highlights (2x2 Grid) */}
+                    <div className={`shrink-0 rounded-2xl p-3.5 border flex flex-col ${
+                        isDark ? 'bg-[#131b2e] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                    }`}>
+                        <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-white/10 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <Star size={17} className="text-amber-500" />
+                                <h3 className="text-sm font-extrabold tracking-tight">Monthly Highlights</h3>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded-full">
+                                {activeSnapshot.monthLabel}
                             </span>
-                        }
-                    >
-                        <div className="grid grid-cols-2 gap-3 h-full">
-                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
-                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                    <Users size={14} /> Faculty tracked
+                        </div>
+
+                        <div className="mt-2.5 grid grid-cols-2 gap-2">
+                            {/* Most Reliable */}
+                            <div className="p-2 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="h-6 w-6 rounded-md bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                        <ShieldCheck size={13} />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Most Reliable</span>
                                 </div>
-                                <div className="flex items-end justify-between mt-2">
-                                    <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{kpis.faculty_count}</span>
-                                    <MiniWave positive />
+                                <div className="mt-1.5">
+                                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                        {activeSnapshot.highlights.mostReliable.name} ({activeSnapshot.highlights.mostReliable.program})
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                        {activeSnapshot.highlights.mostReliable.stats}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
-                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                    <CalendarIcon size={14} /> Classes logged
+                            {/* Most Improved */}
+                            <div className="p-2 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="h-6 w-6 rounded-md bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                        <TrendingUp size={13} />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Most Improved</span>
                                 </div>
-                                <div className="flex items-end justify-between mt-2">
-                                    <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{kpis.present + kpis.absent + kpis.online + kpis.on_leave}</span>
-                                    <MiniWave positive />
+                                <div className="mt-1.5">
+                                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                        {activeSnapshot.highlights.mostImproved.name} ({activeSnapshot.highlights.mostImproved.program})
+                                    </div>
+                                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5 truncate">
+                                        {activeSnapshot.highlights.mostImproved.stats}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
-                                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Present rate</div>
-                                <div className="flex items-baseline justify-between mt-1">
-                                    <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{presentRate}%</span>
-                                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15 px-1.5 py-0.5 rounded">↑ 5%</span>
+                            {/* Needs Attention */}
+                            <div className="p-2 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="h-6 w-6 rounded-md bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                                        <AlertTriangle size={13} />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Needs Attention</span>
+                                </div>
+                                <div className="mt-1.5">
+                                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                        {activeSnapshot.highlights.needsAttention.name} ({activeSnapshot.highlights.needsAttention.program})
+                                    </div>
+                                    <div className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold mt-0.5 truncate">
+                                        {activeSnapshot.highlights.needsAttention.stats}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
-                                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Absent rate</div>
-                                <div className="flex items-baseline justify-between mt-1">
-                                    <span className="text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums">{absentRate}%</span>
-                                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-500/15 px-1.5 py-0.5 rounded">↓ 3%</span>
+                            {/* Most Hours Completed */}
+                            <div className="p-2 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="h-6 w-6 rounded-md bg-purple-50 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                                        <Clock size={13} />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Most Hours</span>
+                                </div>
+                                <div className="mt-1.5">
+                                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                        {activeSnapshot.highlights.mostHoursCompleted.name} ({activeSnapshot.highlights.mostHoursCompleted.program})
+                                    </div>
+                                    <div className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold mt-0.5 truncate">
+                                        {activeSnapshot.highlights.mostHoursCompleted.stats}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </BentoTile>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom Remark Legend Ticker */}
+            <div className={`shrink-0 flex items-center justify-between px-4 py-2 rounded-xl border text-[11px] ${
+                isDark ? 'bg-[#131b2e] border-white/10 text-slate-400' : 'bg-white border-slate-200/80 text-slate-600 shadow-[0_1px_4px_rgba(0,0,0,0.02)]'
+            }`}>
+                <div className="flex items-center gap-3">
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200">Remark Legend:</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200/80 dark:border-emerald-500/30">
+                            85–100 Excellent
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 font-bold border border-blue-200/80 dark:border-blue-500/30">
+                            70–84 Very Satisfactory
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold border border-amber-200/80 dark:border-amber-500/30">
+                            60–69 Satisfactory
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400 font-bold border border-orange-200/80 dark:border-orange-500/30">
+                            50–59 Average
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400 font-bold border border-rose-200/80 dark:border-rose-500/30">
+                            0–49 Needs Attention
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 font-medium">
+                            N/A – Excluded
+                        </span>
+                    </div>
+                </div>
+                <div className="italic text-slate-400 text-[10px]">
+                    Hours-weighted monthly ranking for fairness.
                 </div>
             </div>
         </div>

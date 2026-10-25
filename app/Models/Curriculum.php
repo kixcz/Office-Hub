@@ -16,7 +16,17 @@ class Curriculum extends Model
         'effective_year',
         'total_units',
         'status',
+        'description',
+        'is_active',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+            'total_units' => 'integer',
+        ];
+    }
 
     public function program(): BelongsTo
     {
@@ -26,5 +36,10 @@ class Curriculum extends Model
     public function courses(): HasMany
     {
         return $this->hasMany(Course::class);
+    }
+
+    public function curriculumCourses()
+    {
+        return $this->hasMany(CurriculumCourse::class);
     }
 }

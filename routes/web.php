@@ -8,12 +8,15 @@ use App\Http\Controllers\Compliance\ComplianceTrackerController;
 use App\Http\Controllers\Compliance\PendingOutputController;
 use App\Http\Controllers\Compliance\RequirementController;
 use App\Http\Controllers\Compliance\SubmissionController;
+use App\Http\Controllers\CourseController;
+use App\Http\Controllers\CourseOfferingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentRouteController;
 use App\Http\Controllers\Faculty\FacultyPortalController;
 use App\Http\Controllers\FacultyAttendanceController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\LabInChargeMonitoringController;
+use App\Http\Controllers\LabInventoryManagementController;
 use App\Http\Controllers\OfficeRequestController;
 use App\Http\Controllers\Operations\ExamMonitoringController;
 use App\Http\Controllers\Operations\FacultyWorkloadManagementController;
@@ -32,6 +35,7 @@ use App\Http\Controllers\Schedule\CalendarController;
 use App\Http\Controllers\Schedule\MeetingController;
 use App\Http\Controllers\Schedule\SemesterScheduleController;
 use App\Http\Controllers\ScheduleReconciliationController;
+use App\Http\Controllers\SectionManagementController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\Tv\CustomSlideController;
 use App\Http\Controllers\Tv\PlaylistController;
@@ -211,6 +215,10 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Lab In-Charge Operational Monitoring & End-of-Day Reconciliation
+    Route::get('/monitoring/lab-attendance', function (Request $request) {
+        return redirect()->route('lab-in-charge.index', array_merge($request->query(), ['tab' => 'attendance']));
+    })->name('lab-attendance.index');
+
     Route::prefix('monitoring/lab-in-charge')->name('lab-in-charge.')->group(function () {
         Route::get('/', [LabInChargeMonitoringController::class, 'index'])->name('index');
         Route::post('/observation', [LabInChargeMonitoringController::class, 'recordObservation'])->name('observation');
@@ -316,8 +324,33 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/documents', [DocumentRouteController::class, 'store'])->name('documents.store');
     Route::patch('/documents/{document}', [DocumentRouteController::class, 'update'])->name('documents.update');
 
-    // Programs & Faculties
+    // Academic Structure: Programs & Curriculum
     Route::resource('programs', ProgramController::class);
+    Route::post('/programs/{program}/curricula', [ProgramController::class, 'storeCurriculum'])->name('programs.curricula.store');
+    Route::post('/curricula/{curriculum}/copy', [ProgramController::class, 'copyCurriculum'])->name('curricula.copy');
+    Route::patch('/curricula/{curriculum}/status', [ProgramController::class, 'toggleCurriculumStatus'])->name('curricula.status');
+    Route::post('/curricula/{curriculum}/courses', [ProgramController::class, 'addCourseToCurriculum'])->name('curricula.courses.add');
+    Route::delete('/curricula/{curriculum}/courses/{course}', [ProgramController::class, 'removeCourseFromCurriculum'])->name('curricula.courses.remove');
+
+    // Academic Structure: Canonical Courses Catalog
+    Route::post('/courses/sync-sheets', [CourseController::class, 'syncSheets'])->name('courses.sync-sheets');
+    Route::post('/courses/import', [CourseController::class, 'importCatalog'])->name('courses.import');
+    Route::resource('courses', CourseController::class);
+
+    // Academic Structure: Sections (Student Cohorts)
+    Route::post('/sections/sync-sheets', [SectionManagementController::class, 'syncSheets'])->name('sections.sync-sheets');
+    Route::post('/sections/import-csv', [SectionManagementController::class, 'importCsv'])->name('sections.import-csv');
+    Route::post('/sections/bulk', [SectionManagementController::class, 'bulkCreate'])->name('sections.bulk');
+    Route::post('/sections/copy-previous', [SectionManagementController::class, 'copyPreviousSections'])->name('sections.copy-previous');
+    Route::post('/sections/{section}/generate-offerings', [SectionManagementController::class, 'generateOfferingsForSection'])->name('sections.generate-offerings');
+    Route::resource('sections', SectionManagementController::class);
+
+    // Academic Structure: Semester Course Offerings
+    Route::post('/course-offerings/generate', [CourseOfferingController::class, 'generateFromCurriculum'])->name('course-offerings.generate');
+    Route::post('/course-offerings/bulk-status', [CourseOfferingController::class, 'bulkUpdateStatus'])->name('course-offerings.bulk-status');
+    Route::resource('course-offerings', CourseOfferingController::class);
+
+    // Faculty Management
     Route::post('/faculties/{faculty}/assign-role', [FacultyController::class, 'assignRole'])->name('faculties.assign-role');
     Route::resource('faculties', FacultyController::class);
 
@@ -348,7 +381,7 @@ Route::middleware(['auth'])->group(function () {
     // Operations -> Make-Up Class Monitoring (Super Admin, Dean & Program Heads)
     Route::prefix('operations/make-up-classes')->name('operations.make-up-classes.')->group(function () {
         Route::get('/', [MakeUpClassMonitoringController::class, 'index'])->name('index');
-        Route::patch('/{makeUpClassRequest}/review', [MakeUpClassMonitoringController::class, 'review'])->name('review');
+        Route::match(['post', 'patch'], '/{makeUpClassRequest}/review', [MakeUpClassMonitoringController::class, 'review'])->name('review');
     });
 
     // Operations -> Room Utilization Report & Capacity Analytics (Super Admin, Dean & Program Heads)
@@ -431,6 +464,25 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{academicPeriod}/archive', [AcademicPeriodController::class, 'archive'])->name('archive');
         Route::post('/{academicPeriod}/duplicate', [AcademicPeriodController::class, 'duplicateSetup'])->name('duplicate');
         Route::delete('/{academicPeriod}', [AcademicPeriodController::class, 'destroy'])->name('destroy');
+    });
+
+    // Laboratory & Facilities Management Ecosystem
+    Route::prefix('facilities')->name('facilities.')->group(function () {
+        // Rooms & Laboratories Module (Physical spaces & operational availability registry)
+        Route::get('rooms', [RoomInventoryController::class, 'index'])->name('rooms.index');
+        Route::post('rooms', [RoomInventoryController::class, 'store'])->name('rooms.store');
+        Route::put('rooms/{room}', [RoomInventoryController::class, 'update'])->name('rooms.update');
+        Route::delete('rooms/{room}', [RoomInventoryController::class, 'destroy'])->name('rooms.destroy');
+        Route::get('rooms/find-available', [RoomInventoryController::class, 'findAvailable'])->name('rooms.find-available');
+        Route::post('rooms/report-problem', [RoomInventoryController::class, 'reportProblem'])->name('rooms.report-problem');
+
+        // Lab Inventory Management Module (Assets, equipment, consumables, inspections & maintenance)
+        Route::get('lab-inventory', [LabInventoryManagementController::class, 'index'])->name('lab-inventory.index');
+        Route::post('lab-inventory', [LabInventoryManagementController::class, 'store'])->name('lab-inventory.store');
+        Route::put('lab-inventory/{item}', [LabInventoryManagementController::class, 'update'])->name('lab-inventory.update');
+        Route::delete('lab-inventory/{item}', [LabInventoryManagementController::class, 'destroy'])->name('lab-inventory.destroy');
+        Route::post('lab-inventory/adjustments', [LabInventoryManagementController::class, 'storeAdjustment'])->name('lab-inventory.adjustments.store');
+        Route::post('lab-inventory/maintenance', [LabInventoryManagementController::class, 'storeMaintenanceTicket'])->name('lab-inventory.maintenance.store');
     });
 });
 

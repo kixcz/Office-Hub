@@ -8,6 +8,7 @@ import {
     LayoutGrid,
     Calendar,
     Megaphone,
+    Layers,
     GraduationCap,
     Users,
     Monitor,
@@ -44,6 +45,13 @@ import {
     Award,
     History,
     ShieldCheck,
+    CheckCheckIcon,
+    UserRoundCog,
+    LucideMessageSquareText,
+    NotebookIcon,
+    Beaker,
+    SquareChartGantt,
+    MegaphoneIcon,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -53,38 +61,47 @@ const adminNavGroups: NavGroup[] = [
         title: 'SYSTEM MAIN',
         items: [
             { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid },
-            { title: 'Announcements', url: '/announcements', icon: Megaphone },
-            { title: 'Academic Periods', url: '/administration/academic-periods', icon: Calendar },
+            { title: 'Announcements', url: '/announcements', icon: MegaphoneIcon },
+            { title: 'College Calendar', url: '/schedule/calendar', icon: Calendar },
+            { title: 'Academic Periods', url: '/administration/academic-periods', icon: SquareChartGantt },
         ],
     },
     {
-        title: 'OPERATIONS',
+        title: 'ACADEMIC STRUCTURE',
         items: [
-            { title: 'Programs', url: '/programs', icon: GraduationCap },
-            { title: 'Faculty Directory', url: '/faculties', icon: Users },
-            { title: 'College Calendar', url: '/schedule/calendar', icon: Calendar },
-            { title: 'Meetings', url: '/schedule/meetings', icon: Projector },
-            { title: 'Activities', url: '/schedule/activities', icon: Activity },
-            { title: 'Lab Monitoring', url: '/classroom-monitoring', icon: Monitor },
-            { title: 'Lab In-Charge', url: '/operations/lab-in-charge', icon: ShieldCheck },
-            { title: 'Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },
+            { title: 'Programs & Curriculum', url: '/programs', icon: GraduationCap },
+            { title: 'Courses', url: '/courses', icon: BookOpen },
+            { title: 'Sections', url: '/sections', icon: Layers },
+            { title: 'Course Offerings', url: '/course-offerings', icon: CalendarDays },
+        ],
+    },
+    {
+        title: 'FACULTY OPERATIONS',
+        items: [
+            { title: 'Faculty Members', url: '/faculties', icon: Users },
             { title: 'Faculty Workload', url: '/operations/faculty-workload', icon: Briefcase },
             { title: 'Make-Up Classes', url: '/operations/make-up-classes', icon: RefreshCw },
-            // { title: 'Rooms & Laboratories', url: '/schedule/master-data/rooms', icon: Building2 },
-            { title: 'Room Utilization', url: '/operations/room-utilization', icon: BarChart3 },
+            { title: 'Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },
             { title: 'Faculty Attendance', url: '/faculty-attendance', icon: ClipboardCheck },
-            { title: 'Facility Reports', url: '/operations/facility-reports', icon: AlertTriangle },
+        ],
+    },
+    {
+        title: 'COORDINATION',
+        items: [
+            { title: 'Meetings', url: '/schedule/meetings', icon: Projector },
+            { title: 'Activities', url: '/schedule/activities', icon: Activity },
             { title: 'Tasks & Projects', url: '/tasks', icon: BookCheckIcon },
         ],
     },
     {
-        title: 'SCHEDULING & OR-TOOLS',
+        title: 'LABORATORY & FACILITIES',
         items: [
-            { title: 'Schedule Generator', url: '/schedule/generator', icon: Sparkles },
-            { title: 'Faculty Loading', url: '/schedule/loading', icon: Briefcase },
-            { title: 'Master Timetable', url: '/schedule/master-timetable?view=college', icon: CalendarDays },
-            { title: 'Reviews & Endorsement', url: '/schedule/reviews', icon: FileCheck },
-            { title: 'Swap Requests Hub', url: '/schedule/adjustments', icon: ArrowLeftRight },
+            { title: 'Rooms & Labs', url: '/facilities/rooms', icon: Building2 },
+            { title: 'Lab Inventory', url: '/facilities/lab-inventory', icon: Monitor },
+            { title: 'Lab Monitoring', url: '/classroom-monitoring', icon: Monitor },
+            { title: 'Lab In-Charge', url: '/operations/lab-in-charge', icon: Users },
+            { title: 'Room Utilization', url: '/operations/room-utilization', icon: BarChart3 },
+            { title: 'Facility Reports', url: '/operations/facility-reports', icon: AlertTriangle },
         ],
     },
     {
@@ -105,11 +122,26 @@ const adminNavGroups: NavGroup[] = [
         ],
     },
     {
+        title: 'REPORTS & ANALYTICS',
+        items: [
+            { title: 'College Reports', url: '/performance/faculty', icon: Star },
+            { title: 'Attendance Reports', url: '/performance/program', icon: Trophy },
+            { title: 'Laboratory Reports', url: '/performance/rules', icon: BookOpen },
+            { title: 'Workload Reports', url: '/performance/rules', icon: BookOpen },
+            { title: 'Compliance  Reports', url: '/performance/rules', icon: BookOpen },
+            { title: 'Executive  Reports', url: '/performance/rules', icon: BookOpen },
+        ],
+    },
+    {
+        title: 'SCHEDULING & OR-TOOLS',
+        items: [
+            { title: 'Schedule Generator', url: '/schedule/generator', icon: Sparkles },
+        ],
+    },
+    {
         title: 'TV DISPLAY STUDIO',
         items: [
             { title: 'TV Workspace', url: '/tv-config/dashboard', icon: Tv },
-            // { title: 'Spotlight Slides', url: '/tv-config/spotlight', icon: Sparkles },
-            // { title: 'Custom Manual Slides', url: '/tv-config/custom', icon: FileText },
         ],
     },
 ];
@@ -267,9 +299,11 @@ const labInChargeNavGroups: NavGroup[] = [
         title: 'OPERATIONS',
         items: [
             { title: 'Dashboard', url: '/monitoring/lab-in-charge?tab=dashboard', icon: LayoutGrid },
-            { title: 'Live Lab Monitoring', url: '/monitoring/lab-in-charge?tab=live', icon: Monitor },
+            // { title: 'Live Lab Monitoring', url: '/monitoring/lab-in-charge?tab=live', icon: Monitor },
             { title: 'Lab Schedules', url: '/monitoring/lab-in-charge?tab=schedules', icon: CalendarDays },
-            { title: 'Daily Closing Reports', url: '/monitoring/lab-in-charge?tab=closing_reports', icon: ClipboardCheck },
+            { title: 'Lab Attendance', url: '/monitoring/lab-in-charge?tab=attendance', icon: NotebookIcon },
+            { title: 'EOD Reports', url: '/monitoring/lab-in-charge/end-of-day', icon: ClipboardCheck },
+            
         ],
     },
     {
@@ -285,6 +319,7 @@ const labInChargeNavGroups: NavGroup[] = [
             { title: 'Announcements', url: '/announcements', icon: Megaphone },
         ],
     },
+   
 ];
 
 const footerNavItems: NavItem[] = [];

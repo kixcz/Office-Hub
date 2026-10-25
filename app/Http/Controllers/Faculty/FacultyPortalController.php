@@ -14,6 +14,7 @@ use App\Models\FacultyAttendance;
 use App\Models\FacultyAttendanceSummary;
 use App\Models\FacultyAvailability;
 use App\Models\FacultyCorrection;
+use App\Models\MakeUpClassRequest;
 use App\Models\Meeting;
 use App\Models\Requirement;
 use App\Models\ResearchEngagement;

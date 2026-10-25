@@ -14,11 +14,35 @@ class Program extends Model
     protected $fillable = [
         'code',
         'name',
+        'degree_level',
+        'department',
+        'duration_years',
+        'status',
         'description',
     ];
 
     public function faculties()
     {
         return $this->hasMany(Faculty::class);
+    }
+
+    public function curricula()
+    {
+        return $this->hasMany(Curriculum::class);
+    }
+
+    public function courses()
+    {
+        return $this->hasMany(Course::class);
+    }
+
+    public function sections()
+    {
+        return $this->hasMany(Section::class);
+    }
+
+    public function courseOfferings()
+    {
+        return $this->hasMany(CourseOffering::class);
     }
 }

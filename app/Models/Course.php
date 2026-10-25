@@ -13,15 +13,24 @@ class Course extends Model
         'program_id',
         'code',
         'title',
+        'description',
         'units',
         'lecture_hours',
         'lab_hours',
         'room_type_required',
+        'required_facility_type',
+        'required_equipment',
         'consecutive_lab_required',
+        'can_split_lab_hours',
+        'preferred_block_length',
         'year_level',
         'semester_placement',
         'category',
+        'prerequisites',
+        'corequisites',
         'specialization_tag',
+        'status',
+        'source',
     ];
 
     protected function casts(): array
@@ -30,7 +39,9 @@ class Course extends Model
             'units' => 'decimal:1',
             'lecture_hours' => 'decimal:1',
             'lab_hours' => 'decimal:1',
+            'preferred_block_length' => 'decimal:1',
             'consecutive_lab_required' => 'boolean',
+            'can_split_lab_hours' => 'boolean',
             'year_level' => 'integer',
         ];
     }
@@ -43,6 +54,11 @@ class Course extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
+    }
+
+    public function curriculumCourses(): HasMany
+    {
+        return $this->hasMany(CurriculumCourse::class);
     }
 
     public function courseOfferings(): HasMany

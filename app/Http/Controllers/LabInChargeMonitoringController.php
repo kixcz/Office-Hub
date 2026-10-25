@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AcademicPeriod;
 use App\Models\DailyMonitoringReport;
 use App\Models\Faculty;
+use App\Models\FacultyAttendance;
 use App\Models\LabInChargeAssignment;
 use App\Models\LabMonitoringDiscrepancy;
 use App\Models\LabMonitoringSession;
@@ -75,7 +76,7 @@ class LabInChargeMonitoringController extends Controller
         $allAssignedIds = $assignedRooms->pluck('id');
 
         // 2. Verified expected laboratory sessions for TODAY
-        $todayExpectedSchedules = VerifiedSchedule::with(['faculty', 'course', 'section', 'room'])
+        $todayExpectedSchedules = VerifiedSchedule::with(['faculty', 'course.program', 'section', 'room'])
             ->whereIn('room_id', $allAssignedIds)
             ->where('day_of_week', 'like', "%{$todayName}%")
             ->where('status', 'Active')
@@ -213,9 +214,13 @@ class LabInChargeMonitoringController extends Controller
                 'room_name' => $sched->room->room_name ?? $sched->room->name ?? 'Room #'.$sched->room_id,
                 'course_code' => $sched->course->code,
                 'course_title' => $sched->course->title,
+                'program_code' => $sched->course->program->code ?? 'BSIT',
+                'program_name' => $sched->course->program->name ?? 'Information Technology',
                 'section' => $sched->section->code,
                 'expected_faculty' => "{$sched->faculty->first_name} {$sched->faculty->last_name}",
                 'faculty_id' => $sched->faculty_id,
+                'session_type' => $sched->session_type ?? 'Laboratory Class',
+                'mapping_confidence' => $sched->mapping_confidence ?? 1.0,
                 'scheduled_time' => Carbon::parse($sched->scheduled_start_time)->format('h:i A').' – '.Carbon::parse($sched->scheduled_end_time)->format('h:i A'),
                 'scheduled_start' => Carbon::parse($sched->scheduled_start_time)->format('H:i'),
                 'scheduled_end' => Carbon::parse($sched->scheduled_end_time)->format('H:i'),
@@ -349,12 +354,21 @@ class LabInChargeMonitoringController extends Controller
             }
         }
 
-        // Add open discrepancies requiring lab in-charge action / remarks
-        $openDiscrepancies = LabMonitoringDiscrepancy::with(['room', 'reporter'])
+        // All discrepancies for assigned rooms (including active, verification, resolved)
+        $allDiscrepancies = LabMonitoringDiscrepancy::with([
+            'room',
+            'reporter',
+            'verifiedSchedule.faculty',
+            'verifiedSchedule.course',
+            'verifiedSchedule.section',
+        ])
             ->whereIn('room_id', $allAssignedIds)
-            ->whereIn('resolution_status', ['Open', 'Clarification Required', 'Under Review'])
             ->latest()
             ->get();
+
+        $openDiscrepancies = $allDiscrepancies
+            ->filter(fn ($d) => in_array($d->resolution_status, ['Open', 'Active', 'Clarification Required', 'Under Review']))
+            ->values();
 
         foreach ($openDiscrepancies as $disc) {
             $actionRequired->push([
@@ -418,7 +432,7 @@ class LabInChargeMonitoringController extends Controller
         $unmonitoredHistoricalCount = 14; // Default baseline needing retrospective verification
 
         // 9. Laboratory Weekly Timetables (Monday–Saturday grid for assigned rooms)
-        $allVerifiedWeekly = VerifiedSchedule::with(['faculty', 'course', 'section', 'room'])
+        $allVerifiedWeekly = VerifiedSchedule::with(['faculty', 'course.program', 'section', 'room'])
             ->whereIn('room_id', $allAssignedIds)
             ->where('status', 'Active')
             ->orderBy('scheduled_start_time')
@@ -434,9 +448,16 @@ class LabInChargeMonitoringController extends Controller
                         'time_label' => Carbon::parse($item->scheduled_start_time)->format('h:i A').' – '.Carbon::parse($item->scheduled_end_time)->format('h:i A'),
                         'course_code' => $item->course->code,
                         'course_title' => $item->course->title,
+                        'program_code' => $item->course->program->code ?? 'BSIT',
+                        'program_name' => $item->course->program->name ?? 'Information Technology',
                         'section' => $item->section->code,
                         'faculty_name' => "{$item->faculty->first_name} {$item->faculty->last_name}",
+                        'faculty_id' => $item->faculty_id,
+                        'room_id' => $item->room_id,
                         'room_name' => $item->room->room_name ?? $item->room->name,
+                        'session_type' => $item->session_type ?? 'Laboratory Class',
+                        'scheduled_minutes' => $item->scheduled_minutes,
+                        'mapping_confidence' => $item->mapping_confidence ?? 1.0,
                     ];
                 });
             });
@@ -488,6 +509,7 @@ class LabInChargeMonitoringController extends Controller
             'sessionsList' => $sessionsList,
             'kpi' => $kpi,
             'openDiscrepancies' => $openDiscrepancies,
+            'allDiscrepancies' => $allDiscrepancies,
             'historicalSessions' => $historicalSessions,
             'unmonitoredHistoricalCount' => $unmonitoredHistoricalCount,
             'timetablesByRoom' => $allVerifiedWeekly,
@@ -496,6 +518,17 @@ class LabInChargeMonitoringController extends Controller
             'overallLabPeak' => $overallLabPeak,
             'availableTimeSlots' => $availableTimeSlots,
             'endOfDayReport' => $endOfDayData,
+            'academicPeriod' => [
+                'id' => $academicPeriod?->id,
+                'name' => $academicPeriod?->name ?? 'AY 2026–2027 · 1st Semester',
+                'academic_year' => $academicPeriod?->academic_year ?? '2026-2027',
+                'semester' => $academicPeriod?->semester ?? '1st Semester',
+                'code' => $academicPeriod?->code ?? 'AY2026-2027-1S',
+                'class_start_date' => $classStartDate->format('M d, Y'),
+                'class_start_date_raw' => $classStartDate->toDateString(),
+            ],
+            'scheduleVersion' => 'Verified Master Timetable v1',
+            'lastSyncTime' => 'Oct 24, 2026, 5:45 PM',
         ]);
     }
 
@@ -1197,6 +1230,59 @@ class LabInChargeMonitoringController extends Controller
                 'photo_path' => $photoPath,
                 'resolution_status' => 'Reported',
             ]);
+        }
+
+        // Direct synchronization to Faculty Member's "My Attendance" module
+        $facultyIdToSync = $validated['observed_faculty_id'] ?? $verified->faculty_id;
+        $facultyRecord = Faculty::find($facultyIdToSync);
+
+        if ($facultyRecord) {
+            $facultyStatus = 'present';
+            $sessionOutcome = $validated['session_outcome'] ?? '';
+            $obsStatus = $validated['observation_status'] ?? '';
+
+            if ($obsStatus === 'Late' || $lateMinutes > 0 || str_contains(strtolower($sessionOutcome), 'late')) {
+                $facultyStatus = 'late';
+            } elseif ($sessionOutcome === 'Faculty Not Present' || $obsStatus === 'Faculty Not Present') {
+                $facultyStatus = 'absent';
+            } elseif (str_contains(strtolower($sessionOutcome), 'online') || str_contains(strtolower($obsStatus), 'online')) {
+                $facultyStatus = 'online';
+            }
+
+            // Determine week label (e.g. "October 19-25, 2026")
+            $startOfWeek = $now->copy()->startOfWeek(Carbon::MONDAY);
+            $endOfWeek = $now->copy()->endOfWeek(Carbon::FRIDAY);
+            $weekLabel = $startOfWeek->format('F d').'-'.$endOfWeek->format('d, Y');
+
+            $timeSlotLabel = Carbon::parse($verified->scheduled_start_time)->format('h:i A').' – '.Carbon::parse($verified->scheduled_end_time)->format('h:i A');
+
+            FacultyAttendance::updateOrCreate(
+                [
+                    'faculty_id' => $facultyRecord->id,
+                    'session_date' => $now->toDateString(),
+                    'time_slot' => $timeSlotLabel,
+                ],
+                [
+                    'instructor_name' => $facultyRecord->first_name.' '.$facultyRecord->last_name,
+                    'day_of_week' => $verified->day_of_week ?? $now->format('l'),
+                    'scheduled_start_time' => $verified->scheduled_start_time,
+                    'scheduled_end_time' => $verified->scheduled_end_time,
+                    'scheduled_duration_minutes' => $verified->scheduled_minutes ?? 90,
+                    'actual_arrival_time' => $validated['actual_start_time'] ?? null,
+                    'delivered_minutes' => $observedMinutes,
+                    'section' => $verified->section?->code ?? $verified->section?->name ?? 'BSIT',
+                    'subject' => $verified->course?->code ?? 'Lab Class',
+                    'room' => $verified->room?->room_name ?? $verified->room?->name ?? 'Laboratory',
+                    'week_label' => $weekLabel,
+                    'status' => $facultyStatus,
+                    'primary_status' => ucfirst($facultyStatus),
+                    'late_minutes' => $lateMinutes,
+                    'remarks' => $validated['remarks'] ?? 'Verified by Lab In-Charge '.$request->user()->name,
+                    'academic_year' => 'AY 2026–2027',
+                    'semester' => '1st Semester',
+                    'source' => 'Lab In-Charge Operational Monitoring',
+                ]
+            );
         }
 
         $msg = $isHistorical ? 'Historical observation recorded' : 'Live observation recorded';
