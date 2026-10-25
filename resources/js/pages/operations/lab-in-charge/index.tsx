@@ -14,6 +14,7 @@ import {
     Filter,
     Plus,
     Layers,
+    UserPlus,
     UserCheck,
     UserX,
     ArrowRightLeft,
@@ -33,6 +34,12 @@ import {
     X,
     Check,
     ClipboardList,
+    ChevronLeft,
+    Mail,
+    Phone,
+    UserSquare2,
+    Briefcase,
+    GraduationCap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -152,10 +159,24 @@ interface UserProfile {
     id: number;
     name: string;
     email: string;
+    phone?: string | null;
+    office_room?: string | null;
+    academic_rank?: string | null;
+    specialization?: string | null;
+    highest_qualification?: string | null;
+    program_name?: string | null;
+    program_code?: string | null;
+    photo_url?: string | null;
+    roles?: string[];
+    is_system_admin?: boolean;
+    profile_completion: number;
+    primary_shift?: string;
     assigned_rooms: Array<{
         assignment_id: number;
         room_id: number;
         room_name: string;
+        room_building?: string;
+        room_floor?: string;
         role_type: string;
         shift_name: string;
         status: string;
@@ -275,10 +296,16 @@ export default function LabInChargeManagement({
     recentAudits,
     filters,
 }: Props) {
-    // Active navigation tab within module: 'assignments' | 'college_monitoring' | 'eod_oversight' | 'audit_history'
-    const [activeTab, setActiveTab] = useState<'assignments' | 'college_monitoring' | 'eod_oversight' | 'audit_history'>('assignments');
+    // Active navigation tab within module: 'directory' | 'assignments' | 'college_monitoring' | 'eod_oversight' | 'audit_history'
+    const [activeTab, setActiveTab] = useState<'directory' | 'assignments' | 'college_monitoring' | 'eod_oversight' | 'audit_history'>('directory');
 
-    // Search and filter state
+    // Lab in-charge directory search & pagination state
+    const [userSearchQuery, setUserSearchQuery] = useState('');
+    const [userCoverageFilter, setUserCoverageFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
+    const [userCurrentPage, setUserCurrentPage] = useState(1);
+    const userPageSize = 8;
+
+    // Search and filter state for assignments tab
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>(filters.status || 'all');
     const [filterRole, setFilterRole] = useState<string>(filters.role_type || 'all');
@@ -374,6 +401,33 @@ export default function LabInChargeManagement({
             return matchesSearch && matchesStatus && matchesRole && matchesRoom;
         });
     }, [assignments, searchQuery, filterStatus, filterRole, filterRoom]);
+
+    // Filtered & Paginated Lab In-Charge Users
+    const filteredUserProfiles = useMemo(() => {
+        return userProfiles.filter((u) => {
+            const matchesSearch =
+                !userSearchQuery.trim() ||
+                u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                u.email.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                (u.academic_rank || '').toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                u.assigned_rooms.some((r) => r.room_name.toLowerCase().includes(userSearchQuery.toLowerCase()));
+
+            const matchesCoverage =
+                userCoverageFilter === 'all' ||
+                (userCoverageFilter === 'assigned' && u.active_rooms_count > 0) ||
+                (userCoverageFilter === 'unassigned' && u.active_rooms_count === 0);
+
+            return matchesSearch && matchesCoverage;
+        });
+    }, [userProfiles, userSearchQuery, userCoverageFilter]);
+
+    const userTotalItems = filteredUserProfiles.length;
+    const userTotalPages = Math.max(1, Math.ceil(userTotalItems / userPageSize));
+
+    const paginatedUserProfiles = useMemo(() => {
+        const start = (userCurrentPage - 1) * userPageSize;
+        return filteredUserProfiles.slice(start, start + userPageSize);
+    }, [filteredUserProfiles, userCurrentPage, userPageSize]);
 
     // Handle submit Create User
     const handleCreateUser = (e: React.FormEvent) => {
@@ -646,6 +700,7 @@ export default function LabInChargeManagement({
                 {/* 3. MODULE NAVIGATION TABS */}
                 <div className="flex items-center gap-1 overflow-x-auto pb-0.5 border-b border-border/60 scrollbar-none">
                     {[
+                        { id: 'directory', label: `Lab In-Charge Personnel (${userProfiles.length})`, icon: UserSquare2 },
                         { id: 'assignments', label: `Facility Assignments (${assignments.length})`, icon: ShieldCheck },
                         { id: 'college_monitoring', label: `College-Wide Live Feed (${collegeWideSessions.length})`, icon: Radio },
                         { id: 'eod_oversight', label: `Closing Reports Compliance (${collegeEodReports.length})`, icon: FileCheck },
@@ -681,6 +736,369 @@ export default function LabInChargeManagement({
                         <span>Open Lab In-Charge Workspace</span>
                     </a>
                 </div>
+
+                {/* TAB 0: LAB IN-CHARGE DIRECTORY & PROFILES (DEFAULT TAB) */}
+                {activeTab === 'directory' && (
+                    <div className="space-y-3">
+                        {/* Filters and search toolbar */}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-card p-3 border rounded-xl shadow-2xs">
+                            <div className="flex flex-1 items-center gap-2">
+                                <div className="relative flex-1 max-w-md">
+                                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                                    <Input
+                                        type="text"
+                                        value={userSearchQuery}
+                                        onChange={(e) => {
+                                            setUserSearchQuery(e.target.value);
+                                            setUserCurrentPage(1);
+                                        }}
+                                        placeholder="Search by name, email, rank, or laboratory..."
+                                        className="h-8 pl-8 pr-3 text-xs rounded-lg bg-card"
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-muted/30">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setUserCoverageFilter('all');
+                                            setUserCurrentPage(1);
+                                        }}
+                                        className={cn(
+                                            "px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors",
+                                            userCoverageFilter === 'all'
+                                                ? "bg-amber-500 text-slate-950 shadow-2xs"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        All ({userProfiles.length})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setUserCoverageFilter('assigned');
+                                            setUserCurrentPage(1);
+                                        }}
+                                        className={cn(
+                                            "px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors",
+                                            userCoverageFilter === 'assigned'
+                                                ? "bg-amber-500 text-slate-950 shadow-2xs"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        Assigned ({userProfiles.filter((u) => u.active_rooms_count > 0).length})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setUserCoverageFilter('unassigned');
+                                            setUserCurrentPage(1);
+                                        }}
+                                        className={cn(
+                                            "px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors",
+                                            userCoverageFilter === 'unassigned'
+                                                ? "bg-amber-500 text-slate-950 shadow-2xs"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        Unassigned ({userProfiles.filter((u) => u.active_rooms_count === 0).length})
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                                <Button
+                                    size="sm"
+                                    onClick={() => setCreateUserModalOpen(true)}
+                                    className="h-8 text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold gap-1.5 shadow-2xs cursor-pointer"
+                                >
+                                    <UserPlus className="w-3.5 h-3.5" />
+                                    <span>Register New In-Charge</span>
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Paginated Lab In-Charge Table */}
+                        <div className="rounded-xl border border-border/80 bg-card overflow-hidden shadow-2xs">
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="bg-muted/40 hover:bg-muted/40 text-[11px] uppercase tracking-wider font-bold">
+                                            <TableHead className="w-[300px] py-3">Lab In-Charge Personnel</TableHead>
+                                            <TableHead className="py-3">Assigned Laboratories</TableHead>
+                                            <TableHead className="py-3">Shift & Availability</TableHead>
+                                            <TableHead className="py-3">Profile Completion</TableHead>
+                                            <TableHead className="py-3">Today's Performance</TableHead>
+                                            <TableHead className="text-right py-3 pr-4">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {paginatedUserProfiles.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                                                    <div className="flex flex-col items-center justify-center gap-2">
+                                                        <UserSquare2 className="h-8 w-8 text-muted-foreground/50 stroke-[1.5]" />
+                                                        <p className="text-sm font-semibold text-foreground">No Lab In-Charge personnel found</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Try adjusting your search criteria or register a new user.
+                                                        </p>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            paginatedUserProfiles.map((user) => {
+                                                const completionPct = user.profile_completion ?? 70;
+                                                const strokeColor =
+                                                    completionPct >= 80
+                                                        ? '#eab308' // primary amber
+                                                        : completionPct >= 50
+                                                        ? '#f59e0b' // amber
+                                                        : '#fbbf24'; // light amber
+
+                                                const initials = user.name
+                                                    .split(' ')
+                                                    .filter(Boolean)
+                                                    .slice(0, 2)
+                                                    .map((n) => n[0])
+                                                    .join('')
+                                                    .toUpperCase() || 'LC';
+
+                                                return (
+                                                    <TableRow
+                                                        key={user.id}
+                                                        className="hover:bg-muted/20 transition-colors group cursor-pointer"
+                                                        onClick={() => setSelectedUserProfile(user)}
+                                                    >
+                                                        {/* Avatar with Circular Completion Progress Ring & Name */}
+                                                        <TableCell className="py-3.5">
+                                                            <div className="flex items-center gap-3">
+                                                                <div
+                                                                    className="relative w-11 h-11 shrink-0 flex items-center justify-center"
+                                                                    title={`Profile Completion: ${completionPct}%`}
+                                                                >
+                                                                    {/* Circular SVG Donut Progress Ring */}
+                                                                    <svg className="w-11 h-11 -rotate-90 pointer-events-none absolute inset-0" viewBox="0 0 44 44">
+                                                                        <circle
+                                                                            cx="22"
+                                                                            cy="22"
+                                                                            r="19"
+                                                                            fill="none"
+                                                                            stroke="currentColor"
+                                                                            strokeWidth="2.5"
+                                                                            className="text-amber-500/15 dark:text-amber-500/20"
+                                                                        />
+                                                                        <circle
+                                                                            cx="22"
+                                                                            cy="22"
+                                                                            r="19"
+                                                                            fill="none"
+                                                                            stroke={strokeColor}
+                                                                            strokeWidth="2.5"
+                                                                            strokeDasharray={`${(completionPct / 100) * 119.38} 119.38`}
+                                                                            strokeLinecap="round"
+                                                                            className="transition-all duration-700 ease-out"
+                                                                        />
+                                                                    </svg>
+
+                                                                    {/* Center avatar or initials */}
+                                                                    {user.photo_url ? (
+                                                                        <img
+                                                                            src={user.photo_url}
+                                                                            alt={user.name}
+                                                                            className="w-8 h-8 rounded-full object-cover shrink-0"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-bold text-[11px] flex items-center justify-center shrink-0">
+                                                                            {initials}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Badge with percentage on bottom right of donut */}
+                                                                    <span className="absolute -bottom-1 -right-1 text-[8px] font-black font-mono leading-none bg-amber-500 text-slate-950 px-1 py-0.5 rounded-full border border-background shadow-2xs">
+                                                                        {completionPct}%
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="min-w-0">
+                                                                    <div className="font-bold text-xs text-foreground group-hover:text-amber-600 transition-colors flex items-center gap-1.5 flex-wrap">
+                                                                        <span className="truncate">{user.name}</span>
+                                                                        {user.is_system_admin && (
+                                                                            <Badge className="bg-purple-600 text-white text-[9px] px-1 py-0 h-4 font-semibold">
+                                                                                Super Admin
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                                                                        <Mail className="h-2.5 w-2.5 shrink-0 opacity-70" />
+                                                                        <span>{user.email}</span>
+                                                                    </div>
+                                                                    <div className="text-[10px] text-muted-foreground/80 truncate mt-0.5">
+                                                                        {user.academic_rank || 'Laboratory In-Charge'}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Assigned Laboratories */}
+                                                        <TableCell className="py-3.5">
+                                                            {user.assigned_rooms && user.assigned_rooms.length > 0 ? (
+                                                                <div className="flex flex-wrap gap-1 max-w-xs">
+                                                                    {user.assigned_rooms.map((room) => (
+                                                                        <Badge
+                                                                            key={room.assignment_id}
+                                                                            variant="outline"
+                                                                            className="text-[10px] font-medium bg-muted/40 border-border/80 flex items-center gap-1 py-0.5 px-1.5"
+                                                                        >
+                                                                            <ShieldCheck className="h-2.5 w-2.5 text-emerald-600 shrink-0" />
+                                                                            <span className="font-semibold text-foreground">{room.room_name}</span>
+                                                                            <span className="text-[9px] text-muted-foreground">({room.role_type})</span>
+                                                                        </Badge>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <Badge variant="outline" className="text-[10.5px] text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20 font-medium">
+                                                                    <AlertTriangle className="h-3 w-3 mr-1 shrink-0 text-rose-500" />
+                                                                    No Assigned Labs
+                                                                </Badge>
+                                                            )}
+                                                        </TableCell>
+
+                                                        {/* Shift & Office */}
+                                                        <TableCell className="py-3.5">
+                                                            <div className="space-y-0.5">
+                                                                <div className="text-xs font-semibold text-foreground flex items-center gap-1">
+                                                                    <Clock className="h-3 w-3 text-amber-500 shrink-0" />
+                                                                    <span>{user.primary_shift || '07:30 AM – 05:30 PM'}</span>
+                                                                </div>
+                                                                <div className="text-[11px] text-muted-foreground truncate">
+                                                                    {user.office_room || 'College Laboratory Office'}
+                                                                </div>
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Profile Completion Bar */}
+                                                        <TableCell className="py-3.5">
+                                                            <div className="space-y-1 w-32">
+                                                                <div className="flex items-center justify-between text-[11px]">
+                                                                    <span className="font-medium text-muted-foreground">Score</span>
+                                                                    <span className="font-mono font-bold text-amber-600">{completionPct}%</span>
+                                                                </div>
+                                                                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                                                                        style={{ width: `${Math.min(100, Math.max(0, completionPct))}%` }}
+                                                                    />
+                                                                </div>
+                                                                <span className="text-[9.5px] text-muted-foreground">
+                                                                    {completionPct === 100 ? 'Fully completed' : 'Profile info pending'}
+                                                                </span>
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Today's Monitoring Completeness */}
+                                                        <TableCell className="py-3.5">
+                                                            <div className="space-y-0.5">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                                    <span className="text-xs font-bold text-foreground">
+                                                                        {user.monitoring_completeness}% Completeness
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-[10.5px] text-muted-foreground">
+                                                                    {user.sessions_monitored_today} session{user.sessions_monitored_today === 1 ? '' : 's'} recorded today
+                                                                </p>
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Actions */}
+                                                        <TableCell className="py-3.5 text-right pr-4">
+                                                            <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => setSelectedUserProfile(user)}
+                                                                    className="h-7 text-xs font-semibold px-2.5 border-border/80 hover:bg-amber-500 hover:text-slate-950 transition-colors cursor-pointer"
+                                                                >
+                                                                    <Eye className="h-3 w-3 mr-1" />
+                                                                    View Profile
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => {
+                                                                        assignForm.setData('user_id', String(user.id));
+                                                                        setAssignModalOpen(true);
+                                                                    }}
+                                                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                                                                    title="Assign Laboratory"
+                                                                >
+                                                                    <ShieldCheck className="h-3.5 w-3.5 text-amber-500" />
+                                                                </Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            {/* Pagination Controls */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t bg-muted/20 text-xs text-muted-foreground">
+                                <div>
+                                    Showing <span className="font-semibold text-foreground">{userTotalItems > 0 ? (userCurrentPage - 1) * userPageSize + 1 : 0}</span> to{' '}
+                                    <span className="font-semibold text-foreground">
+                                        {Math.min(userCurrentPage * userPageSize, userTotalItems)}
+                                    </span>{' '}
+                                    of <span className="font-semibold text-foreground">{userTotalItems}</span> Lab In-Charge personnel
+                                </div>
+
+                                <div className="flex items-center gap-1.5">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={userCurrentPage <= 1}
+                                        onClick={() => setUserCurrentPage((p) => Math.max(1, p - 1))}
+                                        className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+                                    >
+                                        <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                                        Previous
+                                    </Button>
+
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: userTotalPages }, (_, i) => i + 1).map((page) => (
+                                            <button
+                                                key={page}
+                                                type="button"
+                                                onClick={() => setUserCurrentPage(page)}
+                                                className={cn(
+                                                    "h-7 w-7 rounded-md text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer",
+                                                    userCurrentPage === page
+                                                        ? "bg-amber-500 text-slate-950 font-bold shadow-2xs"
+                                                        : "border border-border/70 hover:bg-muted text-foreground"
+                                                )}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={userCurrentPage >= userTotalPages}
+                                        onClick={() => setUserCurrentPage((p) => Math.min(userTotalPages, p + 1))}
+                                        className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+                                    >
+                                        Next
+                                        <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* TAB 1: FACILITY ASSIGNMENTS & GOVERNANCE TABLE */}
                 {activeTab === 'assignments' && (
@@ -1700,16 +2118,106 @@ export default function LabInChargeManagement({
                 <Dialog open={!!selectedUserProfile} onOpenChange={() => setSelectedUserProfile(null)}>
                     <DialogContent className="max-w-xl">
                         <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <Users className="h-5 w-5 text-amber-500" />
-                                {selectedUserProfile.name} — Operational Governance Profile
-                            </DialogTitle>
-                            <DialogDescription className="text-xs">
-                                Individual accountability record, active facility scopes, shift coverage, and monitoring completeness metrics.
-                            </DialogDescription>
+                            <div className="flex items-center gap-3">
+                                {(() => {
+                                    const completionPct = selectedUserProfile.profile_completion ?? 75;
+                                    const strokeColor =
+                                        completionPct >= 80 ? '#eab308' : completionPct >= 50 ? '#f59e0b' : '#fbbf24';
+                                    const initials = selectedUserProfile.name
+                                        .split(' ')
+                                        .map((n) => n[0])
+                                        .filter(Boolean)
+                                        .slice(0, 2)
+                                        .join('')
+                                        .toUpperCase();
+
+                                    return (
+                                        <div
+                                            className="relative w-12 h-12 shrink-0 flex items-center justify-center"
+                                            title={`Profile Completion: ${completionPct}%`}
+                                        >
+                                            <svg className="w-12 h-12 -rotate-90 pointer-events-none absolute inset-0" viewBox="0 0 44 44">
+                                                <circle
+                                                    cx="22"
+                                                    cy="22"
+                                                    r="19"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2.5"
+                                                    className="text-amber-500/15 dark:text-amber-500/20"
+                                                />
+                                                <circle
+                                                    cx="22"
+                                                    cy="22"
+                                                    r="19"
+                                                    fill="none"
+                                                    stroke={strokeColor}
+                                                    strokeWidth="2.5"
+                                                    strokeDasharray={`${(completionPct / 100) * 119.38} 119.38`}
+                                                    strokeLinecap="round"
+                                                    className="transition-all duration-700 ease-out"
+                                                />
+                                            </svg>
+
+                                            {selectedUserProfile.photo_url ? (
+                                                <img
+                                                    src={selectedUserProfile.photo_url}
+                                                    alt={selectedUserProfile.name}
+                                                    className="w-9 h-9 rounded-full object-cover shrink-0"
+                                                />
+                                            ) : (
+                                                <div className="w-9 h-9 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-bold text-xs flex items-center justify-center shrink-0">
+                                                    {initials}
+                                                </div>
+                                            )}
+
+                                            <span className="absolute -bottom-1 -right-1 text-[8px] font-black font-mono leading-none bg-amber-500 text-slate-950 px-1 py-0.5 rounded-full border border-background shadow-2xs">
+                                                {completionPct}%
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
+
+                                <div>
+                                    <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground">
+                                        <span>{selectedUserProfile.name}</span>
+                                        {selectedUserProfile.is_system_admin ? (
+                                            <Badge className="text-[9px] font-black bg-amber-500 text-slate-950 px-1.5 py-0 border-amber-600/30">
+                                                Super Admin
+                                            </Badge>
+                                        ) : (
+                                            <Badge className="text-[9px] font-black bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800 px-1.5 py-0">
+                                                Lab In-Charge
+                                            </Badge>
+                                        )}
+                                    </DialogTitle>
+                                    <DialogDescription className="text-xs mt-0.5 text-muted-foreground">
+                                        {selectedUserProfile.email} • {selectedUserProfile.academic_rank || 'Laboratory In-Charge'}
+                                    </DialogDescription>
+                                </div>
+                            </div>
                         </DialogHeader>
 
                         <div className="space-y-4 py-2 text-xs">
+                            {/* Personal & College Details */}
+                            <div className="grid grid-cols-2 gap-2 bg-card p-3 rounded-xl border border-border">
+                                <div>
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Designation</span>
+                                    <div className="font-semibold text-foreground text-xs mt-0.5">{selectedUserProfile.academic_rank}</div>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Qualification</span>
+                                    <div className="font-semibold text-foreground text-xs mt-0.5">{selectedUserProfile.highest_qualification}</div>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Primary Shift</span>
+                                    <div className="font-semibold text-foreground text-xs mt-0.5">{selectedUserProfile.primary_shift}</div>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Specialization</span>
+                                    <div className="font-semibold text-foreground text-xs mt-0.5">{selectedUserProfile.specialization}</div>
+                                </div>
+                            </div>
                             {/* Summary Metrics */}
                             <div className="grid grid-cols-3 gap-2 bg-muted/30 p-3 rounded-lg border">
                                 <div>

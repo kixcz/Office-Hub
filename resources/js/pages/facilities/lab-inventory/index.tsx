@@ -46,6 +46,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import LabInventoryReportModal from './lab-inventory-report-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Super Admin', href: '/dashboard' },
@@ -104,6 +105,7 @@ interface Props {
         total: number;
         links: Array<{ url: string | null; label: string; active: boolean }>;
     };
+    allItemsForReport?: InventoryItem[];
     rooms: Array<{ id: number; room_name: string; type: string; custom_type?: string; building?: string }>;
     categories: string[];
     custodians: string[];
@@ -134,6 +136,7 @@ interface Props {
 
 export default function LabInventoryManagementIndex({
     items,
+    allItemsForReport = [],
     rooms = [],
     categories = [],
     custodians = [],
@@ -168,6 +171,7 @@ export default function LabInventoryManagementIndex({
     const [adjustingItem, setAdjustingItem] = useState<InventoryItem | null>(null);
     const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
     const [maintenanceItem, setMaintenanceItem] = useState<InventoryItem | null>(null);
+    const [isReportOpen, setIsReportOpen] = useState(false);
 
     // Asset Add / Edit Form
     const itemForm = useForm({
@@ -450,6 +454,16 @@ export default function LabInventoryManagementIndex({
                         </Link>
 
                         <button
+                            type="button"
+                            onClick={() => setIsReportOpen(true)}
+                            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-900 bg-amber-400 hover:bg-amber-500 rounded-xl transition-all shadow-xs cursor-pointer ring-1 ring-amber-400/70"
+                        >
+                            <FileSpreadsheet className="w-4 h-4 stroke-[2.2] text-slate-950" />
+                            <span>Generate Report</span>
+                        </button>
+
+                        <button
+                            type="button"
                             onClick={() => openMaintenanceModal()}
                             className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:text-amber-300 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 rounded-xl transition-all shadow-xs cursor-pointer"
                         >
@@ -458,6 +472,7 @@ export default function LabInventoryManagementIndex({
                         </button>
 
                         <button
+                            type="button"
                             onClick={openAddModal}
                             className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-xs cursor-pointer"
                         >
@@ -1306,6 +1321,15 @@ export default function LabInventoryManagementIndex({
                         </form>
                     </DialogContent>
                 </Dialog>
+
+                {/* 10. MODAL: Formal Academic Laboratory Inventory Report Matrix */}
+                <LabInventoryReportModal
+                    open={isReportOpen}
+                    onOpenChange={setIsReportOpen}
+                    items={allItemsForReport && allItemsForReport.length > 0 ? allItemsForReport : itemList}
+                    rooms={rooms}
+                    categories={categories}
+                />
             </div>
         </AppLayout>
     );

@@ -85,6 +85,9 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
     const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
     const [deletingActivity, setDeletingActivity] = useState<Activity | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
     // Filters and pagination state
     const [searchQuery, setSearchQuery] = useState('');
@@ -232,6 +235,38 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
         const start = (currentPage - 1) * pageSize;
         return filteredActivities.slice(start, start + pageSize);
     }, [filteredActivities, currentPage, pageSize]);
+
+    const isAllSelected = paginatedActivities.length > 0 && paginatedActivities.every((a) => selectedIds.includes(a.id));
+    const isSomeSelected = selectedIds.length > 0 && !isAllSelected;
+
+    const handleToggleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(paginatedActivities.map((a) => a.id));
+        }
+    };
+
+    const handleToggleSelectOne = (id: number) => {
+        setSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+    };
+
+    const handleBulkDelete = () => {
+        if (selectedIds.length === 0) return;
+        setIsBulkDeleting(true);
+        router.post('/schedule/activities/bulk-delete', {
+            ids: selectedIds,
+        }, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsBulkDeleting(false);
+                setIsBulkDialogOpen(false);
+                setSelectedIds([]);
+            },
+        });
+    };
 
     // Render category pill with exact colors matching screenshot
     const renderCategoryBadge = (category?: string | null) => {
@@ -553,10 +588,52 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
 
                 {/* 4. MAIN ACTIVITIES TABLE */}
                 <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] space-y-4">
+                    {/* Bulk selection action toolbar */}
+                    {selectedIds.length > 0 && (
+                        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-semibold animate-in fade-in duration-200">
+                            <span className="text-amber-700 dark:text-amber-400 font-bold">
+                                {selectedIds.length} activity/activities selected
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedIds([])}
+                                    className="h-7 px-2 text-xs text-slate-500 hover:text-slate-800 rounded-lg cursor-pointer"
+                                >
+                                    Deselect
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => setIsBulkDialogOpen(true)}
+                                    className="h-7 px-2.5 text-xs rounded-lg font-bold flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white cursor-pointer shadow-2xs"
+                                >
+                                    <Trash className="w-3 h-3" />
+                                    <span>Delete Selected</span>
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="overflow-x-auto -mx-5 md:-mx-6 px-5 md:px-6">
                         <table className="w-full text-xs text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-slate-200/80 text-[11px] font-semibold text-slate-600">
+                                    <th className="pb-3 pl-2 pr-3 w-8 text-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={isAllSelected}
+                                            ref={(el) => {
+                                                if (el) el.indeterminate = isSomeSelected;
+                                            }}
+                                            onChange={handleToggleSelectAll}
+                                            className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 focus:ring-offset-0 cursor-pointer"
+                                            title="Select all on this page"
+                                        />
+                                    </th>
                                     <th className="pb-3 pr-4 font-bold text-slate-700">
                                         <div className="flex items-center gap-1">
                                             <span>ACTIVITY</span>
@@ -599,14 +676,24 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                             <tbody className="divide-y divide-slate-100 font-medium">
                                 {paginatedActivities.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="py-12 text-center text-slate-400 italic">
+                                        <td colSpan={8} className="py-12 text-center text-slate-400 italic">
                                             No activities found matching your criteria.
                                         </td>
                                     </tr>
                                 ) : (
                                     paginatedActivities.map((activity) => {
+                                        const isSelected = selectedIds.includes(activity.id);
                                         return (
-                                            <tr key={activity.id} className="hover:bg-slate-50/70 transition-colors group">
+                                            <tr key={activity.id} className={cn("transition-colors group", isSelected ? "bg-amber-500/10 hover:bg-amber-500/15" : "hover:bg-slate-50/70")}>
+                                                {/* Checkbox Column */}
+                                                <td className="py-3.5 pl-2 pr-3 text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => handleToggleSelectOne(activity.id)}
+                                                        className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 focus:ring-offset-0 cursor-pointer"
+                                                    />
+                                                </td>
                                                 {/* Activity Column (Icon + Title + Subtitle) */}
                                                 <td className="py-3.5 pr-4">
                                                     <div className="flex items-center gap-3">
@@ -986,6 +1073,17 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                             },
                         });
                     }}
+                />
+
+                {/* Bulk Delete Activities Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={isBulkDialogOpen}
+                    onOpenChange={setIsBulkDialogOpen}
+                    title="Delete Selected Activities"
+                    description={`Are you sure you want to permanently delete the ${selectedIds.length} selected activity/activities? This action cannot be undone.`}
+                    confirmLabel={`Delete ${selectedIds.length} Activities`}
+                    isDeleting={isBulkDeleting}
+                    onConfirm={handleBulkDelete}
                 />
             </div>
         </AppLayout>

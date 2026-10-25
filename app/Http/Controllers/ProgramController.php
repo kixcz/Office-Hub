@@ -123,9 +123,15 @@ class ProgramController extends Controller
 
     public function destroy(Program $program)
     {
+        // Cleanly delete associated curricula and their curriculum courses
+        foreach ($program->curricula as $curric) {
+            $curric->curriculumCourses()->delete();
+            $curric->delete();
+        }
+
         $program->delete();
 
-        return redirect()->back()->with('success', 'Program deleted successfully.');
+        return redirect()->route('programs.index')->with('success', 'Program and its curricula deleted successfully.');
     }
 
     // --- Curriculum Management Actions ---
@@ -253,5 +259,26 @@ class ProgramController extends Controller
         $curriculum->update(['total_units' => (int) $totalUnits]);
 
         return redirect()->back()->with('success', 'Course removed from curriculum sequence matrix.');
+    }
+
+    public function updateCurriculumCourse(Request $request, Curriculum $curriculum, CurriculumCourse $curriculumCourse)
+    {
+        $validated = $request->validate([
+            'year_level' => 'required|integer|min:1|max:8',
+            'semester_placement' => 'required|string|in:1st Semester,2nd Semester,Summer',
+            'requirement_type' => 'required|string|in:Required,Major,Elective,Specialization,General Education,Institutional',
+            'prerequisite_override' => 'nullable|string',
+            'corequisite_override' => 'nullable|string',
+        ]);
+
+        $curriculumCourse->update([
+            'year_level' => $validated['year_level'],
+            'semester_placement' => $validated['semester_placement'],
+            'requirement_type' => $validated['requirement_type'],
+            'prerequisite_override' => $validated['prerequisite_override'] ?? null,
+            'corequisite_override' => $validated['corequisite_override'] ?? null,
+        ]);
+
+        return redirect()->back()->with('success', 'Curriculum subject placement updated successfully.');
     }
 }

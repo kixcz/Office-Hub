@@ -96,15 +96,50 @@ interface Props {
     all_programs_avg?: number;
     metrics_distribution: {
         total_faculty: number;
-        compliant: number;
-        compliant_pct: number;
-        minor_issues: number;
-        minor_issues_pct: number;
-        needs_attention: number;
-        needs_attention_pct: number;
-        non_compliant: number;
-        non_compliant_pct: number;
+        compliance: {
+            compliant: number;
+            compliant_pct: number;
+            minor_issues: number;
+            minor_issues_pct: number;
+            needs_attention: number;
+            needs_attention_pct: number;
+            non_compliant: number;
+            non_compliant_pct: number;
+        };
+        attendance: {
+            compliant: number;
+            compliant_pct: number;
+            minor_issues: number;
+            minor_issues_pct: number;
+            needs_attention: number;
+            needs_attention_pct: number;
+            non_compliant: number;
+            non_compliant_pct: number;
+        };
+        tasks: {
+            compliant: number;
+            compliant_pct: number;
+            minor_issues: number;
+            minor_issues_pct: number;
+            needs_attention: number;
+            needs_attention_pct: number;
+            non_compliant: number;
+            non_compliant_pct: number;
+        };
     };
+    trend_data?: Array<{
+        month: string;
+        attendance: number;
+        compliance: number;
+        tasks: number;
+        research_extension: number;
+    }>;
+    weekly_attendance_rates?: number[];
+    recent_research_extension_activities?: Array<{
+        title: string;
+        type: string;
+        date: string;
+    }>;
     faculty_needs_attention: Array<{
         id: number;
         faculty_id: number;
@@ -143,6 +178,9 @@ export default function SuperAdminDashboard({
     productivity_by_program = [],
     all_programs_avg,
     metrics_distribution,
+    trend_data = [],
+    weekly_attendance_rates = [],
+    recent_research_extension_activities = [],
     faculty_needs_attention = [],
     upcoming_activities = [],
     last_sync,
@@ -153,13 +191,26 @@ export default function SuperAdminDashboard({
     const [periodId, setPeriodId] = useState(filters.period_id);
     const [programId, setProgramId] = useState(filters.program_id);
     const [facultyId, setFacultyId] = useState(filters.faculty_id);
-    const [dateRange, setDateRange] = useState('Aug 17, 2026 – Dec 18, 2026');
     const [distributionTab, setDistributionTab] = useState<'Compliance' | 'Attendance' | 'Tasks'>('Compliance');
     const [reportModalOpen, setReportModalOpen] = useState(false);
+
+    // Keep state in sync with filters prop whenever page is refreshed or filtered
+    React.useEffect(() => {
+        setPeriodId(filters.period_id);
+        setProgramId(filters.program_id);
+        setFacultyId(filters.faculty_id);
+    }, [filters.period_id, filters.program_id, filters.faculty_id]);
 
     const activePeriod = available_periods.find((p) => p.id === Number(periodId)) || available_periods[0];
     const academicYear = activePeriod?.academic_year || filters.academic_year || '2026-2027';
     const semester = activePeriod?.semester || filters.semester || '1st Semester';
+    const dateRange = `${filters.start_date} – ${filters.end_date}`;
+
+    // Unique academic years and semesters from available_periods
+    const uniqueAcademicYears = Array.from(new Set(available_periods.map((p) => p.academic_year)));
+    const semestersForCurrentYear = available_periods
+        .filter((p) => p.academic_year === academicYear)
+        .map((p) => p.semester);
 
     const computedAverage =
         all_programs_avg ??
@@ -186,6 +237,96 @@ export default function SuperAdminDashboard({
             }
         );
     };
+
+    const handleAcademicYearChange = (year: string) => {
+        const matchingPeriod = available_periods.find((p) => p.academic_year === year && p.semester === semester)
+            || available_periods.find((p) => p.academic_year === year)
+            || available_periods[0];
+
+        if (matchingPeriod) {
+            setPeriodId(matchingPeriod.id);
+            handleFilterChange({ period_id: matchingPeriod.id });
+        }
+    };
+
+    const handleSemesterChange = (sem: string) => {
+        const matchingPeriod = available_periods.find((p) => p.academic_year === academicYear && p.semester === sem)
+            || available_periods.find((p) => p.semester === sem)
+            || available_periods[0];
+
+        if (matchingPeriod) {
+            setPeriodId(matchingPeriod.id);
+            handleFilterChange({ period_id: matchingPeriod.id });
+        }
+    };
+
+    // Helper to build smooth SVG path through data points (viewBox 500 x 180)
+    // Points at X = [50, 150, 250, 350, 450]
+    // Y mapped from rate (0% -> 155, 100% -> 25)
+    const buildTrendPath = (dataPoints: number[]) => {
+        const xs = [50, 150, 250, 350, 450];
+        const points = dataPoints.map((val, i) => {
+            const clamped = Math.max(0, Math.min(100, val ?? 0));
+            const y = 155 - (clamped / 100) * 130;
+            return { x: xs[i] ?? 50, y: Math.round(y * 10) / 10 };
+        });
+
+        if (points.length < 2) return '';
+        let d = `M ${points[0].x} ${points[0].y}`;
+        for (let i = 0; i < points.length - 1; i++) {
+            const p0 = points[i];
+            const p1 = points[i + 1];
+            const cpX = (p0.x + p1.x) / 2;
+            d += ` C ${cpX} ${p0.y}, ${cpX} ${p1.y}, ${p1.x} ${p1.y}`;
+        }
+        return d;
+    };
+
+    // Helper to build sparkline path for Attendance Rate card (viewBox 300 x 60)
+    const buildSparklinePath = (rates: number[] = []) => {
+        if (!rates || rates.length === 0) return 'M 10 40 Q 60 25 120 35 T 290 20';
+        const startX = 15;
+        const endX = 285;
+        const stepX = (endX - startX) / Math.max(1, rates.length - 1);
+        const points = rates.map((r, i) => {
+            const clamped = Math.max(0, Math.min(100, r));
+            const y = 52 - (clamped / 100) * 44;
+            return { x: Math.round((startX + i * stepX) * 10) / 10, y: Math.round(y * 10) / 10 };
+        });
+
+        let d = `M ${points[0].x} ${points[0].y}`;
+        for (let i = 0; i < points.length - 1; i++) {
+            const p0 = points[i];
+            const p1 = points[i + 1];
+            const cpX = (p0.x + p1.x) / 2;
+            d += ` C ${cpX} ${p0.y}, ${cpX} ${p1.y}, ${p1.x} ${p1.y}`;
+        }
+        return d;
+    };
+
+    // Active Category for Key Metrics Distribution
+    const activeCategoryKey = (distributionTab.toLowerCase() as 'compliance' | 'attendance' | 'tasks');
+    const currentDistribution = metrics_distribution?.[activeCategoryKey] || metrics_distribution?.compliance || {
+        compliant: 0,
+        compliant_pct: 0,
+        minor_issues: 0,
+        minor_issues_pct: 0,
+        needs_attention: 0,
+        needs_attention_pct: 0,
+        non_compliant: 0,
+        non_compliant_pct: 0,
+    };
+
+    // Calculate circumference for Donut chart: r = 40 => circumference = 2 * PI * 40 ~= 251.32
+    const donutCircumference = 2 * Math.PI * 40;
+    const compliantDash = (currentDistribution.compliant_pct / 100) * donutCircumference;
+    const minorDash = (currentDistribution.minor_issues_pct / 100) * donutCircumference;
+    const needsAttnDash = (currentDistribution.needs_attention_pct / 100) * donutCircumference;
+    const nonCompliantDash = (currentDistribution.non_compliant_pct / 100) * donutCircumference;
+
+    const minorOffset = -compliantDash;
+    const needsAttnOffset = -(compliantDash + minorDash);
+    const nonCompliantOffset = -(compliantDash + minorDash + needsAttnDash);
 
     const dashboardTitle = isProgramHead
         ? `${program_code || 'Program'} Operational Command Center`
@@ -247,17 +388,13 @@ export default function SuperAdminDashboard({
                             <span className="font-semibold text-muted-foreground mb-1">Academic Year</span>
                             <div className="relative">
                                 <select
-                                    value={periodId}
-                                    onChange={(e) => {
-                                        const val = Number(e.target.value);
-                                        setPeriodId(val);
-                                        handleFilterChange({ period_id: val });
-                                    }}
+                                    value={academicYear}
+                                    onChange={(e) => handleAcademicYearChange(e.target.value)}
                                     className="appearance-none bg-background border border-border text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 hover:border-slate-400 cursor-pointer focus:ring-1 focus:ring-amber-500 shadow-2xs"
                                 >
-                                    {available_periods.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.academic_year}
+                                    {uniqueAcademicYears.map((ay) => (
+                                        <option key={ay} value={ay}>
+                                            {ay}
                                         </option>
                                     ))}
                                 </select>
@@ -270,17 +407,13 @@ export default function SuperAdminDashboard({
                             <span className="font-semibold text-muted-foreground mb-1">Semester</span>
                             <div className="relative">
                                 <select
-                                    value={periodId}
-                                    onChange={(e) => {
-                                        const val = Number(e.target.value);
-                                        setPeriodId(val);
-                                        handleFilterChange({ period_id: val });
-                                    }}
+                                    value={semester}
+                                    onChange={(e) => handleSemesterChange(e.target.value)}
                                     className="appearance-none bg-background border border-border text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 hover:border-slate-400 cursor-pointer focus:ring-1 focus:ring-amber-500 shadow-2xs"
                                 >
-                                    {available_periods.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.semester}
+                                    {(semestersForCurrentYear.length > 0 ? semestersForCurrentYear : ['1st Semester', '2nd Semester']).map((sem) => (
+                                        <option key={sem} value={sem}>
+                                            {sem}
                                         </option>
                                     ))}
                                 </select>
@@ -615,31 +748,31 @@ export default function SuperAdminDashboard({
                                         <text x="5" y="104" fontSize="10" fill="currentColor" opacity="0.4">50%</text>
                                         <text x="5" y="144" fontSize="10" fill="currentColor" opacity="0.4">25%</text>
 
-                                        {/* Lines */}
+                                        {/* Lines generated dynamically from DB trend_data */}
                                         {/* Attendance (Blue) */}
                                         <path
-                                            d="M 50 40 Q 150 35 250 45 T 450 38"
+                                            d={buildTrendPath((trend_data || []).map((t) => t.attendance))}
                                             stroke="#3b82f6"
                                             strokeWidth="2.5"
                                             fill="none"
                                         />
                                         {/* Compliance (Emerald) */}
                                         <path
-                                            d="M 50 65 Q 150 55 250 60 T 450 52"
+                                            d={buildTrendPath((trend_data || []).map((t) => t.compliance))}
                                             stroke="#10b981"
                                             strokeWidth="2.5"
                                             fill="none"
                                         />
                                         {/* Tasks (Purple) */}
                                         <path
-                                            d="M 50 95 Q 150 90 250 92 T 450 88"
+                                            d={buildTrendPath((trend_data || []).map((t) => t.tasks))}
                                             stroke="#a855f7"
                                             strokeWidth="2.5"
                                             fill="none"
                                         />
                                         {/* Research/Extension (Amber) */}
                                         <path
-                                            d="M 50 135 Q 150 130 250 132 T 450 128"
+                                            d={buildTrendPath((trend_data || []).map((t) => t.research_extension))}
                                             stroke="#f59e0b"
                                             strokeWidth="2.5"
                                             fill="none"
@@ -649,11 +782,11 @@ export default function SuperAdminDashboard({
 
                                 {/* Month labels */}
                                 <div className="flex justify-between px-6 text-[10px] font-bold text-muted-foreground uppercase">
-                                    <span>Aug</span>
-                                    <span>Sep</span>
-                                    <span>Oct</span>
-                                    <span>Nov</span>
-                                    <span>Dec</span>
+                                    {(trend_data && trend_data.length > 0 ? trend_data : [
+                                        { month: 'Aug' }, { month: 'Sep' }, { month: 'Oct' }, { month: 'Nov' }, { month: 'Dec' }
+                                    ]).map((t, idx) => (
+                                        <span key={idx}>{t.month}</span>
+                                    ))}
                                 </div>
 
                                 {/* Legend */}
@@ -690,7 +823,7 @@ export default function SuperAdminDashboard({
                                 <select
                                     value={distributionTab}
                                     onChange={(e) => setDistributionTab(e.target.value as any)}
-                                    className="bg-muted text-[11px] font-bold rounded-lg px-2 py-1 border-0"
+                                    className="bg-muted text-[11px] font-bold rounded-lg px-2 py-1 border-0 cursor-pointer"
                                 >
                                     <option value="Compliance">Compliance</option>
                                     <option value="Attendance">Attendance</option>
@@ -699,11 +832,75 @@ export default function SuperAdminDashboard({
                             </div>
 
                             <div className="mt-5 flex flex-col items-center">
-                                {/* Donut representation */}
-                                <div className="relative w-32 h-32 rounded-full border-[12px] border-emerald-500 flex items-center justify-center">
-                                    <div className="text-center">
+                                {/* Dynamic SVG Donut */}
+                                <div className="relative w-32 h-32 flex items-center justify-center">
+                                    <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                                        {/* Background Track */}
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r="40"
+                                            stroke="currentColor"
+                                            className="text-muted/20"
+                                            strokeWidth="12"
+                                            fill="transparent"
+                                        />
+                                        {/* Compliant segment (Emerald) */}
+                                        {currentDistribution.compliant_pct > 0 && (
+                                            <circle
+                                                cx="50"
+                                                cy="50"
+                                                r="40"
+                                                stroke="#10b981"
+                                                strokeWidth="12"
+                                                fill="transparent"
+                                                strokeDasharray={`${compliantDash} ${donutCircumference}`}
+                                                strokeDashoffset="0"
+                                            />
+                                        )}
+                                        {/* Minor Issues segment (Amber) */}
+                                        {currentDistribution.minor_issues_pct > 0 && (
+                                            <circle
+                                                cx="50"
+                                                cy="50"
+                                                r="40"
+                                                stroke="#f59e0b"
+                                                strokeWidth="12"
+                                                fill="transparent"
+                                                strokeDasharray={`${minorDash} ${donutCircumference}`}
+                                                strokeDashoffset={minorOffset}
+                                            />
+                                        )}
+                                        {/* Needs Attention segment (Orange) */}
+                                        {currentDistribution.needs_attention_pct > 0 && (
+                                            <circle
+                                                cx="50"
+                                                cy="50"
+                                                r="40"
+                                                stroke="#f97316"
+                                                strokeWidth="12"
+                                                fill="transparent"
+                                                strokeDasharray={`${needsAttnDash} ${donutCircumference}`}
+                                                strokeDashoffset={needsAttnOffset}
+                                            />
+                                        )}
+                                        {/* Non-Compliant segment (Rose) */}
+                                        {currentDistribution.non_compliant_pct > 0 && (
+                                            <circle
+                                                cx="50"
+                                                cy="50"
+                                                r="40"
+                                                stroke="#f43f5e"
+                                                strokeWidth="12"
+                                                fill="transparent"
+                                                strokeDasharray={`${nonCompliantDash} ${donutCircumference}`}
+                                                strokeDashoffset={nonCompliantOffset}
+                                            />
+                                        )}
+                                    </svg>
+                                    <div className="absolute text-center pointer-events-none">
                                         <div className="text-xl font-black text-foreground">
-                                            {metrics_distribution.total_faculty}
+                                            {metrics_distribution?.total_faculty ?? 0}
                                         </div>
                                         <div className="text-[10px] text-muted-foreground font-semibold">Faculty Members</div>
                                     </div>
@@ -716,7 +913,7 @@ export default function SuperAdminDashboard({
                                             <span className="font-medium text-muted-foreground">Compliant</span>
                                         </div>
                                         <span className="font-bold text-foreground">
-                                            {metrics_distribution.compliant} ({metrics_distribution.compliant_pct}%)
+                                            {currentDistribution.compliant} ({currentDistribution.compliant_pct}%)
                                         </span>
                                     </div>
 
@@ -726,7 +923,7 @@ export default function SuperAdminDashboard({
                                             <span className="font-medium text-muted-foreground">Minor Issues</span>
                                         </div>
                                         <span className="font-bold text-foreground">
-                                            {metrics_distribution.minor_issues} ({metrics_distribution.minor_issues_pct}%)
+                                            {currentDistribution.minor_issues} ({currentDistribution.minor_issues_pct}%)
                                         </span>
                                     </div>
 
@@ -736,7 +933,7 @@ export default function SuperAdminDashboard({
                                             <span className="font-medium text-muted-foreground">Needs Attention</span>
                                         </div>
                                         <span className="font-bold text-foreground">
-                                            {metrics_distribution.needs_attention} ({metrics_distribution.needs_attention_pct}%)
+                                            {currentDistribution.needs_attention} ({currentDistribution.needs_attention_pct}%)
                                         </span>
                                     </div>
 
@@ -746,7 +943,7 @@ export default function SuperAdminDashboard({
                                             <span className="font-medium text-muted-foreground">Non-Compliant</span>
                                         </div>
                                         <span className="font-bold text-foreground">
-                                            {metrics_distribution.non_compliant} ({metrics_distribution.non_compliant_pct}%)
+                                            {currentDistribution.non_compliant} ({currentDistribution.non_compliant_pct}%)
                                         </span>
                                     </div>
                                 </div>
@@ -822,13 +1019,13 @@ export default function SuperAdminDashboard({
 
                             <div className="mt-4 flex items-center justify-between">
                                 <div>
-                                    <div className="text-3xl font-black text-foreground">94%</div>
+                                    <div className="text-3xl font-black text-foreground">{kpis.attendance_rate}%</div>
                                     <div className="text-xs text-muted-foreground font-semibold">Overall Attendance</div>
-                                    <div className="text-[11px] font-bold text-emerald-600 mt-0.5">↑ 3% vs. last sem</div>
+                                    <div className="text-[11px] font-bold text-emerald-600 mt-0.5">{kpis.attendance_trend}</div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-lg font-black text-rose-600">2</div>
-                                    <div className="text-[11px] text-muted-foreground font-semibold">Faculty with low attendance</div>
+                                    <div className="text-lg font-black text-rose-600">{kpis.attendance_low_count}</div>
+                                    <div className="text-[11px] text-muted-foreground font-semibold">Absences Recorded</div>
                                     <Link
                                         href="/faculty-attendance"
                                         className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1 justify-end mt-1"
@@ -841,7 +1038,7 @@ export default function SuperAdminDashboard({
                             <div className="mt-4 h-16 w-full">
                                 <svg className="w-full h-full text-blue-500" viewBox="0 0 300 60" fill="none">
                                     <path
-                                        d="M 10 40 Q 60 25 120 35 T 290 20"
+                                        d={buildSparklinePath(weekly_attendance_rates || [])}
                                         stroke="currentColor"
                                         strokeWidth="2.5"
                                         strokeLinecap="round"
@@ -866,41 +1063,39 @@ export default function SuperAdminDashboard({
 
                             <div className="grid grid-cols-2 gap-4 mt-4">
                                 <div className="p-3.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40">
-                                    <div className="text-2xl font-black text-purple-700 dark:text-purple-300">12</div>
+                                    <div className="text-2xl font-black text-purple-700 dark:text-purple-300">
+                                        {kpis.research_active}
+                                    </div>
                                     <div className="text-xs font-bold text-foreground mt-0.5">Active Research Projects</div>
-                                    <div className="text-[10px] text-muted-foreground mt-0.5">↑ 2 vs. last sem</div>
+                                    <div className="text-[10px] text-muted-foreground mt-0.5">Current academic period</div>
                                 </div>
                                 <div className="p-3.5 rounded-xl bg-teal-50/50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/40">
-                                    <div className="text-2xl font-black text-teal-700 dark:text-teal-300">8</div>
+                                    <div className="text-2xl font-black text-teal-700 dark:text-teal-300">
+                                        {kpis.extension_active}
+                                    </div>
                                     <div className="text-xs font-bold text-foreground mt-0.5">Active Extension Programs</div>
-                                    <div className="text-[10px] text-muted-foreground mt-0.5">↑ 3 vs. last sem</div>
+                                    <div className="text-[10px] text-muted-foreground mt-0.5">Current academic period</div>
                                 </div>
                             </div>
 
                             <div className="mt-4 space-y-2">
-                                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Recent Activities</div>
+                                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Recent Engagements</div>
                                 <div className="text-xs space-y-1.5 font-medium">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5 truncate">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                                            <span className="truncate">AI Research Workshop</span>
+                                    {(recent_research_extension_activities && recent_research_extension_activities.length > 0) ? (
+                                        recent_research_extension_activities.map((act, idx) => (
+                                            <div key={idx} className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5 truncate">
+                                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${act.type === 'Research' ? 'bg-purple-500' : 'bg-teal-500'}`} />
+                                                    <span className="truncate">{act.title}</span>
+                                                </div>
+                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">{act.date}</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-[11px] text-muted-foreground italic py-1">
+                                            No active projects recorded for this selection.
                                         </div>
-                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">Oct 12, 2026</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5 truncate">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />
-                                            <span className="truncate">Community Tech Literacy Program</span>
-                                        </div>
-                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">Oct 10, 2026</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5 truncate">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
-                                            <span className="truncate">CIDS Research Colloquium</span>
-                                        </div>
-                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">Oct 5, 2026</span>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -921,9 +1116,30 @@ export default function SuperAdminDashboard({
 
                             <div className="mt-4 flex items-center justify-between gap-4">
                                 {/* Radial progress */}
-                                <div className="relative w-24 h-24 rounded-full border-8 border-emerald-500 flex items-center justify-center shrink-0">
-                                    <div className="text-center">
-                                        <div className="text-lg font-black text-foreground">74%</div>
+                                <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+                                    <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r="40"
+                                            stroke="currentColor"
+                                            className="text-muted/20"
+                                            strokeWidth="10"
+                                            fill="transparent"
+                                        />
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r="40"
+                                            stroke="#10b981"
+                                            strokeWidth="10"
+                                            fill="transparent"
+                                            strokeDasharray={`${(kpis.tasks_rate / 100) * 2 * Math.PI * 40} ${2 * Math.PI * 40}`}
+                                            strokeDashoffset="0"
+                                        />
+                                    </svg>
+                                    <div className="absolute text-center pointer-events-none">
+                                        <div className="text-lg font-black text-foreground">{kpis.tasks_rate}%</div>
                                         <div className="text-[8px] text-muted-foreground font-semibold uppercase">Completion</div>
                                     </div>
                                 </div>
@@ -946,7 +1162,7 @@ export default function SuperAdminDashboard({
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-1.5">
                                             <div className="w-2 h-2 rounded-full bg-rose-500" />
-                                            <span className="text-muted-foreground font-medium">Overdue</span>
+                                            <span className="text-muted-foreground font-medium">Overdue / Todo</span>
                                         </div>
                                         <span className="font-bold text-rose-600">{kpis.tasks_overdue}</span>
                                     </div>

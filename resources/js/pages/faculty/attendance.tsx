@@ -61,19 +61,47 @@ interface SummaryData {
     present_count: number;
     late_count: number;
     absent_count: number;
+    on_leave_count?: number;
     total_late_minutes: number;
     attendance_rate: number;
 }
 
 interface MonthlySummaryItem {
-    id: number;
+    id: number | string;
     period_label: string;
     scheduled_sessions: number;
     present_count: number;
     late_count: number;
     absent_count: number;
+    on_leave_count?: number;
     total_late_minutes: number;
+    scheduled_minutes?: number;
+    eligible_minutes?: number;
+    attended_minutes?: number;
+    approved_leave_minutes?: number;
+    unexcused_absent_minutes?: number;
+    make_up_required_minutes?: number;
+    make_up_completed_minutes?: number;
     attendance_rate: number;
+    attendance_coverage_rate?: number | null;
+    on_time_rate?: number | null;
+    instructional_completion_rate?: number | null;
+    is_rank_eligible?: boolean;
+}
+
+function formatDuration(minutes: number | null | undefined): string {
+    if (minutes === null || minutes === undefined || isNaN(minutes)) {
+        return '—';
+    }
+    const mins = Math.max(0, Math.round(minutes));
+    if (mins === 0) return '0m';
+
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
 }
 
 interface Props {
@@ -170,7 +198,12 @@ export default function FacultyAttendancePage({
                 (s.room && s.room.toLowerCase().includes(searchTerm.toLowerCase())) ||
                 (s.section && s.section.toLowerCase().includes(searchTerm.toLowerCase()));
 
-            const matchesStatus = selectedStatus === 'all' || s.status.toLowerCase() === selectedStatus.toLowerCase();
+            const sStatus = s.status.toLowerCase();
+            const filterStatus = selectedStatus.toLowerCase();
+            let matchesStatus = filterStatus === 'all' || sStatus === filterStatus;
+            if (filterStatus === 'absent') {
+                matchesStatus = sStatus === 'absent' || sStatus === 'unattended';
+            }
 
             return matchesSearch && matchesStatus;
         });
@@ -514,8 +547,9 @@ export default function FacultyAttendancePage({
                                                         "px-2.5 py-0.5 rounded-full text-[10px] font-bold",
                                                         r.status.toLowerCase() === 'present' && "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
                                                         r.status.toLowerCase() === 'late' && "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-                                                        r.status.toLowerCase() === 'absent' && "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
-                                                        r.status.toLowerCase() === 'online' && "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                                                        (r.status.toLowerCase() === 'absent' || r.status.toLowerCase() === 'unattended') && "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
+                                                        r.status.toLowerCase() === 'online' && "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
+                                                        (r.status.toLowerCase() === 'on-leave' || r.status.toLowerCase() === 'leave') && "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300"
                                                     )}>
                                                         {r.status}
                                                     </span>
@@ -596,47 +630,188 @@ export default function FacultyAttendancePage({
                     </div>
                 )}
 
-                {/* 5. Monthly Attendance Matrix Table View */}
+                {/* 5. Monthly Attendance Matrix Table View (Matches Faculty Attendance Generated Report Columns) */}
                 {viewType === 'monthly' && (
                     <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-2xs space-y-4 p-5">
-                        <div className="pb-3 border-b border-border">
-                            <h2 className="text-sm font-bold text-foreground">Monthly Attendance Matrix</h2>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                                Consolidated teaching performance and attendance percentages per academic month.
-                            </p>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-border">
+                            <div>
+                                <h2 className="text-sm font-bold text-foreground">Monthly Attendance Matrix</h2>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Official institutional evaluation matching Davao del Sur State College Faculty Attendance Report format.
+                                </p>
+                            </div>
+                            <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-muted text-muted-foreground border border-border w-fit">
+                                {monthlySummaries.length} Academic Months Tracked
+                            </span>
                         </div>
 
                         <div className="overflow-x-auto border border-border rounded-xl">
-                            <table className="w-full text-left text-xs">
-                                <thead className="bg-muted/40 text-muted-foreground border-b border-border uppercase text-[11px] font-bold">
+                            <table className="w-full text-left text-xs border-collapse">
+                                <thead className="bg-muted/40 text-muted-foreground border-b border-border uppercase text-[10.5px] font-bold">
                                     <tr>
-                                        <th className="p-3.5">Month</th>
-                                        <th className="p-3.5 text-center">Scheduled Sessions</th>
-                                        <th className="p-3.5 text-center">Present Sessions</th>
-                                        <th className="p-3.5 text-center">Late Sessions</th>
-                                        <th className="p-3.5 text-center">Absent Sessions</th>
-                                        <th className="p-3.5 text-center">Total Late Mins</th>
-                                        <th className="p-3.5 text-center">Attendance Rate</th>
+                                        <th className="p-3 border-r border-border min-w-[130px]">Month</th>
+                                        <th className="p-3 text-right border-r border-border whitespace-nowrap" title="Total Scheduled Teaching Time">Scheduled</th>
+                                        <th className="p-3 text-right border-r border-border whitespace-nowrap" title="Eligible Scheduled Time = Scheduled - Approved Leave">Eligible</th>
+                                        <th className="p-3 text-right border-r border-border whitespace-nowrap" title="Attended Instructional Time">Attended</th>
+                                        <th className="p-3 text-right border-r border-border whitespace-nowrap" title="Approved Leave Time">Leave</th>
+                                        <th className="p-3 text-right border-r border-border whitespace-nowrap" title="Unexcused Absence Time">Absence</th>
+                                        <th className="p-3 text-center border-r border-border whitespace-nowrap" title="Late Attended Sessions Count">Late Sess</th>
+                                        <th className="p-3 text-right border-r border-border whitespace-nowrap" title="Cumulative Late Time">Late Time</th>
+                                        <th className="p-3 text-right border-r border-border whitespace-nowrap" title="Make-Up Time Required">Make-Up Req.</th>
+                                        <th className="p-3 text-right border-r border-border whitespace-nowrap" title="Make-Up Time Completed">Make-Up Comp.</th>
+                                        <th className="p-3 text-center border-r border-border whitespace-nowrap" title="Attendance Coverage = Attended Eligible Min ÷ Eligible Scheduled Min × 100">Attendance Cov</th>
+                                        <th className="p-3 text-center border-r border-border whitespace-nowrap" title="On-Time Arrival Rate %">On-Time</th>
+                                        <th className="p-3 text-center border-r border-border whitespace-nowrap" title="Instructional Completion Rate = (Attended Min + Make-Up Done) ÷ Required Scheduled Min × 100">Completion</th>
+                                        <th className="p-3 text-center whitespace-nowrap" title="Evaluated Attendance Remarks">Remarks</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border font-medium">
                                     {monthlySummaries.length > 0 ? (
-                                        monthlySummaries.map((m) => (
-                                            <tr key={m.id} className="hover:bg-muted/30">
-                                                <td className="p-3.5 font-bold text-foreground">{m.period_label}</td>
-                                                <td className="p-3.5 text-center tabular-nums">{m.scheduled_sessions}</td>
-                                                <td className="p-3.5 text-center text-emerald-600 font-bold tabular-nums">{m.present_count}</td>
-                                                <td className="p-3.5 text-center text-amber-600 font-bold tabular-nums">{m.late_count}</td>
-                                                <td className="p-3.5 text-center text-rose-600 font-bold tabular-nums">{m.absent_count}</td>
-                                                <td className="p-3.5 text-center tabular-nums">{m.total_late_minutes}m</td>
-                                                <td className="p-3.5 text-center font-black text-emerald-600 tabular-nums">
-                                                    {m.attendance_rate}%
-                                                </td>
-                                            </tr>
-                                        ))
+                                        monthlySummaries.map((m) => {
+                                            const scheduledMin = m.scheduled_minutes ?? (m.scheduled_sessions * 90);
+                                            const leaveMin = m.approved_leave_minutes ?? ((m.on_leave_count ?? 0) * 90);
+                                            const absentMin = m.unexcused_absent_minutes ?? (m.absent_count * 90);
+                                            const eligibleMin = m.eligible_minutes ?? Math.max(0, scheduledMin - leaveMin);
+                                            const attendedMin = m.attended_minutes ?? ((m.present_count + m.late_count) * 90);
+                                            const makeUpReqMin = m.make_up_required_minutes ?? (absentMin + leaveMin);
+                                            const makeUpDoneMin = m.make_up_completed_minutes ?? 0;
+                                            const covRate = m.attendance_coverage_rate ?? (eligibleMin > 0 ? Number(((attendedMin / eligibleMin) * 100).toFixed(2)) : null);
+                                            const onTime = m.on_time_rate ?? (m.present_count > 0 ? Number((((m.present_count) / (m.present_count + m.late_count)) * 100).toFixed(2)) : null);
+                                            const completion = m.instructional_completion_rate ?? (scheduledMin > 0 ? Math.min(100, Number((((attendedMin + makeUpDoneMin) / scheduledMin) * 100).toFixed(2))) : null);
+
+                                            // Monitoring Status Badge
+                                            let covBadge = { text: 'N/A', cls: 'bg-muted text-muted-foreground border-border' };
+                                            if (covRate !== null) {
+                                                if (covRate >= 85) covBadge = { text: 'Excellent', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300' };
+                                                else if (covRate >= 70) covBadge = { text: 'Very Satisfactory', cls: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-300' };
+                                                else if (covRate >= 60) covBadge = { text: 'Satisfactory', cls: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-300' };
+                                                else if (covRate >= 50) covBadge = { text: 'Average', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300' };
+                                                else covBadge = { text: 'Needs Attention', cls: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300' };
+                                            }
+
+                                            const remarksText = scheduledMin === 0
+                                                ? 'N/A – No Classes'
+                                                : leaveMin === scheduledMin
+                                                    ? 'On Approved Leave'
+                                                    : eligibleMin === 0
+                                                        ? 'N/A – Excluded'
+                                                        : covBadge.text;
+
+                                            return (
+                                                <tr key={m.id} className="hover:bg-muted/30 transition-colors">
+                                                    {/* Month Period Label */}
+                                                    <td className="p-3 font-bold text-foreground border-r border-border whitespace-nowrap">
+                                                        <div>{m.period_label}</div>
+                                                        <div className="text-[11px] text-muted-foreground font-normal">
+                                                            {m.scheduled_sessions} {m.scheduled_sessions === 1 ? 'session' : 'sessions'}
+                                                        </div>
+                                                    </td>
+
+                                                    {/* Scheduled */}
+                                                    <td className="p-3 text-right font-mono border-r border-border whitespace-nowrap">
+                                                        <div className="font-bold text-foreground">{formatDuration(scheduledMin)}</div>
+                                                        <div className="text-[10px] text-muted-foreground">({scheduledMin}m)</div>
+                                                    </td>
+
+                                                    {/* Eligible */}
+                                                    <td className="p-3 text-right font-mono border-r border-border whitespace-nowrap">
+                                                        <div className="font-semibold text-foreground">{formatDuration(eligibleMin)}</div>
+                                                        <div className="text-[10px] text-muted-foreground">({eligibleMin}m)</div>
+                                                    </td>
+
+                                                    {/* Attended */}
+                                                    <td className="p-3 text-right font-mono border-r border-border whitespace-nowrap">
+                                                        <div className="font-bold text-emerald-600 dark:text-emerald-400">{formatDuration(attendedMin)}</div>
+                                                        <div className="text-[10px] text-muted-foreground">({attendedMin}m)</div>
+                                                    </td>
+
+                                                    {/* Leave */}
+                                                    <td className="p-3 text-right font-mono border-r border-border whitespace-nowrap">
+                                                        <div className="text-muted-foreground">{leaveMin > 0 ? formatDuration(leaveMin) : '0m'}</div>
+                                                        {leaveMin > 0 && <div className="text-[10px] text-muted-foreground">({leaveMin}m)</div>}
+                                                    </td>
+
+                                                    {/* Absence */}
+                                                    <td className="p-3 text-right font-mono border-r border-border whitespace-nowrap">
+                                                        <div className={cn("font-semibold", absentMin > 0 ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground")}>
+                                                            {absentMin > 0 ? formatDuration(absentMin) : '0m'}
+                                                        </div>
+                                                        {absentMin > 0 && <div className="text-[10px] text-rose-500">({absentMin}m)</div>}
+                                                    </td>
+
+                                                    {/* Late Sess */}
+                                                    <td className="p-3 text-center font-mono border-r border-border whitespace-nowrap">
+                                                        <span className={cn("font-bold", m.late_count > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground")}>
+                                                            {m.late_count}
+                                                        </span>
+                                                    </td>
+
+                                                    {/* Late Time */}
+                                                    <td className="p-3 text-right font-mono border-r border-border whitespace-nowrap">
+                                                        <span className={cn(m.total_late_minutes > 0 ? "text-amber-600 dark:text-amber-400 font-bold" : "text-muted-foreground")}>
+                                                            {m.total_late_minutes > 0 ? formatDuration(m.total_late_minutes) : '0m'}
+                                                        </span>
+                                                    </td>
+
+                                                    {/* Make-Up Req */}
+                                                    <td className="p-3 text-right font-mono border-r border-border whitespace-nowrap">
+                                                        <span className={cn(makeUpReqMin > 0 ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-muted-foreground")}>
+                                                            {makeUpReqMin > 0 ? formatDuration(makeUpReqMin) : '0m'}
+                                                        </span>
+                                                    </td>
+
+                                                    {/* Make-Up Comp */}
+                                                    <td className="p-3 text-right font-mono border-r border-border whitespace-nowrap">
+                                                        <span className={cn(makeUpDoneMin > 0 ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-muted-foreground")}>
+                                                            {makeUpDoneMin > 0 ? formatDuration(makeUpDoneMin) : '0m'}
+                                                        </span>
+                                                    </td>
+
+                                                    {/* Attendance Cov */}
+                                                    <td className="p-3 text-center border-r border-border whitespace-nowrap">
+                                                        {covRate !== null ? (
+                                                            <span className="font-mono font-bold text-foreground">
+                                                                {covRate}%
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">N/A</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* On-Time */}
+                                                    <td className="p-3 text-center border-r border-border whitespace-nowrap">
+                                                        {onTime !== null ? (
+                                                            <span className="font-mono font-bold text-foreground">
+                                                                {onTime}%
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">N/A</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Completion */}
+                                                    <td className="p-3 text-center border-r border-border whitespace-nowrap">
+                                                        {completion !== null ? (
+                                                            <span className="font-mono font-bold text-foreground">
+                                                                {completion}%
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">N/A</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Remarks */}
+                                                    <td className="p-3 text-center whitespace-nowrap">
+                                                        <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold border", covBadge.cls)}>
+                                                            {remarksText}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
                                     ) : (
                                         <tr>
-                                            <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                                            <td colSpan={14} className="p-8 text-center text-muted-foreground">
                                                 No monthly attendance summaries computed yet for this semester.
                                             </td>
                                         </tr>

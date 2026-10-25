@@ -152,7 +152,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Schedule Section
     Route::prefix('schedule')->name('schedule.')->group(function () {
+        Route::post('meetings/bulk-delete', [MeetingController::class, 'bulkDestroy'])->name('meetings.bulk-delete');
         Route::resource('meetings', MeetingController::class);
+        Route::post('activities/bulk-delete', [ActivityController::class, 'bulkDestroy'])->name('activities.bulk-delete');
         Route::resource('activities', ActivityController::class);
         Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
         Route::get('calendar/events-json', [CalendarController::class, 'eventsJson'])->name('calendar.events-json');
@@ -330,6 +332,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/curricula/{curriculum}/copy', [ProgramController::class, 'copyCurriculum'])->name('curricula.copy');
     Route::patch('/curricula/{curriculum}/status', [ProgramController::class, 'toggleCurriculumStatus'])->name('curricula.status');
     Route::post('/curricula/{curriculum}/courses', [ProgramController::class, 'addCourseToCurriculum'])->name('curricula.courses.add');
+    Route::put('/curricula/{curriculum}/courses/{curriculumCourse}', [ProgramController::class, 'updateCurriculumCourse'])->name('curricula.courses.update');
     Route::delete('/curricula/{curriculum}/courses/{course}', [ProgramController::class, 'removeCourseFromCurriculum'])->name('curricula.courses.remove');
 
     // Academic Structure: Canonical Courses Catalog
@@ -449,6 +452,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/corrections', [FacultyPortalController::class, 'storeCorrection'])->name('corrections.store');
 
         Route::get('/notifications', [FacultyPortalController::class, 'notifications'])->name('notifications');
+        Route::post('/notifications/{id}/read', [FacultyPortalController::class, 'markNotificationAsRead'])->name('notifications.read');
+        Route::post('/notifications/read-all', [FacultyPortalController::class, 'markAllNotificationsAsRead'])->name('notifications.read-all');
 
         // Legacy / shortcut workspace redirect
         Route::get('/workspace', [FacultyPortalController::class, 'dashboard'])->name('workspace');

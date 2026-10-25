@@ -140,14 +140,14 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                     </button>
 
                     {/* Notification Bell */}
-                    <button
-                        type="button"
+                    <Link
+                        href="/faculty/notifications"
                         className="relative hidden sm:flex items-center justify-center p-2 rounded-xl border border-border bg-background hover:bg-muted/70 transition-colors shadow-2xs group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                         title="Notifications"
                     >
                         <Bell className="h-4 w-4 text-foreground group-hover:text-amber-500 transition-colors" />
                         <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
-                    </button>
+                    </Link>
 
                     {/* TV Display Button */}
                     <Link

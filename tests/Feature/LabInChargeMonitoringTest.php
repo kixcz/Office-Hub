@@ -31,12 +31,49 @@ test('lab in-charge workspace loads with operational data and without admin cont
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('monitoring/lab-in-charge/index')
-        ->has('roomStatusBoard')
+        ->has('roomStatusBoard', 1)
+        ->where('roomStatusBoard.0.room_name', 'CLR 3')
         ->has('actionRequired')
         ->has('kpi')
         ->has('sessionsList')
         ->has('timetablesByRoom')
-        ->has('myAssignedLabs')
+        ->has('myAssignedLabs', 1)
+    );
+});
+
+test('lab in-charge only sees schedules and timetables for assigned labs', function () {
+    $user = User::factory()->create();
+    $role = Role::firstOrCreate(['name' => 'Lab In-Charge']);
+    $user->roles()->syncWithoutDetaching([$role->id]);
+
+    $room1 = Room::firstOrCreate(
+        ['room_name' => 'CLR 1'],
+        ['building' => 'CIDS Main', 'type' => 'Laboratory', 'capacity' => 40, 'status' => 'Available']
+    );
+    $room2 = Room::firstOrCreate(
+        ['room_name' => 'CLR 2'],
+        ['building' => 'CIDS Main', 'type' => 'Laboratory', 'capacity' => 40, 'status' => 'Available']
+    );
+
+    // Only assign room1 to user
+    LabInChargeAssignment::create([
+        'user_id' => $user->id,
+        'room_id' => $room1->id,
+        'shift_name' => 'Day Shift',
+        'role_type' => 'Primary',
+        'assigned_days' => 'Monday–Saturday',
+        'is_active' => true,
+    ]);
+
+    $response = $this->actingAs($user)->get(route('lab-in-charge.index'));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('monitoring/lab-in-charge/index')
+        ->has('assignedRooms', 1)
+        ->where('assignedRooms.0.id', $room1->id)
+        ->has('roomStatusBoard', 1)
+        ->where('roomStatusBoard.0.room_name', 'CLR 1')
     );
 });
 

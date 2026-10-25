@@ -78,7 +78,7 @@ class FacultyAttendance extends Model
      */
     public function resolveSchedule(): ?RoomSchedule
     {
-        $parts = explode('-', $this->time_slot);
+        $parts = explode('-', (string) ($this->time_slot ?? ''));
         $startRaw = trim($parts[0] ?? '');
         $startFormatted = $startRaw ? date('H:i', strtotime($startRaw)) : '';
 

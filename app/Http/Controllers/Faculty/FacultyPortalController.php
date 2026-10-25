@@ -7,6 +7,7 @@ use App\Http\Controllers\Schedule\CalendarController;
 use App\Models\AcademicPeriod;
 use App\Models\Accomplishment;
 use App\Models\Activity;
+use App\Models\Announcement;
 use App\Models\ExamSchedule;
 use App\Models\ExtensionEngagement;
 use App\Models\Faculty;
@@ -599,9 +600,9 @@ class FacultyPortalController extends Controller
         $faculty = $this->resolveFaculty($request);
 
         // Filter options: 'weekly' or 'monthly'
-        $viewType = $request->query('view_type', 'weekly'); // 'weekly' or 'monthly'
+        $viewType = $request->query('view_type', 'weekly');
 
-        // Monthly periods available
+        // Month ordering dictionary
         $monthOrder = [
             'August 2026' => 1,
             'September 2026' => 2,
@@ -611,64 +612,74 @@ class FacultyPortalController extends Controller
             'January 2027' => 6,
         ];
 
-        $monthlyPeriods = FacultyAttendanceSummary::where('period_type', 'monthly')
-            ->pluck('period_label')
+        // Helper closure to strictly scope query to the resolved faculty member
+        $scopeFaculty = function ($q) use ($faculty) {
+            if ($faculty) {
+                $fullName = trim("{$faculty->first_name} {$faculty->last_name}");
+                $lastName = trim($faculty->last_name);
+                $q->where(function ($sub) use ($faculty, $fullName, $lastName) {
+                    if ($faculty->id) {
+                        $sub->where('faculty_id', $faculty->id)
+                            ->orWhere('instructor_name', $fullName);
+                    } else {
+                        $sub->where('instructor_name', 'like', "%{$lastName}%");
+                    }
+                });
+            }
+        };
+
+        // 1. All sessions for this faculty member (unfiltered by week/month for periods & monthly matrix calculation)
+        $allFacultySessions = FacultyAttendance::query()
+            ->when($faculty, $scopeFaculty)
+            ->orderBy('session_date')
+            ->orderBy('time_slot')
+            ->get();
+
+        // Standard canonical academic semester months
+        $canonicalMonths = ['August 2026', 'September 2026', 'October 2026', 'November 2026', 'December 2026'];
+
+        // Get monthly periods uniquely from sessions or canonical list (no duplicates)
+        $sessionMonths = $allFacultySessions->map(function ($s) {
+            return $s->session_date ? date('F Y', strtotime($s->session_date)) : null;
+        })->filter()->unique();
+
+        $monthlyPeriods = collect($canonicalMonths)
+            ->concat($sessionMonths)
             ->unique()
             ->sortBy(fn ($label) => $monthOrder[$label] ?? 99)
             ->values();
 
-        if ($monthlyPeriods->isEmpty()) {
-            $monthlyPeriods = collect(['August 2026', 'September 2026', 'October 2026', 'November 2026', 'December 2026']);
-        }
-
-        // Weekly periods available - prioritize this faculty member's recorded weeks first
-        $facultyWeekQuery = FacultyAttendance::query();
-        if ($faculty) {
-            $facultyWeekQuery->where(function ($q) use ($faculty) {
-                $q->where('faculty_id', $faculty->id)
-                    ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
-            });
-        }
-        $facultyWeeks = $facultyWeekQuery->pluck('week_label')->filter()->unique()->values();
+        // 2. Weekly periods available for this faculty member (clean, deduplicated)
+        $facultyWeeks = $allFacultySessions->pluck('week_label')->filter()->unique()->values();
 
         $allWeeklyPeriods = FacultyAttendanceSummary::where('period_type', 'weekly')
+            ->when($faculty, $scopeFaculty)
             ->pluck('period_label')
-            ->concat(FacultyAttendance::pluck('week_label'))
+            ->concat($facultyWeeks)
             ->unique()
             ->filter(fn ($label) => ! empty($label) && ! preg_match('/\(\d{5}\)/', $label))
             ->values();
 
-        // Merge so the faculty's weeks appear first
-        $weeklyPeriods = $facultyWeeks->concat($allWeeklyPeriods)->unique()->values();
+        $weeklyPeriods = $allWeeklyPeriods->isNotEmpty()
+            ? $allWeeklyPeriods
+            : collect(['August Week 3', 'August Week 4', 'September Week 1', 'September Week 2', 'September Week 3', 'September Week 4', 'October Week 1', 'October Week 2', 'October Week 3']);
 
-        if ($weeklyPeriods->isEmpty()) {
-            $weeklyPeriods = collect(['August 10-14, 2026', 'August 17-21, 2026', 'August 24-28, 2026']);
-        }
-
-        // Default week to 'all' as requested by the user, or specific week if provided
+        // Default filters
         $selectedWeek = $request->query('week', 'all');
         $selectedMonth = $request->query('month', 'all');
         $selectedStatus = $request->query('status', 'all');
 
-        // Sessions Query
-        $sessionsQuery = FacultyAttendance::query();
-        if ($faculty) {
-            $sessionsQuery->where(function ($q) use ($faculty) {
-                $q->where('faculty_id', $faculty->id)
-                    ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
-            });
-        }
+        // 3. Filtered Sessions Query for Weekly Sessions table
+        $sessionsQuery = FacultyAttendance::query()->when($faculty, $scopeFaculty);
 
         if ($viewType === 'weekly' && $selectedWeek && $selectedWeek !== 'all') {
             $sessionsQuery->where('week_label', $selectedWeek);
         } elseif ($viewType === 'monthly' && $selectedMonth && $selectedMonth !== 'all') {
-            // If month filtering is active, filter session dates by that month/year
             try {
                 $carbonMonth = Carbon::parse($selectedMonth);
                 $sessionsQuery->whereYear('session_date', $carbonMonth->year)
                     ->whereMonth('session_date', $carbonMonth->month);
             } catch (\Exception) {
-                // If parse fails, attempt substring matching
                 $monthWord = explode(' ', $selectedMonth)[0] ?? '';
                 if ($monthWord) {
                     $sessionsQuery->where('week_label', 'like', "%{$monthWord}%");
@@ -677,64 +688,123 @@ class FacultyPortalController extends Controller
         }
 
         if ($selectedStatus && $selectedStatus !== 'all') {
-            $sessionsQuery->where('status', strtolower($selectedStatus));
+            if (strtolower($selectedStatus) === 'absent') {
+                $sessionsQuery->whereIn('status', ['absent', 'Absent', 'unattended', 'Unattended']);
+            } else {
+                $sessionsQuery->where('status', 'like', $selectedStatus);
+            }
         }
 
         $sessions = $sessionsQuery->orderBy('session_date')
             ->orderBy('time_slot')
             ->get();
 
-        // Summaries Query (Monthly or Weekly)
-        $summary = null;
-        if ($viewType === 'weekly' && $selectedWeek !== 'all') {
-            $summaryQuery = FacultyAttendanceSummary::query()->where('period_type', 'weekly')->where('period_label', $selectedWeek);
-            if ($faculty) {
-                $summaryQuery->where(function ($q) use ($faculty) {
-                    $q->where('faculty_id', $faculty->id)
-                        ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
-                });
-            }
-            $summary = $summaryQuery->first();
-        } elseif ($viewType === 'monthly' && $selectedMonth !== 'all') {
-            $summaryQuery = FacultyAttendanceSummary::query()->where('period_type', 'monthly')->where('period_label', $selectedMonth);
-            if ($faculty) {
-                $summaryQuery->where(function ($q) use ($faculty) {
-                    $q->where('faculty_id', $faculty->id)
-                        ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
-                });
-            }
-            $summary = $summaryQuery->first();
-        }
+        // 4. Current Context Summary (for KPI Cards)
+        $activeSessions = $sessions;
+        $scheduled = $activeSessions->count();
+        $present = $activeSessions->filter(fn ($s) => in_array(strtolower($s->status), ['present', 'online']))->count();
+        $late = $activeSessions->filter(fn ($s) => strtolower($s->status) === 'late')->count();
+        $absent = $activeSessions->filter(fn ($s) => in_array(strtolower($s->status), ['absent', 'unattended']))->count();
+        $onLeave = $activeSessions->filter(fn ($s) => in_array(strtolower($s->status), ['on-leave', 'on_leave', 'leave']))->count();
+        $lateMinutes = $activeSessions->sum('late_minutes');
+        $rate = $scheduled > 0 ? round((($present + $late) / $scheduled) * 100, 1) : 100.0;
 
-        // If no pre-computed summary exists or 'all' is selected, compute dynamically from matched sessions
-        if (! $summary) {
-            $scheduled = $sessions->count();
-            $present = $sessions->filter(fn ($s) => in_array(strtolower($s->status), ['present', 'online']))->count();
-            $late = $sessions->filter(fn ($s) => strtolower($s->status) === 'late')->count();
-            $absent = $sessions->filter(fn ($s) => strtolower($s->status) === 'absent')->count();
-            $lateMinutes = $sessions->sum('late_minutes');
-            $rate = $scheduled > 0 ? round((($present + $late) / $scheduled) * 100, 1) : 100.0;
+        $summary = (object) [
+            'scheduled_sessions' => $scheduled,
+            'present_count' => $present,
+            'late_count' => $late,
+            'absent_count' => $absent,
+            'on_leave_count' => $onLeave,
+            'total_late_minutes' => $lateMinutes,
+            'attendance_rate' => $rate,
+        ];
 
-            $summary = (object) [
-                'scheduled_sessions' => $scheduled,
-                'present_count' => $present,
-                'late_count' => $late,
-                'absent_count' => $absent,
-                'total_late_minutes' => $lateMinutes,
-                'attendance_rate' => $rate,
-            ];
-        }
-
-        // All monthly summaries for the faculty member (for Monthly Matrix view)
-        $monthlySummaries = FacultyAttendanceSummary::query()
+        // 5. Pre-computed DB summaries for fallback and metadata
+        $dbMonthlySummaries = FacultyAttendanceSummary::query()
             ->where('period_type', 'monthly')
-            ->when($faculty, function ($q) use ($faculty) {
-                $q->where(function ($sub) use ($faculty) {
-                    $sub->where('faculty_id', $faculty->id)
-                        ->orWhere('instructor_name', 'like', "%{$faculty->last_name}%");
-                });
-            })
-            ->get();
+            ->when($faculty, $scopeFaculty)
+            ->get()
+            ->keyBy(fn ($s) => trim($s->period_label));
+
+        // 6. Build the Monthly Attendance Matrix matching faculty attendance report columns
+        $monthlySummaries = $monthlyPeriods->map(function ($periodLabel) use ($allFacultySessions, $dbMonthlySummaries) {
+            $matchingSessions = $allFacultySessions->filter(function ($s) use ($periodLabel) {
+                return $s->session_date && date('F Y', strtotime($s->session_date)) === $periodLabel;
+            });
+
+            $dbSummary = $dbMonthlySummaries->get($periodLabel);
+
+            // Compute atomic baseline metrics from verified session records if sessions exist for this month
+            if ($matchingSessions->isNotEmpty()) {
+                $schedCount = $matchingSessions->count();
+                $presCount = $matchingSessions->filter(fn ($s) => in_array(strtolower($s->status), ['present', 'online']))->count();
+                $lateCount = $matchingSessions->filter(fn ($s) => strtolower($s->status) === 'late')->count();
+                $absCount = $matchingSessions->filter(fn ($s) => in_array(strtolower($s->status), ['absent', 'unattended']))->count();
+                $leaveCount = $matchingSessions->filter(fn ($s) => in_array(strtolower($s->status), ['on-leave', 'on_leave', 'leave']))->count();
+                $lateMins = (int) $matchingSessions->sum('late_minutes');
+
+                $schedMin = (int) $matchingSessions->sum(fn ($s) => $s->scheduled_duration_minutes ?? 90) ?: ($schedCount * 90);
+                $leaveMin = $leaveCount * 90;
+                $absMin = $absCount * 90;
+                $eligibleMin = max(0, $schedMin - $leaveMin);
+                $attendedMin = ($presCount * 90) + ($lateCount * 90);
+
+                $makeUpReqMin = $absMin + $leaveMin;
+                $makeUpDoneMin = $dbSummary?->make_up_completed_minutes ?? 0;
+
+                $attRate = $schedCount > 0 ? round((($presCount + $lateCount) / $schedCount) * 100, 1) : 100.0;
+                $covRate = $eligibleMin > 0 ? round(($attendedMin / $eligibleMin) * 100, 2) : 100.0;
+                $onTimeRate = ($presCount + $lateCount) > 0 ? round(($presCount / ($presCount + $lateCount)) * 100, 2) : 100.0;
+                $compRate = $schedMin > 0 ? min(100.0, round((($attendedMin + $makeUpDoneMin) / $schedMin) * 100, 2)) : 100.0;
+
+                return [
+                    'id' => $dbSummary?->id ?? ('month_'.md5($periodLabel)),
+                    'period_label' => $periodLabel,
+                    'scheduled_sessions' => $schedCount,
+                    'present_count' => $presCount,
+                    'late_count' => $lateCount,
+                    'absent_count' => $absCount,
+                    'on_leave_count' => $leaveCount,
+                    'total_late_minutes' => $lateMins,
+                    'scheduled_minutes' => $schedMin,
+                    'eligible_minutes' => $eligibleMin,
+                    'attended_minutes' => $attendedMin,
+                    'approved_leave_minutes' => $leaveMin,
+                    'unexcused_absent_minutes' => $absMin,
+                    'make_up_required_minutes' => $makeUpReqMin,
+                    'make_up_completed_minutes' => $makeUpDoneMin,
+                    'attendance_rate' => $attRate,
+                    'attendance_coverage_rate' => $covRate,
+                    'on_time_rate' => $onTimeRate,
+                    'instructional_completion_rate' => $compRate,
+                    'is_rank_eligible' => ($covRate >= 80),
+                ];
+            }
+
+            // If no sessions exist for this future month (e.g., November / December), use clean zero baseline
+            return [
+                'id' => $dbSummary?->id ?? ('month_'.md5($periodLabel)),
+                'period_label' => $periodLabel,
+                'scheduled_sessions' => $dbSummary?->scheduled_sessions ?? 0,
+                'present_count' => $dbSummary?->present_count ?? 0,
+                'late_count' => $dbSummary?->late_count ?? 0,
+                'absent_count' => $dbSummary?->absent_count ?? 0,
+                'on_leave_count' => $dbSummary?->on_leave_count ?? 0,
+                'total_late_minutes' => $dbSummary?->total_late_minutes ?? 0,
+                'scheduled_minutes' => $dbSummary?->scheduled_minutes ?? 0,
+                'eligible_minutes' => $dbSummary?->eligible_minutes ?? 0,
+                'attended_minutes' => $dbSummary?->attended_minutes ?? 0,
+                'approved_leave_minutes' => $dbSummary?->approved_leave_minutes ?? 0,
+                'unexcused_absent_minutes' => $dbSummary?->unexcused_absent_minutes ?? 0,
+                'make_up_required_minutes' => $dbSummary?->make_up_required_minutes ?? 0,
+                'make_up_completed_minutes' => $dbSummary?->make_up_completed_minutes ?? 0,
+                'attendance_rate' => $dbSummary?->attendance_rate ?? 100,
+                'attendance_coverage_rate' => $dbSummary?->attendance_coverage_rate ?? null,
+                'on_time_rate' => $dbSummary?->on_time_rate ?? null,
+                'instructional_completion_rate' => $dbSummary?->instructional_completion_rate ?? null,
+                'is_rank_eligible' => $dbSummary?->is_rank_eligible ?? true,
+            ];
+        })->values();
 
         return Inertia::render('faculty/attendance', [
             'faculty' => $faculty,
@@ -2527,5 +2597,172 @@ class FacultyPortalController extends Controller
         $examSchedule->delete();
 
         return back()->with('success', "Exam schedule for {$course} was removed.");
+    }
+
+    /**
+     * System & Administrative Notifications
+     */
+    public function notifications(Request $request): Response
+    {
+        $user = $request->user();
+        $faculty = $this->resolveFaculty($request);
+
+        // Fetch user database notifications
+        $dbNotifications = $user ? $user->notifications()->latest()->take(50)->get()->map(function ($n) {
+            $data = is_array($n->data) ? $n->data : [];
+
+            return [
+                'id' => $n->id,
+                'title' => $data['title'] ?? 'System Notification',
+                'description' => $data['message'] ?? ($data['description'] ?? 'You have a new update.'),
+                'time' => $n->created_at ? $n->created_at->diffForHumans() : 'Just now',
+                'created_at' => $n->created_at?->toIso8601String(),
+                'type' => $data['type'] ?? 'system',
+                'action_url' => $data['action_url'] ?? null,
+                'read' => ! is_null($n->read_at),
+                'is_db' => true,
+            ];
+        }) : collect();
+
+        // Also gather contextual alerts from announcements, upcoming deadlines, etc.
+        $recentAnnouncements = Announcement::where('status', 'active')
+            ->latest('publish_at')
+            ->take(5)
+            ->get()
+            ->map(function ($a) {
+                return [
+                    'id' => 'announcement-'.$a->id,
+                    'title' => $a->title,
+                    'description' => $a->message,
+                    'time' => $a->publish_at ? $a->publish_at->diffForHumans() : $a->created_at?->diffForHumans(),
+                    'created_at' => ($a->publish_at ?? $a->created_at)?->toIso8601String(),
+                    'type' => 'announcement',
+                    'action_url' => '/announcements',
+                    'read' => false,
+                    'is_db' => false,
+                ];
+            });
+
+        // Upcoming requirement deadlines
+        $upcomingRequirements = Requirement::where('due_date', '>=', now()->startOfDay())
+            ->where('due_date', '<=', now()->addDays(14))
+            ->orderBy('due_date')
+            ->take(5)
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'id' => 'requirement-'.$r->id,
+                    'title' => 'Deadline Approaching: '.$r->title,
+                    'description' => 'Requirement submission is due on '.($r->due_date ? $r->due_date->format('M d, Y h:i A') : 'soon').'.',
+                    'time' => $r->due_date ? $r->due_date->diffForHumans() : 'Upcoming',
+                    'created_at' => $r->created_at?->toIso8601String(),
+                    'type' => 'deadline',
+                    'action_url' => '/faculty/requirements',
+                    'read' => false,
+                    'is_db' => false,
+                ];
+            });
+
+        // Fallback default notifications if none exist yet
+        $fallbackNotifications = collect([
+            [
+                'id' => 'sys-1',
+                'title' => 'Midterm Exam Guidelines Published',
+                'description' => 'The Dean’s office has released the examination schedule and proctoring guidelines for AY 2026–2027.',
+                'time' => '2 hours ago',
+                'created_at' => now()->subHours(2)->toIso8601String(),
+                'type' => 'announcement',
+                'action_url' => '/announcements',
+                'read' => false,
+                'is_db' => false,
+            ],
+            [
+                'id' => 'sys-2',
+                'title' => 'Requirement Deadline Reminder',
+                'description' => 'Class Attendance Report (Week 6) submission deadline is approaching. Please ensure all logs are synced.',
+                'time' => '4 hours ago',
+                'created_at' => now()->subHours(4)->toIso8601String(),
+                'type' => 'deadline',
+                'action_url' => '/faculty/requirements',
+                'read' => false,
+                'is_db' => false,
+            ],
+            [
+                'id' => 'sys-3',
+                'title' => 'Classroom Reassignment',
+                'description' => 'BSIT 2B Data Structures reassigned to Room 302 due to network equipment maintenance.',
+                'time' => '6 hours ago',
+                'created_at' => now()->subHours(6)->toIso8601String(),
+                'type' => 'schedule',
+                'action_url' => '/faculty/schedule',
+                'read' => true,
+                'is_db' => false,
+            ],
+            [
+                'id' => 'sys-4',
+                'title' => 'Call for Research Proposals',
+                'description' => 'Institutional research grants are now accepting submissions for the upcoming academic cycle.',
+                'time' => '1 day ago',
+                'created_at' => now()->subDay()->toIso8601String(),
+                'type' => 'research',
+                'action_url' => '/faculty/research-extension',
+                'read' => true,
+                'is_db' => false,
+            ],
+            [
+                'id' => 'sys-5',
+                'title' => 'Faculty Meeting Notice',
+                'description' => 'General faculty assembly scheduled for tomorrow at 9:00 AM in Conference Room A.',
+                'time' => '1 day ago',
+                'created_at' => now()->subDay()->toIso8601String(),
+                'type' => 'meeting',
+                'action_url' => '/faculty/meetings',
+                'read' => true,
+                'is_db' => false,
+            ],
+        ]);
+
+        $allNotifications = $dbNotifications
+            ->concat($recentAnnouncements)
+            ->concat($upcomingRequirements);
+
+        if ($allNotifications->isEmpty()) {
+            $allNotifications = $fallbackNotifications;
+        }
+
+        return Inertia::render('faculty/notifications', [
+            'faculty' => $faculty,
+            'notifications' => $allNotifications->values(),
+            'unreadCount' => $allNotifications->where('read', false)->count(),
+        ]);
+    }
+
+    /**
+     * Mark a specific notification as read.
+     */
+    public function markNotificationAsRead(Request $request, string $id): RedirectResponse
+    {
+        $user = $request->user();
+        if ($user) {
+            $notification = $user->notifications()->where('id', $id)->first();
+            if ($notification) {
+                $notification->markAsRead();
+            }
+        }
+
+        return back()->with('success', 'Notification marked as read.');
+    }
+
+    /**
+     * Mark all notifications as read.
+     */
+    public function markAllNotificationsAsRead(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        if ($user) {
+            $user->unreadNotifications->markAsRead();
+        }
+
+        return back()->with('success', 'All notifications marked as read.');
     }
 }

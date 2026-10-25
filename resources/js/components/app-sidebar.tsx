@@ -52,6 +52,7 @@ import {
     Beaker,
     SquareChartGantt,
     MegaphoneIcon,
+    SquareActivity,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -98,7 +99,7 @@ const adminNavGroups: NavGroup[] = [
         items: [
             { title: 'Rooms & Labs', url: '/facilities/rooms', icon: Building2 },
             { title: 'Lab Inventory', url: '/facilities/lab-inventory', icon: Monitor },
-            { title: 'Lab Monitoring', url: '/classroom-monitoring', icon: Monitor },
+            { title: 'Lab Monitoring', url: '/classroom-monitoring', icon: SquareActivity },
             { title: 'Lab In-Charge', url: '/operations/lab-in-charge', icon: Users },
             { title: 'Room Utilization', url: '/operations/room-utilization', icon: BarChart3 },
             { title: 'Facility Reports', url: '/operations/facility-reports', icon: AlertTriangle },
@@ -121,17 +122,17 @@ const adminNavGroups: NavGroup[] = [
             { title: 'Recognition Rules', url: '/performance/rules', icon: BookOpen },
         ],
     },
-    {
-        title: 'REPORTS & ANALYTICS',
-        items: [
-            { title: 'College Reports', url: '/performance/faculty', icon: Star },
-            { title: 'Attendance Reports', url: '/performance/program', icon: Trophy },
-            { title: 'Laboratory Reports', url: '/performance/rules', icon: BookOpen },
-            { title: 'Workload Reports', url: '/performance/rules', icon: BookOpen },
-            { title: 'Compliance  Reports', url: '/performance/rules', icon: BookOpen },
-            { title: 'Executive  Reports', url: '/performance/rules', icon: BookOpen },
-        ],
-    },
+    // {
+    //     title: 'REPORTS & ANALYTICS',
+    //     items: [
+    //         { title: 'College Reports', url: '/performance/faculty', icon: Star },
+    //         { title: 'Attendance Reports', url: '/performance/program', icon: Trophy },
+    //         { title: 'Laboratory Reports', url: '/performance/rules', icon: BookOpen },
+    //         { title: 'Workload Reports', url: '/performance/rules', icon: BookOpen },
+    //         { title: 'Compliance  Reports', url: '/performance/rules', icon: BookOpen },
+    //         { title: 'Executive  Reports', url: '/performance/rules', icon: BookOpen },
+    //     ],
+    // },
     {
         title: 'SCHEDULING & OR-TOOLS',
         items: [

@@ -56,13 +56,6 @@ class LabInChargeMonitoringController extends Controller
             })->get();
         } else {
             $assignedRooms = Room::whereIn('id', $assignedRoomIds)->get();
-            // Ensure core labs (CHS, CLR 1-5, COM 1) are available for comprehensive monitoring
-            if ($assignedRooms->count() < 7) {
-                $coreLabNames = ['CHS', 'CLR 1', 'CLR 2', 'CLR 3', 'CLR 4', 'CLR 5', 'COM 1'];
-                $assignedRooms = Room::whereIn('room_name', $coreLabNames)
-                    ->orWhereIn('id', $assignedRoomIds)
-                    ->get();
-            }
         }
 
         // Canonical display order matching the TV display bento grid (CHS, CLR 1..5, COM 1, etc.)

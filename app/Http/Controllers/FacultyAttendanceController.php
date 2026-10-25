@@ -167,13 +167,33 @@ class FacultyAttendanceController extends Controller
             'last_sync_batch' => AttendanceSourceSnapshot::latest('synced_at')->value('sync_batch_id'),
         ];
 
+        $makeUpRequests = MakeUpClassRequest::with('faculty')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $activePeriod = AcademicPeriod::where('is_current', true)->first()
+            ?? AcademicPeriod::where('status', 'Active')->first()
+            ?? AcademicPeriod::find(1);
+
+        // Fetch all summaries and all weekly sessions (with eager loading) so client can calculate matrices and trends matching report exactly
+        $allSummaries = FacultyAttendanceSummary::with(['faculty.program'])
+            ->orderBy('instructor_name')
+            ->get();
+
+        $allWeeklySessions = FacultyAttendance::with(['faculty.program', 'roomSchedule', 'makeUpRequest'])
+            ->orderBy('session_date')
+            ->orderBy('time_slot')
+            ->get();
+
         return Inertia::render('attendance/index', [
             'programs' => $programs,
             'faculties' => $faculties,
-            'summaries' => $summaries,
-            'weekly_sessions' => $weeklySessions,
+            'summaries' => $allSummaries->isNotEmpty() ? $allSummaries : $summaries,
+            'weekly_sessions' => $allWeeklySessions->isNotEmpty() ? $allWeeklySessions : $weeklySessions,
+            'make_up_requests' => $makeUpRequests,
             'monthly_periods' => $monthlyPeriods,
             'weekly_periods' => $weeklyPeriods,
+            'academic_period' => $activePeriod,
             'kpis' => [
                 'faculty_tracked' => $totalTracked,
                 'sessions_conducted' => $totalConducted,

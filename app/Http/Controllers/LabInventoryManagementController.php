@@ -94,8 +94,15 @@ class LabInventoryManagementController extends Controller
             ->latest()
             ->get();
 
+        // All inventory items for formal report matrix generation (ordered by facility and item)
+        $allItemsForReport = LabInventoryItem::with(['room'])
+            ->orderBy('room_name')
+            ->orderBy('item_name')
+            ->get();
+
         return Inertia::render('facilities/lab-inventory/index', [
             'items' => $items,
+            'allItemsForReport' => $allItemsForReport,
             'rooms' => $rooms,
             'categories' => $categories,
             'custodians' => $custodians,

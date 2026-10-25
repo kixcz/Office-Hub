@@ -33,7 +33,7 @@ import {
     PlusCircle
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -169,11 +169,16 @@ export default function ProgramsCurriculumIndex({
     const [isAddCurriculumOpen, setIsAddCurriculumOpen] = useState(false);
     const [isCopyCurriculumOpen, setIsCopyCurriculumOpen] = useState(false);
     const [isAddCourseOpen, setIsAddCourseOpen] = useState(false);
+    const [isEditCourseOpen, setIsEditCourseOpen] = useState(false);
     const [isCompareCurriculaOpen, setIsCompareCurriculaOpen] = useState(false);
     const [compareTargetId, setCompareTargetId] = useState<number | null>(null);
 
     // Delete dialog
     const [deletingCoursePivot, setDeletingCoursePivot] = useState<{ curriculumId: number; course: Course } | null>(null);
+    const [deletingProgram, setDeletingProgram] = useState<Program | null>(null);
+    const [isDeletingProgramLoading, setIsDeletingProgramLoading] = useState(false);
+    const [editingProgram, setEditingProgram] = useState<Program | null>(null);
+    const [editingCurriculumCourse, setEditingCurriculumCourse] = useState<CurriculumCourse | null>(null);
 
     // Forms
     const addProgramForm = useForm({
@@ -220,7 +225,17 @@ export default function ProgramsCurriculumIndex({
         corequisite_override: '',
     });
 
+    const editCourseForm = useForm({
+        year_level: 1,
+        semester_placement: '1st Semester',
+        requirement_type: 'Required',
+        prerequisite_override: '',
+        corequisite_override: '',
+    });
+
     const handleOpenEditProgram = (prog: Program) => {
+        setEditingProgram(prog);
+        editProgramForm.clearErrors();
         editProgramForm.setData({
             code: prog.code,
             name: prog.name,
@@ -231,6 +246,33 @@ export default function ProgramsCurriculumIndex({
             description: prog.description || '',
         });
         setIsEditProgramOpen(true);
+    };
+
+    const handleOpenAddCourseForTerm = (year: number, semester: string) => {
+        addCourseForm.reset();
+        addCourseForm.clearErrors();
+        addCourseForm.setData({
+            course_id: coursesCatalog[0]?.id || '',
+            year_level: year,
+            semester_placement: semester,
+            requirement_type: 'Required',
+            prerequisite_override: '',
+            corequisite_override: '',
+        });
+        setIsAddCourseOpen(true);
+    };
+
+    const handleOpenEditCourse = (cc: CurriculumCourse) => {
+        setEditingCurriculumCourse(cc);
+        editCourseForm.clearErrors();
+        editCourseForm.setData({
+            year_level: cc.year_level,
+            semester_placement: cc.semester_placement,
+            requirement_type: cc.requirement_type,
+            prerequisite_override: cc.prerequisite_override || '',
+            corequisite_override: cc.corequisite_override || '',
+        });
+        setIsEditCourseOpen(true);
     };
 
     const submitAddProgram: FormEventHandler = (e) => {
@@ -245,10 +287,36 @@ export default function ProgramsCurriculumIndex({
 
     const submitEditProgram: FormEventHandler = (e) => {
         e.preventDefault();
-        if (!selectedProgram) return;
-        editProgramForm.put(`/programs/${selectedProgram.id}`, {
+        const targetProgram = editingProgram || selectedProgram;
+        if (!targetProgram) return;
+        editProgramForm.put(`/programs/${targetProgram.id}`, {
             onSuccess: () => {
                 setIsEditProgramOpen(false);
+                setEditingProgram(null);
+            },
+        });
+    };
+
+    const confirmDeleteProgram = () => {
+        if (!deletingProgram) return;
+        setIsDeletingProgramLoading(true);
+        router.delete(`/programs/${deletingProgram.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsDeletingProgramLoading(false);
+            },
+            onSuccess: () => {
+                const deletedId = deletingProgram.id;
+                setDeletingProgram(null);
+                if (selectedProgramId === deletedId) {
+                    const remaining = programs.filter((p) => p.id !== deletedId);
+                    if (remaining.length > 0) {
+                        setSelectedProgramId(remaining[0].id);
+                    } else {
+                        setSelectedProgramId(null);
+                    }
+                    setSelectedCurriculumId(null);
+                }
             },
         });
     };
@@ -298,6 +366,18 @@ export default function ProgramsCurriculumIndex({
                     prerequisite_override: '',
                     corequisite_override: '',
                 });
+            },
+        });
+    };
+
+    const submitEditCourse: FormEventHandler = (e) => {
+        e.preventDefault();
+        if (!activeCurriculum || !editingCurriculumCourse) return;
+        editCourseForm.put(`/curricula/${activeCurriculum.id}/courses/${editingCurriculumCourse.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsEditCourseOpen(false);
+                setEditingCurriculumCourse(null);
             },
         });
     };
@@ -526,14 +606,80 @@ export default function ProgramsCurriculumIndex({
                                                     </span>
                                                 </div>
 
-                                                <span className={cn(
-                                                    'text-[10px] font-bold px-2 py-0.5 rounded-full border',
-                                                    prog.status === 'Active'
-                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
-                                                        : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-                                                )}>
-                                                    {prog.status}
-                                                </span>
+                                                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                                    <span className={cn(
+                                                        'text-[10px] font-bold px-2 py-0.5 rounded-full border',
+                                                        prog.status === 'Active'
+                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                                                            : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                                                    )}>
+                                                        {prog.status}
+                                                    </span>
+
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <button
+                                                                type="button"
+                                                                className="w-6 h-6 rounded-md inline-flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                                                title="Program Actions"
+                                                                aria-label={`Actions for ${prog.code}`}
+                                                            >
+                                                                <MoreVertical className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-48 text-xs font-semibold">
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    setSelectedProgramId(prog.id);
+                                                                    handleOpenEditProgram(prog);
+                                                                }}
+                                                                className="cursor-pointer gap-2"
+                                                            >
+                                                                <Edit className="w-3.5 h-3.5 text-slate-500" />
+                                                                <span>Edit Program</span>
+                                                            </DropdownMenuItem>
+
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    setSelectedProgramId(prog.id);
+                                                                    setIsAddCurriculumOpen(true);
+                                                                }}
+                                                                className="cursor-pointer gap-2"
+                                                            >
+                                                                <Plus className="w-3.5 h-3.5 text-amber-500" />
+                                                                <span>Add Curriculum</span>
+                                                            </DropdownMenuItem>
+
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    router.put(`/programs/${prog.id}`, {
+                                                                        code: prog.code,
+                                                                        name: prog.name,
+                                                                        degree_level: prog.degree_level,
+                                                                        department: prog.department,
+                                                                        duration_years: prog.duration_years,
+                                                                        status: prog.status === 'Active' ? 'Inactive' : 'Active',
+                                                                        description: prog.description || '',
+                                                                    }, { preserveScroll: true });
+                                                                }}
+                                                                className="cursor-pointer gap-2"
+                                                            >
+                                                                <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
+                                                                <span>Mark as {prog.status === 'Active' ? 'Inactive' : 'Active'}</span>
+                                                            </DropdownMenuItem>
+
+                                                            <DropdownMenuSeparator />
+
+                                                            <DropdownMenuItem
+                                                                onClick={() => setDeletingProgram(prog)}
+                                                                className="cursor-pointer gap-2 text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-950/30"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                                                <span>Delete Program</span>
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
                                             </div>
 
                                             <h3 className="text-xs font-bold text-slate-900 dark:text-white mt-2 line-clamp-1">
@@ -737,6 +883,15 @@ export default function ProgramsCurriculumIndex({
                                                     <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold">
                                                         {group.totalUnits} Units
                                                     </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenAddCourseForTerm(group.year, group.semester)}
+                                                        className="ml-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white dark:text-slate-950 flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                                                        title={`Add course to Year ${group.year} ${group.semester}`}
+                                                    >
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                        <span>Add Course</span>
+                                                    </button>
                                                 </div>
                                             </div>
 
@@ -803,19 +958,30 @@ export default function ProgramsCurriculumIndex({
                                                                         </span>
                                                                     </td>
                                                                     <td className="py-3 px-3 text-right pr-4">
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                if (!activeCurriculum) return;
-                                                                                setDeletingCoursePivot({
-                                                                                    curriculumId: activeCurriculum.id,
-                                                                                    course: cc.course,
-                                                                                });
-                                                                            }}
-                                                                            className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
-                                                                            title="Remove from curriculum"
-                                                                        >
-                                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                                        </button>
+                                                                        <div className="flex items-center justify-end gap-1">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleOpenEditCourse(cc)}
+                                                                                className="p-1 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
+                                                                                title="Edit course sequence / placement"
+                                                                            >
+                                                                                <Edit className="w-3.5 h-3.5" />
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    if (!activeCurriculum) return;
+                                                                                    setDeletingCoursePivot({
+                                                                                        curriculumId: activeCurriculum.id,
+                                                                                        course: cc.course,
+                                                                                    });
+                                                                                }}
+                                                                                className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                                                                                title="Remove from curriculum"
+                                                                            >
+                                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                                            </button>
+                                                                        </div>
                                                                     </td>
                                                                 </tr>
                                                             ))
@@ -996,7 +1162,29 @@ export default function ProgramsCurriculumIndex({
                                 />
                             </div>
 
+                            {Object.keys(editProgramForm.errors).length > 0 && (
+                                <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 text-xs text-rose-600 dark:text-rose-400 space-y-1">
+                                    {Object.entries(editProgramForm.errors).map(([field, err]) => (
+                                        <p key={field}>• {err}</p>
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Degree Level</label>
+                                    <select
+                                        value={editProgramForm.data.degree_level}
+                                        onChange={(e) => editProgramForm.setData('degree_level', e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    >
+                                        <option value="Bachelor's Degree">Bachelor's Degree</option>
+                                        <option value="Associate Degree">Associate Degree</option>
+                                        <option value="Master's Degree">Master's Degree</option>
+                                        <option value="Doctoral Degree">Doctoral Degree</option>
+                                        <option value="Diploma / Certificate">Diploma / Certificate</option>
+                                    </select>
+                                </div>
                                 <div>
                                     <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Status</label>
                                     <select
@@ -1009,16 +1197,28 @@ export default function ProgramsCurriculumIndex({
                                         <option value="Phased Out">Phased Out</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Department</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={editProgramForm.data.department}
-                                        onChange={(e) => editProgramForm.setData('department', e.target.value)}
-                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
-                                    />
-                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Department / College</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editProgramForm.data.department}
+                                    onChange={(e) => editProgramForm.setData('department', e.target.value)}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Description (Optional)</label>
+                                <textarea
+                                    rows={2}
+                                    value={editProgramForm.data.description}
+                                    onChange={(e) => editProgramForm.setData('description', e.target.value)}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    placeholder="Brief overview of the program..."
+                                />
                             </div>
 
                             <DialogFooter className="mt-4">
@@ -1287,6 +1487,114 @@ export default function ProgramsCurriculumIndex({
                     </DialogContent>
                 </Dialog>
 
+                {/* MODAL: Edit Course in Curriculum */}
+                <Dialog open={isEditCourseOpen} onOpenChange={setIsEditCourseOpen}>
+                    <DialogContent className="sm:max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>Edit Sequenced Course Placement</DialogTitle>
+                            <DialogDescription>
+                                Modify Year Level, Semester placement, and overrides for {editingCurriculumCourse?.course?.code} - {editingCurriculumCourse?.course?.title}.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={submitEditCourse} className="space-y-4 py-2">
+                            {Object.keys(editCourseForm.errors).length > 0 && (
+                                <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 text-xs text-rose-600 dark:text-rose-400 space-y-1">
+                                    {Object.entries(editCourseForm.errors).map(([field, err]) => (
+                                        <p key={field}>• {err}</p>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Year Level</label>
+                                    <select
+                                        value={editCourseForm.data.year_level}
+                                        onChange={(e) => editCourseForm.setData('year_level', Number(e.target.value))}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    >
+                                        <option value={1}>1st Year</option>
+                                        <option value={2}>2nd Year</option>
+                                        <option value={3}>3rd Year</option>
+                                        <option value={4}>4th Year</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Semester Placement</label>
+                                    <select
+                                        value={editCourseForm.data.semester_placement}
+                                        onChange={(e) => editCourseForm.setData('semester_placement', e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    >
+                                        <option value="1st Semester">1st Semester</option>
+                                        <option value="2nd Semester">2nd Semester</option>
+                                        <option value="Summer">Summer Term</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Requirement Classification</label>
+                                <select
+                                    value={editCourseForm.data.requirement_type}
+                                    onChange={(e) => editCourseForm.setData('requirement_type', e.target.value)}
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                >
+                                    <option value="Required">Required Major</option>
+                                    <option value="Major">Professional Core</option>
+                                    <option value="Elective">Professional Elective</option>
+                                    <option value="Specialization">Specialization Track</option>
+                                    <option value="General Education">General Education (GE)</option>
+                                    <option value="Institutional">Institutional Mandated</option>
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Prerequisite Override</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. IT 111, MATH 101"
+                                        value={editCourseForm.data.prerequisite_override}
+                                        onChange={(e) => editCourseForm.setData('prerequisite_override', e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Co-requisite Override</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. IT 112 Lab"
+                                        value={editCourseForm.data.corequisite_override}
+                                        onChange={(e) => editCourseForm.setData('corequisite_override', e.target.value)}
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg"
+                                    />
+                                </div>
+                            </div>
+
+                            <DialogFooter className="mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsEditCourseOpen(false);
+                                        setEditingCurriculumCourse(null);
+                                    }}
+                                    className="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={editCourseForm.processing}
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                >
+                                    Update Course Placement
+                                </button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
                 {/* MODAL: Compare Curriculum Versions */}
                 <Dialog open={isCompareCurriculaOpen} onOpenChange={setIsCompareCurriculaOpen}>
                     <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
@@ -1374,13 +1682,23 @@ export default function ProgramsCurriculumIndex({
                     </DialogContent>
                 </Dialog>
 
-                {/* DELETE CONFIRM DIALOG */}
+                {/* DELETE CONFIRM DIALOG - COURSE REMOVAL */}
                 <DeleteConfirmDialog
                     isOpen={!!deletingCoursePivot}
                     onClose={() => setDeletingCoursePivot(null)}
                     onConfirm={confirmRemoveCourse}
                     title="Remove Course from Curriculum"
                     description={`Are you sure you want to remove "${deletingCoursePivot?.course.code} - ${deletingCoursePivot?.course.title}" from this curriculum matrix?`}
+                />
+
+                {/* DELETE CONFIRM DIALOG - PROGRAM DELETION */}
+                <DeleteConfirmDialog
+                    isOpen={!!deletingProgram}
+                    onClose={() => setDeletingProgram(null)}
+                    onConfirm={confirmDeleteProgram}
+                    isLoading={isDeletingProgramLoading}
+                    title={`Delete Program ${deletingProgram?.code || ''}`}
+                    description={`Are you sure you want to delete "${deletingProgram?.name}" (${deletingProgram?.code})? This will permanently remove the program along with all associated curriculum versions, courses, and syllabus configurations.`}
                 />
             </div>
         </AppLayout>

@@ -70,4 +70,16 @@ class MeetingController extends Controller
 
         return redirect()->back()->with('success', 'Meeting deleted successfully.');
     }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer|exists:meetings,id',
+        ]);
+
+        $count = Meeting::whereIn('id', $validated['ids'])->delete();
+
+        return redirect()->back()->with('success', "{$count} meeting(s) deleted successfully.");
+    }
 }

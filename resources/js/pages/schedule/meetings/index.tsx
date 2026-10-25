@@ -82,8 +82,11 @@ export default function MeetingsIndex({
     const [dateRangeFilter, setDateRangeFilter] = useState('Oct 1, 2026 - Oct 31, 2026');
     const [sortField, setSortField] = useState<'date' | 'time' | 'venue' | 'organizer' | 'title'>('date');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-    const [deletingMeeting, setDeletingMeeting] = useState<Meeting | null>(null);
+    const [deletingMeeting, setDeletingMeeting] = useState<MeetingItem | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
     const { data, setData, post, processing, reset, errors } = useForm({
         title: '',
@@ -292,6 +295,38 @@ export default function MeetingsIndex({
             setSortField(field);
             setSortDirection('asc');
         }
+    };
+
+    const isAllSelected = filteredMeetings.length > 0 && filteredMeetings.every((m) => selectedIds.includes(m.id));
+    const isSomeSelected = selectedIds.length > 0 && !isAllSelected;
+
+    const handleToggleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(filteredMeetings.map((m) => m.id));
+        }
+    };
+
+    const handleToggleSelectOne = (id: number) => {
+        setSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+    };
+
+    const handleBulkDelete = () => {
+        if (selectedIds.length === 0) return;
+        setIsBulkDeleting(true);
+        router.post('/schedule/meetings/bulk-delete', {
+            ids: selectedIds,
+        }, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsBulkDeleting(false);
+                setIsBulkDialogOpen(false);
+                setSelectedIds([]);
+            },
+        });
     };
 
     return (
@@ -772,19 +807,61 @@ export default function MeetingsIndex({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     {/* LEFT SECTION: Meetings List Table (Span 8 or 9 cols) */}
                     <div className="lg:col-span-8 xl:col-span-8 bg-white rounded-2xl p-5 md:p-6 border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)]">
-                        <div className="mb-4">
-                            <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                                Meetings List
-                            </h2>
-                            <p className="text-xs text-slate-400 mt-0.5">
-                                Showing {filteredMeetings.length} of {meetings.length} meetings
-                            </p>
+                        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                                    Meetings List
+                                </h2>
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                    Showing {filteredMeetings.length} of {meetings.length} meetings
+                                </p>
+                            </div>
+
+                            {/* Bulk selection action toolbar */}
+                            {selectedIds.length > 0 && (
+                                <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-semibold animate-in fade-in duration-200">
+                                    <span className="text-amber-700 dark:text-amber-400 font-bold">
+                                        {selectedIds.length} meeting{selectedIds.length > 1 ? 's' : ''} selected
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setSelectedIds([])}
+                                        className="h-7 px-2 text-xs text-slate-500 hover:text-slate-800 rounded-lg cursor-pointer"
+                                    >
+                                        Deselect
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => setIsBulkDialogOpen(true)}
+                                        className="h-7 px-2.5 text-xs rounded-lg font-bold flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white cursor-pointer shadow-2xs"
+                                    >
+                                        <Trash className="w-3 h-3" />
+                                        <span>Delete Selected</span>
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="overflow-x-auto -mx-5 md:-mx-6 px-5 md:px-6">
                             <table className="w-full text-xs text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-slate-200/80 text-[11px] font-semibold text-slate-600">
+                                        <th className="pb-3 pl-2 pr-3 w-8 text-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={isAllSelected}
+                                                ref={(el) => {
+                                                    if (el) el.indeterminate = isSomeSelected;
+                                                }}
+                                                onChange={handleToggleSelectAll}
+                                                className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 focus:ring-offset-0 cursor-pointer"
+                                                title="Select all"
+                                            />
+                                        </th>
                                         <th className="pb-3 pr-4 font-bold text-slate-700">
                                             <button
                                                 onClick={() => handleSort('title')}
@@ -837,7 +914,7 @@ export default function MeetingsIndex({
                                 <tbody className="divide-y divide-slate-100 font-medium">
                                     {filteredMeetings.length === 0 ? (
                                         <tr>
-                                            <td colSpan={7} className="py-12 text-center text-slate-400 italic">
+                                            <td colSpan={8} className="py-12 text-center text-slate-400 italic">
                                                 No meetings found matching your filter criteria.
                                             </td>
                                         </tr>
@@ -848,9 +925,20 @@ export default function MeetingsIndex({
                                             const timeRange = formatTimeRange(meeting.start_time, meeting.end_time);
                                             const iconTheme = getIconTheme(index);
                                             const subtitle = getMeetingSubtitle(meeting);
+                                            const isSelected = selectedIds.includes(meeting.id);
 
                                             return (
-                                                <tr key={meeting.id} className="hover:bg-slate-50/70 transition-colors group">
+                                                <tr key={meeting.id} className={cn("transition-colors group", isSelected ? "bg-amber-500/10 hover:bg-amber-500/15" : "hover:bg-slate-50/70")}>
+                                                    {/* Checkbox column */}
+                                                    <td className="py-3.5 pl-2 pr-3 text-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={() => handleToggleSelectOne(meeting.id)}
+                                                            className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 focus:ring-offset-0 cursor-pointer"
+                                                        />
+                                                    </td>
+
                                                     {/* Title Column with colorful icon & subtitle */}
                                                     <td className="py-3.5 pr-4">
                                                         <div className="flex items-center gap-3">
@@ -1052,6 +1140,17 @@ export default function MeetingsIndex({
                             },
                         });
                     }}
+                />
+
+                {/* Bulk Delete Meetings Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={isBulkDialogOpen}
+                    onOpenChange={setIsBulkDialogOpen}
+                    title="Delete Selected Meetings"
+                    description={`Are you sure you want to permanently delete the ${selectedIds.length} selected meeting(s)? This action cannot be undone.`}
+                    confirmLabel={`Delete ${selectedIds.length} Meetings`}
+                    isDeleting={isBulkDeleting}
+                    onConfirm={handleBulkDelete}
                 />
             </div>
         </AppLayout>

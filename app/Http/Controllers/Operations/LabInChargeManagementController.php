@@ -58,8 +58,11 @@ class LabInChargeManagementController extends Controller
 
         // 3. Named Lab In-Charge Users
         $labInChargeRole = Role::firstOrCreate(['name' => 'Lab In-Charge']);
-        $users = User::whereHas('roles', fn ($q) => $q->where('name', 'Lab In-Charge'))
-            ->orWhereHas('roles', fn ($q) => $q->where('name', 'System Administrator'))
+        $users = User::with(['roles', 'faculty.program'])
+            ->where(function ($q) {
+                $q->whereHas('roles', fn ($r) => $r->where('name', 'Lab In-Charge'))
+                    ->orWhereHas('roles', fn ($r) => $r->where('name', 'System Administrator'));
+            })
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
 
@@ -247,13 +250,15 @@ class LabInChargeManagementController extends Controller
             ];
         });
 
-        // 8. User Operational Profiles (for Lab In-Charge profile drawer)
+        // 8. User Operational Profiles (for Lab In-Charge directory & profile drawer)
         $userProfiles = $users->map(function ($u) use ($allAssignments, $allSessionsToday) {
             $userAssignments = $allAssignments->where('user_id', $u->id);
             $assignedRooms = $userAssignments->where('is_active', true)->map(fn ($a) => [
                 'assignment_id' => $a->id,
                 'room_id' => $a->room_id,
                 'room_name' => $a->room?->room_name ?? $a->room?->name ?? 'Room #'.$a->room_id,
+                'room_building' => $a->room?->building ?? 'Main Building',
+                'room_floor' => $a->room?->floor ?? 'Floor',
                 'role_type' => $a->role_type,
                 'shift_name' => $a->shift_name,
                 'status' => $a->status,
@@ -265,10 +270,47 @@ class LabInChargeManagementController extends Controller
             $userSessions = $allSessionsToday->where('monitored_by_user_id', $u->id);
             $userEodReports = DailyMonitoringReport::where('user_id', $u->id)->latest()->take(5)->get();
 
+            $faculty = $u->faculty;
+            $roles = $u->roles->pluck('name')->toArray();
+            $photoUrl = $faculty?->photo_url;
+
+            // Calculate profile completion percentage (0 - 100)
+            $completionFields = [
+                $u->name,
+                $u->email,
+                $faculty?->phone ?? null,
+                $faculty?->office_room ?? null,
+                $photoUrl,
+                $faculty?->academic_rank ?? null,
+                $faculty?->specialization ?? null,
+                $faculty?->highest_qualification ?? null,
+                $assignedRooms->isNotEmpty() ? 'assigned' : null,
+                count($roles) > 0 ? 'roles' : null,
+            ];
+            $filledCount = count(array_filter($completionFields, fn ($val) => ! is_null($val) && trim((string) $val) !== ''));
+            $profileCompletion = (int) round(($filledCount / count($completionFields)) * 100);
+
+            // Compute primary shift and designation
+            $primaryAssignment = $userAssignments->firstWhere('role_type', 'Primary') ?? $userAssignments->first();
+            $primaryShift = $primaryAssignment?->shift_name ?? '07:30 AM – 05:30 PM (Mon–Sat)';
+            $isSysAdmin = in_array('System Administrator', $roles);
+
             return [
                 'id' => $u->id,
                 'name' => $u->name,
                 'email' => $u->email,
+                'phone' => $faculty?->phone ?? '+63 912 345 6789',
+                'office_room' => $faculty?->office_room ?? ($assignedRooms->first()['room_name'] ?? 'College Lab Office'),
+                'academic_rank' => $faculty?->academic_rank ?? ($isSysAdmin ? 'Lead Systems Administrator' : 'Laboratory Technician & Monitor'),
+                'specialization' => $faculty?->specialization ?? 'Network & Hardware Systems',
+                'highest_qualification' => $faculty?->highest_qualification ?? 'BS Information Technology',
+                'program_name' => $faculty?->program?->name ?? 'College of Information & Decision Sciences',
+                'program_code' => $faculty?->program?->code ?? 'CIDS',
+                'photo_url' => $photoUrl,
+                'roles' => $roles,
+                'is_system_admin' => $isSysAdmin,
+                'profile_completion' => $profileCompletion,
+                'primary_shift' => $primaryShift,
                 'assigned_rooms' => $assignedRooms,
                 'active_rooms_count' => $assignedRooms->count(),
                 'sessions_monitored_today' => $userSessions->count(),
