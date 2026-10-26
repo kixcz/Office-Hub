@@ -331,13 +331,15 @@ export function AppSidebar() {
     const user = props.auth?.user as any;
 
     const roles: string[] = user?.roles || [];
-    const isProgramHead = roles.includes('Program Head');
+    const isProgramHead = roles.includes('Program Head') || roles.includes('Program Chair');
     const isDean = roles.includes('Dean');
-    const isSuperAdmin = roles.includes('System Administrator') || roles.includes('Super Admin');
-    const isLabInCharge = roles.includes('Lab In-Charge');
+    const isCollegeAdmin = roles.includes('College Admin') || roles.includes('System Administrator') || roles.includes('Super Admin');
+    const isInstitutionAdmin = roles.includes('Institution Super Admin');
+    const isVpaf = roles.includes('VPAF / Executive Oversight');
+    const isLabInCharge = roles.includes('Lab In-Charge') || roles.includes('Head Lab / Facility In-Charge') || roles.includes('Non-Teaching Lab / Facility In-Charge');
     const isFaculty = user?.is_faculty || roles.includes('Faculty Member');
 
-    const canSwitchWorkspace = (isProgramHead || isDean || isSuperAdmin) && isFaculty;
+    const canSwitchWorkspace = (isProgramHead || isDean || isCollegeAdmin || isInstitutionAdmin) && isFaculty;
 
     // Workspace mode state: 'management' | 'faculty'
     const [workspaceMode, setWorkspaceMode] = useState<'management' | 'faculty'>(() => {
@@ -385,30 +387,54 @@ export function AppSidebar() {
         groups = programHeadNavGroups;
     } else if (isDean) {
         groups = deanNavGroups;
-    } else if (isLabInCharge && !isSuperAdmin) {
+    } else if (isLabInCharge && !isCollegeAdmin && !isInstitutionAdmin) {
         groups = labInChargeNavGroups;
-    } else if (isFaculty && !isSuperAdmin) {
+    } else if (isFaculty && !isCollegeAdmin && !isInstitutionAdmin) {
         groups = facultyNavGroups;
     } else {
         groups = adminNavGroups;
     }
 
-    const managementTitle = isProgramHead
+    const managementTitle = isInstitutionAdmin
+        ? 'Institution Super Admin'
+        : isVpaf
+        ? 'VPAF Executive Oversight'
+        : isProgramHead
         ? 'Program Head Workspace'
         : isDean
         ? 'Dean Executive Workspace'
-        : 'Admin Management';
+        : 'College Admin Workspace';
+
+    const managementShort = isInstitutionAdmin
+        ? 'ISA'
+        : isVpaf
+        ? 'VP'
+        : isProgramHead
+        ? 'PH'
+        : isDean
+        ? 'DN'
+        : 'CA';
+
+    const managementLabel = isInstitutionAdmin
+        ? 'Institution Admin'
+        : isVpaf
+        ? 'VPAF Exec'
+        : isProgramHead
+        ? 'Program Head'
+        : isDean
+        ? 'Dean Oversight'
+        : 'College Admin';
 
     return (
         <Sidebar collapsible="icon" variant="sidebar" className="top-16 h-[calc(100svh-4rem)] border-r border-border/80 bg-sidebar">
-            {/* Seamless Dual-Role Workspace Switcher for Program Heads & Deans */}
+            {/* Seamless Dual-Role Workspace Switcher for Program Heads, Deans, and College Admins */}
             {canSwitchWorkspace && (
                 <div scroll-region="true" className="p-3 border-b border-border/60 group-data-[collapsible=icon]:p-1 shrink-0 bg-muted/30">
                     <div className="flex flex-col gap-1.5 group-data-[collapsible=icon]:items-center">
                         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-data-[collapsible=icon]:hidden">
                             <span>Workspace View</span>
                             <span className="text-amber-500 font-extrabold">
-                                {workspaceMode === 'faculty' ? 'Faculty Portal' : (isProgramHead ? 'Program Head' : 'Dean')}
+                                {workspaceMode === 'faculty' ? 'Faculty Portal' : managementLabel}
                             </span>
                         </div>
                         <div className="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-background border border-border group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col">
@@ -423,10 +449,10 @@ export function AppSidebar() {
                                 title={managementTitle}
                             >
                                 <span className="group-data-[collapsible=icon]:hidden">
-                                    {isProgramHead ? 'Program Head' : isDean ? 'Dean Oversight' : 'Management'}
+                                    {managementLabel}
                                 </span>
                                 <span className="hidden group-data-[collapsible=icon]:inline text-xs font-bold">
-                                    {isProgramHead ? 'PH' : isDean ? 'DN' : 'MG'}
+                                    {managementShort}
                                 </span>
                             </button>
                             <button
@@ -438,6 +464,7 @@ export function AppSidebar() {
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                                 title="Faculty Self-Service Portal"
+
                             >
                                 <span className="group-data-[collapsible=icon]:hidden">Faculty Portal</span>
                                 <span className="hidden group-data-[collapsible=icon]:inline text-xs font-bold">FAC</span>

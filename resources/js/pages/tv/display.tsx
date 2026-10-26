@@ -53,11 +53,13 @@ import {
     Heart,
     type LucideIcon,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, createContext, useContext, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 import TvLayout from '@/layouts/tv-layout';
 import { cn, localDateString, longTodayLabel } from '@/lib/utils';
 import { SpotlightSlideHero } from '@/components/spotlight-slide-hero';
+
 import { CustomContentSlideHero } from '@/components/custom-slide-hero';
 
 const FADE_MS = 500;
@@ -81,7 +83,7 @@ const SLIDE_TYPES = {
 /*  Main TV Display Page                                                       */
 /* -------------------------------------------------------------------------- */
 
-export default function TvDisplay({ slides, data, current_term, settings }: any) {
+export default function TvDisplay({ slides, data, current_term, settings, channels = [], current_channel = null, faculty_profiles = {} }: any) {
     const activeSlides = useMemo(() => slides.filter((s: any) => s.is_active), [slides]);
     const count = activeSlides.length;
     const [index, setIndex] = useState(0);
@@ -204,9 +206,11 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
     const showClock = settings?.show_clock !== '0';
 
     return (
-        <TvLayout
-            currentTerm={current_term}
-            title={currentSlide?.title || currentSlide?.type}
+        <FacultyContext.Provider value={faculty_profiles}>
+            <TvLayout
+                currentTerm={current_term}
+                title={currentSlide?.title || currentSlide?.type}
+            collegeTitle={current_channel?.college_name}
             lastUpdated={data?.slide6?.last_updated || data?.slide5?.last_updated || data?.last_updated}
             isDark={isDark}
             onToggleDark={toggleDark}
@@ -214,6 +218,8 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
             onTogglePause={togglePause}
             showHeader={showHeader}
             showClock={showClock}
+            channels={channels}
+            currentChannel={current_channel}
         >
             <Head title="TV Display" />
             <style>{'@keyframes tv-fill{from{width:0}to{width:100%}}'}</style>
@@ -340,9 +346,11 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
                     </div>
                 </footer>
             )}
-        </TvLayout>
+            </TvLayout>
+        </FacultyContext.Provider>
     );
 }
+
 
 /* -------------------------------------------------------------------------- */
 /*  Design Tokens & Helpers                                                    */
@@ -432,8 +440,297 @@ function MiniWave({ positive = true }: { positive?: boolean }) {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Faculty Profile Hover Card & Context                                       */
+/* -------------------------------------------------------------------------- */
+
+export interface FacultyProfile {
+    id?: number | string;
+    name: string;
+    first_name?: string;
+    last_name?: string;
+    photo_url?: string | null;
+    program?: string;
+    program_name?: string;
+    academic_rank?: string;
+    highest_qualification?: string;
+    specialization?: string;
+    office_room?: string;
+    email?: string;
+    employment_type?: string;
+    status?: string;
+}
+
+const FacultyContext = createContext<Record<string | number, FacultyProfile>>({});
+
+function FacultyAvatarHover({
+    facultyId,
+    name,
+    photoUrl,
+    program,
+    initials,
+    size = 'md',
+    isDark = false,
+    className = '',
+    customProfile,
+}: {
+    facultyId?: string | number | null;
+    name?: string;
+    photoUrl?: string | null;
+    program?: string;
+    initials?: string;
+    size?: 'sm' | 'md' | 'lg';
+    isDark?: boolean;
+    className?: string;
+    customProfile?: Partial<FacultyProfile>;
+}) {
+    const profiles = useContext(FacultyContext);
+
+    // Resolve profile by ID or by normalized name
+    const resolvedProfile: FacultyProfile = useMemo(() => {
+        let p: FacultyProfile | undefined;
+        if (facultyId && profiles[facultyId]) {
+            p = profiles[facultyId];
+        } else if (name) {
+            const cleanName = name.trim().toLowerCase();
+            const foundKey = Object.keys(profiles).find((k) => {
+                const item = profiles[k];
+                return (
+                    item.name?.trim().toLowerCase() === cleanName ||
+                    cleanName.includes(item.last_name?.toLowerCase() || '___')
+                );
+            });
+            if (foundKey) p = profiles[foundKey];
+        }
+
+        const effName = p?.name || name || 'Faculty Member';
+        return {
+            id: p?.id || facultyId || undefined,
+            name: effName,
+            photo_url: photoUrl || p?.photo_url || null,
+            program: p?.program || program || 'CIDS',
+            program_name: p?.program_name || 'College of Information and Digital Sciences',
+            academic_rank: p?.academic_rank || customProfile?.academic_rank || 'Faculty Member',
+            highest_qualification: p?.highest_qualification || customProfile?.highest_qualification || 'Master of Science',
+            specialization: p?.specialization || customProfile?.specialization || 'Information Technology',
+            office_room: p?.office_room || customProfile?.office_room || 'CIDS Faculty Room',
+            email: p?.email || customProfile?.email || undefined,
+            status: p?.status || customProfile?.status || 'Active',
+            employment_type: p?.employment_type || customProfile?.employment_type || 'Full-time',
+            ...customProfile,
+        };
+    }, [facultyId, name, photoUrl, program, profiles, customProfile]);
+
+    const displayInitials = initials || (resolvedProfile.name ? resolvedProfile.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() : 'FC');
+
+    const sizeClasses = {
+        sm: 'w-6 h-6 text-[8px]',
+        md: 'w-8 h-8 text-[10px]',
+        lg: 'w-10 h-10 text-xs',
+    }[size];
+
+    const [isOpen, setIsOpen] = useState(false);
+    const [coords, setCoords] = useState<{ top: number; left: number; placeAbove: boolean } | null>(null);
+    const anchorRef = useRef<HTMLDivElement>(null);
+    const closeTimeoutRef = useRef<number | null>(null);
+
+    const updatePosition = useCallback(() => {
+        if (!anchorRef.current) return;
+        const rect = anchorRef.current.getBoundingClientRect();
+        const cardWidth = 270;
+        const cardHeight = 220; // estimated card height
+        const margin = 10;
+
+        // Determine if there is enough space above
+        const spaceAbove = rect.top;
+        const placeAbove = spaceAbove >= cardHeight + margin;
+
+        let top = placeAbove ? rect.top - margin : rect.bottom + margin;
+        let left = rect.left + rect.width / 2;
+
+        // Prevent overflow horizontally
+        const minLeft = cardWidth / 2 + margin;
+        const maxLeft = window.innerWidth - (cardWidth / 2 + margin);
+        left = Math.max(minLeft, Math.min(left, maxLeft));
+
+        setCoords({ top, left, placeAbove });
+    }, []);
+
+    const handleMouseEnter = () => {
+        if (closeTimeoutRef.current) {
+            window.clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
+        updatePosition();
+        setIsOpen(true);
+    };
+
+    const handleMouseLeave = () => {
+        closeTimeoutRef.current = window.setTimeout(() => {
+            setIsOpen(false);
+        }, 120);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (closeTimeoutRef.current) {
+                window.clearTimeout(closeTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    return (
+        <div
+            ref={anchorRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            className="relative inline-flex items-center shrink-0 z-10"
+        >
+            {/* The Clickable / Hoverable Avatar Element */}
+            <div
+                className={cn(
+                    "relative rounded-full cursor-pointer transition-transform duration-200 hover:scale-110",
+                    sizeClasses,
+                    className
+                )}
+            >
+                {resolvedProfile.photo_url ? (
+                    <img
+                        src={resolvedProfile.photo_url}
+                        alt={resolvedProfile.name}
+                        className={cn("w-full h-full rounded-full object-cover shadow-xs border border-black/10 dark:border-white/10")}
+                        onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                            const fallback = e.currentTarget.parentElement?.querySelector('.avatar-hover-fallback') as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                        }}
+                    />
+                ) : null}
+                <div
+                    className={cn(
+                        "avatar-hover-fallback w-full h-full rounded-full items-center justify-center font-black shadow-xs border",
+                        resolvedProfile.photo_url ? "hidden" : "flex",
+                        isDark ? "bg-amber-500/20 text-amber-300 border-amber-500/30" : "bg-amber-100 text-amber-900 border-amber-300/60"
+                    )}
+                >
+                    {displayInitials}
+                </div>
+            </div>
+
+            {/* Portal-Rendered High-Fidelity Faculty Profile Card */}
+            {typeof document !== 'undefined' && isOpen && coords && createPortal(
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: coords.placeAbove ? undefined : `${coords.top}px`,
+                        bottom: coords.placeAbove ? `${window.innerHeight - coords.top}px` : undefined,
+                        left: `${coords.left}px`,
+                        transform: 'translateX(-50%)',
+                        zIndex: 99999,
+                    }}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                    className={cn(
+                        "w-68 rounded-2xl p-3.5 shadow-2xl border transition-all duration-200 pointer-events-auto animate-in fade-in zoom-in-95",
+                        isDark
+                            ? "bg-[#0b1120] border-white/20 text-slate-100 shadow-[0_15px_40px_rgba(0,0,0,0.85)]"
+                            : "bg-white border-slate-200/90 text-slate-900 shadow-[0_15px_40px_rgba(0,0,0,0.2)]"
+                    )}
+                >
+                    {/* Arrow Pointer */}
+                    <div
+                        style={{ left: '50%' }}
+                        className={cn(
+                            "absolute w-3 h-3 rotate-45 -translate-x-1/2 border",
+                            coords.placeAbove
+                                ? "-bottom-1.5 border-t-0 border-l-0 border-b border-r"
+                                : "-top-1.5 border-b-0 border-r-0 border-t border-l",
+                            isDark ? "bg-[#0b1120] border-white/20" : "bg-white border-slate-200/90"
+                        )}
+                    />
+
+                    <div className="flex items-start gap-3 relative z-10">
+                        {/* Enlarged Avatar */}
+                        <div className="relative w-12 h-12 rounded-full shrink-0 shadow-md border-2 border-amber-400 overflow-hidden bg-amber-500/10">
+                            {resolvedProfile.photo_url ? (
+                                <img
+                                    src={resolvedProfile.photo_url}
+                                    alt={resolvedProfile.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center font-black text-sm text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40">
+                                    {displayInitials}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Basic Info Header */}
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-black truncate leading-tight text-slate-900 dark:text-white">
+                                    {resolvedProfile.name}
+                                </span>
+                            </div>
+                            <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 truncate mt-0.5">
+                                {resolvedProfile.academic_rank}
+                            </p>
+                            <div className="flex items-center gap-1 mt-1">
+                                <span className="px-1.5 py-0.5 rounded-md text-[8.5px] font-black uppercase bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                                    {resolvedProfile.program}
+                                </span>
+                                <span className="px-1.5 py-0.5 rounded-md text-[8.5px] font-bold uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                    {resolvedProfile.status}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Detailed Attributes List */}
+                    <div className="mt-2.5 pt-2 border-t border-black/[0.06] dark:border-white/[0.08] space-y-1 relative z-10 text-[9.5px]">
+                        {resolvedProfile.highest_qualification && (
+                            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                                <span className="font-semibold">Qualification:</span>
+                                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[130px] text-right">
+                                    {resolvedProfile.highest_qualification}
+                                </span>
+                            </div>
+                        )}
+                        {resolvedProfile.specialization && (
+                            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                                <span className="font-semibold">Specialization:</span>
+                                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[130px] text-right">
+                                    {resolvedProfile.specialization}
+                                </span>
+                            </div>
+                        )}
+                        {resolvedProfile.office_room && (
+                            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                                <span className="font-semibold">Office:</span>
+                                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[130px] text-right">
+                                    {resolvedProfile.office_room}
+                                </span>
+                            </div>
+                        )}
+                        {resolvedProfile.email && (
+                            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                                <span className="font-semibold">Email:</span>
+                                <span className="font-bold text-amber-600 dark:text-amber-400 truncate max-w-[130px] text-right">
+                                    {resolvedProfile.email}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Shared Bento Components                                                    */
 /* -------------------------------------------------------------------------- */
+
 
 function Kpi({
     icon: Icon,
@@ -1487,17 +1784,15 @@ function SlideFour({ data, isDark = false }: any) {
                                             )}
                                         </div>
 
-                                        {f.photo_url ? (
-                                            <img
-                                                src={f.photo_url}
-                                                alt={f.name}
-                                                className={`h-9 w-9 rounded-full object-cover shrink-0 ${i === 0 ? 'border-2 border-amber-400 shadow-xs' : i === 1 ? 'border-2 border-slate-300' : i === 2 ? 'border-2 border-amber-600' : 'border border-slate-200 dark:border-white/10'}`}
-                                            />
-                                        ) : (
-                                            <div className={`h-9 w-9 rounded-full font-bold text-xs flex items-center justify-center shrink-0 border ${avatarBgs[i] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                                                {initials}
-                                            </div>
-                                        )}
+                                        <FacultyAvatarHover
+                                            facultyId={f.id}
+                                            name={f.name}
+                                            photoUrl={f.photo_url}
+                                            program={f.program}
+                                            initials={initials}
+                                            size="md"
+                                            isDark={isDark}
+                                        />
                                         <div className="min-w-0 flex-1 pr-3">
                                             <p className="truncate text-sm font-bold text-slate-900 dark:text-white leading-tight">{f.name}</p>
                                             <p className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{f.program}</p>
@@ -2698,34 +2993,21 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                                 )}
                                             </td>
 
-                                            {/* Faculty Name with Profile Picture Avatar */}
+                                            {/* Faculty Name with Profile Picture Avatar (Profile on Hover) */}
                                             <td className="py-2 px-2.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                                                 <div className="flex items-center gap-2.5">
-                                                    <div className="relative w-7 h-7 shrink-0">
-                                                        {r.photo_url ? (
-                                                            <img
-                                                                src={r.photo_url}
-                                                                alt={r.facultyName}
-                                                                className="w-7 h-7 rounded-full object-cover shadow-2xs border border-slate-200 dark:border-white/10"
-                                                                onError={(e) => {
-                                                                    (e.currentTarget as HTMLElement).style.display = 'none';
-                                                                    const fallback = e.currentTarget.parentElement?.querySelector('.table-avatar-fallback') as HTMLElement;
-                                                                    if (fallback) fallback.style.display = 'flex';
-                                                                }}
-                                                            />
-                                                        ) : null}
-                                                        <div
-                                                            className={cn(
-                                                                "table-avatar-fallback w-7 h-7 rounded-full items-center justify-center font-black text-[9px] shadow-2xs border bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10",
-                                                                r.photo_url ? "hidden" : "flex"
-                                                            )}
-                                                        >
-                                                            {r.facultyName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
-                                                        </div>
-                                                    </div>
+                                                    <FacultyAvatarHover
+                                                        facultyId={r.faculty_id}
+                                                        name={r.facultyName}
+                                                        photoUrl={r.photo_url}
+                                                        program={r.program}
+                                                        size="sm"
+                                                        isDark={isDark}
+                                                    />
                                                     <span className="truncate">{r.facultyName}</span>
                                                 </div>
                                             </td>
+
 
                                             {/* Program */}
                                             <td className="py-2.5 px-2 text-center text-slate-600 dark:text-slate-400 font-semibold">
@@ -2949,36 +3231,16 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                                 </div>
                                             </div>
 
-                                            {/* Faculty Avatar */}
-                                            <div className="relative w-8 h-8 shrink-0">
-                                                {fac.photo_url ? (
-                                                    <img
-                                                        src={fac.photo_url}
-                                                        alt={fac.facultyName}
-                                                        className={cn(
-                                                            "w-8 h-8 rounded-full object-cover shadow-2xs border",
-                                                            effectiveRank === 1
-                                                                ? "border-amber-400 ring-2 ring-amber-400/50"
-                                                                : effectiveRank === 2
-                                                                    ? "border-slate-300 ring-2 ring-slate-300/50"
-                                                                    : "border-amber-700/60 ring-2 ring-amber-700/30"
-                                                        )}
-                                                        onError={(e) => {
-                                                            (e.currentTarget as HTMLElement).style.display = 'none';
-                                                            const fallback = e.currentTarget.parentElement?.querySelector('.board-avatar-fallback') as HTMLElement;
-                                                            if (fallback) fallback.style.display = 'flex';
-                                                        }}
-                                                    />
-                                                ) : null}
-                                                <div
-                                                    className={cn(
-                                                        "board-avatar-fallback w-8 h-8 rounded-full items-center justify-center font-black text-[10px] shadow-2xs border bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10",
-                                                        fac.photo_url ? "hidden" : "flex"
-                                                    )}
-                                                >
-                                                    {fac.facultyName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
-                                                </div>
-                                            </div>
+                                            {/* Faculty Avatar (Profile on Hover) */}
+                                            <FacultyAvatarHover
+                                                facultyId={fac.faculty_id}
+                                                name={fac.facultyName}
+                                                photoUrl={fac.photo_url}
+                                                program={fac.program}
+                                                size="md"
+                                                isDark={isDark}
+                                            />
+
 
                                             <div className="min-w-0">
                                                 <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
@@ -3060,28 +3322,13 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Most Reliable</span>
                                 </div>
                                 <div className="mt-1.5 flex items-center gap-2">
-                                    <div className="relative w-6 h-6 shrink-0">
-                                        {activeSnapshot.highlights.mostReliable.photo_url ? (
-                                            <img
-                                                src={activeSnapshot.highlights.mostReliable.photo_url}
-                                                alt={activeSnapshot.highlights.mostReliable.name}
-                                                className="w-6 h-6 rounded-full object-cover border border-emerald-400/40"
-                                                onError={(e) => {
-                                                    (e.currentTarget as HTMLElement).style.display = 'none';
-                                                    const fallback = e.currentTarget.parentElement?.querySelector('.hl-avatar-fallback') as HTMLElement;
-                                                    if (fallback) fallback.style.display = 'flex';
-                                                }}
-                                            />
-                                        ) : null}
-                                        <div
-                                            className={cn(
-                                                "hl-avatar-fallback w-6 h-6 rounded-full items-center justify-center font-bold text-[8px] border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30",
-                                                activeSnapshot.highlights.mostReliable.photo_url ? "hidden" : "flex"
-                                            )}
-                                        >
-                                            {activeSnapshot.highlights.mostReliable.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
-                                        </div>
-                                    </div>
+                                    <FacultyAvatarHover
+                                        name={activeSnapshot.highlights.mostReliable.name}
+                                        photoUrl={activeSnapshot.highlights.mostReliable.photo_url}
+                                        program={activeSnapshot.highlights.mostReliable.program}
+                                        size="sm"
+                                        isDark={isDark}
+                                    />
                                     <div className="min-w-0 flex-1">
                                         <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                             {activeSnapshot.highlights.mostReliable.name}
@@ -3102,28 +3349,13 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Most Improved</span>
                                 </div>
                                 <div className="mt-1.5 flex items-center gap-2">
-                                    <div className="relative w-6 h-6 shrink-0">
-                                        {activeSnapshot.highlights.mostImproved.photo_url ? (
-                                            <img
-                                                src={activeSnapshot.highlights.mostImproved.photo_url}
-                                                alt={activeSnapshot.highlights.mostImproved.name}
-                                                className="w-6 h-6 rounded-full object-cover border border-blue-400/40"
-                                                onError={(e) => {
-                                                    (e.currentTarget as HTMLElement).style.display = 'none';
-                                                    const fallback = e.currentTarget.parentElement?.querySelector('.hl-avatar-fallback') as HTMLElement;
-                                                    if (fallback) fallback.style.display = 'flex';
-                                                }}
-                                            />
-                                        ) : null}
-                                        <div
-                                            className={cn(
-                                                "hl-avatar-fallback w-6 h-6 rounded-full items-center justify-center font-bold text-[8px] border bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30",
-                                                activeSnapshot.highlights.mostImproved.photo_url ? "hidden" : "flex"
-                                            )}
-                                        >
-                                            {activeSnapshot.highlights.mostImproved.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
-                                        </div>
-                                    </div>
+                                    <FacultyAvatarHover
+                                        name={activeSnapshot.highlights.mostImproved.name}
+                                        photoUrl={activeSnapshot.highlights.mostImproved.photo_url}
+                                        program={activeSnapshot.highlights.mostImproved.program}
+                                        size="sm"
+                                        isDark={isDark}
+                                    />
                                     <div className="min-w-0 flex-1">
                                         <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                             {activeSnapshot.highlights.mostImproved.name}
@@ -3144,28 +3376,13 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Needs Attention</span>
                                 </div>
                                 <div className="mt-1.5 flex items-center gap-2">
-                                    <div className="relative w-6 h-6 shrink-0">
-                                        {activeSnapshot.highlights.needsAttention.photo_url ? (
-                                            <img
-                                                src={activeSnapshot.highlights.needsAttention.photo_url}
-                                                alt={activeSnapshot.highlights.needsAttention.name}
-                                                className="w-6 h-6 rounded-full object-cover border border-rose-400/40"
-                                                onError={(e) => {
-                                                    (e.currentTarget as HTMLElement).style.display = 'none';
-                                                    const fallback = e.currentTarget.parentElement?.querySelector('.hl-avatar-fallback') as HTMLElement;
-                                                    if (fallback) fallback.style.display = 'flex';
-                                                }}
-                                            />
-                                        ) : null}
-                                        <div
-                                            className={cn(
-                                                "hl-avatar-fallback w-6 h-6 rounded-full items-center justify-center font-bold text-[8px] border bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/30",
-                                                activeSnapshot.highlights.needsAttention.photo_url ? "hidden" : "flex"
-                                            )}
-                                        >
-                                            {activeSnapshot.highlights.needsAttention.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
-                                        </div>
-                                    </div>
+                                    <FacultyAvatarHover
+                                        name={activeSnapshot.highlights.needsAttention.name}
+                                        photoUrl={activeSnapshot.highlights.needsAttention.photo_url}
+                                        program={activeSnapshot.highlights.needsAttention.program}
+                                        size="sm"
+                                        isDark={isDark}
+                                    />
                                     <div className="min-w-0 flex-1">
                                         <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                             {activeSnapshot.highlights.needsAttention.name}
@@ -3186,28 +3403,13 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Most Hours</span>
                                 </div>
                                 <div className="mt-1.5 flex items-center gap-2">
-                                    <div className="relative w-6 h-6 shrink-0">
-                                        {activeSnapshot.highlights.mostHoursCompleted.photo_url ? (
-                                            <img
-                                                src={activeSnapshot.highlights.mostHoursCompleted.photo_url}
-                                                alt={activeSnapshot.highlights.mostHoursCompleted.name}
-                                                className="w-6 h-6 rounded-full object-cover border border-purple-400/40"
-                                                onError={(e) => {
-                                                    (e.currentTarget as HTMLElement).style.display = 'none';
-                                                    const fallback = e.currentTarget.parentElement?.querySelector('.hl-avatar-fallback') as HTMLElement;
-                                                    if (fallback) fallback.style.display = 'flex';
-                                                }}
-                                            />
-                                        ) : null}
-                                        <div
-                                            className={cn(
-                                                "hl-avatar-fallback w-6 h-6 rounded-full items-center justify-center font-bold text-[8px] border bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-500/30",
-                                                activeSnapshot.highlights.mostHoursCompleted.photo_url ? "hidden" : "flex"
-                                            )}
-                                        >
-                                            {activeSnapshot.highlights.mostHoursCompleted.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
-                                        </div>
-                                    </div>
+                                    <FacultyAvatarHover
+                                        name={activeSnapshot.highlights.mostHoursCompleted.name}
+                                        photoUrl={activeSnapshot.highlights.mostHoursCompleted.photo_url}
+                                        program={activeSnapshot.highlights.mostHoursCompleted.program}
+                                        size="sm"
+                                        isDark={isDark}
+                                    />
                                     <div className="min-w-0 flex-1">
                                         <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                             {activeSnapshot.highlights.mostHoursCompleted.name}
@@ -5125,40 +5327,19 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                                                 {cIdx + 1}
                                             </span>
 
-                                            {/* Faculty Avatar (Photo or Fallback Initials) */}
-                                            <div className="relative w-8 h-8 shrink-0">
-                                                {cleaner.photo_url ? (
-                                                    <img
-                                                        src={cleaner.photo_url}
-                                                        alt={cleaner.name}
-                                                        className={cn(
-                                                            "w-8 h-8 rounded-full object-cover shadow-xs border",
-                                                            isToday
-                                                                ? "border-amber-400 ring-2 ring-amber-400/50"
-                                                                : "border-slate-200 dark:border-white/10"
-                                                        )}
-                                                        onError={(e) => {
-                                                            // If image fails to load, hide image and show the fallback initials badge
-                                                            (e.currentTarget as HTMLElement).style.display = 'none';
-                                                            const fallback = (e.currentTarget.parentElement?.querySelector('.cleaner-initials-fallback') as HTMLElement);
-                                                            if (fallback) fallback.style.display = 'flex';
-                                                        }}
-                                                    />
-                                                ) : null}
-                                                <div
-                                                    className={cn(
-                                                        "cleaner-initials-fallback w-8 h-8 rounded-full items-center justify-center font-black text-[10px] shadow-xs border",
-                                                        cleaner.photo_url ? "hidden" : "flex",
-                                                        isToday
-                                                            ? "bg-amber-400 text-slate-950 border-amber-500/40 ring-1 ring-amber-400/50"
-                                                            : isDark
-                                                                ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                                                                : "bg-amber-100 text-amber-900 border-amber-300/60"
-                                                    )}
-                                                >
-                                                    {initials}
-                                                </div>
-                                            </div>
+                                            {/* Faculty Avatar (With Profile Card on Hover) */}
+                                            <FacultyAvatarHover
+                                                facultyId={cleaner.faculty_id}
+                                                name={cleaner.name}
+                                                photoUrl={cleaner.photo_url}
+                                                initials={initials}
+                                                size="md"
+                                                isDark={isDark}
+                                                customProfile={{
+                                                    academic_rank: cleaner.role || 'Faculty Member',
+                                                }}
+                                            />
+
 
                                             {/* Cleaner Name & Role */}
                                             <div className="min-w-0 flex-1">

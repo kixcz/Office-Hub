@@ -88,4 +88,44 @@ class User extends Authenticatable
     {
         return $this->hasRole('Faculty Member') || $this->faculty()->exists();
     }
+
+    /**
+     * Check if user is an Institution Super Admin (platform-level).
+     */
+    public function isInstitutionSuperAdmin(): bool
+    {
+        return $this->hasRole('Institution Super Admin');
+    }
+
+    /**
+     * Check if user is VPAF / Executive Oversight.
+     */
+    public function isVpaf(): bool
+    {
+        return $this->hasRole('VPAF / Executive Oversight');
+    }
+
+    /**
+     * Check if user is a College Admin (operational administrator for a college).
+     * Includes backward-compatible aliases 'System Administrator' and 'Super Admin'.
+     */
+    public function isCollegeAdmin(): bool
+    {
+        return $this->hasRole('College Admin')
+            || $this->hasRole('System Administrator')
+            || $this->hasRole('Super Admin')
+            || $this->isInstitutionSuperAdmin();
+    }
+
+    /**
+     * Check if user can switch TV channels (Institution Super Admin, VPAF, or College Admin).
+     */
+    public function canSwitchTvChannels(): bool
+    {
+        return $this->isInstitutionSuperAdmin()
+            || $this->isVpaf()
+            || $this->isCollegeAdmin()
+            || $this->hasRole('Institution TV / Communications Manager')
+            || $this->hasRole('Dean');
+    }
 }

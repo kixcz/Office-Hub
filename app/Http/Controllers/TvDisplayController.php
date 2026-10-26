@@ -1216,6 +1216,37 @@ class TvDisplayController extends Controller
                 'slide12' => $cleaningSchedule ?? TvCleaningSchedule::first(),
             ],
             'current_term' => $settings['academic_term'] ?? 'AY 2026-2027, 1st Semester',
+            'faculty_profiles' => Faculty::with('program')
+                ->get()
+                ->mapWithKeys(fn ($f) => [
+                    $f->id => [
+                        'id' => $f->id,
+                        'name' => $f->full_name,
+                        'first_name' => $f->first_name,
+                        'last_name' => $f->last_name,
+                        'photo_url' => $f->photo_url,
+                        'program' => $f->program ? $f->program->code : 'CIDS',
+                        'program_name' => $f->program ? $f->program->name : 'College of Information and Digital Sciences',
+                        'academic_rank' => $f->academic_rank ?: 'Faculty Member',
+                        'highest_qualification' => $f->highest_qualification ?: 'Master of Science',
+                        'specialization' => $f->specialization ?: 'Information Technology',
+                        'office_room' => $f->office_room ?: 'CIDS Faculty Office',
+                        'email' => $f->email,
+                        'employment_type' => $f->employment_type ?: 'Full-time',
+                        'status' => $f->status ?: 'Active',
+                    ],
+                ]),
+            'channels' => TvDevice::orderBy('channel_number')
+                ->get(['id', 'device_code', 'name', 'location', 'college_name', 'college_code', 'channel_number']),
+            'current_channel' => $device ? [
+                'id' => $device->id,
+                'device_code' => $device->device_code,
+                'name' => $device->name,
+                'location' => $device->location,
+                'college_name' => $device->college_name,
+                'college_code' => $device->college_code,
+                'channel_number' => $device->channel_number,
+            ] : null,
         ];
     }
 

@@ -47,6 +47,10 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user() ? array_merge($request->user()->toArray(), [
                     'roles' => $request->user()->roles->pluck('name'),
                     'is_faculty' => $request->user()->isFaculty(),
+                    'is_college_admin' => $request->user()->isCollegeAdmin(),
+                    'is_institution_super_admin' => $request->user()->isInstitutionSuperAdmin(),
+                    'is_vpaf' => $request->user()->isVpaf(),
+                    'can_switch_channels' => $request->user()->canSwitchTvChannels(),
                     'faculty' => $request->user()->faculty?->load('program'),
                 ]) : null,
             ],

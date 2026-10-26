@@ -42,5 +42,23 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    roles?: string[];
+    is_faculty?: boolean;
+    is_college_admin?: boolean;
+    is_institution_super_admin?: boolean;
+    is_vpaf?: boolean;
+    can_switch_channels?: boolean;
+    faculty?: {
+        id: number;
+        full_name?: string;
+        photo_url?: string | null;
+        academic_rank?: string;
+        program?: {
+            id: number;
+            code: string;
+            name: string;
+        };
+    };
     [key: string]: unknown; // This allows for additional properties...
 }
+

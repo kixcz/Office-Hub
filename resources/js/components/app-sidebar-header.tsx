@@ -176,15 +176,15 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                                     {(user as any)?.faculty?.photo_url ? (
                                         <img src={(user as any).faculty.photo_url} alt={user.name} className="w-full h-full rounded-full object-cover" />
                                     ) : (
-                                        user ? getInitials(user.name) : 'SA'
+                                        user ? getInitials(user.name) : 'CA'
                                     )}
                                 </div>
                                 <div className="hidden sm:flex flex-col text-left leading-none max-w-[140px]">
                                     <span className="text-xs font-bold text-foreground truncate">
-                                        {(user as any)?.faculty?.full_name || user?.name || 'Super Admin'}
+                                        {(user as any)?.faculty?.full_name || user?.name || 'College Admin'}
                                     </span>
                                     <span className="text-[10px] text-muted-foreground font-medium truncate mt-0.5">
-                                        {(user as any)?.faculty?.academic_rank || (user as any)?.roles?.[0] || 'Administrator'}
+                                        {(user as any)?.faculty?.academic_rank || (user as any)?.roles?.[0] || 'College Secretary'}
                                     </span>
                                 </div>
                                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-1" />
