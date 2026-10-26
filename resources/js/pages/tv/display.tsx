@@ -4972,32 +4972,39 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                                                 {cIdx + 1}
                                             </span>
 
-                                            {/* Faculty Avatar (Photo or Initials Badge) */}
-                                            {cleaner.photo_url ? (
-                                                <img
-                                                    src={cleaner.photo_url}
-                                                    alt={cleaner.name}
+                                            {/* Faculty Avatar (Photo or Fallback Initials) */}
+                                            <div className="relative w-8 h-8 shrink-0">
+                                                {cleaner.photo_url ? (
+                                                    <img
+                                                        src={cleaner.photo_url}
+                                                        alt={cleaner.name}
+                                                        className={cn(
+                                                            "w-8 h-8 rounded-full object-cover shadow-xs border",
+                                                            isToday
+                                                                ? "border-amber-400 ring-2 ring-amber-400/50"
+                                                                : "border-slate-200 dark:border-white/10"
+                                                        )}
+                                                        onError={(e) => {
+                                                            // If image fails to load, hide image and show the fallback initials badge
+                                                            (e.currentTarget as HTMLElement).style.display = 'none';
+                                                            const fallback = (e.currentTarget.parentElement?.querySelector('.cleaner-initials-fallback') as HTMLElement);
+                                                            if (fallback) fallback.style.display = 'flex';
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                <div
                                                     className={cn(
-                                                        "w-7 h-7 rounded-full object-cover shrink-0 shadow-2xs border",
-                                                        isToday ? "border-amber-400 ring-1 ring-amber-400" : "border-slate-200 dark:border-white/10"
+                                                        "cleaner-initials-fallback w-8 h-8 rounded-full items-center justify-center font-black text-[10px] shadow-xs border",
+                                                        cleaner.photo_url ? "hidden" : "flex",
+                                                        isToday
+                                                            ? "bg-amber-400 text-slate-950 border-amber-500/40 ring-1 ring-amber-400/50"
+                                                            : isDark
+                                                                ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                                                                : "bg-amber-100 text-amber-900 border-amber-300/60"
                                                     )}
-                                                    onError={(e) => {
-                                                        (e.currentTarget as HTMLElement).style.display = 'none';
-                                                        const next = e.currentTarget.nextElementSibling as HTMLElement;
-                                                        if (next) next.style.display = 'flex';
-                                                    }}
-                                                />
-                                            ) : null}
-                                            <div className={cn(
-                                                "w-7 h-7 rounded-full items-center justify-center font-black text-[9px] shrink-0 shadow-2xs",
-                                                cleaner.photo_url ? "hidden" : "flex",
-                                                isToday
-                                                    ? "bg-amber-400 text-slate-950"
-                                                    : isDark
-                                                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                                                        : "bg-amber-100 text-amber-900 border border-amber-300/60"
-                                            )}>
-                                                {initials}
+                                                >
+                                                    {initials}
+                                                </div>
                                             </div>
 
                                             {/* Cleaner Name & Role */}
