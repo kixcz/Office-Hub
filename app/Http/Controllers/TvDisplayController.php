@@ -1373,6 +1373,7 @@ class TvDisplayController extends Controller
                             'faculty_id' => $fac->id,
                             'facultyName' => $facultyName,
                             'program' => $programCode,
+                            'photo_url' => $fac->photo_url,
                             'scheduledHours' => $isNotYetEmployed ? 0 : round($scheduledMin / 60, 1),
                             'attendedHours' => $isNotYetEmployed ? 0 : round($attendedMin / 60, 1),
                             'absenceHours' => $isNotYetEmployed ? 0 : round($absentMin / 60, 1),
@@ -1440,24 +1441,27 @@ class TvDisplayController extends Controller
                     $mostReliable = isset($evaluated[0]) ? [
                         'name' => $evaluated[0]['facultyName'],
                         'program' => $evaluated[0]['program'],
+                        'photo_url' => $evaluated[0]['photo_url'] ?? null,
                         'stats' => "{$evaluated[0]['coveragePercent']}% coverage · {$evaluated[0]['attendedHours']}h attended",
-                    ] : ['name' => 'None', 'program' => 'CIDS', 'stats' => 'N/A'];
+                    ] : ['name' => 'None', 'program' => 'CIDS', 'photo_url' => null, 'stats' => 'N/A'];
 
                     // 2. Most Hours Completed: Faculty with the highest completed/attended classroom hours
                     $mostHoursRecord = collect($evaluated)->sortByDesc('attendedHours')->first();
                     $mostHoursCompleted = $mostHoursRecord ? [
                         'name' => $mostHoursRecord['facultyName'],
                         'program' => $mostHoursRecord['program'],
+                        'photo_url' => $mostHoursRecord['photo_url'] ?? null,
                         'stats' => "{$mostHoursRecord['attendedHours']}h attended · {$mostHoursRecord['completionPercent']}% completion",
-                    ] : ['name' => 'None', 'program' => 'CIDS', 'stats' => 'N/A'];
+                    ] : ['name' => 'None', 'program' => 'CIDS', 'photo_url' => null, 'stats' => 'N/A'];
 
                     // 3. Needs Attention: Faculty member with lowest attendance coverage or highest absence hours among evaluated
                     $needsAttentionRecord = end($evaluated);
                     $needsAttention = $needsAttentionRecord ? [
                         'name' => $needsAttentionRecord['facultyName'],
                         'program' => $needsAttentionRecord['program'],
+                        'photo_url' => $needsAttentionRecord['photo_url'] ?? null,
                         'stats' => "{$needsAttentionRecord['coveragePercent']}% coverage · {$needsAttentionRecord['absenceHours']}h absent",
-                    ] : ['name' => 'None', 'program' => 'CIDS', 'stats' => 'Zero absences'];
+                    ] : ['name' => 'None', 'program' => 'CIDS', 'photo_url' => null, 'stats' => 'Zero absences'];
 
                     // 4. Most Improved: Truly calculate change in coverage % compared to the preceding month
                     $mostImproved = ['name' => 'None', 'program' => 'CIDS', 'stats' => 'Consistently High'];
@@ -1481,6 +1485,7 @@ class TvDisplayController extends Controller
                                     $improvements[] = [
                                         'name' => $curRec['facultyName'],
                                         'program' => $curRec['program'],
+                                        'photo_url' => $curRec['photo_url'] ?? null,
                                         'delta' => $delta,
                                         'curCoverage' => $curRec['coveragePercent'],
                                         'prevCoverage' => $prevRec['coveragePercent'],
@@ -1507,6 +1512,7 @@ class TvDisplayController extends Controller
                             $mostImproved = [
                                 'name' => $topImproved['name'],
                                 'program' => $topImproved['program'],
+                                'photo_url' => $topImproved['photo_url'] ?? null,
                                 'stats' => "+{$topImproved['delta']}% vs. {$prevMonth}",
                             ];
                         } else {
@@ -1514,6 +1520,7 @@ class TvDisplayController extends Controller
                             $mostImproved = [
                                 'name' => $evaluated[0]['facultyName'],
                                 'program' => $evaluated[0]['program'],
+                                'photo_url' => $evaluated[0]['photo_url'] ?? null,
                                 'stats' => 'Consistently High',
                             ];
                         }
@@ -1522,8 +1529,9 @@ class TvDisplayController extends Controller
                         $mostImproved = isset($evaluated[0]) ? [
                             'name' => $evaluated[0]['facultyName'],
                             'program' => $evaluated[0]['program'],
+                            'photo_url' => $evaluated[0]['photo_url'] ?? null,
                             'stats' => 'Consistent Leader',
-                        ] : ['name' => 'None', 'program' => 'CIDS', 'stats' => 'Baseline Period'];
+                        ] : ['name' => 'None', 'program' => 'CIDS', 'photo_url' => null, 'stats' => 'Baseline Period'];
                     }
 
                     $monthlySnapshots[] = [

@@ -1747,6 +1747,7 @@ interface MonthlySnapshotRecord {
     id: string;
     facultyName: string;
     program: string;
+    photo_url?: string | null;
     scheduledHours: number;
     attendedHours: number;
     absenceHours: number;
@@ -1781,10 +1782,10 @@ interface MonthlySnapshotData {
     };
     records: MonthlySnapshotRecord[];
     highlights: {
-        mostReliable: { name: string; program: string; stats: string };
-        mostImproved: { name: string; program: string; stats: string };
-        needsAttention: { name: string; program: string; stats: string };
-        mostHoursCompleted: { name: string; program: string; stats: string };
+        mostReliable: { name: string; program: string; stats: string; photo_url?: string | null };
+        mostImproved: { name: string; program: string; stats: string; photo_url?: string | null };
+        needsAttention: { name: string; program: string; stats: string; photo_url?: string | null };
+        mostHoursCompleted: { name: string; program: string; stats: string; photo_url?: string | null };
     };
     hoursDistribution: {
         scheduledHours: number;
@@ -2697,9 +2698,33 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                                 )}
                                             </td>
 
-                                            {/* Faculty Name */}
-                                            <td className="py-2.5 px-2.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                                                {r.facultyName}
+                                            {/* Faculty Name with Profile Picture Avatar */}
+                                            <td className="py-2 px-2.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="relative w-7 h-7 shrink-0">
+                                                        {r.photo_url ? (
+                                                            <img
+                                                                src={r.photo_url}
+                                                                alt={r.facultyName}
+                                                                className="w-7 h-7 rounded-full object-cover shadow-2xs border border-slate-200 dark:border-white/10"
+                                                                onError={(e) => {
+                                                                    (e.currentTarget as HTMLElement).style.display = 'none';
+                                                                    const fallback = e.currentTarget.parentElement?.querySelector('.table-avatar-fallback') as HTMLElement;
+                                                                    if (fallback) fallback.style.display = 'flex';
+                                                                }}
+                                                            />
+                                                        ) : null}
+                                                        <div
+                                                            className={cn(
+                                                                "table-avatar-fallback w-7 h-7 rounded-full items-center justify-center font-black text-[9px] shadow-2xs border bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10",
+                                                                r.photo_url ? "hidden" : "flex"
+                                                            )}
+                                                        >
+                                                            {r.facultyName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
+                                                        </div>
+                                                    </div>
+                                                    <span className="truncate">{r.facultyName}</span>
+                                                </div>
                                             </td>
 
                                             {/* Program */}
@@ -2923,6 +2948,38 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                                     </span>
                                                 </div>
                                             </div>
+
+                                            {/* Faculty Avatar */}
+                                            <div className="relative w-8 h-8 shrink-0">
+                                                {fac.photo_url ? (
+                                                    <img
+                                                        src={fac.photo_url}
+                                                        alt={fac.facultyName}
+                                                        className={cn(
+                                                            "w-8 h-8 rounded-full object-cover shadow-2xs border",
+                                                            effectiveRank === 1
+                                                                ? "border-amber-400 ring-2 ring-amber-400/50"
+                                                                : effectiveRank === 2
+                                                                    ? "border-slate-300 ring-2 ring-slate-300/50"
+                                                                    : "border-amber-700/60 ring-2 ring-amber-700/30"
+                                                        )}
+                                                        onError={(e) => {
+                                                            (e.currentTarget as HTMLElement).style.display = 'none';
+                                                            const fallback = e.currentTarget.parentElement?.querySelector('.board-avatar-fallback') as HTMLElement;
+                                                            if (fallback) fallback.style.display = 'flex';
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                <div
+                                                    className={cn(
+                                                        "board-avatar-fallback w-8 h-8 rounded-full items-center justify-center font-black text-[10px] shadow-2xs border bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10",
+                                                        fac.photo_url ? "hidden" : "flex"
+                                                    )}
+                                                >
+                                                    {fac.facultyName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
+                                                </div>
+                                            </div>
+
                                             <div className="min-w-0">
                                                 <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                                     {fac.facultyName}
@@ -3002,12 +3059,36 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                     </div>
                                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Most Reliable</span>
                                 </div>
-                                <div className="mt-1.5">
-                                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                        {activeSnapshot.highlights.mostReliable.name} ({activeSnapshot.highlights.mostReliable.program})
+                                <div className="mt-1.5 flex items-center gap-2">
+                                    <div className="relative w-6 h-6 shrink-0">
+                                        {activeSnapshot.highlights.mostReliable.photo_url ? (
+                                            <img
+                                                src={activeSnapshot.highlights.mostReliable.photo_url}
+                                                alt={activeSnapshot.highlights.mostReliable.name}
+                                                className="w-6 h-6 rounded-full object-cover border border-emerald-400/40"
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLElement).style.display = 'none';
+                                                    const fallback = e.currentTarget.parentElement?.querySelector('.hl-avatar-fallback') as HTMLElement;
+                                                    if (fallback) fallback.style.display = 'flex';
+                                                }}
+                                            />
+                                        ) : null}
+                                        <div
+                                            className={cn(
+                                                "hl-avatar-fallback w-6 h-6 rounded-full items-center justify-center font-bold text-[8px] border bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30",
+                                                activeSnapshot.highlights.mostReliable.photo_url ? "hidden" : "flex"
+                                            )}
+                                        >
+                                            {activeSnapshot.highlights.mostReliable.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
+                                        </div>
                                     </div>
-                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                        {activeSnapshot.highlights.mostReliable.stats}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                            {activeSnapshot.highlights.mostReliable.name}
+                                        </div>
+                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                            {activeSnapshot.highlights.mostReliable.stats}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -3020,12 +3101,36 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                     </div>
                                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Most Improved</span>
                                 </div>
-                                <div className="mt-1.5">
-                                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                        {activeSnapshot.highlights.mostImproved.name} ({activeSnapshot.highlights.mostImproved.program})
+                                <div className="mt-1.5 flex items-center gap-2">
+                                    <div className="relative w-6 h-6 shrink-0">
+                                        {activeSnapshot.highlights.mostImproved.photo_url ? (
+                                            <img
+                                                src={activeSnapshot.highlights.mostImproved.photo_url}
+                                                alt={activeSnapshot.highlights.mostImproved.name}
+                                                className="w-6 h-6 rounded-full object-cover border border-blue-400/40"
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLElement).style.display = 'none';
+                                                    const fallback = e.currentTarget.parentElement?.querySelector('.hl-avatar-fallback') as HTMLElement;
+                                                    if (fallback) fallback.style.display = 'flex';
+                                                }}
+                                            />
+                                        ) : null}
+                                        <div
+                                            className={cn(
+                                                "hl-avatar-fallback w-6 h-6 rounded-full items-center justify-center font-bold text-[8px] border bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30",
+                                                activeSnapshot.highlights.mostImproved.photo_url ? "hidden" : "flex"
+                                            )}
+                                        >
+                                            {activeSnapshot.highlights.mostImproved.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
+                                        </div>
                                     </div>
-                                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5 truncate">
-                                        {activeSnapshot.highlights.mostImproved.stats}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                            {activeSnapshot.highlights.mostImproved.name}
+                                        </div>
+                                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold truncate">
+                                            {activeSnapshot.highlights.mostImproved.stats}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -3038,12 +3143,36 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                     </div>
                                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Needs Attention</span>
                                 </div>
-                                <div className="mt-1.5">
-                                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                        {activeSnapshot.highlights.needsAttention.name} ({activeSnapshot.highlights.needsAttention.program})
+                                <div className="mt-1.5 flex items-center gap-2">
+                                    <div className="relative w-6 h-6 shrink-0">
+                                        {activeSnapshot.highlights.needsAttention.photo_url ? (
+                                            <img
+                                                src={activeSnapshot.highlights.needsAttention.photo_url}
+                                                alt={activeSnapshot.highlights.needsAttention.name}
+                                                className="w-6 h-6 rounded-full object-cover border border-rose-400/40"
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLElement).style.display = 'none';
+                                                    const fallback = e.currentTarget.parentElement?.querySelector('.hl-avatar-fallback') as HTMLElement;
+                                                    if (fallback) fallback.style.display = 'flex';
+                                                }}
+                                            />
+                                        ) : null}
+                                        <div
+                                            className={cn(
+                                                "hl-avatar-fallback w-6 h-6 rounded-full items-center justify-center font-bold text-[8px] border bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/30",
+                                                activeSnapshot.highlights.needsAttention.photo_url ? "hidden" : "flex"
+                                            )}
+                                        >
+                                            {activeSnapshot.highlights.needsAttention.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
+                                        </div>
                                     </div>
-                                    <div className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold mt-0.5 truncate">
-                                        {activeSnapshot.highlights.needsAttention.stats}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                            {activeSnapshot.highlights.needsAttention.name}
+                                        </div>
+                                        <div className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold truncate">
+                                            {activeSnapshot.highlights.needsAttention.stats}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -3056,12 +3185,36 @@ function SlideSix({ data, isDark = false, isPaused = false }: { data?: any; isDa
                                     </div>
                                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Most Hours</span>
                                 </div>
-                                <div className="mt-1.5">
-                                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                        {activeSnapshot.highlights.mostHoursCompleted.name} ({activeSnapshot.highlights.mostHoursCompleted.program})
+                                <div className="mt-1.5 flex items-center gap-2">
+                                    <div className="relative w-6 h-6 shrink-0">
+                                        {activeSnapshot.highlights.mostHoursCompleted.photo_url ? (
+                                            <img
+                                                src={activeSnapshot.highlights.mostHoursCompleted.photo_url}
+                                                alt={activeSnapshot.highlights.mostHoursCompleted.name}
+                                                className="w-6 h-6 rounded-full object-cover border border-purple-400/40"
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLElement).style.display = 'none';
+                                                    const fallback = e.currentTarget.parentElement?.querySelector('.hl-avatar-fallback') as HTMLElement;
+                                                    if (fallback) fallback.style.display = 'flex';
+                                                }}
+                                            />
+                                        ) : null}
+                                        <div
+                                            className={cn(
+                                                "hl-avatar-fallback w-6 h-6 rounded-full items-center justify-center font-bold text-[8px] border bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-500/30",
+                                                activeSnapshot.highlights.mostHoursCompleted.photo_url ? "hidden" : "flex"
+                                            )}
+                                        >
+                                            {activeSnapshot.highlights.mostHoursCompleted.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
+                                        </div>
                                     </div>
-                                    <div className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold mt-0.5 truncate">
-                                        {activeSnapshot.highlights.mostHoursCompleted.stats}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                            {activeSnapshot.highlights.mostHoursCompleted.name}
+                                        </div>
+                                        <div className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold truncate">
+                                            {activeSnapshot.highlights.mostHoursCompleted.stats}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

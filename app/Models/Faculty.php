@@ -141,7 +141,8 @@ class Faculty extends Model
             return $this->profile_picture;
         }
 
-        return asset('storage/'.$this->profile_picture);
+        // Return root-relative URL to prevent mixed content blocking (http vs https)
+        return '/storage/'.ltrim($this->profile_picture, '/');
     }
 
     public function program()
