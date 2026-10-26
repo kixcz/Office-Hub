@@ -16,10 +16,10 @@ use App\Models\RoomSchedule;
 use App\Models\SpotlightSlide;
 use App\Models\Submission;
 use App\Models\Task;
+use App\Models\TvCleaningSchedule;
 use App\Models\TvDevice;
 use App\Models\TvSetting;
 use App\Models\TvSlide;
-use App\Services\ComplianceService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -30,12 +30,9 @@ class TvDisplayController extends Controller
 {
     public function index($displayId = null)
     {
-        ComplianceService::syncPendingSubmissions();
-
         $now = Carbon::now();
-        $today = $now->format('Y-m-d');
 
-        // 1. Device and Settings resolution
+        // 1. Device resolution & keep-alive ping
         $device = null;
         if ($displayId) {
             $device = TvDevice::where('id', $displayId)->orWhere('device_code', $displayId)->first();
@@ -47,6 +44,48 @@ class TvDisplayController extends Controller
         if ($device) {
             $device->update(['last_ping_at' => $now, 'is_online' => true]);
         }
+
+        $displayKey = $device ? (string) $device->id : ($displayId ?: 'default');
+        $cacheKey = 'tv_display_payload_v1_'.$displayKey;
+
+        // Cache the entire display payload for 10 minutes so TV responds in < 10ms
+        $payload = Cache::remember($cacheKey, 600, function () use ($device, $displayId) {
+            return $this->buildTvPayload($device, $displayId);
+        });
+
+        return Inertia::render('tv/display', $payload);
+    }
+
+    /**
+     * Dedicated lightweight JSON endpoint for frontend polling without full Inertia HTML reload.
+     */
+    public function getTvDataApi($displayId = null)
+    {
+        $device = null;
+        if ($displayId) {
+            $device = TvDevice::where('id', $displayId)->orWhere('device_code', $displayId)->first();
+        }
+        if (! $device) {
+            $device = TvDevice::first();
+        }
+
+        $displayKey = $device ? (string) $device->id : ($displayId ?: 'default');
+        $cacheKey = 'tv_display_payload_v1_'.$displayKey;
+
+        $payload = Cache::remember($cacheKey, 600, function () use ($device, $displayId) {
+            return $this->buildTvPayload($device, $displayId);
+        });
+
+        return response()->json($payload);
+    }
+
+    /**
+     * Build the TV Display payload (slides, data, settings, current_term).
+     */
+    private function buildTvPayload($device = null, $displayId = null): array
+    {
+        $now = Carbon::now();
+        $today = $now->format('Y-m-d');
 
         $globalSettings = TvSetting::pluck('value', 'key')->toArray();
 
@@ -209,6 +248,55 @@ class TvDisplayController extends Controller
                     'duration_seconds' => $cust->duration_seconds ?: 20,
                 ]);
                 $customIndex++;
+            }
+
+            // Include Cleaners Duty Schedule Slide if active
+            $cleaningSchedule = TvCleaningSchedule::where('is_active', true)->first();
+            if ($cleaningSchedule) {
+                // Enrich days_data cleaners with live faculty photo_url
+                $facultyPhotos = Faculty::whereNotNull('profile_picture')
+                    ->get()
+                    ->mapWithKeys(fn ($f) => [
+                        $f->id => $f->photo_url,
+                        trim(strtolower($f->full_name)) => $f->photo_url,
+                    ])
+                    ->toArray();
+
+                $enrichedDays = collect($cleaningSchedule->days_data)->map(function ($day) use ($facultyPhotos) {
+                    $cleaners = collect($day['cleaners'] ?? [])->map(function ($c) use ($facultyPhotos) {
+                        $photo = $c['photo_url'] ?? null;
+                        if (! $photo) {
+                            if (! empty($c['faculty_id']) && isset($facultyPhotos[$c['faculty_id']])) {
+                                $photo = $facultyPhotos[$c['faculty_id']];
+                            } elseif (! empty($c['name'])) {
+                                $nameKey = trim(strtolower($c['name']));
+                                if (isset($facultyPhotos[$nameKey])) {
+                                    $photo = $facultyPhotos[$nameKey];
+                                }
+                            }
+                        }
+                        $c['photo_url'] = $photo;
+
+                        return $c;
+                    })->all();
+                    $day['cleaners'] = $cleaners;
+
+                    return $day;
+                })->all();
+
+                $cleaningSchedule->days_data = $enrichedDays;
+
+                $interleavedSlides->push([
+                    'id' => 'cleaners_'.$cleaningSchedule->id,
+                    'title' => '🧹 Cleaners Duty Schedule',
+                    'type' => 'Slide 12 - Cleaners Duty',
+                    'is_spotlight' => false,
+                    'is_custom' => false,
+                    'is_cleaners' => true,
+                    'order' => $interleavedSlides->count() + 1,
+                    'is_active' => true,
+                    'duration_seconds' => $cleaningSchedule->duration_seconds ?: 25,
+                ]);
             }
         }
 
@@ -1061,7 +1149,7 @@ class TvDisplayController extends Controller
             ],
         ];
 
-        return Inertia::render('tv/display', [
+        return [
             'settings' => $settings,
             'slides' => $slides,
             'data' => [
@@ -1125,21 +1213,23 @@ class TvDisplayController extends Controller
                 'slide9' => $complianceTrackerData,
                 'slide10' => $tasksAndProjectsData,
                 'slide11' => $programPerformanceData,
+                'slide12' => $cleaningSchedule ?? TvCleaningSchedule::first(),
             ],
             'current_term' => $settings['academic_term'] ?? 'AY 2026-2027, 1st Semester',
-        ]);
+        ];
     }
 
     /**
      * Fetch and parse the Class & Lab Monitoring Summary and dynamic Monthly Attendance Matrices.
+     * Cached for 15 minutes (900 seconds) to prevent 504 timeouts from synchronous Google Sheets fetches.
      */
     private function fetchClassroomMonitoringSummary(): array
     {
-        return Cache::remember('tv_classroom_monitoring_summary_v3', 60, function () {
+        return Cache::remember('tv_classroom_monitoring_summary_v3', 900, function () {
             try {
                 // 1. Fetch raw Google Sheets monitoring summary
                 $url = 'https://docs.google.com/spreadsheets/d/15m7NI4joQRBi9X7gdpqkF7SRZFFn61wXMhv5EkfyBY0/export?format=csv&gid=2115846189';
-                $response = Http::withoutVerifying()->timeout(8)->get($url);
+                $response = Http::withoutVerifying()->timeout(5)->get($url);
 
                 $lines = $response->successful() ? explode("\n", $response->body()) : [];
                 $header = null;

@@ -12,6 +12,7 @@ import {
     Calendar as CalendarIcon,
     CheckCircle2,
     ChevronLeft,
+    MessageSquare,
     ChevronRight,
     Building2,
     Clock,
@@ -49,7 +50,7 @@ import {
     FolderGit2,
     ListTodo,
     Paperclip,
-    MessageSquare,
+    Heart,
     type LucideIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -73,6 +74,7 @@ const SLIDE_TYPES = {
     nine: 'Slide 9 - Compliance Tracker',
     ten: 'Slide 10 - Tasks & Projects',
     eleven: 'Slide 11 - Program Performance',
+    twelve: 'Slide 12 - Cleaners Duty',
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -139,12 +141,24 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
             const len = countRef.current;
             if (len === 0) return;
             const next = (indexRef.current + dir + len) % len;
-            if (dir === 1 && next === 0) {
-                router.reload({ only: ['settings', 'slides', 'data'] });
-            }
+            // No reload on every slide loop - avoids spamming server and prevents 504 gateway timeouts
             setIndex(next);
             setFade(true);
         }, FADE_MS);
+    }, []);
+
+    // Relaxed 5-minute background refresh to fetch fresh data without blocking or rapid reloading
+    useEffect(() => {
+        const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+        const interval = window.setInterval(() => {
+            router.reload({
+                only: ['settings', 'slides', 'data'],
+                preserveScroll: true,
+                preserveState: true,
+            });
+        }, REFRESH_INTERVAL_MS);
+
+        return () => window.clearInterval(interval);
     }, []);
 
     const currentSlide = activeSlides[safeIndex];
@@ -236,6 +250,7 @@ export default function TvDisplay({ slides, data, current_term, settings }: any)
                 {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.nine || currentSlide.type.includes('Compliance Tracker')) && <SlideNine data={data.slide9} isDark={isDark} />}
                 {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.ten || currentSlide.type.includes('Tasks & Projects') || currentSlide.type.includes('Tasks and Projects')) && <SlideTen data={data.slide10} isDark={isDark} />}
                 {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.eleven || currentSlide.type.includes('Program Performance')) && <SlideEleven data={data.slide11} isDark={isDark} />}
+                {!currentSlide.is_spotlight && (currentSlide.is_cleaners || currentSlide.type === SLIDE_TYPES.twelve || currentSlide.type.includes('Cleaners Duty') || currentSlide.type.includes('Cleaning Schedule')) && <SlideTwelve data={data.slide12} isDark={isDark} />}
             </div>
 
             {/* Footer - Styled precisely as in reference images */}
@@ -4727,6 +4742,334 @@ function SlideEleven({ data, isDark }: { data: any; isDark: boolean }) {
                             ))}
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Slide 12: Faculty Cleaners Duty Schedule                                  */
+/* -------------------------------------------------------------------------- */
+
+function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
+    if (!data) {
+        return (
+            <div className="flex flex-1 items-center justify-center p-8 text-center text-slate-400">
+                <p>No cleaners duty schedule available.</p>
+            </div>
+        );
+    }
+
+    const {
+        title = 'OFFICE CLEANING SCHEDULE',
+        subtitle = 'FACULTY CLEANERS',
+        scope_badge = 'CIDS OFFICE AREAS ONLY',
+        motto_title = 'A Clean Office, A Brighter CIDS.',
+        motto_description = "LET'S KEEP OUR WORKPLACE CLEAN, ORGANIZED, AND WELCOMING FOR EVERYONE.",
+        week_label = 'OCT 19 - OCT 23, 2026',
+        days_data = [],
+    } = data;
+
+    // Determine current day of week to highlight scheduled cleaners for today
+    // Javascript getDay(): 0 is Sunday, 1 is Monday, 2 is Tuesday, etc.
+    const currentDayOfWeek = new Date().getDay();
+
+    return (
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-2 select-none overflow-hidden font-['Poppins']">
+            {/* Top Header Card */}
+            <div className={cn(
+                "relative rounded-2xl px-5 py-3 border shadow-xs overflow-hidden shrink-0 flex items-center justify-between",
+                isDark 
+                    ? "bg-[#101726]/90 border-white/10 text-white" 
+                    : "bg-gradient-to-r from-amber-50/70 via-white to-amber-50/50 border-amber-200/80 text-slate-900"
+            )}>
+                {/* Left: Institute & Logos */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <img src="/DSSC.jpg" alt="DSSC" className="h-10 w-10 object-contain rounded-full shadow-xs" />
+                        <img src="/CIDS_Logo.png" alt="CIDS" className="h-10 w-10 object-contain rounded-full shadow-xs" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                            DAVAO DEL SUR STATE COLLEGE
+                        </p>
+                        <p className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-amber-400">
+                            COLLEGE OF INFORMATION AND DIGITAL SCIENCES
+                        </p>
+                    </div>
+                </div>
+
+                {/* Center: Main Banner Title */}
+                <div className="flex flex-col items-center text-center">
+                    <div className="flex items-center gap-2">
+                        <span className="text-2xl animate-bounce">🧹</span>
+                        <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white drop-shadow-xs">
+                            {title}
+                        </h1>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[11px] font-black tracking-widest uppercase text-amber-700 dark:text-amber-400">
+                            {subtitle}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-400/90 text-slate-950 font-black text-[9px] uppercase tracking-wider shadow-xs">
+                            {scope_badge}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Right: Cheerful Banner & Live Badge */}
+                <div className="flex items-center gap-3">
+                    <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100/80 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/50 text-[10px] font-bold text-amber-900 dark:text-amber-200 shadow-2xs">
+                        <span>✨</span>
+                        <span>Same Team, Cleaner Spaces!</span>
+                        <span>💛</span>
+                    </div>
+                    <div className="text-right">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                            Cleaning Week
+                        </span>
+                        <span className="text-xs font-black text-amber-600 dark:text-amber-400 tabular-nums">
+                            {week_label}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Sub-Header: Mission Banner & 4 Pillars */}
+            <div className="grid grid-cols-12 gap-2 shrink-0">
+                {/* Left Motto Box (4 cols) */}
+                <div className={cn(
+                    "col-span-4 rounded-xl px-4 py-2 border shadow-2xs flex items-center gap-3",
+                    isDark 
+                        ? "bg-[#131b2e] border-white/10" 
+                        : "bg-white border-slate-200/90"
+                )}>
+                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-xl shrink-0 shadow-xs">
+                        🥰
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-xs font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+                            {motto_title}
+                        </p>
+                        <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 uppercase tracking-wide">
+                            {motto_description}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Right 4 Pillar Badges (8 cols) */}
+                <div className="col-span-8 grid grid-cols-4 gap-2">
+                    {[
+                        { title: 'CLEAN WORKSPACE', icon: '✨', sub: 'Spotless Desks' },
+                        { title: 'BETTER COLLABORATION', icon: '🤝', sub: 'Organized Labs' },
+                        { title: 'HEALTHIER COMMUNITY', icon: '🌿', sub: 'Safe & Fresh' },
+                        { title: 'A STRONGER CIDS', icon: '🛡️', sub: 'Excellence' },
+                    ].map((pill, idx) => (
+                        <div
+                            key={idx}
+                            className={cn(
+                                "rounded-xl px-2 py-2 border shadow-2xs flex flex-col items-center justify-center text-center transition-all",
+                                isDark 
+                                    ? "bg-[#131b2e] border-white/10" 
+                                    : "bg-white border-slate-200/80"
+                            )}
+                        >
+                            <span className="text-base leading-none mb-0.5">{pill.icon}</span>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 leading-tight">
+                                {pill.title}
+                            </span>
+                            <span className="text-[8px] font-medium text-slate-400 dark:text-slate-500">
+                                {pill.sub}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Main Daily Roster Columns (Monday - Friday) */}
+            <div className="grid grid-cols-5 gap-2.5 flex-1 min-h-0">
+                {days_data.map((dayItem: any, dayIdx: number) => {
+                    // Check if this card represents today's schedule
+                    // dayItem.day_number: 1 = Mon, 2 = Tue, 3 = Wed, 4 = Thu, 5 = Fri
+                    const isToday = dayItem.day_number === currentDayOfWeek;
+                    const cleaners = dayItem.cleaners || [];
+
+                    return (
+                        <div
+                            key={dayIdx}
+                            className={cn(
+                                "flex flex-col rounded-2xl border transition-all duration-300 min-h-0 overflow-hidden shadow-sm",
+                                isToday
+                                    ? isDark
+                                        ? "bg-amber-950/20 border-amber-400 ring-2 ring-amber-400/30 shadow-md"
+                                        : "bg-gradient-to-b from-amber-50/80 to-white border-amber-400 ring-2 ring-amber-400/40 shadow-md"
+                                    : isDark
+                                        ? "bg-[#131b2e] border-white/10"
+                                        : "bg-white border-slate-200/90"
+                            )}
+                        >
+                            {/* Day Header Banner */}
+                            <div className={cn(
+                                "px-3 py-2 border-b flex items-center justify-between shrink-0",
+                                isToday
+                                    ? "bg-amber-400 text-slate-950 border-amber-500/30"
+                                    : isDark
+                                        ? "bg-white/[0.04] border-white/10 text-white"
+                                        : "bg-amber-100/60 border-amber-200/70 text-slate-900"
+                            )}>
+                                <div>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs font-black uppercase tracking-wider">
+                                            {dayItem.day}
+                                        </span>
+                                        {isToday && (
+                                            <span className="px-1.5 py-0.2 rounded-full bg-slate-950 text-amber-400 text-[8px] font-black uppercase tracking-widest animate-pulse">
+                                                TODAY
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className={cn(
+                                        "text-[9px] font-bold tracking-tight",
+                                        isToday ? "text-slate-900" : "text-slate-500 dark:text-slate-400"
+                                    )}>
+                                        {dayItem.date_label}
+                                    </p>
+                                </div>
+
+                                <div className={cn(
+                                    "px-2 py-0.5 rounded-full flex items-center gap-1 text-[9px] font-black tracking-wide shadow-2xs",
+                                    isToday
+                                        ? "bg-slate-950/20 text-slate-950"
+                                        : "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                                )}>
+                                    <Users size={10} />
+                                    <span>{cleaners.length} CLEANERS</span>
+                                </div>
+                            </div>
+
+                            {/* Cleaners List */}
+                            <div className="flex-1 p-2 space-y-1.5 overflow-y-auto no-scrollbar">
+                                {cleaners.map((cleaner: any, cIdx: number) => {
+                                    const initials = cleaner.initials || cleaner.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'FC';
+
+                                    return (
+                                        <div
+                                            key={cIdx}
+                                            className={cn(
+                                                "p-1.5 rounded-xl border flex items-center gap-2 transition-all",
+                                                isToday
+                                                    ? isDark
+                                                        ? "bg-amber-500/10 border-amber-500/30 text-white"
+                                                        : "bg-white border-amber-300 shadow-2xs text-slate-900"
+                                                    : isDark
+                                                        ? "bg-white/[0.02] border-white/5 text-white"
+                                                        : "bg-slate-50/70 border-slate-100 text-slate-900"
+                                            )}
+                                        >
+                                            {/* Numeric Index */}
+                                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 w-3 text-center shrink-0">
+                                                {cIdx + 1}
+                                            </span>
+
+                                            {/* Faculty Avatar (Photo or Initials Badge) */}
+                                            {cleaner.photo_url ? (
+                                                <img
+                                                    src={cleaner.photo_url}
+                                                    alt={cleaner.name}
+                                                    className={cn(
+                                                        "w-7 h-7 rounded-full object-cover shrink-0 shadow-2xs border",
+                                                        isToday ? "border-amber-400 ring-1 ring-amber-400" : "border-slate-200 dark:border-white/10"
+                                                    )}
+                                                    onError={(e) => {
+                                                        (e.currentTarget as HTMLElement).style.display = 'none';
+                                                        const next = e.currentTarget.nextElementSibling as HTMLElement;
+                                                        if (next) next.style.display = 'flex';
+                                                    }}
+                                                />
+                                            ) : null}
+                                            <div className={cn(
+                                                "w-7 h-7 rounded-full items-center justify-center font-black text-[9px] shrink-0 shadow-2xs",
+                                                cleaner.photo_url ? "hidden" : "flex",
+                                                isToday
+                                                    ? "bg-amber-400 text-slate-950"
+                                                    : isDark
+                                                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                                        : "bg-amber-100 text-amber-900 border border-amber-300/60"
+                                            )}>
+                                                {initials}
+                                            </div>
+
+                                            {/* Cleaner Name & Role */}
+                                            <div className="min-w-0 flex-1">
+                                                <p className={cn(
+                                                    "text-[10px] font-bold truncate leading-tight",
+                                                    isToday ? "text-slate-950 dark:text-amber-300 font-extrabold" : "text-slate-800 dark:text-slate-200"
+                                                )}>
+                                                    {cleaner.name}
+                                                </p>
+                                                <p className="text-[8px] font-semibold text-slate-400 dark:text-slate-500 leading-none mt-0.5">
+                                                    {cleaner.role || 'Faculty Cleaner'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Card Slogan Footer */}
+                            <div className={cn(
+                                "px-2 py-1.5 border-t text-center shrink-0 flex items-center justify-center gap-1",
+                                isToday
+                                    ? "bg-amber-400/20 border-amber-400/40 text-amber-900 dark:text-amber-300 font-black text-[9px]"
+                                    : "bg-slate-50/50 dark:bg-white/[0.02] border-slate-100 dark:border-white/5 text-slate-500 dark:text-slate-400 font-bold text-[8.5px]"
+                            )}>
+                                <span>{dayIdx === 0 ? '🧹' : dayIdx === 1 ? '🗑️' : dayIdx === 2 ? '🧼' : dayIdx === 3 ? '🧽' : '🎉'}</span>
+                                <span className="italic">{dayItem.slogan || 'Keep it clean!'}</span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Bottom Slogan Bar matching Reference Image */}
+            <div className={cn(
+                "rounded-xl px-5 py-1.5 border shadow-2xs flex items-center justify-between shrink-0",
+                isDark 
+                    ? "bg-[#0b101b] border-white/10 text-white" 
+                    : "bg-slate-950 text-white border-slate-900"
+            )}>
+                {/* Left Brand Badge */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                        <Building2 size={16} className="text-amber-400" />
+                        <span className="font-black text-xs tracking-wider text-amber-400">CIDS</span>
+                    </div>
+                    <div className="h-4 w-px bg-white/20" />
+                    <p className="text-[10px] font-black uppercase tracking-wider text-white">
+                        CLEAN SPACES SUPPORT BRIGHT MINDS.
+                    </p>
+                </div>
+
+                {/* Mid Values */}
+                <div className="hidden md:flex items-center gap-5 text-[9px] font-bold text-slate-300">
+                    <span className="flex items-center gap-1">
+                        <span className="text-amber-400">💼</span> ORGANIZED OFFICE
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <span className="text-amber-400">👥</span> PRODUCTIVE PEOPLE
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <span className="text-amber-400">🌱</span> HEALTHIER ENVIRONMENT
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <span className="text-amber-400">📈</span> A STRONGER CIDS
+                    </span>
+                </div>
+
+                {/* Right Motto */}
+                <div className="text-[9px] font-black tracking-widest text-amber-400 uppercase">
+                    DISCIPLINE · COLLABORATION · SERVICE
                 </div>
             </div>
         </div>

@@ -54,6 +54,7 @@ export const TV_STUDIO_NAV_GROUPS: TvStudioNavGroup[] = [
             { id: 'slides', title: 'Slide Configuration', url: '/tv-config/slides', icon: Sliders },
             { id: 'spotlight', title: 'Spotlight Slides', url: '/tv-config/spotlight', icon: Sparkles, badge: 'New' },
             { id: 'custom', title: 'Custom Manual Slides', url: '/tv-config/custom', icon: FileText, badge: 'New' },
+            { id: 'cleaners', title: 'Cleaners Schedule', url: '/tv-config/cleaners', icon: Sparkles, badge: 'Duty' },
             { id: 'templates', title: 'Templates', url: '/tv-config/templates', icon: LayoutTemplate },
         ],
     },

@@ -42,6 +42,7 @@ use App\Http\Controllers\Tv\PlaylistController;
 use App\Http\Controllers\Tv\SettingController;
 use App\Http\Controllers\Tv\SlideController;
 use App\Http\Controllers\Tv\SpotlightController;
+use App\Http\Controllers\Tv\TvCleaningScheduleController;
 use App\Http\Controllers\Tv\TvStudioController;
 use App\Http\Controllers\TvDisplayController;
 use Illuminate\Support\Facades\Artisan;
@@ -56,6 +57,8 @@ Route::get('/', function () {
 Route::post('/tv-display/verify-code', [SettingController::class, 'verifyCode'])->name('tv-display.verify-code');
 Route::get('/tv-display/{displayId?}', [TvDisplayController::class, 'index'])->name('tv-display');
 Route::get('/tv/display/{displayId?}', [TvDisplayController::class, 'index'])->name('tv.display');
+Route::get('/api/tv/data/{displayId?}', [TvDisplayController::class, 'getTvDataApi'])->name('tv.data.api');
+Route::get('/tv-display/{displayId?}/data', [TvDisplayController::class, 'getTvDataApi'])->name('tv-display.data');
 
 // One-click maintenance route for Hostinger shared hosting without SSH access
 Route::get('/hostinger-fix-storage', function () {
@@ -283,6 +286,11 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('custom/{custom}', [CustomSlideController::class, 'destroy'])->name('custom.destroy');
         Route::post('custom/{custom}/toggle-publish', [CustomSlideController::class, 'togglePublish'])->name('custom.toggle-publish');
         Route::post('custom/{custom}/duplicate', [CustomSlideController::class, 'duplicate'])->name('custom.duplicate');
+
+        // Cleaners Duty Schedule Slide (Editable)
+        Route::get('cleaners', [TvCleaningScheduleController::class, 'index'])->name('cleaners.index');
+        Route::put('cleaners/{schedule}', [TvCleaningScheduleController::class, 'update'])->name('cleaners.update');
+        Route::post('cleaners/{schedule}/reset', [TvCleaningScheduleController::class, 'reset'])->name('cleaners.reset');
 
         Route::get('templates', [TvStudioController::class, 'templates'])->name('templates.index');
         Route::get('widgets', [TvStudioController::class, 'widgets'])->name('widgets.index');
