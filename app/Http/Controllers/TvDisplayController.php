@@ -1473,9 +1473,9 @@ class TvDisplayController extends Controller
                             'off_campus_total' => $offCampusTotal,
                             'upcoming_total' => $upcomingOffCampus->count(),
                         ],
-                        'on_campus_list' => $onCampusList->take(10)->values()->all(),
-                        'off_campus_today' => $offCampusToday->take(6)->values()->all(),
-                        'upcoming_off_campus' => $upcomingOffCampus->sortBy('start_date')->take(5)->values()->all(),
+                        'on_campus_list' => $onCampusList->values()->all(),
+                        'off_campus_today' => $offCampusToday->values()->all(),
+                        'upcoming_off_campus' => $upcomingOffCampus->sortBy('start_date')->values()->all(),
                     ];
                 })(),
                 'slide14' => (function () {

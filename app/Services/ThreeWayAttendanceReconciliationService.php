@@ -136,7 +136,7 @@ class ThreeWayAttendanceReconciliationService
         // 3. Check Approved Travel Orders
         $travelOrder = TravelOrder::query()
             ->where('faculty_id', $facultyId)
-            ->whereIn('status', ['Approved', 'approved'])
+            ->whereIn('status', ['Approved', 'approved', 'Traveling Now', 'traveling now', 'In Progress', 'in progress'])
             ->whereDate('start_date', '<=', $sessionDateStr)
             ->whereDate('end_date', '>=', $sessionDateStr)
             ->first();
@@ -241,10 +241,10 @@ class ThreeWayAttendanceReconciliationService
             $actStart = Carbon::parse($sessionDateStr.' '.substr($actualStartStr, 0, 5));
             $actEnd = Carbon::parse($sessionDateStr.' '.substr($actualEndStr, 0, 5));
             if ($actEnd > $actStart) {
-                $deliveredMinutes = min($scheduledMinutes, (int) round($actEnd->diffInMinutes($actStart)));
+                $deliveredMinutes = min($scheduledMinutes, (int) abs(round($actEnd->diffInMinutes($actStart))));
             }
             if ($actStart > $sessionStart) {
-                $lateMinutes = (int) round($actStart->diffInMinutes($sessionStart));
+                $lateMinutes = (int) abs(round($actStart->diffInMinutes($sessionStart)));
             }
         } elseif (in_array($outcome, ['Class Conducted by Scheduled Faculty', 'Class Conducted by Substitute Faculty', 'Transferred to Another Room', 'Switched to Online Modality'])) {
             // If conducted fully without specific minute overrides, default delivered to scheduled

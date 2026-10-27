@@ -5587,12 +5587,12 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                     </div>
 
                     {/* Table */}
-                    <div className="flex-1 min-h-0 overflow-hidden">
+                    <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar pr-0.5">
                         <table className="w-full text-left text-xs">
-                            <thead>
+                            <thead className="sticky top-0 z-10 bg-white dark:bg-slate-900 shadow-2xs">
                                 <tr className={cn(
                                     "border-b text-[10px] font-black uppercase tracking-wider",
-                                    isDark ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-400"
+                                    isDark ? "border-slate-800 text-slate-400" : "border-slate-200 text-slate-400"
                                     )}>
                                     <th className="pb-2 w-7">#</th>
                                     <th className="pb-2">Faculty</th>
@@ -5603,8 +5603,8 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                                {onCampusList.slice(0, 8).map((f: any, idx: number) => (
-                                    <tr key={f.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                {onCampusList.map((f: any, idx: number) => (
+                                    <tr key={f.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                         <td className="py-2 text-slate-400 font-bold">{idx + 1}</td>
                                         <td className="py-2">
                                             <div className="flex items-center gap-2">
@@ -5648,8 +5648,7 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                     {/* Bottom Action / Last updated line */}
                     <div className="pt-2.5 border-t flex items-center justify-between text-[11px] text-slate-400 shrink-0">
                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-200 text-xs">
-                            <span>View All On-Campus Faculty</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
+                            <span>Showing All On-Campus Faculty ({onCampusList.length})</span>
                         </div>
                         <div className="flex items-center gap-1.5 font-medium">
                             <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -5662,7 +5661,7 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                 <div className="col-span-12 lg:col-span-6 flex flex-col gap-3.5 min-h-0 overflow-hidden">
                     {/* Top Card: Off Campus Today */}
                     <div className={cn(
-                        "flex-1 min-h-0 rounded-2xl border p-4 sm:p-4.5 flex flex-col justify-between shadow-xs overflow-hidden",
+                        "flex-1 min-h-0 rounded-2xl border p-4 sm:p-4.5 flex flex-col shadow-xs overflow-hidden",
                         isDark ? "bg-slate-900/90 border-slate-800 text-white" : "bg-white border-slate-200/90 text-slate-900"
                     )}>
                         {/* Header */}
@@ -5687,14 +5686,14 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                             </span>
                         </div>
 
-                        {/* Off Campus Cards List */}
+                        {/* Off Campus Cards List - scrollable with hidden scrollbar */}
                         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-2.5 pr-0.5">
                             {offCampusToday.length === 0 ? (
                                 <div className="py-8 text-center text-slate-400 text-xs">
                                     No faculty off-campus at this time.
                                 </div>
                             ) : (
-                                offCampusToday.slice(0, 4).map((f: any) => (
+                                offCampusToday.map((f: any) => (
                                     <div
                                         key={f.id}
                                         className={cn(
@@ -5754,9 +5753,9 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                                         </div>
 
                                         {/* Bottom Row: Destination (Left) & Purpose (Right) */}
-                                        <div className="grid grid-cols-12 gap-3 pt-1 text-[10px] leading-tight border-t border-slate-100 dark:border-slate-800/60">
-                                            {/* Destination */}
-                                            <div className="col-span-5 flex items-start gap-1.5 min-w-0">
+                                        <div className="grid grid-cols-12 gap-3 pt-2 text-[10px] leading-tight border-t border-slate-300/80 dark:border-slate-700">
+                                            {/* Destination with visible right divider */}
+                                            <div className="col-span-5 flex items-start gap-1.5 min-w-0 border-r border-slate-300/80 dark:border-slate-700 pr-2">
                                                 <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                                                 <div className="min-w-0">
                                                     <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">
@@ -5769,7 +5768,7 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                                             </div>
 
                                             {/* Purpose / Activity */}
-                                            <div className="col-span-7 flex items-start gap-1.5 min-w-0">
+                                            <div className="col-span-7 flex items-start gap-1.5 min-w-0 pl-1">
                                                 <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                                                 <div className="min-w-0">
                                                     <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">
@@ -5780,7 +5779,7 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                                                     </p>
                                                     {f.time_window && (
                                                         <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 block">
-                                                            {f.time_window}
+                                                             {f.time_window}
                                                         </span>
                                                     )}
                                                     {f.slip_number && (
@@ -5795,19 +5794,11 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                                 ))
                             )}
                         </div>
-
-                        {/* Bottom Link */}
-                        <div className="pt-2 border-t shrink-0">
-                            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-200 text-[10px]">
-                                <span>View All Off-Campus Faculty</span>
-                                <ChevronRight className="w-3 h-3" />
-                            </div>
-                        </div>
                     </div>
 
                     {/* Bottom Card: Upcoming Off-Campus Engagements */}
                     <div className={cn(
-                        "flex-1 min-h-0 rounded-2xl border p-4 sm:p-4.5 flex flex-col justify-between shadow-xs overflow-hidden",
+                        "flex-1 min-h-0 rounded-2xl border p-4 sm:p-4.5 flex flex-col shadow-xs overflow-hidden",
                         isDark ? "bg-slate-900/90 border-slate-800 text-white" : "bg-white border-slate-200/90 text-slate-900"
                     )}>
                         {/* Header */}
@@ -5832,14 +5823,14 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                             </span>
                         </div>
 
-                        {/* Upcoming Cards List */}
+                        {/* Upcoming Cards List - scrollable with hidden scrollbar */}
                         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-2.5 pr-0.5">
                             {upcomingOffCampus.length === 0 ? (
                                 <div className="py-8 text-center text-slate-400 text-xs">
                                     No upcoming off-campus engagements.
                                 </div>
                             ) : (
-                                upcomingOffCampus.slice(0, 3).map((f: any) => (
+                                upcomingOffCampus.map((f: any) => (
                                     <div
                                         key={f.id}
                                         className={cn(
@@ -5899,9 +5890,9 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                                         </div>
 
                                         {/* Bottom Row: Destination (Left) & Purpose (Right) */}
-                                        <div className="grid grid-cols-12 gap-3 pt-1 text-[10px] leading-tight border-t border-slate-100 dark:border-slate-800/60">
-                                            {/* Destination */}
-                                            <div className="col-span-5 flex items-start gap-1.5 min-w-0">
+                                        <div className="grid grid-cols-12 gap-3 pt-2 text-[10px] leading-tight border-t border-slate-300/80 dark:border-slate-700">
+                                            {/* Destination with visible right divider */}
+                                            <div className="col-span-5 flex items-start gap-1.5 min-w-0 border-r border-slate-300/80 dark:border-slate-700 pr-2">
                                                 <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                                                 <div className="min-w-0">
                                                     <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">
@@ -5914,7 +5905,7 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
                                             </div>
 
                                             {/* Purpose / Activity */}
-                                            <div className="col-span-7 flex items-start gap-1.5 min-w-0">
+                                            <div className="col-span-7 flex items-start gap-1.5 min-w-0 pl-1">
                                                 <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                                                 <div className="min-w-0">
                                                     <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">

@@ -154,11 +154,41 @@ interface SignatoryItem {
     showSignatureLine: boolean;
 }
 
+interface TravelOrder {
+    id: number;
+    tracking_number: string;
+    faculty_id: number;
+    faculty_name?: string;
+    destination?: string;
+    purpose?: string;
+    start_date: string;
+    end_date: string;
+    travel_type?: string;
+    status: string;
+    faculty?: Faculty | null;
+}
+
+interface LocatorSlip {
+    id: number;
+    slip_number: string;
+    faculty_id: number;
+    faculty_name?: string;
+    destination?: string;
+    purpose?: string;
+    date: string;
+    time_out?: string;
+    time_in?: string;
+    status: string;
+    faculty?: Faculty | null;
+}
+
 interface Props {
     programs: Program[];
     faculties: Faculty[];
     summaries: FacultyAttendanceSummary[];
     weekly_sessions: FacultyAttendanceRecord[];
+    travel_orders?: TravelOrder[];
+    locator_slips?: LocatorSlip[];
     make_up_requests?: any[];
     monthly_periods: string[];
     weekly_periods: string[];
@@ -276,6 +306,8 @@ export default function GenerateReportPage({
     faculties = [],
     summaries = [],
     weekly_sessions = [],
+    travel_orders = [],
+    locator_slips = [],
     monthly_periods = [],
     weekly_periods = [],
     last_synced_at = 'Oct 13, 2026 06:23 AM',
@@ -609,8 +641,146 @@ export default function GenerateReportPage({
             // Compute atomic minute baselines
             const scheduledMin = s.scheduled_minutes || (s.total_scheduled_hours ? Math.round(s.total_scheduled_hours * 60) : scheduledSessions * 90);
             const leaveMin = s.approved_leave_minutes || (s.approved_leave_hours ? Math.round(s.approved_leave_hours * 60) : onLeave * 90);
-            const travelOrderMin = s.travel_order_minutes || 0;
-            const locatorSlipMin = s.locator_slip_minutes || 0;
+
+            // Calculate Travel Order minutes: use summary record if positive; otherwise dynamically compute from approved travel orders
+            let travelOrderMin = s.travel_order_minutes || 0;
+            if (travelOrderMin === 0 && (s.faculty_id || s.instructor_name)) {
+                // Find travel orders for this faculty
+                const activeTOs = travel_orders.filter(to => {
+                    const toFacultyId = to.faculty_id;
+                    const matchesFaculty = s.faculty_id
+                        ? toFacultyId === s.faculty_id
+                        : (to.faculty_name || '').trim().toLowerCase() === (s.instructor_name || '').trim().toLowerCase();
+                    if (!matchesFaculty) return false;
+
+                    const statusLower = (to.status || '').toLowerCase();
+                    return statusLower === 'approved' || statusLower === 'in progress' || statusLower === 'traveling now' || statusLower === 'completed';
+                });
+
+                if (activeTOs.length > 0) {
+                    // Check overlap between travel order date range and currently selected reporting period
+                    const periodLower = (selectedPeriod || '').toLowerCase();
+                    let pStartStr = '2026-08-10';
+                    let pEndStr = '2026-12-18';
+
+                    if (periodTab === 'week') {
+                        const dateMatch = periodLower.match(/\((\d{1,2}\/\d{1,2}\/\d{4})\)/);
+                        if (dateMatch) {
+                            const [m, d, y] = dateMatch[1].split('/').map(Number);
+                            const startObj = new Date(y, m - 1, d);
+                            const endObj = new Date(y, m - 1, d + 6);
+                            pStartStr = `${startObj.getFullYear()}-${String(startObj.getMonth() + 1).padStart(2, '0')}-${String(startObj.getDate()).padStart(2, '0')}`;
+                            pEndStr = `${endObj.getFullYear()}-${String(endObj.getMonth() + 1).padStart(2, '0')}-${String(endObj.getDate()).padStart(2, '0')}`;
+                        }
+                    } else if (periodTab === 'month') {
+                        if (periodLower.includes('august')) { pStartStr = '2026-08-01'; pEndStr = '2026-08-31'; }
+                        else if (periodLower.includes('september')) { pStartStr = '2026-09-01'; pEndStr = '2026-09-30'; }
+                        else if (periodLower.includes('october')) { pStartStr = '2026-10-01'; pEndStr = '2026-10-31'; }
+                        else if (periodLower.includes('november')) { pStartStr = '2026-11-01'; pEndStr = '2026-11-30'; }
+                        else if (periodLower.includes('december')) { pStartStr = '2026-12-01'; pEndStr = '2026-12-31'; }
+                    }
+
+                    // Check for weekly sessions overlapping travel orders first
+                    const overlappingSessions = (weekly_sessions as any[]).filter(ws => {
+                        const matchesFaculty = s.faculty_id
+                            ? ws.faculty_id === s.faculty_id
+                            : (ws.instructor_name || '').trim().toLowerCase() === (s.instructor_name || '').trim().toLowerCase();
+                        if (!matchesFaculty || !ws.session_date) return false;
+
+                        const sDate = ws.session_date.split('T')[0].split(' ')[0];
+                        return activeTOs.some(to => {
+                            const toStart = (to.start_date || '').split('T')[0].split(' ')[0];
+                            const toEnd = (to.end_date || '').split('T')[0].split(' ')[0];
+                            return sDate >= toStart && sDate <= toEnd && sDate >= pStartStr && sDate <= pEndStr;
+                        });
+                    });
+
+                    if (overlappingSessions.length > 0) {
+                        travelOrderMin = overlappingSessions.reduce((acc, sess) => acc + (sess.scheduled_duration_minutes || 90), 0);
+                    } else {
+                        // If no specific session records exist on those exact dates, calculate based on business days overlapping in the period
+                        let totalOverlappingDays = 0;
+                        activeTOs.forEach(to => {
+                            const toStart = (to.start_date || '').split('T')[0].split(' ')[0];
+                            const toEnd = (to.end_date || '').split('T')[0].split(' ')[0];
+                            const effStart = toStart > pStartStr ? toStart : pStartStr;
+                            const effEnd = toEnd < pEndStr ? toEnd : pEndStr;
+
+                            if (effStart <= effEnd) {
+                                const s = new Date(effStart);
+                                const e = new Date(effEnd);
+                                for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+                                    const day = d.getDay();
+                                    if (day >= 1 && day <= 5) { // Mon-Fri
+                                        totalOverlappingDays++;
+                                    }
+                                }
+                            }
+                        });
+
+                        if (totalOverlappingDays > 0) {
+                            // Standard teaching day allocation: 90m per travel day covered, capped at scheduledMin
+                            travelOrderMin = Math.min(scheduledMin, totalOverlappingDays * 90);
+                        }
+                    }
+                }
+            }
+
+            // Calculate Locator Slip minutes
+            let locatorSlipMin = s.locator_slip_minutes || 0;
+            if (locatorSlipMin === 0 && (s.faculty_id || s.instructor_name)) {
+                const activeLSs = locator_slips.filter(ls => {
+                    const lsFacultyId = ls.faculty_id;
+                    const matchesFaculty = s.faculty_id
+                        ? lsFacultyId === s.faculty_id
+                        : (ls.faculty_name || '').trim().toLowerCase() === (s.instructor_name || '').trim().toLowerCase();
+                    if (!matchesFaculty) return false;
+
+                    const statusLower = (ls.status || '').toLowerCase();
+                    return statusLower === 'approved' || statusLower === 'completed' || statusLower === 'departed';
+                });
+
+                if (activeLSs.length > 0) {
+                    const periodLower = (selectedPeriod || '').toLowerCase();
+                    let pStartStr = '2026-08-10';
+                    let pEndStr = '2026-12-18';
+
+                    if (periodTab === 'week') {
+                        const dateMatch = periodLower.match(/\((\d{1,2}\/\d{1,2}\/\d{4})\)/);
+                        if (dateMatch) {
+                            const [m, d, y] = dateMatch[1].split('/').map(Number);
+                            const startObj = new Date(y, m - 1, d);
+                            const endObj = new Date(y, m - 1, d + 6);
+                            pStartStr = `${startObj.getFullYear()}-${String(startObj.getMonth() + 1).padStart(2, '0')}-${String(startObj.getDate()).padStart(2, '0')}`;
+                            pEndStr = `${endObj.getFullYear()}-${String(endObj.getMonth() + 1).padStart(2, '0')}-${String(endObj.getDate()).padStart(2, '0')}`;
+                        }
+                    } else if (periodTab === 'month') {
+                        if (periodLower.includes('august')) { pStartStr = '2026-08-01'; pEndStr = '2026-08-31'; }
+                        else if (periodLower.includes('september')) { pStartStr = '2026-09-01'; pEndStr = '2026-09-30'; }
+                        else if (periodLower.includes('october')) { pStartStr = '2026-10-01'; pEndStr = '2026-10-31'; }
+                        else if (periodLower.includes('november')) { pStartStr = '2026-11-01'; pEndStr = '2026-11-30'; }
+                        else if (periodLower.includes('december')) { pStartStr = '2026-12-01'; pEndStr = '2026-12-31'; }
+                    }
+
+                    const periodLSs = activeLSs.filter(ls => {
+                        const lsDate = (ls.date || '').split('T')[0].split(' ')[0];
+                        return lsDate >= pStartStr && lsDate <= pEndStr;
+                    });
+
+                    if (periodLSs.length > 0) {
+                        locatorSlipMin = periodLSs.reduce((acc, ls) => {
+                            if (ls.time_out && ls.time_in) {
+                                const [h1, m1] = ls.time_out.split(':').map(Number);
+                                const [h2, m2] = ls.time_in.split(':').map(Number);
+                                const diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+                                return acc + (diff > 0 ? diff : 90);
+                            }
+                            return acc + 90;
+                        }, 0);
+                    }
+                }
+            }
+
             const otherObMin = s.other_ob_minutes || 0;
             const absentMin = s.unexcused_absent_minutes || (s.unexcused_absent_hours ? Math.round(s.unexcused_absent_hours * 60) : absent * 90);
             const eligibleMin = s.eligible_minutes ?? (s.eligible_scheduled_hours ? Math.round(s.eligible_scheduled_hours * 60) : Math.max(0, scheduledMin - (leaveMin + travelOrderMin + locatorSlipMin + otherObMin)));

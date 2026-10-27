@@ -7,8 +7,10 @@ use App\Models\AttendanceSourceSnapshot;
 use App\Models\Faculty;
 use App\Models\FacultyAttendance;
 use App\Models\FacultyAttendanceSummary;
+use App\Models\LocatorSlip;
 use App\Models\MakeUpClassRequest;
 use App\Models\Program;
+use App\Models\TravelOrder;
 use App\Services\GoogleSheetsAttendanceService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -185,11 +187,16 @@ class FacultyAttendanceController extends Controller
             ->orderBy('time_slot')
             ->get();
 
+        $travelOrders = TravelOrder::with('faculty.program')->get();
+        $locatorSlips = LocatorSlip::with('faculty.program')->get();
+
         return Inertia::render('attendance/index', [
             'programs' => $programs,
             'faculties' => $faculties,
             'summaries' => $allSummaries->isNotEmpty() ? $allSummaries : $summaries,
             'weekly_sessions' => $allWeeklySessions->isNotEmpty() ? $allWeeklySessions : $weeklySessions,
+            'travel_orders' => $travelOrders,
+            'locator_slips' => $locatorSlips,
             'make_up_requests' => $makeUpRequests,
             'monthly_periods' => $monthlyPeriods,
             'weekly_periods' => $weeklyPeriods,
@@ -304,6 +311,9 @@ class FacultyAttendanceController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $travelOrders = TravelOrder::with('faculty.program')->get();
+        $locatorSlips = LocatorSlip::with('faculty.program')->get();
+
         $lastSync = Cache::get('faculty_attendance_last_sync');
 
         $activePeriod = AcademicPeriod::where('is_current', true)->first()
@@ -315,6 +325,8 @@ class FacultyAttendanceController extends Controller
             'faculties' => $faculties,
             'summaries' => $summaries,
             'weekly_sessions' => $weeklySessions,
+            'travel_orders' => $travelOrders,
+            'locator_slips' => $locatorSlips,
             'make_up_requests' => $makeUpRequests,
             'monthly_periods' => $monthlyPeriods,
             'weekly_periods' => $weeklyPeriods,
