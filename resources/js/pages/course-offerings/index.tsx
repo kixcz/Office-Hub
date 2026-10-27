@@ -28,7 +28,9 @@ import {
     BookOpen,
     Split,
     GraduationCap,
-    RefreshCw
+    RefreshCw,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -294,13 +296,32 @@ export default function CourseOfferingsIndex({
         });
     }, [offerings, selectedPeriod, selectedProgram, selectedYear, selectedSection, selectedLoading, selectedPub, searchTerm]);
 
-    const isAllSelected = filteredOfferings.length > 0 && selectedIds.length === filteredOfferings.length;
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
 
-    const toggleSelectAll = () => {
-        if (isAllSelected) {
-            setSelectedIds([]);
+    const totalPages = Math.max(1, Math.ceil(filteredOfferings.length / perPage));
+
+    const safeCurrentPage = useMemo(() => {
+        if (currentPage > totalPages) return totalPages;
+        if (currentPage < 1) return 1;
+        return currentPage;
+    }, [currentPage, totalPages]);
+
+    const paginatedOfferings = useMemo(() => {
+        const start = (safeCurrentPage - 1) * perPage;
+        return filteredOfferings.slice(start, start + perPage);
+    }, [filteredOfferings, safeCurrentPage, perPage]);
+
+    const isCurrentPageAllSelected = paginatedOfferings.length > 0 && paginatedOfferings.every((o) => selectedIds.includes(o.id));
+
+    const toggleSelectCurrentPage = () => {
+        if (isCurrentPageAllSelected) {
+            setSelectedIds(selectedIds.filter((id) => !paginatedOfferings.some((o) => o.id === id)));
         } else {
-            setSelectedIds(filteredOfferings.map((o) => o.id));
+            const pageIds = paginatedOfferings.map((o) => o.id);
+            const combined = Array.from(new Set([...selectedIds, ...pageIds]));
+            setSelectedIds(combined);
         }
     };
 
@@ -551,8 +572,8 @@ export default function CourseOfferingsIndex({
                                     <th className="py-3 px-3 w-10 text-center">
                                         <input
                                             type="checkbox"
-                                            checked={isAllSelected}
-                                            onChange={toggleSelectAll}
+                                            checked={isCurrentPageAllSelected}
+                                            onChange={toggleSelectCurrentPage}
                                             className="rounded border-slate-300 text-blue-600 focus:ring-blue-500/20"
                                         />
                                     </th>
@@ -575,7 +596,7 @@ export default function CourseOfferingsIndex({
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredOfferings.map((offering) => {
+                                    paginatedOfferings.map((offering) => {
                                         const isSelected = selectedIds.includes(offering.id);
 
                                         return (
@@ -713,6 +734,90 @@ export default function CourseOfferingsIndex({
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination Footer */}
+                    {filteredOfferings.length > 0 && (
+                        <div className="p-4 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/30">
+                            {/* Page size & items counter */}
+                            <div className="flex items-center gap-2">
+                                <span>Show</span>
+                                <select
+                                    value={perPage}
+                                    onChange={(e) => {
+                                        setPerPage(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                    className="h-8 px-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                                >
+                                    <option value={5}>5</option>
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                    <option value={50}>50</option>
+                                </select>
+                                <span>
+                                    per page · Showing {Math.min((safeCurrentPage - 1) * perPage + 1, filteredOfferings.length)} to{' '}
+                                    {Math.min(safeCurrentPage * perPage, filteredOfferings.length)} of {filteredOfferings.length} offerings
+                                </span>
+                            </div>
+
+                            {/* Pagination controls */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                        disabled={safeCurrentPage === 1}
+                                        className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                                        aria-label="Previous page"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                                        if (
+                                            totalPages > 7 &&
+                                            pageNum !== 1 &&
+                                            pageNum !== totalPages &&
+                                            Math.abs(pageNum - safeCurrentPage) > 1
+                                        ) {
+                                            if (pageNum === 2 || pageNum === totalPages - 1) {
+                                                return (
+                                                    <span key={pageNum} className="w-6 text-center text-slate-400">
+                                                        ...
+                                                    </span>
+                                                );
+                                            }
+                                            return null;
+                                        }
+
+                                        const isActive = safeCurrentPage === pageNum;
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => setCurrentPage(pageNum)}
+                                                className={cn(
+                                                    "w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                                                    isActive
+                                                        ? "bg-amber-400 text-slate-950 shadow-xs"
+                                                        : "border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
+                                                )}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    })}
+
+                                    <button
+                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                        disabled={safeCurrentPage === totalPages}
+                                        className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                                        aria-label="Next page"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* MODAL: Auto-Generate Offerings from Curriculum */}

@@ -19,17 +19,23 @@ use App\Models\Submission;
 use App\Models\Task;
 use App\Services\ComplianceService;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         ComplianceService::syncPendingSubmissions();
 
         $user = $request->user();
+
+        if ($user && $user->isInstitutionSuperAdmin()) {
+            return redirect()->route('institution.dashboard');
+        }
+
         $isProgramHead = $user && ($user->hasRole('Program Head') || $user->hasRole('Program Chair'));
         $isDean = $user && $user->hasRole('Dean');
 

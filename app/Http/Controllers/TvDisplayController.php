@@ -24,6 +24,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
 class TvDisplayController extends Controller
@@ -34,24 +35,33 @@ class TvDisplayController extends Controller
 
         // 1. Device resolution & keep-alive ping
         $device = null;
-        if ($displayId) {
-            $device = TvDevice::where('id', $displayId)->orWhere('device_code', $displayId)->first();
-        }
-        if (! $device) {
-            $device = TvDevice::first();
-        }
+        try {
+            if ($displayId) {
+                $device = TvDevice::where('id', $displayId)->orWhere('device_code', $displayId)->first();
+            }
+            if (! $device) {
+                $device = TvDevice::first();
+            }
 
-        if ($device) {
-            $device->update(['last_ping_at' => $now, 'is_online' => true]);
+            if ($device) {
+                $device->update(['last_ping_at' => $now, 'is_online' => true]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('TvDevice ping/resolution failed: '.$e->getMessage());
         }
 
         $displayKey = $device ? (string) $device->id : ($displayId ?: 'default');
         $cacheKey = 'tv_display_payload_v1_'.$displayKey;
 
         // Cache the entire display payload for 10 minutes so TV responds in < 10ms
-        $payload = Cache::remember($cacheKey, 600, function () use ($device, $displayId) {
-            return $this->buildTvPayload($device, $displayId);
-        });
+        try {
+            $payload = Cache::remember($cacheKey, 600, function () use ($device, $displayId) {
+                return $this->buildTvPayload($device, $displayId);
+            });
+        } catch (\Throwable $e) {
+            Log::error('Error building TV payload: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            $payload = $this->buildFallbackTvPayload($device);
+        }
 
         return Inertia::render('tv/display', $payload);
     }
@@ -62,19 +72,28 @@ class TvDisplayController extends Controller
     public function getTvDataApi($displayId = null)
     {
         $device = null;
-        if ($displayId) {
-            $device = TvDevice::where('id', $displayId)->orWhere('device_code', $displayId)->first();
-        }
-        if (! $device) {
-            $device = TvDevice::first();
+        try {
+            if ($displayId) {
+                $device = TvDevice::where('id', $displayId)->orWhere('device_code', $displayId)->first();
+            }
+            if (! $device) {
+                $device = TvDevice::first();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('TvDevice resolution in getTvDataApi failed: '.$e->getMessage());
         }
 
         $displayKey = $device ? (string) $device->id : ($displayId ?: 'default');
         $cacheKey = 'tv_display_payload_v1_'.$displayKey;
 
-        $payload = Cache::remember($cacheKey, 600, function () use ($device, $displayId) {
-            return $this->buildTvPayload($device, $displayId);
-        });
+        try {
+            $payload = Cache::remember($cacheKey, 600, function () use ($device, $displayId) {
+                return $this->buildTvPayload($device, $displayId);
+            });
+        } catch (\Throwable $e) {
+            Log::error('Error building TV payload in getTvDataApi: '.$e->getMessage());
+            $payload = $this->buildFallbackTvPayload($device);
+        }
 
         return response()->json($payload);
     }
@@ -250,53 +269,60 @@ class TvDisplayController extends Controller
                 $customIndex++;
             }
 
-            // Include Cleaners Duty Schedule Slide if active
-            $cleaningSchedule = TvCleaningSchedule::where('is_active', true)->first();
-            if ($cleaningSchedule) {
-                // Enrich days_data cleaners with live faculty photo_url
-                $facultyPhotos = Faculty::whereNotNull('profile_picture')
-                    ->get()
-                    ->mapWithKeys(fn ($f) => [
-                        $f->id => $f->photo_url,
-                        trim(strtolower($f->full_name)) => $f->photo_url,
-                    ])
-                    ->toArray();
+            // Include Cleaners Duty Schedule Slide if active and table exists
+            $cleaningSchedule = null;
+            if (Schema::hasTable('tv_cleaning_schedules')) {
+                try {
+                    $cleaningSchedule = TvCleaningSchedule::where('is_active', true)->first();
+                    if ($cleaningSchedule) {
+                        // Enrich days_data cleaners with live faculty photo_url
+                        $facultyPhotos = Faculty::whereNotNull('profile_picture')
+                            ->get()
+                            ->mapWithKeys(fn ($f) => [
+                                $f->id => $f->photo_url,
+                                trim(strtolower($f->full_name)) => $f->photo_url,
+                            ])
+                            ->toArray();
 
-                $enrichedDays = collect($cleaningSchedule->days_data)->map(function ($day) use ($facultyPhotos) {
-                    $cleaners = collect($day['cleaners'] ?? [])->map(function ($c) use ($facultyPhotos) {
-                        $photo = $c['photo_url'] ?? null;
-                        if (! $photo) {
-                            if (! empty($c['faculty_id']) && isset($facultyPhotos[$c['faculty_id']])) {
-                                $photo = $facultyPhotos[$c['faculty_id']];
-                            } elseif (! empty($c['name'])) {
-                                $nameKey = trim(strtolower($c['name']));
-                                if (isset($facultyPhotos[$nameKey])) {
-                                    $photo = $facultyPhotos[$nameKey];
+                        $enrichedDays = collect($cleaningSchedule->days_data)->map(function ($day) use ($facultyPhotos) {
+                            $cleaners = collect($day['cleaners'] ?? [])->map(function ($c) use ($facultyPhotos) {
+                                $photo = $c['photo_url'] ?? null;
+                                if (! $photo) {
+                                    if (! empty($c['faculty_id']) && isset($facultyPhotos[$c['faculty_id']])) {
+                                        $photo = $facultyPhotos[$c['faculty_id']];
+                                    } elseif (! empty($c['name'])) {
+                                        $nameKey = trim(strtolower($c['name']));
+                                        if (isset($facultyPhotos[$nameKey])) {
+                                            $photo = $facultyPhotos[$nameKey];
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        $c['photo_url'] = $photo;
+                                $c['photo_url'] = $photo;
 
-                        return $c;
-                    })->all();
-                    $day['cleaners'] = $cleaners;
+                                return $c;
+                            })->all();
+                            $day['cleaners'] = $cleaners;
 
-                    return $day;
-                })->all();
+                            return $day;
+                        })->all();
 
-                $cleaningSchedule->days_data = $enrichedDays;
+                        $cleaningSchedule->days_data = $enrichedDays;
 
-                $interleavedSlides->push([
-                    'id' => 'cleaners_'.$cleaningSchedule->id,
-                    'title' => '🧹 Cleaners Duty Schedule',
-                    'type' => 'Slide 12 - Cleaners Duty',
-                    'is_spotlight' => false,
-                    'is_custom' => false,
-                    'is_cleaners' => true,
-                    'order' => $interleavedSlides->count() + 1,
-                    'is_active' => true,
-                    'duration_seconds' => $cleaningSchedule->duration_seconds ?: 25,
-                ]);
+                        $interleavedSlides->push([
+                            'id' => 'cleaners_'.$cleaningSchedule->id,
+                            'title' => '🧹 Cleaners Duty Schedule',
+                            'type' => 'Slide 12 - Cleaners Duty',
+                            'is_spotlight' => false,
+                            'is_custom' => false,
+                            'is_cleaners' => true,
+                            'order' => $interleavedSlides->count() + 1,
+                            'is_active' => true,
+                            'duration_seconds' => $cleaningSchedule->duration_seconds ?: 25,
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('TvCleaningSchedule check failed: '.$e->getMessage());
+                }
             }
         }
 
@@ -1213,7 +1239,7 @@ class TvDisplayController extends Controller
                 'slide9' => $complianceTrackerData,
                 'slide10' => $tasksAndProjectsData,
                 'slide11' => $programPerformanceData,
-                'slide12' => $cleaningSchedule ?? TvCleaningSchedule::first(),
+                'slide12' => $cleaningSchedule ?? (Schema::hasTable('tv_cleaning_schedules') ? TvCleaningSchedule::first() : null),
             ],
             'current_term' => $settings['academic_term'] ?? 'AY 2026-2027, 1st Semester',
             'faculty_profiles' => Faculty::with('program')
@@ -1236,16 +1262,31 @@ class TvDisplayController extends Controller
                         'status' => $f->status ?: 'Active',
                     ],
                 ]),
-            'channels' => TvDevice::orderBy('channel_number')
-                ->get(['id', 'device_code', 'name', 'location', 'college_name', 'college_code', 'channel_number']),
+            'channels' => (function () {
+                if (! Schema::hasTable('tv_devices')) {
+                    return collect();
+                }
+                try {
+                    if (Schema::hasColumn('tv_devices', 'channel_number')) {
+                        return TvDevice::orderBy('channel_number')
+                            ->get(['id', 'device_code', 'name', 'location', 'college_name', 'college_code', 'channel_number']);
+                    }
+
+                    return TvDevice::all(['id', 'device_code', 'name', 'location']);
+                } catch (\Throwable $e) {
+                    Log::warning('Channels query failed: '.$e->getMessage());
+
+                    return collect();
+                }
+            })(),
             'current_channel' => $device ? [
                 'id' => $device->id,
                 'device_code' => $device->device_code,
                 'name' => $device->name,
                 'location' => $device->location,
-                'college_name' => $device->college_name,
-                'college_code' => $device->college_code,
-                'channel_number' => $device->channel_number,
+                'college_name' => $device->college_name ?? 'College of Information and Digital Sciences',
+                'college_code' => $device->college_code ?? 'CIDS',
+                'channel_number' => $device->channel_number ?? 1,
             ] : null,
         ];
     }
@@ -1646,6 +1687,119 @@ class TvDisplayController extends Controller
                 'faculty_count' => 0,
             ],
             'last_updated' => now()->format('M d, Y h:i A'),
+        ];
+    }
+
+    /**
+     * Fallback payload used when database or network service is down or unmigrated.
+     */
+    private function buildFallbackTvPayload($device = null): array
+    {
+        $baseSlides = collect([
+            [
+                'id' => 1,
+                'title' => 'Daily Overview',
+                'type' => 'Slide 1 - Daily Overview',
+                'is_spotlight' => false,
+                'is_custom' => false,
+                'order' => 1,
+                'is_active' => true,
+                'duration_seconds' => 15,
+            ],
+            [
+                'id' => 6,
+                'title' => 'Attendance Monitoring',
+                'type' => 'Slide 6 - Attendance Monitoring',
+                'is_spotlight' => false,
+                'is_custom' => false,
+                'order' => 6,
+                'is_active' => true,
+                'duration_seconds' => 15,
+            ],
+        ]);
+
+        return [
+            'settings' => [
+                'display_id' => $device?->id,
+                'device_code' => $device?->device_code ?? 'CIDS-MAIN',
+                'display_name' => $device?->name ?? 'CIDS Office TV',
+                'location' => $device?->location ?? "Dean's Office",
+                'audience_mode' => 'internal',
+                'screen_resolution' => '1920x1080',
+                'safe_area_margin' => 'normal',
+                'refresh_interval' => '60',
+                'slide_duration' => '15',
+                'transition_speed' => 'fade',
+                'fullscreen_mode' => '1',
+                'auto_rotate' => '1',
+                'show_header' => '1',
+                'show_footer' => '1',
+                'show_clock' => '1',
+                'show_slide_title' => '1',
+                'show_status_labels' => '1',
+                'allow_manual_controls' => '1',
+                'auto_launch_on_refresh' => '1',
+                'fallback_screen' => 'logo_welcome',
+                'emergency_takeover_enabled' => '1',
+            ],
+            'slides' => $baseSlides,
+            'data' => [
+                'slide1' => [
+                    'announcements' => [],
+                    'todays_schedule' => [],
+                    'upcoming_meetings' => [],
+                    'kpis' => [
+                        'compliance_rate' => 100,
+                        'pending_review' => 0,
+                        'overdue_outputs' => 0,
+                        'meetings_this_week' => 0,
+                    ],
+                ],
+                'slide2' => [
+                    'weekly_schedule' => [],
+                    'upcoming_meetings' => [],
+                    'upcoming_deadlines' => [],
+                    'kpis' => ['meetings_this_week' => 0, 'activities_this_week' => 0, 'deadlines_this_week' => 0],
+                ],
+                'slide3' => [
+                    'compliance_summary' => [],
+                    'pending_outputs' => [],
+                    'upcoming_deadlines' => [],
+                    'kpis' => ['compliance_rate' => 100, 'pending_outputs' => 0, 'overdue_outputs' => 0],
+                ],
+                'slide4' => [
+                    'top_programs' => [],
+                    'top_faculty' => [],
+                    'recognition_categories' => [],
+                    'kpis' => ['college_on_time_rate' => 100, 'zero_overdue_faculty' => 0],
+                ],
+                'slide5' => [
+                    'facilities' => [],
+                    'last_updated' => now()->format('M d, Y h:i A'),
+                    'day' => 'Monday',
+                    'overall_peak' => 'N/A',
+                    'kpis' => ['in_use' => 0, 'available' => 0, 'maintenance' => 0, 'peak_hour' => 'N/A'],
+                ],
+                'slide6' => $this->fallbackMonitoringSummary(),
+                'slide7' => [
+                    'schedule_grid' => [],
+                    'all_rooms' => [],
+                    'all_faculty' => [],
+                    'all_sections' => [],
+                    'all_day_slots' => [],
+                    'programs' => [],
+                    'stats' => ['total_schedules' => 0, 'unique_rooms' => 0, 'unique_faculty' => 0],
+                ],
+                'slide8' => ['calendar' => ['events' => [], 'programs' => [], 'venues' => [], 'defaultDate' => now()->format('Y-m-d')]],
+                'slide9' => ['requirements' => [], 'faculty' => [], 'programs' => [], 'stats' => ['total_submissions' => 0, 'pending_review' => 0, 'approved' => 0, 'compliance_rate' => 100]],
+                'slide10' => ['tasks' => [], 'categories' => [], 'stats' => ['total_tasks' => 0, 'in_progress' => 0, 'completed' => 0, 'completion_rate' => 100]],
+                'slide11' => ['programs' => [], 'overall' => ['total_students' => 0, 'total_faculty' => 0, 'accredited_programs' => 0]],
+                'slide12' => null,
+            ],
+            'current_term' => 'AY 2026-2027, 1st Semester',
+            'faculty_profiles' => [],
+            'channels' => [],
+            'current_channel' => null,
         ];
     }
 }

@@ -14,6 +14,7 @@ import {
     Building2,
     Calendar,
     ChevronRight,
+    ChevronLeft,
     Clock,
     ShieldAlert,
     AlertTriangle,
@@ -24,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Operations', href: '/operations/faculty-workload' },
@@ -104,6 +106,23 @@ export default function FacultyWorkloadIndex({
             return matchesSearch && matchesProgram;
         });
     }, [workloads, searchTerm, filterProgram]);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+
+    const totalPages = Math.max(1, Math.ceil(filteredWorkloads.length / perPage));
+
+    const safeCurrentPage = useMemo(() => {
+        if (currentPage > totalPages) return totalPages;
+        if (currentPage < 1) return 1;
+        return currentPage;
+    }, [currentPage, totalPages]);
+
+    const paginatedWorkloads = useMemo(() => {
+        const start = (safeCurrentPage - 1) * perPage;
+        return filteredWorkloads.slice(start, start + perPage);
+    }, [filteredWorkloads, safeCurrentPage, perPage]);
 
     const handleToggleLock = (facultyId: number, currentlyLocked: boolean) => {
         const action = currentlyLocked ? 'unlock' : 'lock';
@@ -242,92 +261,184 @@ export default function FacultyWorkloadIndex({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border/40">
-                            {filteredWorkloads.map((item) => (
-                                <tr key={item.faculty_id} className="hover:bg-muted/20 transition-colors">
-                                    <td className="py-3 px-4">
-                                        <span className="font-bold text-foreground block">{item.faculty.name}</span>
-                                        <span className="text-[11px] text-muted-foreground">{item.faculty.employment_type}</span>
-                                    </td>
-
-                                    <td className="py-3 px-4">
-                                        <Badge variant="outline" className="text-[11px] font-semibold">{item.faculty.program}</Badge>
-                                        <span className="block text-[10px] text-muted-foreground mt-0.5">{item.faculty.academic_rank}</span>
-                                    </td>
-
-                                    <td className="py-3 px-4">
-                                        <span className="font-bold text-foreground">{item.teaching_units.toFixed(1)} u</span>
-                                        <span className="block text-[10px] text-muted-foreground">({item.assigned_sections_count} assigned classes)</span>
-                                    </td>
-
-                                    <td className="py-3 px-4">
-                                        <span className="text-foreground font-medium">{(item.research_credits + item.extension_credits).toFixed(1)} u</span>
-                                        <span className="block text-[10px] text-muted-foreground">R: {item.research_credits} | E: {item.extension_credits}</span>
-                                    </td>
-
-                                    <td className="py-3 px-4">
-                                        <span className="text-foreground font-medium">{(item.designation_credits + item.administrative_credits).toFixed(1)} u</span>
-                                        <span className="block text-[10px] text-muted-foreground">Des: {item.designation_credits} | Adm: {item.administrative_credits}</span>
-                                    </td>
-
-                                    <td className="py-3 px-4">
-                                        <span className="text-sm font-extrabold text-foreground">{item.total_workload.toFixed(1)}</span>
-                                        <Badge
-                                            className={`ml-2 text-[10px] ${
-                                                item.workload_status === 'Balanced'
-                                                    ? 'bg-emerald-600 text-white'
-                                                    : item.workload_status === 'Underload'
-                                                    ? 'bg-amber-500 text-white'
-                                                    : 'bg-rose-600 text-white'
-                                            }`}
-                                        >
-                                            {item.workload_status}
-                                        </Badge>
-                                    </td>
-
-                                    <td className="py-3 px-4">
-                                        {item.is_locked ? (
-                                            <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300 font-semibold text-[11px]">
-                                                <Lock className="h-3.5 w-3.5 text-blue-600" />
-                                                <span>Locked ({item.document_version})</span>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-1.5 text-muted-foreground text-[11px]">
-                                                <Unlock className="h-3.5 w-3.5 text-amber-500" />
-                                                <span>Draft / Unlocked</span>
-                                            </div>
-                                        )}
-                                    </td>
-
-                                    <td className="py-3 px-4 text-right">
-                                        <div className="flex items-center justify-end gap-1.5">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="h-7 text-[11px] gap-1 font-semibold"
-                                                onClick={() => {
-                                                    setSelectedWorkload(item);
-                                                    setSummaryModalOpen(true);
-                                                }}
-                                                title="View Official FM-DSSC-CAP-001 Form"
-                                            >
-                                                <FileText className="h-3.5 w-3.5 text-blue-600" /> View Form
-                                            </Button>
-
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className={`h-7 text-[11px] gap-1 ${item.is_locked ? 'border-amber-400 text-amber-800' : 'border-blue-400 text-blue-800'}`}
-                                                onClick={() => handleToggleLock(item.faculty_id, item.is_locked)}
-                                            >
-                                                {item.is_locked ? <Unlock className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                                                {item.is_locked ? 'Unlock' : 'Lock Form'}
-                                            </Button>
-                                        </div>
+                            {filteredWorkloads.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="py-12 text-center text-muted-foreground italic">
+                                        No faculty workload records found matching criteria.
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                paginatedWorkloads.map((item) => (
+                                    <tr key={item.faculty_id} className="hover:bg-muted/20 transition-colors">
+                                        <td className="py-3 px-4">
+                                            <span className="font-bold text-foreground block">{item.faculty.name}</span>
+                                            <span className="text-[11px] text-muted-foreground">{item.faculty.employment_type}</span>
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            <Badge variant="outline" className="text-[11px] font-semibold">{item.faculty.program}</Badge>
+                                            <span className="block text-[10px] text-muted-foreground mt-0.5">{item.faculty.academic_rank}</span>
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            <span className="font-bold text-foreground">{item.teaching_units.toFixed(1)} u</span>
+                                            <span className="block text-[10px] text-muted-foreground">({item.assigned_sections_count} assigned classes)</span>
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            <span className="text-foreground font-medium">{(item.research_credits + item.extension_credits).toFixed(1)} u</span>
+                                            <span className="block text-[10px] text-muted-foreground">R: {item.research_credits} | E: {item.extension_credits}</span>
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            <span className="text-foreground font-medium">{(item.designation_credits + item.administrative_credits).toFixed(1)} u</span>
+                                            <span className="block text-[10px] text-muted-foreground">Des: {item.designation_credits} | Adm: {item.administrative_credits}</span>
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            <span className="text-sm font-extrabold text-foreground">{item.total_workload.toFixed(1)}</span>
+                                            <Badge
+                                                className={`ml-2 text-[10px] ${
+                                                    item.workload_status === 'Balanced'
+                                                        ? 'bg-emerald-600 text-white'
+                                                        : item.workload_status === 'Underload'
+                                                        ? 'bg-amber-500 text-white'
+                                                        : 'bg-rose-600 text-white'
+                                                }`}
+                                            >
+                                                {item.workload_status}
+                                            </Badge>
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            {item.is_locked ? (
+                                                <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300 font-semibold text-[11px]">
+                                                    <Lock className="h-3.5 w-3.5 text-blue-600" />
+                                                    <span>Locked ({item.document_version})</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 text-muted-foreground text-[11px]">
+                                                    <Unlock className="h-3.5 w-3.5 text-amber-500" />
+                                                    <span>Draft / Unlocked</span>
+                                                </div>
+                                            )}
+                                        </td>
+
+                                        <td className="py-3 px-4 text-right">
+                                            <div className="flex items-center justify-end gap-1.5">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-7 text-[11px] gap-1 font-semibold"
+                                                    onClick={() => {
+                                                        setSelectedWorkload(item);
+                                                        setSummaryModalOpen(true);
+                                                    }}
+                                                    title="View Official FM-DSSC-CAP-001 Form"
+                                                >
+                                                    <FileText className="h-3.5 w-3.5 text-blue-600" /> View Form
+                                                </Button>
+
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className={`h-7 text-[11px] gap-1 ${item.is_locked ? 'border-amber-400 text-amber-800' : 'border-blue-400 text-blue-800'}`}
+                                                    onClick={() => handleToggleLock(item.faculty_id, item.is_locked)}
+                                                >
+                                                    {item.is_locked ? <Unlock className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                                                    {item.is_locked ? 'Unlock' : 'Lock Form'}
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
+
+                    {/* Pagination Footer */}
+                    {filteredWorkloads.length > 0 && (
+                        <div className="p-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground bg-muted/20">
+                            {/* Page size & items counter */}
+                            <div className="flex items-center gap-2">
+                                <span>Show</span>
+                                <select
+                                    value={perPage}
+                                    onChange={(e) => {
+                                        setPerPage(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                    className="h-8 px-2 text-xs font-semibold rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                                >
+                                    <option value={5}>5</option>
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                    <option value={50}>50</option>
+                                </select>
+                                <span>
+                                    per page · Showing {Math.min((safeCurrentPage - 1) * perPage + 1, filteredWorkloads.length)} to{' '}
+                                    {Math.min(safeCurrentPage * perPage, filteredWorkloads.length)} of {filteredWorkloads.length} records
+                                </span>
+                            </div>
+
+                            {/* Pagination controls */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                        disabled={safeCurrentPage === 1}
+                                        className="h-8 w-8 flex items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                                        aria-label="Previous page"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                                        if (
+                                            totalPages > 7 &&
+                                            pageNum !== 1 &&
+                                            pageNum !== totalPages &&
+                                            Math.abs(pageNum - safeCurrentPage) > 1
+                                        ) {
+                                            if (pageNum === 2 || pageNum === totalPages - 1) {
+                                                return (
+                                                    <span key={pageNum} className="w-6 text-center text-muted-foreground">
+                                                        ...
+                                                    </span>
+                                                );
+                                            }
+                                            return null;
+                                        }
+
+                                        const isActive = safeCurrentPage === pageNum;
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => setCurrentPage(pageNum)}
+                                                className={cn(
+                                                    "w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                                                    isActive
+                                                        ? "bg-amber-400 text-slate-950 shadow-xs"
+                                                        : "border border-border bg-background hover:bg-muted text-foreground"
+                                                )}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    })}
+
+                                    <button
+                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                        disabled={safeCurrentPage === totalPages}
+                                        className="h-8 w-8 flex items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                                        aria-label="Next page"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 

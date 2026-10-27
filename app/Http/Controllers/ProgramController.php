@@ -7,6 +7,7 @@ use App\Models\Curriculum;
 use App\Models\CurriculumCourse;
 use App\Models\Program;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ProgramController extends Controller
@@ -123,13 +124,26 @@ class ProgramController extends Controller
 
     public function destroy(Program $program)
     {
-        // Cleanly delete associated curricula and their curriculum courses
-        foreach ($program->curricula as $curric) {
-            $curric->curriculumCourses()->delete();
-            $curric->delete();
-        }
+        DB::transaction(function () use ($program) {
+            // 1. Cleanly delete associated curricula and their curriculum courses
+            foreach ($program->curricula as $curric) {
+                $curric->curriculumCourses()->delete();
+                $curric->delete();
+            }
 
-        $program->delete();
+            // 2. Remove or dissociate canonical courses owned by this program
+            $program->courses()->update(['program_id' => null]);
+
+            // 3. Clear program references from sections and course offerings
+            $program->sections()->update(['program_id' => null]);
+            $program->courseOfferings()->update(['program_id' => null]);
+
+            // 4. Detach faculties assigned to this program
+            $program->faculties()->update(['program_id' => null]);
+
+            // 5. Delete program
+            $program->delete();
+        });
 
         return redirect()->route('programs.index')->with('success', 'Program and its curricula deleted successfully.');
     }

@@ -17,6 +17,7 @@ import {
     Download,
     ChevronDown,
     ChevronRight,
+    ChevronLeft,
     Search,
     Clock,
     AlertTriangle,
@@ -250,6 +251,10 @@ export default function PendingOutputsIndex({ pendingSubmissions }: { pendingSub
     const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set());
     const [reminderToast, setReminderToast] = useState<string | null>(null);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [perPage, setPerPage] = useState<number>(10);
+
     // Filter list
     const filteredList = useMemo(() => {
         return initialList
@@ -300,15 +305,31 @@ export default function PendingOutputsIndex({ pendingSubmissions }: { pendingSub
             });
     }, [initialList, searchQuery, programFilter, requirementFilter, urgencyFilter, sortOption]);
 
-    // Selection handlers
-    const isAllSelected = filteredList.length > 0 && selectedIds.size === filteredList.length;
+    // Reset current page when filters change
+    const totalPages = Math.max(1, Math.ceil(filteredList.length / perPage));
 
-    const handleSelectAll = (checked: boolean) => {
+    const safeCurrentPage = useMemo(() => {
+        if (currentPage > totalPages) return totalPages;
+        if (currentPage < 1) return 1;
+        return currentPage;
+    }, [currentPage, totalPages]);
+
+    const paginatedList = useMemo(() => {
+        const start = (safeCurrentPage - 1) * perPage;
+        return filteredList.slice(start, start + perPage);
+    }, [filteredList, safeCurrentPage, perPage]);
+
+    // Selection handlers (based on current page)
+    const isCurrentPageAllSelected = paginatedList.length > 0 && paginatedList.every((item) => selectedIds.has(item.id));
+
+    const handleSelectCurrentPage = (checked: boolean) => {
+        const next = new Set(selectedIds);
         if (checked) {
-            setSelectedIds(new Set(filteredList.map((i) => i.id)));
+            paginatedList.forEach((i) => next.add(i.id));
         } else {
-            setSelectedIds(new Set());
+            paginatedList.forEach((i) => next.delete(i.id));
         }
+        setSelectedIds(next);
     };
 
     const handleToggleItem = (id: number | string) => {
@@ -704,8 +725,8 @@ export default function PendingOutputsIndex({ pendingSubmissions }: { pendingSub
                                     <tr className="border-b border-slate-200/80 text-[11px] font-semibold text-slate-600">
                                         <th className="pb-3 pr-2 w-7">
                                             <Checkbox
-                                                checked={isAllSelected}
-                                                onCheckedChange={handleSelectAll}
+                                                checked={isCurrentPageAllSelected}
+                                                onCheckedChange={handleSelectCurrentPage}
                                                 className="rounded border-slate-300 data-[state=checked]:bg-amber-400 data-[state=checked]:border-amber-400 data-[state=checked]:text-slate-950"
                                             />
                                         </th>
@@ -750,7 +771,7 @@ export default function PendingOutputsIndex({ pendingSubmissions }: { pendingSub
                                             </td>
                                         </tr>
                                     ) : (
-                                        filteredList.map((item) => {
+                                        paginatedList.map((item) => {
                                             const isSelected = selectedIds.has(item.id);
 
                                             return (
@@ -817,7 +838,7 @@ export default function PendingOutputsIndex({ pendingSubmissions }: { pendingSub
                                                         </span>
                                                     </td>
 
-                                                    {/* Urgency Badge (Matches mockup: Due Soon in amber, Due in x days in blue, Overdue in red) */}
+                                                    {/* Urgency Badge */}
                                                     <td className="py-3.5 px-3 whitespace-nowrap">
                                                         {item.urgency_type === 'due_soon' && (
                                                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
@@ -875,6 +896,95 @@ export default function PendingOutputsIndex({ pendingSubmissions }: { pendingSub
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination Footer */}
+                        {filteredList.length > 0 && (
+                            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+                                {/* Page size & items counter */}
+                                <div className="flex items-center gap-2">
+                                    <span>Show</span>
+                                    <select
+                                        value={perPage}
+                                        onChange={(e) => {
+                                            setPerPage(Number(e.target.value));
+                                            setCurrentPage(1);
+                                        }}
+                                        className="h-8 px-2 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                                    >
+                                        <option value={5}>5</option>
+                                        <option value={10}>10</option>
+                                        <option value={20}>20</option>
+                                        <option value={50}>50</option>
+                                    </select>
+                                    <span>
+                                        per page · Showing {Math.min((safeCurrentPage - 1) * perPage + 1, filteredList.length)} to{' '}
+                                        {Math.min(safeCurrentPage * perPage, filteredList.length)} of {filteredList.length} items
+                                    </span>
+                                </div>
+
+                                {/* Pagination controls */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center gap-1.5">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                            disabled={safeCurrentPage === 1}
+                                            className="h-8 w-8 p-0 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                                            aria-label="Previous page"
+                                        >
+                                            <ChevronLeft className="w-4 h-4" />
+                                        </Button>
+
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                                            // Show smart window of pages if totalPages is large
+                                            if (
+                                                totalPages > 7 &&
+                                                pageNum !== 1 &&
+                                                pageNum !== totalPages &&
+                                                Math.abs(pageNum - safeCurrentPage) > 1
+                                            ) {
+                                                if (pageNum === 2 || pageNum === totalPages - 1) {
+                                                    return (
+                                                        <span key={pageNum} className="w-6 text-center text-slate-400">
+                                                            ...
+                                                        </span>
+                                                    );
+                                                }
+                                                return null;
+                                            }
+
+                                            const isActive = safeCurrentPage === pageNum;
+                                            return (
+                                                <button
+                                                    key={pageNum}
+                                                    onClick={() => setCurrentPage(pageNum)}
+                                                    className={cn(
+                                                        "w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                                                        isActive
+                                                            ? "bg-amber-400 text-slate-950 shadow-xs"
+                                                            : "border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                                                    )}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            );
+                                        })}
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                            disabled={safeCurrentPage === totalPages}
+                                            className="h-8 w-8 p-0 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                                            aria-label="Next page"
+                                        >
+                                            <ChevronRight className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* RIGHT SECTION: Quick Insights + Pending by Program (Span 4 cols) */}

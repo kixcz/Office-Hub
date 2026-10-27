@@ -313,7 +313,7 @@ export default function ProgramsCurriculumIndex({
                     if (remaining.length > 0) {
                         setSelectedProgramId(remaining[0].id);
                     } else {
-                        setSelectedProgramId(null);
+                        setSelectedProgramId(0);
                     }
                     setSelectedCurriculumId(null);
                 }
@@ -740,6 +740,14 @@ export default function ProgramsCurriculumIndex({
                                         >
                                             <Plus className="w-3.5 h-3.5" />
                                             <span>New Curriculum Version</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setDeletingProgram(selectedProgram)}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center gap-1.5 cursor-pointer"
+                                            title="Delete Program"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <span>Delete</span>
                                         </button>
                                     </div>
                                 </div>

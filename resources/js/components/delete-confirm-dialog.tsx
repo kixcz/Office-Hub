@@ -11,8 +11,10 @@ import { Button } from '@/components/ui/button';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 
 interface DeleteConfirmDialogProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
+    open?: boolean;
+    isOpen?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    onClose?: () => void;
     title?: string;
     description?: string;
     itemName?: string;
@@ -20,21 +22,35 @@ interface DeleteConfirmDialogProps {
     cancelLabel?: string;
     onConfirm: () => void;
     isDeleting?: boolean;
+    isLoading?: boolean;
 }
 
 export function DeleteConfirmDialog({
     open,
+    isOpen,
     onOpenChange,
+    onClose,
     title = 'Confirm Deletion',
     description = 'Are you sure you want to delete this record? This action cannot be undone and will permanently remove the item.',
     itemName,
     confirmLabel = 'Delete Record',
     cancelLabel = 'Cancel',
     onConfirm,
-    isDeleting = false,
+    isDeleting,
+    isLoading,
 }: DeleteConfirmDialogProps) {
+    const isDialogOpen = open !== undefined ? open : !!isOpen;
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (onOpenChange) {
+            onOpenChange(nextOpen);
+        }
+        if (!nextOpen && onClose) {
+            onClose();
+        }
+    };
+    const deletingState = isDeleting !== undefined ? isDeleting : !!isLoading;
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-[420px] p-6 rounded-2xl border-border bg-card">
                 <div className="flex flex-col items-center text-center sm:items-start sm:text-left gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
@@ -62,8 +78,8 @@ export function DeleteConfirmDialog({
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        disabled={isDeleting}
+                        onClick={() => handleOpenChange(false)}
+                        disabled={deletingState}
                         className="rounded-xl border-border text-xs font-bold w-full sm:w-auto h-9"
                     >
                         {cancelLabel}
@@ -74,11 +90,11 @@ export function DeleteConfirmDialog({
                         onClick={() => {
                             onConfirm();
                         }}
-                        disabled={isDeleting}
+                        disabled={deletingState}
                         className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold w-full sm:w-auto h-9 gap-1.5 shadow-xs"
                     >
                         <Trash2 className="w-3.5 h-3.5" />
-                        <span>{isDeleting ? 'Deleting...' : confirmLabel}</span>
+                        <span>{deletingState ? 'Deleting...' : confirmLabel}</span>
                     </Button>
                 </DialogFooter>
             </DialogContent>

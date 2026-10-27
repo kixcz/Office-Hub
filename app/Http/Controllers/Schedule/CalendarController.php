@@ -220,7 +220,16 @@ class CalendarController extends Controller
     public static function ensureBaselineEvents(): void
     {
         $bsit = Program::where('code', 'BSIT')->first();
-        $organizerId = auth()->id() ?: (User::first()?->id ?: 1);
+
+        $organizer = User::first();
+        if (! $organizer) {
+            $organizer = User::create([
+                'name' => 'System Administrator',
+                'email' => 'admin@cids.edu.ph',
+                'password' => bcrypt('password'),
+            ]);
+        }
+        $organizerId = auth()->id() ?: $organizer->id;
 
         // October 13, 2026 events from Dashboard and Modal mockups
         Meeting::firstOrCreate(

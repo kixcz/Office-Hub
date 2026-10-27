@@ -15,6 +15,7 @@ use App\Http\Controllers\DocumentRouteController;
 use App\Http\Controllers\Faculty\FacultyPortalController;
 use App\Http\Controllers\FacultyAttendanceController;
 use App\Http\Controllers\FacultyController;
+use App\Http\Controllers\Institution\InstitutionGovernanceController;
 use App\Http\Controllers\LabInChargeMonitoringController;
 use App\Http\Controllers\LabInventoryManagementController;
 use App\Http\Controllers\OfficeRequestController;
@@ -496,6 +497,28 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('lab-inventory/{item}', [LabInventoryManagementController::class, 'destroy'])->name('lab-inventory.destroy');
         Route::post('lab-inventory/adjustments', [LabInventoryManagementController::class, 'storeAdjustment'])->name('lab-inventory.adjustments.store');
         Route::post('lab-inventory/maintenance', [LabInventoryManagementController::class, 'storeMaintenanceTicket'])->name('lab-inventory.maintenance.store');
+    });
+
+    // Institution Super Admin Platform Governance Ecosystem
+    Route::prefix('institution')->name('institution.')->group(function () {
+        Route::get('/dashboard', [InstitutionGovernanceController::class, 'dashboard'])->name('dashboard');
+
+        // Institution Management
+        Route::get('/profile', [InstitutionGovernanceController::class, 'profile'])->name('profile');
+        Route::post('/profile', [InstitutionGovernanceController::class, 'updateProfile'])->name('profile.update');
+        Route::get('/colleges', [InstitutionGovernanceController::class, 'colleges'])->name('colleges');
+        Route::post('/colleges', [InstitutionGovernanceController::class, 'storeCollege'])->name('colleges.store');
+        Route::get('/colleges/setup/{college?}', [InstitutionGovernanceController::class, 'collegeSetup'])->name('colleges.setup');
+        Route::put('/colleges/{college}/setup', [InstitutionGovernanceController::class, 'updateCollegeSetup'])->name('colleges.setup.update');
+
+        // Users & Scoped Roles
+        Route::get('/scoped-roles', [InstitutionGovernanceController::class, 'scopedRoles'])->name('scoped-roles');
+        Route::post('/scoped-roles', [InstitutionGovernanceController::class, 'storeScopedRole'])->name('scoped-roles.store');
+
+        // Platform Configuration
+        Route::get('/modules', [InstitutionGovernanceController::class, 'modules'])->name('modules');
+        Route::get('/terminology', [InstitutionGovernanceController::class, 'terminology'])->name('terminology');
+        Route::post('/terminology', [InstitutionGovernanceController::class, 'updateTerminology'])->name('terminology.update');
     });
 });
 

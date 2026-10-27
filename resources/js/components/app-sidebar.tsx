@@ -53,6 +53,20 @@ import {
     SquareChartGantt,
     MegaphoneIcon,
     SquareActivity,
+    Sliders,
+    Database,
+    Shield,
+    SlidersHorizontal,
+    Settings,
+    Key,
+    Globe,
+    FileStack,
+    Cpu,
+    FileCheck2,
+    School,
+    Network,
+    Compass,
+    FileSearch,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -143,6 +157,125 @@ const adminNavGroups: NavGroup[] = [
         title: 'TV DISPLAY STUDIO',
         items: [
             { title: 'TV Workspace', url: '/tv-config/dashboard', icon: Tv },
+        ],
+    },
+];
+
+// Institution Super Admin Navigation Groups (Highest platform administration & governance)
+const institutionSuperAdminNavGroups: NavGroup[] = [
+    {
+        title: 'INSTITUTION SUPER ADMIN',
+        items: [
+            { title: 'Dashboard', url: '/institution/dashboard', icon: LayoutGrid },
+        ],
+    },
+    {
+        title: 'INSTITUTION MANAGEMENT',
+        items: [
+            { title: 'Institution Profile', url: '/institution/profile', icon: Building2 },
+            { title: 'Colleges & Organizational Units', url: '/institution/colleges', icon: School },
+            { title: 'College Setup & Configuration', url: '/institution/colleges/setup', icon: Sliders },
+            { title: 'Academic Periods', url: '/administration/academic-periods', icon: SquareChartGantt },
+            { title: 'Institution Calendar', url: '/schedule/calendar', icon: Calendar },
+            { title: 'Institutional Announcements', url: '/announcements', icon: MegaphoneIcon },
+        ],
+    },
+    {
+        title: 'USERS & ACCESS',
+        items: [
+            { title: 'Users Directory', url: '/faculties', icon: Users },
+            { title: 'Roles & Permissions', url: '/institution/scoped-roles', icon: ShieldCheck },
+            { title: 'Scoped Role Assignments', url: '/institution/scoped-roles', icon: Key },
+            { title: 'College Admin Assignments', url: '/institution/scoped-roles', icon: UserRoundCog },
+            { title: 'Access Requests', url: '/institution/scoped-roles', icon: Inbox },
+            { title: 'Account Status / Security', url: '/institution/scoped-roles', icon: ShieldAlert },
+        ],
+    },
+    {
+        title: 'PLATFORM CONFIGURATION',
+        items: [
+            { title: 'Module Management', url: '/institution/modules', icon: Layers },
+            { title: 'Terminology Configuration', url: '/institution/terminology', icon: LucideMessageSquareText },
+            { title: 'Feature Flags', url: '/institution/dashboard', icon: SlidersHorizontal },
+            { title: 'Policy Templates', url: '/institution/dashboard', icon: FileStack },
+            { title: 'Workflow Builder', url: '/institution/dashboard', icon: Network },
+            { title: 'Approval Rules', url: '/institution/dashboard', icon: CheckCheckIcon },
+            { title: 'Global Defaults', url: '/institution/profile', icon: Settings },
+        ],
+    },
+    {
+        title: 'ACADEMIC GOVERNANCE',
+        items: [
+            { title: 'Program Portfolio', url: '/programs', icon: GraduationCap },
+            { title: 'Curriculum Oversight', url: '/programs', icon: BookOpen },
+            { title: 'Course Catalog Oversight', url: '/courses', icon: LibraryBig },
+            { title: 'Academic Scheduling Oversight', url: '/schedule/generator', icon: CalendarDays },
+            { title: 'Scheduling Policy Templates', url: '/schedule/generator', icon: FileCheck2 },
+        ],
+    },
+    {
+        title: 'FACILITIES & RESOURCE OVERSIGHT',
+        items: [
+            { title: 'Institution Facility Registry', url: '/facilities/rooms', icon: Building2 },
+            { title: 'Facility Type Management', url: '/facilities/rooms', icon: Layers },
+            { title: 'Inventory Categories', url: '/facilities/lab-inventory', icon: Monitor },
+            { title: 'Asset Classification', url: '/facilities/lab-inventory', icon: Monitor },
+            { title: 'Resource Standards', url: '/operations/room-utilization', icon: BarChart3 },
+        ],
+    },
+    {
+        title: 'RESEARCH, EXTENSION & EVIDENCE',
+        items: [
+            { title: 'Research / Extension Categories', url: '/performance/faculty', icon: BookOpen },
+            { title: 'Accomplishment Taxonomy', url: '/performance/rules', icon: Award },
+            { title: 'Scope / Classification Levels', url: '/performance/rules', icon: Globe },
+            { title: 'Evidence Requirements', url: '/compliance/requirements', icon: FileCheck },
+            { title: 'Accreditation Mapping', url: '/compliance/tracker', icon: CheckSquare },
+        ],
+    },
+    {
+        title: 'DATA & INTEGRATIONS',
+        items: [
+            { title: 'Data Sources', url: '/institution/dashboard', icon: Database },
+            { title: 'Google Workspace Integration', url: '/institution/dashboard', icon: Globe },
+            { title: 'Google Sheets Connections', url: '/schedule/reconciliation', icon: RefreshCw },
+            { title: 'Google Drive Integration', url: '/institution/dashboard', icon: FolderKanban },
+            { title: 'AI / Document Understanding', url: '/institution/dashboard', icon: Bot },
+            { title: 'API Integrations', url: '/institution/dashboard', icon: Cpu },
+            { title: 'Sync & Reconciliation Settings', url: '/schedule/reconciliation', icon: ArrowLeftRight },
+        ],
+    },
+    {
+        title: 'REPORTING & ANALYTICS',
+        items: [
+            { title: 'Institution Overview', url: '/institution/dashboard', icon: LayoutGrid },
+            { title: 'Cross-College Reports', url: '/operations/room-utilization', icon: BarChart3 },
+            { title: 'Report Templates', url: '/institution/profile', icon: FileText },
+            { title: 'Signatory Templates', url: '/institution/profile', icon: FileCheck },
+            { title: 'Export Configuration', url: '/institution/profile', icon: Sliders },
+            { title: 'Data Quality Monitoring', url: '/institution/dashboard', icon: Activity },
+        ],
+    },
+    {
+        title: 'TV & COMMUNICATIONS',
+        items: [
+            { title: 'Institution TV Workspace', url: '/tv-config/dashboard', icon: Tv },
+            { title: 'Display Management', url: '/tv-config/dashboard', icon: Monitor },
+            { title: 'Institution Playlists', url: '/tv-config/dashboard', icon: Sparkles },
+            { title: 'College Highlight Submissions', url: '/tv-config/dashboard', icon: Send },
+            { title: 'Institution Communication Settings', url: '/institution/dashboard', icon: Bell },
+        ],
+    },
+    {
+        title: 'SYSTEM GOVERNANCE',
+        items: [
+            { title: 'Audit Logs', url: '/institution/dashboard', icon: FileSearch },
+            { title: 'Activity Logs', url: '/institution/dashboard', icon: History },
+            { title: 'Change History', url: '/institution/dashboard', icon: Clock },
+            { title: 'Notifications Configuration', url: '/institution/dashboard', icon: Bell },
+            { title: 'Data Retention', url: '/institution/dashboard', icon: Database },
+            { title: 'Privacy & Security', url: '/institution/dashboard', icon: Shield },
+            { title: 'System Settings', url: '/institution/profile', icon: Settings },
         ],
     },
 ];
@@ -383,6 +516,8 @@ export function AppSidebar() {
 
     if (canSwitchWorkspace && workspaceMode === 'faculty') {
         groups = facultyNavGroups;
+    } else if (isInstitutionAdmin) {
+        groups = institutionSuperAdminNavGroups;
     } else if (isProgramHead) {
         groups = programHeadNavGroups;
     } else if (isDean) {

@@ -23,6 +23,7 @@ import {
     Clock,
     CheckCircle2,
     ChevronRight,
+    ChevronLeft,
     Filter,
     Download,
     Eye,
@@ -482,6 +483,23 @@ export default function FacultiesIndex({
         attentionFacultyIds,
     ]);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+
+    const totalPages = Math.max(1, Math.ceil(filteredFaculties.length / perPage));
+
+    const safeCurrentPage = useMemo(() => {
+        if (currentPage > totalPages) return totalPages;
+        if (currentPage < 1) return 1;
+        return currentPage;
+    }, [currentPage, totalPages]);
+
+    const paginatedFaculties = useMemo(() => {
+        const start = (safeCurrentPage - 1) * perPage;
+        return filteredFaculties.slice(start, start + perPage);
+    }, [filteredFaculties, safeCurrentPage, perPage]);
+
     // Unique academic ranks for dropdown
     const rankOptions = useMemo(() => {
         if (ranks && ranks.length > 0) return ranks;
@@ -779,7 +797,8 @@ export default function FacultiesIndex({
                                     </button>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
+                                <>
+                                    <div className="overflow-x-auto">
                                     <table className="w-full text-xs text-left">
                                         <thead className="text-[11px] font-semibold text-muted-foreground uppercase bg-slate-50/80 dark:bg-muted/30 border-b border-border">
                                             <tr>
@@ -792,7 +811,7 @@ export default function FacultiesIndex({
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border">
-                                            {filteredFaculties.map((faculty) => {
+                                            {paginatedFaculties.map((faculty) => {
                                                 const hasAttention = attentionFacultyIds.has(faculty.id);
                                                 const initials = `${faculty.first_name?.[0] || ''}${faculty.last_name?.[0] || ''}`.toUpperCase();
 
@@ -1089,9 +1108,94 @@ export default function FacultiesIndex({
                                         </tbody>
                                     </table>
                                 </div>
-                            )}
-                        </div>
+
+                                {/* Pagination Footer */}
+                                {filteredFaculties.length > 0 && (
+                                    <div className="p-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground bg-muted/20">
+                                        {/* Page size & items counter */}
+                                        <div className="flex items-center gap-2">
+                                            <span>Show</span>
+                                            <select
+                                                value={perPage}
+                                                onChange={(e) => {
+                                                    setPerPage(Number(e.target.value));
+                                                    setCurrentPage(1);
+                                                }}
+                                                className="h-8 px-2 text-xs font-semibold rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                                            >
+                                                <option value={5}>5</option>
+                                                <option value={10}>10</option>
+                                                <option value={20}>20</option>
+                                                <option value={50}>50</option>
+                                            </select>
+                                            <span>
+                                                per page · Showing {Math.min((safeCurrentPage - 1) * perPage + 1, filteredFaculties.length)} to{' '}
+                                                {Math.min(safeCurrentPage * perPage, filteredFaculties.length)} of {filteredFaculties.length} members
+                                            </span>
+                                        </div>
+
+                                        {/* Pagination controls */}
+                                        {totalPages > 1 && (
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                                    disabled={safeCurrentPage === 1}
+                                                    className="h-8 w-8 flex items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                                                    aria-label="Previous page"
+                                                >
+                                                    <ChevronLeft className="w-4 h-4" />
+                                                </button>
+
+                                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                                                    if (
+                                                        totalPages > 7 &&
+                                                        pageNum !== 1 &&
+                                                        pageNum !== totalPages &&
+                                                        Math.abs(pageNum - safeCurrentPage) > 1
+                                                    ) {
+                                                        if (pageNum === 2 || pageNum === totalPages - 1) {
+                                                            return (
+                                                                <span key={pageNum} className="w-6 text-center text-muted-foreground">
+                                                                    ...
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    }
+
+                                                    const isActive = safeCurrentPage === pageNum;
+                                                    return (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => setCurrentPage(pageNum)}
+                                                            className={cn(
+                                                                "w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                                                                isActive
+                                                                    ? "bg-amber-400 text-slate-950 shadow-xs"
+                                                                    : "border border-border bg-background hover:bg-muted text-foreground"
+                                                            )}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    );
+                                                })}
+
+                                                <button
+                                                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                                    disabled={safeCurrentPage === totalPages}
+                                                    className="h-8 w-8 flex items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                                                    aria-label="Next page"
+                                                >
+                                                    <ChevronRight className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
+                </div>
 
                     {/* Right Column (4 cols) — Real DB Data: Faculty Needing Attention, Profile Completion, Recent Updates */}
                     <div className="xl:col-span-4 flex flex-col gap-6">
