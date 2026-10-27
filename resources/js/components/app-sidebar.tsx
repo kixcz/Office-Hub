@@ -94,6 +94,7 @@ const adminNavGroups: NavGroup[] = [
         title: 'FACULTY OPERATIONS',
         items: [
             { title: 'Faculty Members', url: '/faculties', icon: Users },
+            { title: 'Compliance', url: '/compliance/requirements', icon: CheckSquare },
             { title: 'Faculty Workload', url: '/operations/faculty-workload', icon: Briefcase },
             { title: 'Make-Up Classes', url: '/operations/make-up-classes', icon: RefreshCw },
             { title: 'Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },
@@ -117,15 +118,6 @@ const adminNavGroups: NavGroup[] = [
             { title: 'Lab In-Charge', url: '/operations/lab-in-charge', icon: Users },
             { title: 'Room Utilization', url: '/operations/room-utilization', icon: BarChart3 },
             { title: 'Facility Reports', url: '/operations/facility-reports', icon: AlertTriangle },
-        ],
-    },
-    {
-        title: 'COMPLIANCE',
-        items: [
-            { title: 'Requirements', url: '/compliance/requirements', icon: LibraryBig },
-            { title: 'Submission Records', url: '/compliance/submissions', icon: FileCheck },
-            { title: 'Pending Outputs', url: '/compliance/pending-outputs', icon: ClipboardEdit, badge: 12 },
-            { title: 'Compliance Tracker', url: '/compliance/tracker', icon: CheckSquare },
         ],
     },
     {
@@ -308,8 +300,7 @@ const programHeadNavGroups: NavGroup[] = [
     {
         title: 'ACADEMIC MONITORING',
         items: [
-            { title: 'Compliance Tracker', url: '/compliance/tracker', icon: CheckSquare },
-            { title: 'Pending Outputs', url: '/compliance/pending-outputs', icon: ClipboardEdit },
+            { title: 'Requirements', url: '/compliance/requirements', icon: LibraryBig },
             { title: 'Make-Up Classes', url: '/operations/make-up-classes', icon: RefreshCw },
             { title: 'Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },
             { title: 'Lab / Room Utilization', url: '/operations/room-utilization', icon: BarChart3 },
@@ -353,7 +344,7 @@ const deanNavGroups: NavGroup[] = [
     {
         title: 'COLLEGE OVERSIGHT',
         items: [
-            { title: 'College Compliance Overview', url: '/compliance/tracker', icon: CheckSquare },
+            { title: 'College Requirements', url: '/compliance/requirements', icon: LibraryBig },
             { title: 'Faculty Attendance Monitor', url: '/faculty-attendance', icon: ClipboardCheck },
             { title: 'Make-Up Class Approvals', url: '/operations/make-up-classes', icon: RefreshCw },
             { title: 'College Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },

@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, useForm, router } from '@inertiajs/react';
-import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,13 +21,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
     Plus,
-    MoreHorizontal,
-    Edit,
-    Trash2,
-    Eye,
-    FileCheck,
+    Folder,
+    FolderPlus,
+    LayoutGrid,
+    List,
     Search,
-    GraduationCap,
     Clock,
     AlertCircle,
     Calendar,
@@ -37,19 +34,28 @@ import {
     FileText,
     TrendingUp,
     CheckCircle2,
-    RotateCw,
-    ChevronLeft,
-    ChevronRight,
+    BarChart3,
+    ArrowUpRight,
+    ArrowDownRight,
+    ArrowRight,
+    SlidersHorizontal,
+    Sparkles,
+    Download,
+    Eye,
+    MoreHorizontal,
+    X,
+    Filter,
+    ShieldAlert,
+    ExternalLink,
     Building2,
-    Layers,
-    ListFilter
+    CalendarDays,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Compliance', href: '/compliance/tracker' },
-    { title: 'Requirements', href: '/compliance/requirements' },
+    { title: 'Faculty Operations', href: '/compliance/requirements' },
+    { title: 'Compliance', href: '/compliance/requirements' },
 ];
 
 interface Program {
@@ -58,884 +64,1415 @@ interface Program {
     name: string;
 }
 
-interface Submission {
+interface FacultyMember {
     id: number;
-    status: string;
-    submitted_at: string | null;
+    first_name: string;
+    last_name: string;
+    email: string;
+    photo_url?: string;
+    program?: { code: string; name: string };
 }
 
-interface Requirement {
+interface MatrixCell {
+    requirement_id: number;
+    requirement_title: string;
+    status: string;
+    label: string;
+    color: 'green' | 'amber' | 'red' | 'gray' | 'muted';
+    submission_date?: string | null;
+    days_info?: string | null;
+}
+
+interface MatrixRow {
+    index: number;
+    faculty_id: number;
+    faculty_name: string;
+    faculty_email: string;
+    program_code: string;
+    program_name?: string;
+    avatar_url?: string | null;
+    cells: Record<number, MatrixCell>;
+}
+
+interface MatrixColumn {
     id: number;
     title: string;
-    document_type: string;
-    academic_year: string;
-    semester: string;
+    short_title: string;
+    category: string;
     due_date: string;
-    program_id: number | null;
-    program?: Program | null;
-    submissions?: Submission[];
+    raw_due_date?: string;
 }
 
-interface KPIs {
-    total_requirements: number;
-    active_programs: number;
-    open_deadlines: number;
-    total_submissions: number;
+interface FolderCard {
+    id: number;
+    title: string;
+    description?: string;
+    category: string;
+    document_type: string;
+    due_date: string;
+    status: string;
+    health_indicator: 'On Track' | 'Needs Attention' | 'Critical';
+    assigned_count: number;
+    on_time_count: number;
+    late_count: number;
+    pending_count: number;
+    overdue_count: number;
+    compliance_rate: number;
+}
+
+interface AttentionAlert {
+    id: number;
+    type: string;
+    title: string;
+    message: string;
+    requirement_id?: number | null;
+    level: 'critical' | 'warning' | 'info';
 }
 
 interface Props {
-    requirements: Requirement[];
+    requirements: any[];
+    enhancedFolders: FolderCard[];
     programs: Program[];
-    kpis?: KPIs;
+    faculties: FacultyMember[];
+    filters: {
+        period: string;
+        program: string;
+        faculty: string;
+        category: string;
+    };
+    kpiCards: {
+        active_folders: number;
+        active_folders_trend: string;
+        expected_faculty: number;
+        expected_faculty_trend: string;
+        submitted_on_time: number;
+        submitted_on_time_trend: string;
+        submitted_late: number;
+        submitted_late_trend: string;
+        pending: number;
+        pending_trend: string;
+        overdue: number;
+        overdue_trend: string;
+        overall_rate: number;
+        overall_rate_trend: string;
+        avg_days_late: number;
+        avg_days_late_trend: string;
+    };
+    matrix: {
+        columns: MatrixColumn[];
+        rows: MatrixRow[];
+    };
+    charts: {
+        requirement_rates: { id: number; name: string; short_name: string; rate: number }[];
+        status_distribution: {
+            total: number;
+            on_time: { count: number; percentage: number };
+            late: { count: number; percentage: number };
+            pending: { count: number; percentage: number };
+            overdue: { count: number; percentage: number };
+            not_required: { count: number; percentage: number };
+        };
+        late_trend: { month: string; count: number }[];
+        program_comparison: { code: string; rate: number }[];
+    };
+    attentionAlerts: AttentionAlert[];
 }
 
-const formatDatetimeLocal = (dateStr?: string) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '';
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-
-export default function RequirementsIndex({
-    requirements = [],
+export default function ComplianceManagementIndex({
+    enhancedFolders = [],
     programs = [],
-    kpis,
+    faculties = [],
+    filters: initialFilters,
+    kpiCards,
+    matrix,
+    charts,
+    attentionAlerts = [],
 }: Props) {
-    // Dialogs state
+    // Main Tab Toggle: Overview vs Requirements
+    const [mainTab, setMainTab] = useState<'overview' | 'requirements'>('overview');
+
+    // Filter bar state
+    const [academicPeriod, setAcademicPeriod] = useState(initialFilters?.period || 'AY 2026–2027 • 1st Semester');
+    const [selectedProgram, setSelectedProgram] = useState(initialFilters?.program || 'all');
+    const [selectedFaculty, setSelectedFaculty] = useState(initialFilters?.faculty || 'all');
+    const [selectedCategory, setSelectedCategory] = useState(initialFilters?.category || 'all');
+    const [dateRange, setDateRange] = useState('Aug 1, 2026 - Oct 31, 2026');
+
+    // Matrix search & view toggle
+    const [matrixSearch, setMatrixSearch] = useState('');
+    const [matrixView, setMatrixView] = useState<'matrix' | 'list'>('matrix');
+
+    // Requirements Tab: Search, Status filter, Category filter, Grid vs List
+    const [folderSearch, setFolderSearch] = useState('');
+    const [folderCategory, setFolderCategory] = useState('all');
+    const [folderStatus, setFolderStatus] = useState('all');
+    const [folderView, setFolderView] = useState<'grid' | 'list'>('grid');
+
+    // Create Folder Modal State
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [editingRequirement, setEditingRequirement] = useState<Requirement | null>(null);
-    const [viewingRequirement, setViewingRequirement] = useState<Requirement | null>(null);
-
-    // Filters and sorting
-    const [searchQuery, setSearchQuery] = useState('');
-    const [programFilter, setProgramFilter] = useState<string>('all');
-    const [periodFilter, setPeriodFilter] = useState<string>('all');
-    const [statusFilter, setStatusFilter] = useState<string>('all');
-    const [sortOrder, setSortOrder] = useState<string>('newest');
-
-    // Pagination (6 per page matching mockup: "Showing 6 of 9 requirements")
-    const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 6;
-
-    // Create form using Inertia useForm
-    const createForm = useForm({
+    const { data, setData, post, processing, reset, errors } = useForm({
         title: '',
-        document_type: '',
-        academic_year: '2026-2027',
+        description: '',
+        category: 'Teaching and Learning Requirements',
+        document_type: 'TOS/TQ',
+        academic_year: 'AY 2026–2027',
         semester: '1st Semester',
-        due_date: '',
-        program_id: '',
+        due_date: '2026-08-30T23:59',
+        open_date: '2026-08-01T08:00',
+        grace_period_days: 0,
+        required_file_types: 'pdf,docx',
+        allow_multiple_files: false,
+        naming_convention: '',
+        late_policy: 'allowed_with_flag',
+        status: 'Open',
+        program_id: 'all',
     });
-
-    // Edit form using Inertia useForm
-    const editForm = useForm({
-        title: '',
-        document_type: '',
-        academic_year: '',
-        semester: '',
-        due_date: '',
-        program_id: '',
-    });
-
-    const openCreateDialog = () => {
-        createForm.reset();
-        createForm.clearErrors();
-        createForm.setData({
-            title: '',
-            document_type: '',
-            academic_year: '2026-2027',
-            semester: '1st Semester',
-            due_date: '',
-            program_id: '',
-        });
-        setIsCreateOpen(true);
-    };
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        createForm.post('/compliance/requirements', {
+        post('/compliance/requirements', {
             onSuccess: () => {
-                createForm.reset();
                 setIsCreateOpen(false);
+                reset();
             },
         });
     };
 
-    const openEditDialog = (req: Requirement) => {
-        setEditingRequirement(req);
-        editForm.clearErrors();
-        editForm.setData({
-            title: req.title,
-            document_type: req.document_type,
-            academic_year: req.academic_year || '2026-2027',
-            semester: req.semester || '1st Semester',
-            due_date: formatDatetimeLocal(req.due_date),
-            program_id: req.program_id ? String(req.program_id) : '',
+    // Filter matrix rows based on search
+    const filteredMatrixRows = useMemo(() => {
+        if (!matrixSearch.trim()) return matrix?.rows || [];
+        const q = matrixSearch.toLowerCase();
+        return (matrix?.rows || []).filter(
+            (row) =>
+                row.faculty_name.toLowerCase().includes(q) ||
+                row.program_code.toLowerCase().includes(q) ||
+                row.faculty_email.toLowerCase().includes(q)
+        );
+    }, [matrix?.rows, matrixSearch]);
+
+    // Filter folder cards for Requirements tab
+    const filteredFolders = useMemo(() => {
+        return (enhancedFolders || []).filter((f) => {
+            const matchesSearch =
+                !folderSearch.trim() ||
+                f.title.toLowerCase().includes(folderSearch.toLowerCase()) ||
+                (f.description && f.description.toLowerCase().includes(folderSearch.toLowerCase())) ||
+                f.category.toLowerCase().includes(folderSearch.toLowerCase());
+
+            const matchesCategory = folderCategory === 'all' || f.category === folderCategory;
+            const matchesStatus = folderStatus === 'all' || f.status === folderStatus;
+
+            return matchesSearch && matchesCategory && matchesStatus;
         });
-    };
+    }, [enhancedFolders, folderSearch, folderCategory, folderStatus]);
 
-    const handleEditSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!editingRequirement) return;
-
-        editForm.put(`/compliance/requirements/${editingRequirement.id}`, {
-            onSuccess: () => {
-                setEditingRequirement(null);
+    const applyFilters = () => {
+        router.get(
+            '/compliance/requirements',
+            {
+                period: academicPeriod,
+                program: selectedProgram,
+                faculty: selectedFaculty,
+                category: selectedCategory,
             },
-        });
+            { preserveState: true }
+        );
     };
-
-    const [deletingReq, setDeletingReq] = useState<Requirement | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-
-    const handleDelete = (req: Requirement) => {
-        setDeletingReq(req);
-    };
-
-    const confirmDeleteReq = () => {
-        if (!deletingReq) return;
-        setIsDeleting(true);
-        router.delete(`/compliance/requirements/${deletingReq.id}`, {
-            preserveScroll: true,
-            onFinish: () => {
-                setIsDeleting(false);
-                setDeletingReq(null);
-            },
-        });
-    };
-
-    // Calculate deadline status & pills
-    const getDeadlineMeta = (dueDateStr?: string) => {
-        if (!dueDateStr) {
-            return {
-                formattedDate: 'No Deadline',
-                badgeText: 'No Date',
-                isOverdue: false,
-                isDueSoon: false,
-                colorClass: 'text-muted-foreground bg-muted',
-                status: 'Upcoming',
-            };
-        }
-
-        const due = new Date(dueDateStr);
-        const formattedDate = due.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
-
-        const now = new Date();
-        // Zero out time components for day difference
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const target = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-        const diffMs = target.getTime() - today.getTime();
-        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 0) {
-            return {
-                formattedDate,
-                badgeText: `Overdue (${Math.abs(diffDays)}d)`,
-                isOverdue: true,
-                isDueSoon: false,
-                badgeStyle: 'text-rose-600 bg-rose-500/10 border-rose-500/20 dark:text-rose-400',
-                status: 'Overdue',
-            };
-        } else if (diffDays === 0) {
-            return {
-                formattedDate,
-                badgeText: 'Due Today',
-                isOverdue: false,
-                isDueSoon: true,
-                badgeStyle: 'text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400',
-                status: 'Due Soon',
-            };
-        } else if (diffDays <= 3) {
-            return {
-                formattedDate,
-                badgeText: `Due in ${diffDays}d`,
-                isOverdue: false,
-                isDueSoon: true,
-                badgeStyle: 'text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400',
-                status: 'Due Soon',
-            };
-        } else if (diffDays <= 20) {
-            return {
-                formattedDate,
-                badgeText: `Due in ${diffDays}d`,
-                isOverdue: false,
-                isDueSoon: false,
-                badgeStyle: 'text-sky-600 bg-sky-500/10 border-sky-500/20 dark:text-sky-400',
-                status: 'In Progress',
-            };
-        } else {
-            return {
-                formattedDate,
-                badgeText: `Due in ${diffDays}d`,
-                isOverdue: false,
-                isDueSoon: false,
-                badgeStyle: 'text-blue-600 bg-blue-500/10 border-blue-500/20 dark:text-blue-400',
-                status: 'Upcoming',
-            };
-        }
-    };
-
-    // Filter & Sort
-    const filteredRequirements = useMemo(() => {
-        return requirements
-            .filter((req) => {
-                const searchLower = searchQuery.toLowerCase();
-                const matchesSearch =
-                    !searchQuery ||
-                    req.title.toLowerCase().includes(searchLower) ||
-                    req.document_type.toLowerCase().includes(searchLower) ||
-                    (req.program?.code || '').toLowerCase().includes(searchLower);
-
-                const matchesProgram =
-                    programFilter === 'all' ||
-                    (programFilter === 'unassigned' && !req.program_id) ||
-                    (req.program?.code || '').toLowerCase() === programFilter.toLowerCase() ||
-                    String(req.program_id) === programFilter;
-
-                const matchesPeriod =
-                    periodFilter === 'all' ||
-                    (req.academic_year && req.academic_year.includes(periodFilter)) ||
-                    (req.semester && req.semester.includes(periodFilter));
-
-                const deadlineMeta = getDeadlineMeta(req.due_date);
-                const totalSubs = req.submissions ? req.submissions.length : 0;
-                const completedSubs = req.submissions
-                    ? req.submissions.filter((s) => s.submitted_at !== null).length
-                    : 0;
-
-                let derivedStatus = deadlineMeta.status;
-                if (completedSubs > 0 && completedSubs < totalSubs) {
-                    derivedStatus = 'In Progress';
-                }
-
-                const matchesStatus =
-                    statusFilter === 'all' ||
-                    derivedStatus.toLowerCase() === statusFilter.toLowerCase();
-
-                return matchesSearch && matchesProgram && matchesPeriod && matchesStatus;
-            })
-            .sort((a, b) => {
-                if (sortOrder === 'oldest') {
-                    return new Date(a.due_date || '').getTime() - new Date(b.due_date || '').getTime();
-                }
-                if (sortOrder === 'title') {
-                    return a.title.localeCompare(b.title);
-                }
-                // Default: newest first
-                return new Date(b.created_at || b.due_date || '').getTime() - new Date(a.created_at || a.due_date || '').getTime();
-            });
-    }, [requirements, searchQuery, programFilter, periodFilter, statusFilter, sortOrder]);
-
-    // Paginated list
-    const totalPages = Math.ceil(filteredRequirements.length / pageSize) || 1;
-    const paginatedRequirements = useMemo(() => {
-        const start = (currentPage - 1) * pageSize;
-        return filteredRequirements.slice(start, start + pageSize);
-    }, [filteredRequirements, currentPage, pageSize]);
-
-    // Unique academic periods for filter
-    const academicPeriods = useMemo(() => {
-        const periods = new Set<string>();
-        requirements.forEach((r) => {
-            if (r.academic_year) periods.add(r.academic_year);
-            if (r.semester) periods.add(r.semester);
-        });
-        return Array.from(periods);
-    }, [requirements]);
-
-    // KPI values
-    const totalReqs = kpis?.total_requirements ?? requirements.length;
-    const activeProgs = kpis?.active_programs ?? programs.length;
-    const openDeadlinesCount = kpis?.open_deadlines ?? requirements.filter((r) => {
-        const meta = getDeadlineMeta(r.due_date);
-        return !meta.isOverdue;
-    }).length;
-    const totalSubmissionsCount = kpis?.total_submissions ?? requirements.reduce(
-        (acc, r) => acc + (r.submissions ? r.submissions.length : 0),
-        0
-    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Requirements Management" />
+            <Head title="Compliance Management - OfficeHub" />
 
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
-                {/* 1. TOP MODULE HEADER */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20 shadow-xs">
-                            <FileText className="w-6 h-6" />
+            <div className="flex flex-col gap-6 p-4 md:p-6 lg:p-8 bg-[#F9FAFB] dark:bg-zinc-950 min-h-screen">
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-sm">
+                            <Folder className="w-6 h-6 fill-amber-500 text-amber-600" />
                         </div>
-                        <div className="space-y-0.5">
-                            <h1 className="text-2xl font-black tracking-tight text-foreground">
-                                Requirements Management
+                        <div>
+                            <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
+                                Compliance Management
                             </h1>
-                            <p className="text-xs text-muted-foreground font-medium">
-                                Create, distribute, and manage compliance requirements across academic programs.
+                            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                                Monitor and manage faculty requirement submissions
                             </p>
                         </div>
                     </div>
 
-                    <Button
-                        onClick={openCreateDialog}
-                        className="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 cursor-pointer shadow-xs transition-colors"
+                    {/* Action Buttons Top Right */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            onClick={() => setIsCreateOpen(true)}
+                            className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all"
+                        >
+                            <Plus className="w-4 h-4 mr-1.5 stroke-[2.5]" />
+                            Create Requirement Folder
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-semibold text-xs md:text-sm px-3.5 py-2.5 rounded-xl text-zinc-700 dark:text-zinc-300 shadow-xs"
+                            onClick={() => window.print()}
+                        >
+                            <FileText className="w-4 h-4 mr-1.5 text-zinc-500" />
+                            Generate Report
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-semibold text-xs md:text-sm px-3.5 py-2.5 rounded-xl text-zinc-700 dark:text-zinc-300 shadow-xs"
+                            onClick={() => alert('Exporting compliance tracker matrix to CSV...')}
+                        >
+                            <Download className="w-4 h-4 mr-1.5 text-zinc-500" />
+                            Export Matrix
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Sub-navigation Tabs: Overview vs Requirements */}
+                <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-1">
+                    <button
+                        onClick={() => setMainTab('overview')}
+                        className={cn(
+                            'px-5 py-2 text-sm font-bold rounded-xl transition-all',
+                            mainTab === 'overview'
+                                ? 'bg-amber-100/90 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 shadow-xs'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
+                        )}
                     >
-                        <Plus className="w-4 h-4 stroke-[3]" />
-                        <span>Add Requirement</span>
-                    </Button>
+                        Overview
+                    </button>
+                    <button
+                        onClick={() => setMainTab('requirements')}
+                        className={cn(
+                            'px-5 py-2 text-sm font-bold rounded-xl transition-all',
+                            mainTab === 'requirements'
+                                ? 'bg-amber-100/90 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 shadow-xs'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
+                        )}
+                    >
+                        Requirements
+                    </button>
                 </div>
 
-                {/* 2. FOUR KPI STAT CARDS (Exact match to mockup) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Card 1: TOTAL REQUIREMENTS */}
-                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden flex items-center justify-between">
-                        <div className="flex items-center gap-3.5">
-                            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-                                <FileText className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
-                                    TOTAL REQUIREMENTS
-                                </span>
-                                <div className="text-2xl font-black text-foreground mt-0.5">
-                                    {totalReqs}
-                                </div>
-                                <span className="text-[11px] text-muted-foreground">
-                                    assigned tasks
-                                </span>
-                            </div>
-                        </div>
-                        <div className="text-amber-500">
-                            <TrendingUp className="w-5 h-5" />
-                        </div>
-                    </div>
-
-                    {/* Card 2: ACTIVE PROGRAMS */}
-                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden flex items-center justify-between">
-                        <div className="flex items-center gap-3.5">
-                            <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
-                                <GraduationCap className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
-                                    ACTIVE PROGRAMS
-                                </span>
-                                <div className="text-2xl font-black text-foreground mt-0.5">
-                                    {activeProgs}
-                                </div>
-                                <span className="text-[11px] text-muted-foreground">
-                                    with requirements
-                                </span>
-                            </div>
-                        </div>
-                        <div className="text-sky-500">
-                            <Users className="w-5 h-5" />
-                        </div>
-                    </div>
-
-                    {/* Card 3: OPEN DEADLINES */}
-                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden flex items-center justify-between">
-                        <div className="flex items-center gap-3.5">
-                            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
-                                <Clock className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
-                                    OPEN DEADLINES
-                                </span>
-                                <div className="text-2xl font-black text-foreground mt-0.5">
-                                    {openDeadlinesCount}
-                                </div>
-                                <span className="text-[11px] text-muted-foreground">
-                                    upcoming or overdue
-                                </span>
-                            </div>
-                        </div>
-                        <div className="text-rose-500">
-                            <Calendar className="w-5 h-5" />
-                        </div>
-                    </div>
-
-                    {/* Card 4: TOTAL SUBMISSIONS */}
-                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden flex items-center justify-between">
-                        <div className="flex items-center gap-3.5">
-                            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-                                <Users className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
-                                    TOTAL SUBMISSIONS
-                                </span>
-                                <div className="text-2xl font-black text-foreground mt-0.5">
-                                    {totalSubmissionsCount}
-                                </div>
-                                <span className="text-[11px] text-muted-foreground">
-                                    distributed outputs
-                                </span>
-                            </div>
-                        </div>
-                        <div className="text-emerald-500">
-                            <FileCheck className="w-5 h-5" />
-                        </div>
-                    </div>
-                </div>
-
-                {/* 3. FILTER & SEARCH CONTROLS BAR (Matches Mockup) */}
-                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-                    {/* Search Bar */}
-                    <div className="relative flex-1 min-w-[280px]">
-                        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                        <Input
-                            placeholder="Search requirements by title, document type, or keywords..."
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            className="h-10 pl-9.5 pr-4 text-xs rounded-xl border border-border bg-card text-foreground shadow-2xs"
-                        />
-                    </div>
-
-                    {/* Filter Dropdowns */}
-                    <div className="flex flex-wrap items-center gap-2.5">
-                        {/* All Programs */}
-                        <div className="relative min-w-[140px]">
-                            <GraduationCap className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                            <select
-                                value={programFilter}
-                                onChange={(e) => {
-                                    setProgramFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="h-10 pl-8 pr-7 text-xs font-semibold rounded-xl border border-border bg-card text-foreground focus:outline-hidden appearance-none w-full cursor-pointer shadow-2xs"
-                            >
-                                <option value="all">All Programs</option>
-                                <option value="unassigned">All Unassigned</option>
-                                {programs.map((prog) => (
-                                    <option key={prog.id} value={prog.code}>
-                                        {prog.code}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                        </div>
-
-                        {/* All Academic Periods */}
-                        <div className="relative min-w-[160px]">
-                            <Calendar className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                            <select
-                                value={periodFilter}
-                                onChange={(e) => {
-                                    setPeriodFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="h-10 pl-8 pr-7 text-xs font-semibold rounded-xl border border-border bg-card text-foreground focus:outline-hidden appearance-none w-full cursor-pointer shadow-2xs"
-                            >
-                                <option value="all">All Academic Periods</option>
-                                <option value="2026-2027">2026-2027</option>
-                                <option value="1st Semester">1st Semester</option>
-                                <option value="2nd Semester">2nd Semester</option>
-                            </select>
-                            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                        </div>
-
-                        {/* All Statuses */}
-                        <div className="relative min-w-[130px]">
-                            <ListFilter className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => {
-                                    setStatusFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="h-10 pl-8 pr-7 text-xs font-semibold rounded-xl border border-border bg-card text-foreground focus:outline-hidden appearance-none w-full cursor-pointer shadow-2xs"
-                            >
-                                <option value="all">All Statuses</option>
-                                <option value="Overdue">Overdue</option>
-                                <option value="Due Soon">Due Soon</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Upcoming">Upcoming</option>
-                            </select>
-                            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                        </div>
-
-                        {/* Sort Order */}
-                        <div className="relative min-w-[130px]">
-                            <select
-                                value={sortOrder}
-                                onChange={(e) => setSortOrder(e.target.value)}
-                                className="h-10 px-3 pr-7 text-xs font-semibold rounded-xl border border-border bg-card text-foreground focus:outline-hidden appearance-none w-full cursor-pointer shadow-2xs"
-                            >
-                                <option value="newest">⇅ Newest First</option>
-                                <option value="oldest">⇅ Oldest Deadline</option>
-                                <option value="title">⇅ By Title (A-Z)</option>
-                            </select>
-                            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                        </div>
-                    </div>
-                </div>
-
-                {/* 4. MAIN REQUIREMENTS TABLE CARD (Matches Mockup) */}
-                <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-xs text-left">
-                            <thead>
-                                <tr className="border-b border-border/80 bg-muted/20 text-muted-foreground font-bold uppercase tracking-wider text-[11px]">
-                                    <th className="py-3.5 px-6 font-bold">REQUIREMENT</th>
-                                    <th className="py-3.5 px-4 font-bold">ASSIGNED PROGRAM</th>
-                                    <th className="py-3.5 px-4 font-bold">ACADEMIC PERIOD</th>
-                                    <th className="py-3.5 px-4 font-bold">DEADLINE</th>
-                                    <th className="py-3.5 px-4 font-bold min-w-[160px]">SUBMISSION PROGRESS</th>
-                                    <th className="py-3.5 px-4 font-bold text-center">STATUS</th>
-                                    <th className="py-3.5 px-4 font-bold text-right">ACTIONS</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/60 font-medium">
-                                {paginatedRequirements.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="py-12 text-center text-muted-foreground">
-                                            No compliance requirements found matching your criteria.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    paginatedRequirements.map((req, idx) => {
-                                        const deadlineMeta = getDeadlineMeta(req.due_date);
-                                        const totalSubs = req.submissions ? req.submissions.length : 0;
-                                        const completedSubs = req.submissions
-                                            ? req.submissions.filter((s) => s.submitted_at !== null).length
-                                            : 0;
-                                        const progressPercent = totalSubs > 0 ? Math.round((completedSubs / totalSubs) * 100) : 0;
-
-                                        // Left requirement icon color variety matching mockup
-                                        const iconColorVariants = [
-                                            'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-                                            'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-                                            'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-                                            'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-                                            'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
-                                            'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
-                                        ];
-                                        const iconStyle = iconColorVariants[idx % iconColorVariants.length];
-
-                                        // Determine Status Pill
-                                        let statusLabel = deadlineMeta.status;
-                                        let statusPillClass = 'bg-slate-500/10 text-slate-600 border-slate-500/20';
-                                        let StatusIcon = Clock;
-
-                                        if (progressPercent > 0 && progressPercent < 100) {
-                                            statusLabel = 'In Progress';
-                                            statusPillClass = 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20';
-                                            StatusIcon = RotateCw;
-                                        } else if (progressPercent === 100) {
-                                            statusLabel = 'Completed';
-                                            statusPillClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-                                            StatusIcon = CheckCircle2;
-                                        } else if (deadlineMeta.isOverdue) {
-                                            statusLabel = 'Overdue';
-                                            statusPillClass = 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20';
-                                            StatusIcon = AlertCircle;
-                                        } else if (deadlineMeta.isDueSoon) {
-                                            statusLabel = 'Due Soon';
-                                            statusPillClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-                                            StatusIcon = Clock;
-                                        } else {
-                                            statusLabel = 'Upcoming';
-                                            statusPillClass = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-                                            StatusIcon = Clock;
-                                        }
-
-                                        return (
-                                            <tr key={req.id} className="hover:bg-muted/30 transition-colors">
-                                                {/* 1. REQUIREMENT TITLE & TYPE */}
-                                                <td className="py-4 px-6">
-                                                    <div className="flex items-center gap-3.5">
-                                                        <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border", iconStyle)}>
-                                                            <FileText className="w-4 h-4" />
-                                                        </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="font-bold text-sm text-foreground hover:text-primary transition-colors cursor-pointer" onClick={() => setViewingRequirement(req)}>
-                                                                {req.title}
-                                                            </span>
-                                                            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-0.5">
-                                                                {req.document_type || 'DOCUMENT'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </td>
-
-                                                {/* 2. ASSIGNED PROGRAM */}
-                                                <td className="py-4 px-4">
-                                                    {req.program ? (
-                                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
-                                                            <GraduationCap className="w-3.5 h-3.5" />
-                                                            <span>{req.program.code}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
-                                                            <Users className="w-3.5 h-3.5" />
-                                                            <span>All Programs</span>
-                                                        </div>
-                                                    )}
-                                                </td>
-
-                                                {/* 3. ACADEMIC PERIOD */}
-                                                <td className="py-4 px-4">
-                                                    <div className="flex flex-col">
-                                                        <span className="font-bold text-xs text-foreground">
-                                                            {req.academic_year || '2026-2027'}
-                                                        </span>
-                                                        <span className="text-[11px] text-muted-foreground mt-0.5">
-                                                            {req.semester || '1st Semester'}
-                                                        </span>
-                                                    </div>
-                                                </td>
-
-                                                {/* 4. DEADLINE */}
-                                                <td className="py-4 px-4">
-                                                    <div className="flex flex-col items-start gap-1">
-                                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                                                            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                                                            <span>{deadlineMeta.formattedDate}</span>
-                                                        </div>
-                                                        {deadlineMeta.badgeText && (
-                                                            <span className={cn(
-                                                                "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border",
-                                                                deadlineMeta.badgeStyle
-                                                            )}>
-                                                                {deadlineMeta.badgeText}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-
-                                                {/* 5. SUBMISSION PROGRESS */}
-                                                <td className="py-4 px-4">
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <div className="flex items-center justify-between text-[11px]">
-                                                            <span className="font-semibold text-foreground">
-                                                                {completedSubs} / {totalSubs} submitted
-                                                            </span>
-                                                            <span className="font-bold text-muted-foreground">
-                                                                {progressPercent}%
-                                                            </span>
-                                                        </div>
-                                                        <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                                                            <div
-                                                                className={cn(
-                                                                    "h-full rounded-full transition-all duration-300",
-                                                                    progressPercent === 100
-                                                                        ? "bg-emerald-500"
-                                                                        : progressPercent > 0
-                                                                        ? "bg-emerald-500"
-                                                                        : "bg-muted-foreground/30"
-                                                                )}
-                                                                style={{ width: `${progressPercent}%` }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </td>
-
-                                                {/* 6. STATUS */}
-                                                <td className="py-4 px-4 text-center">
-                                                    <span className={cn(
-                                                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border",
-                                                        statusPillClass
-                                                    )}>
-                                                        <StatusIcon className="w-3.5 h-3.5" />
-                                                        <span>{statusLabel}</span>
-                                                    </span>
-                                                </td>
-
-                                                {/* 7. ACTIONS */}
-                                                <td className="py-4 px-4 text-right">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <button className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer transition-colors border border-border">
-                                                                <MoreHorizontal className="w-4 h-4" />
-                                                            </button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-40">
-                                                            <DropdownMenuItem onClick={() => setViewingRequirement(req)} className="cursor-pointer">
-                                                                <Eye className="w-3.5 h-3.5 mr-2" />
-                                                                <span>View Details</span>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => openEditDialog(req)} className="cursor-pointer">
-                                                                <Edit className="w-3.5 h-3.5 mr-2" />
-                                                                <span>Edit</span>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleDelete(req)} className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/50 cursor-pointer">
-                                                                <Trash2 className="w-3.5 h-3.5 mr-2" />
-                                                                <span>Delete</span>
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination footer (Matches Mockup: Showing 6 of 9 requirements) */}
-                    <div className="p-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                        <span className="text-muted-foreground font-medium">
-                            Showing {paginatedRequirements.length} of {filteredRequirements.length} requirements
-                        </span>
-
-                        <div className="flex items-center gap-1.5">
-                            <button
-                                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                                disabled={currentPage === 1}
-                                className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
-                                <button
-                                    key={pageNumber}
-                                    onClick={() => setCurrentPage(pageNumber)}
-                                    className={cn(
-                                        "w-8 h-8 rounded-lg font-bold text-xs transition-colors cursor-pointer",
-                                        currentPage === pageNumber
-                                            ? "bg-amber-500 text-slate-950 shadow-xs"
-                                            : "border border-border bg-card hover:bg-muted text-foreground"
-                                    )}
+                {/* ========================================================================= */}
+                {/* TAB 1: OVERVIEW COMPLIANCE COMMAND CENTER */}
+                {/* ========================================================================= */}
+                {mainTab === 'overview' && (
+                    <div className="flex flex-col gap-6">
+                        {/* Top Filters Row */}
+                        <div className="bg-white dark:bg-zinc-900 p-3.5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-wrap items-center gap-3">
+                            <div className="flex flex-col min-w-[200px] flex-1">
+                                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                                    Academic Period
+                                </label>
+                                <select
+                                    value={academicPeriod}
+                                    onChange={(e) => setAcademicPeriod(e.target.value)}
+                                    className="bg-zinc-50 dark:bg-zinc-800/70 border border-zinc-200 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                                 >
-                                    {pageNumber}
-                                </button>
-                            ))}
+                                    <option value="AY 2026–2027 • 1st Semester">AY 2026–2027 • 1st Semester</option>
+                                    <option value="AY 2026–2027 • 2nd Semester">AY 2026–2027 • 2nd Semester</option>
+                                    <option value="AY 2025–2026 • 2nd Semester">AY 2025–2026 • 2nd Semester</option>
+                                </select>
+                            </div>
 
-                            <button
-                                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
+                            <div className="flex flex-col min-w-[150px] flex-1">
+                                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                                    Program
+                                </label>
+                                <select
+                                    value={selectedProgram}
+                                    onChange={(e) => setSelectedProgram(e.target.value)}
+                                    className="bg-zinc-50 dark:bg-zinc-800/70 border border-zinc-200 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                >
+                                    <option value="all">All Programs</option>
+                                    {programs.map((p) => (
+                                        <option key={p.id} value={p.code}>
+                                            {p.code} - {p.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex flex-col min-w-[150px] flex-1">
+                                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                                    Faculty
+                                </label>
+                                <select
+                                    value={selectedFaculty}
+                                    onChange={(e) => setSelectedFaculty(e.target.value)}
+                                    className="bg-zinc-50 dark:bg-zinc-800/70 border border-zinc-200 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                >
+                                    <option value="all">All Faculty</option>
+                                    {faculties.map((f) => (
+                                        <option key={f.id} value={f.id}>
+                                            {f.last_name}, {f.first_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex flex-col min-w-[160px] flex-1">
+                                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                                    Requirement Category
+                                </label>
+                                <select
+                                    value={selectedCategory}
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                    className="bg-zinc-50 dark:bg-zinc-800/70 border border-zinc-200 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                >
+                                    <option value="all">All Categories</option>
+                                    <option value="Teaching and Learning Requirements">Teaching and Learning</option>
+                                    <option value="Workload and Assignments">Workload and Assignments</option>
+                                    <option value="Course Documents">Course Documents</option>
+                                    <option value="Grading and Assessment">Grading and Assessment</option>
+                                    <option value="Performance Evaluation">Performance Evaluation</option>
+                                    <option value="Research and Extension">Research and Extension</option>
+                                </select>
+                            </div>
+
+                            <div className="flex flex-col min-w-[200px] flex-1">
+                                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                                    Date Range
+                                </label>
+                                <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800/70 border border-zinc-200 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                    <Calendar className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                                    <span>{dateRange}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-end self-end">
+                                <Button
+                                    onClick={applyFilters}
+                                    className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold text-xs px-5 py-2 rounded-xl h-[34px] shadow-xs"
+                                >
+                                    Apply
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* 8 KPI Cards Matching User Screenshot */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+                            {/* 1. Active Requirement Folders */}
+                            <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-blue-600">
+                                        <Folder className="w-4 h-4 fill-blue-500 text-blue-600" />
+                                    </div>
+                                    <span className="text-2xl font-black text-zinc-900 dark:text-zinc-50">
+                                        {kpiCards?.active_folders ?? 6}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-tight">
+                                        Active Requirement Folders
+                                    </p>
+                                    <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-0.5">
+                                        {kpiCards?.active_folders_trend ?? '↑ 2 vs. last period'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 2. Faculty Expected to Submit */}
+                            <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600">
+                                        <Users className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-2xl font-black text-zinc-900 dark:text-zinc-50">
+                                        {kpiCards?.expected_faculty ?? 38}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-tight">
+                                        Faculty Expected to Submit
+                                    </p>
+                                    <p className="text-[10px] font-semibold text-zinc-400 mt-1">
+                                        {kpiCards?.expected_faculty_trend ?? '0% vs. last period'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 3. Submitted On Time */}
+                            <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600">
+                                        <CheckCircle2 className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                                        {kpiCards?.submitted_on_time ?? 24}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-tight">
+                                        Submitted On Time
+                                    </p>
+                                    <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+                                        {kpiCards?.submitted_on_time_trend ?? '↑ 12% vs. last period'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 4. Submitted Late */}
+                            <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600">
+                                        <Clock className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-2xl font-black text-amber-600 dark:text-amber-400">
+                                        {kpiCards?.submitted_late ?? 6}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-tight">
+                                        Submitted Late
+                                    </p>
+                                    <p className="text-[10px] font-semibold text-rose-500 mt-1">
+                                        {kpiCards?.submitted_late_trend ?? '↑ 2% vs. last period'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 5. Pending */}
+                            <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600">
+                                        <FileText className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-2xl font-black text-zinc-800 dark:text-zinc-200">
+                                        {kpiCards?.pending ?? 5}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-tight">
+                                        Pending
+                                    </p>
+                                    <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+                                        {kpiCards?.pending_trend ?? '↓ 3% vs. last period'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 6. Overdue */}
+                            <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-rose-600">
+                                        <AlertCircle className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
+                                        {kpiCards?.overdue ?? 3}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-tight">
+                                        Overdue
+                                    </p>
+                                    <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+                                        {kpiCards?.overdue_trend ?? '↓ 5% vs. last period'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 7. Overall Compliance Rate Gauge */}
+                            <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+                                <div className="flex items-center justify-between mb-1">
+                                    <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-tight">
+                                        Overall Compliance Rate
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                            <path
+                                                className="text-zinc-100 dark:text-zinc-800"
+                                                strokeWidth="3.8"
+                                                stroke="currentColor"
+                                                fill="none"
+                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                            />
+                                            <path
+                                                className="text-emerald-500"
+                                                strokeDasharray={`${kpiCards?.overall_rate ?? 76}, 100`}
+                                                strokeWidth="3.8"
+                                                strokeLinecap="round"
+                                                stroke="currentColor"
+                                                fill="none"
+                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                            />
+                                        </svg>
+                                        <span className="absolute text-xs font-black text-zinc-900 dark:text-zinc-100">
+                                            {kpiCards?.overall_rate ?? 76}%
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-xl font-black text-zinc-900 dark:text-zinc-50">
+                                            {kpiCards?.overall_rate ?? 76}%
+                                        </span>
+                                        <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                            {kpiCards?.overall_rate_trend ?? '↑ 6% vs. last period'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 8. Average Days Late */}
+                            <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600">
+                                        <CalendarDays className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-2xl font-black text-zinc-900 dark:text-zinc-50">
+                                        {kpiCards?.avg_days_late ?? 2.3}{' '}
+                                        <span className="text-xs font-medium text-zinc-500">days</span>
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-tight">
+                                        Average Days Late
+                                    </p>
+                                    <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+                                        {kpiCards?.avg_days_late_trend ?? '↓ 1.7 vs. last period'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Central Section: Left = Compliance Tracker Matrix, Right = Charts & Attention Required */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            {/* LEFT: Compliance Tracker Matrix (7 cols on 12-col grid) */}
+                            <div className="lg:col-span-8 flex flex-col gap-4">
+                                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs p-5">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600">
+                                                <Folder className="w-4 h-4 fill-amber-500 text-amber-600" />
+                                            </div>
+                                            <h2 className="text-base font-black text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                                                Compliance Tracker Matrix
+                                                <span className="w-4 h-4 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-[10px] font-bold flex items-center justify-center">
+                                                    i
+                                                </span>
+                                            </h2>
+                                        </div>
+
+                                        <div className="flex items-center gap-2.5">
+                                            {/* Matrix / List toggle pills */}
+                                            <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 text-xs font-bold">
+                                                <span className="text-[11px] text-zinc-400 px-2">View:</span>
+                                                <button
+                                                    onClick={() => setMatrixView('matrix')}
+                                                    className={cn(
+                                                        'px-3 py-1 rounded-lg transition-all',
+                                                        matrixView === 'matrix'
+                                                            ? 'bg-[#F59E0B] text-white shadow-xs'
+                                                            : 'text-zinc-600 dark:text-zinc-400'
+                                                    )}
+                                                >
+                                                    Matrix
+                                                </button>
+                                                <button
+                                                    onClick={() => setMatrixView('list')}
+                                                    className={cn(
+                                                        'px-3 py-1 rounded-lg transition-all',
+                                                        matrixView === 'list'
+                                                            ? 'bg-[#F59E0B] text-white shadow-xs'
+                                                            : 'text-zinc-600 dark:text-zinc-400'
+                                                    )}
+                                                >
+                                                    List
+                                                </button>
+                                            </div>
+
+                                            {/* Search input */}
+                                            <div className="relative w-44">
+                                                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search faculty..."
+                                                    value={matrixSearch}
+                                                    onChange={(e) => setMatrixSearch(e.target.value)}
+                                                    className="w-full bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/80 rounded-xl pl-8 pr-3 py-1.5 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Matrix Table */}
+                                    <div className="overflow-x-auto border border-zinc-200/70 dark:border-zinc-800 rounded-xl">
+                                        <table className="w-full text-left text-xs border-collapse">
+                                            <thead>
+                                                <tr className="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200/70 dark:border-zinc-800 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
+                                                    <th className="py-3 px-3 w-8 text-center">#</th>
+                                                    <th className="py-3 px-3 min-w-[170px]">Faculty Name</th>
+                                                    <th className="py-3 px-3 w-16">Program</th>
+                                                    {(matrix?.columns || []).map((col) => (
+                                                        <th
+                                                            key={col.id}
+                                                            className="py-3 px-3 text-center min-w-[125px] border-l border-zinc-200/50 dark:border-zinc-800"
+                                                        >
+                                                            <Link
+                                                                href={`/compliance/requirements/${col.id}`}
+                                                                className="hover:underline flex flex-col items-center group"
+                                                            >
+                                                                <span className="font-black text-zinc-800 dark:text-zinc-200 group-hover:text-amber-600 transition-colors">
+                                                                    {col.title}
+                                                                </span>
+                                                                <span className="text-[10px] font-semibold text-zinc-400 group-hover:text-amber-500">
+                                                                    {col.due_date}
+                                                                </span>
+                                                            </Link>
+                                                        </th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-zinc-200/70 dark:divide-zinc-800 bg-white dark:bg-zinc-900">
+                                                {filteredMatrixRows.map((row) => (
+                                                    <tr
+                                                        key={row.faculty_id}
+                                                        className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors"
+                                                    >
+                                                        <td className="py-3 px-3 text-center font-bold text-zinc-400">
+                                                            {row.index}
+                                                        </td>
+                                                        <td className="py-3 px-3 font-semibold text-zinc-900 dark:text-zinc-100">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-bold text-[10px] flex items-center justify-center shrink-0">
+                                                                    {row.faculty_name
+                                                                        .split(' ')
+                                                                        .map((n) => n[0])
+                                                                        .slice(0, 2)
+                                                                        .join('')}
+                                                                </div>
+                                                                <span className="font-bold text-xs">{row.faculty_name}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-3 px-3 font-bold text-zinc-600 dark:text-zinc-400 text-xs">
+                                                            {row.program_code}
+                                                        </td>
+
+                                                        {(matrix?.columns || []).map((col) => {
+                                                            const cell = row.cells[col.id] || {
+                                                                status: 'Pending',
+                                                                label: 'Pending',
+                                                                color: 'gray',
+                                                            };
+
+                                                            // Determine styling badge
+                                                            let badgeClass =
+                                                                'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700';
+
+                                                            if (cell.color === 'green') {
+                                                                badgeClass =
+                                                                    'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800';
+                                                            } else if (cell.color === 'amber') {
+                                                                badgeClass =
+                                                                    'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800';
+                                                            } else if (cell.color === 'red') {
+                                                                badgeClass =
+                                                                    'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800';
+                                                            } else if (cell.color === 'muted') {
+                                                                badgeClass =
+                                                                    'bg-zinc-100/70 dark:bg-zinc-800/50 text-zinc-400 border border-transparent';
+                                                            }
+
+                                                            return (
+                                                                <td
+                                                                    key={col.id}
+                                                                    className="py-2 px-2 text-center border-l border-zinc-200/50 dark:border-zinc-800 cursor-pointer hover:bg-amber-50/30 dark:hover:bg-amber-950/20 transition-colors"
+                                                                    onClick={() =>
+                                                                        router.visit(
+                                                                            `/compliance/requirements/${col.id}`
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <span
+                                                                        className={cn(
+                                                                            'inline-flex items-center justify-center px-2 py-1 rounded-md text-[10px] font-bold transition-all shadow-2xs whitespace-nowrap',
+                                                                            badgeClass
+                                                                        )}
+                                                                    >
+                                                                        {cell.label}
+                                                                    </span>
+                                                                </td>
+                                                            );
+                                                        })}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* RIGHT: Visualizations & Attention Required Panel (4 cols on 12-col grid) */}
+                            <div className="lg:col-span-4 flex flex-col gap-4">
+                                {/* 1. Compliance Rate by Requirement Bar Chart */}
+                                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs p-5">
+                                    <h3 className="text-xs font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                        <BarChart3 className="w-3.5 h-3.5 text-amber-500" />
+                                        Compliance Rate by Requirement
+                                    </h3>
+                                    <div className="flex flex-col gap-3">
+                                        {(charts?.requirement_rates || []).map((item) => (
+                                            <div key={item.id} className="flex flex-col gap-1">
+                                                <div className="flex items-center justify-between text-xs font-bold">
+                                                    <span className="text-zinc-700 dark:text-zinc-300">
+                                                        {item.short_name}
+                                                    </span>
+                                                    <span className="text-zinc-900 dark:text-zinc-100 font-black">
+                                                        {item.rate}%
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={cn(
+                                                            'h-full rounded-full transition-all duration-500',
+                                                            item.rate >= 75
+                                                                ? 'bg-[#F59E0B]'
+                                                                : item.rate >= 60
+                                                                ? 'bg-amber-400'
+                                                                : 'bg-rose-500'
+                                                        )}
+                                                        style={{ width: `${item.rate}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 2. Submission Status Distribution Donut */}
+                                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs p-5">
+                                    <h3 className="text-xs font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                        Submission Status Distribution
+                                    </h3>
+                                    <div className="flex items-center gap-4">
+                                        {/* Donut graphic */}
+                                        <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
+                                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                                <path
+                                                    className="text-zinc-100 dark:text-zinc-800"
+                                                    strokeWidth="4"
+                                                    stroke="currentColor"
+                                                    fill="none"
+                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                />
+                                                <path
+                                                    className="text-emerald-500"
+                                                    strokeDasharray="64, 100"
+                                                    strokeWidth="4"
+                                                    stroke="currentColor"
+                                                    fill="none"
+                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                />
+                                                <path
+                                                    className="text-amber-500"
+                                                    strokeDasharray="16, 100"
+                                                    strokeDashoffset="-64"
+                                                    strokeWidth="4"
+                                                    stroke="currentColor"
+                                                    fill="none"
+                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                />
+                                                <path
+                                                    className="text-rose-500"
+                                                    strokeDasharray="8, 100"
+                                                    strokeDashoffset="-80"
+                                                    strokeWidth="4"
+                                                    stroke="currentColor"
+                                                    fill="none"
+                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                />
+                                            </svg>
+                                            <div className="absolute flex flex-col items-center">
+                                                <span className="text-sm font-black text-zinc-900 dark:text-zinc-50">
+                                                    {charts?.status_distribution?.total ?? 38}
+                                                </span>
+                                                <span className="text-[9px] font-bold text-zinc-400">Total</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Legend with exact labels */}
+                                        <div className="flex flex-col gap-1 text-[11px] font-bold text-zinc-600 dark:text-zinc-400">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                <span>Submitted On Time: 24 (64%)</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                                <span>Submitted Late: 6 (16%)</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-zinc-400" />
+                                                <span>Pending: 5 (13%)</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                                                <span>Overdue: 3 (8%)</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+                                                <span>Not Required: 2 (5%)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 3. Late Submission Trend */}
+                                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs p-5">
+                                    <h3 className="text-xs font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                        <TrendingUp className="w-3.5 h-3.5 text-amber-500" />
+                                        Late Submission Trend
+                                    </h3>
+                                    <div className="h-28 flex items-end justify-between gap-4 pt-4 px-2">
+                                        {(charts?.late_trend || [
+                                            { month: 'Aug', count: 2 },
+                                            { month: 'Sep', count: 7 },
+                                            { month: 'Oct', count: 4 },
+                                        ]).map((point) => (
+                                            <div key={point.month} className="flex-1 flex flex-col items-center gap-1.5">
+                                                <span className="text-[11px] font-black text-amber-600 dark:text-amber-400">
+                                                    {point.count}
+                                                </span>
+                                                <div
+                                                    className="w-full max-w-[28px] bg-amber-400 hover:bg-amber-500 rounded-t-lg transition-all"
+                                                    style={{ height: `${point.count * 10 + 15}px` }}
+                                                />
+                                                <span className="text-[10px] font-bold text-zinc-400">
+                                                    {point.month}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 4. Attention Required Panel Matching Screenshot */}
+                                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs p-5">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-xs font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-2">
+                                            <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                                            Attention Required
+                                        </h3>
+                                        <button className="text-[11px] font-bold text-zinc-400 hover:text-amber-600 flex items-center gap-0.5">
+                                            See All <ArrowRight className="w-3 h-3" />
+                                        </button>
+                                    </div>
+
+                                    <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800/80">
+                                        {attentionAlerts.map((alert) => (
+                                            <div
+                                                key={alert.id}
+                                                onClick={() => {
+                                                    if (alert.requirement_id) {
+                                                        router.visit(`/compliance/requirements/${alert.requirement_id}`);
+                                                    }
+                                                }}
+                                                className="py-2.5 flex items-center justify-between group cursor-pointer hover:bg-zinc-50/60 dark:hover:bg-zinc-800/40 px-1 rounded-lg transition-colors"
+                                            >
+                                                <div className="flex items-center gap-2.5">
+                                                    <div
+                                                        className={cn(
+                                                            'w-2 h-2 rounded-full shrink-0',
+                                                            alert.level === 'critical'
+                                                                ? 'bg-rose-500 ring-4 ring-rose-100 dark:ring-rose-950/60'
+                                                                : alert.level === 'warning'
+                                                                ? 'bg-amber-500 ring-4 ring-amber-100 dark:ring-amber-950/60'
+                                                                : 'bg-blue-500 ring-4 ring-blue-100 dark:ring-blue-950/60'
+                                                        )}
+                                                    />
+                                                    <div>
+                                                        <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-amber-600 transition-colors">
+                                                            {alert.title}
+                                                        </p>
+                                                        <p className="text-[11px] font-medium text-zinc-500">
+                                                            {alert.message}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <ArrowRight className="w-3.5 h-3.5 text-zinc-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 5. Program Compliance Comparison Progress Bars */}
+                                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs p-5">
+                                    <h3 className="text-xs font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                        <Building2 className="w-3.5 h-3.5 text-amber-500" />
+                                        Program Compliance Comparison
+                                    </h3>
+                                    <div className="flex flex-col gap-2.5">
+                                        {(charts?.program_comparison || [
+                                            { code: 'BSIT', rate: 82 },
+                                            { code: 'BSIS', rate: 74 },
+                                            { code: 'DIT', rate: 66 },
+                                        ]).map((prog) => (
+                                            <div key={prog.code} className="flex flex-col gap-1">
+                                                <div className="flex items-center justify-between text-xs font-bold">
+                                                    <span className="text-zinc-700 dark:text-zinc-300">{prog.code}</span>
+                                                    <span className="text-zinc-900 dark:text-zinc-100 font-black">
+                                                        {prog.rate}%
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={cn(
+                                                            'h-full rounded-full transition-all duration-500',
+                                                            prog.rate >= 80 ? 'bg-[#F59E0B]' : 'bg-amber-300'
+                                                        )}
+                                                        style={{ width: `${prog.rate}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
-                {/* CREATE REQUIREMENT MODAL */}
+                {/* ========================================================================= */}
+                {/* TAB 2: REQUIREMENTS OPERATIONAL WORKSPACE (Folders Grid / List) */}
+                {/* ========================================================================= */}
+                {mainTab === 'requirements' && (
+                    <div className="flex flex-col gap-6">
+                        {/* Search and Filter Row */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs">
+                            <div className="flex flex-wrap items-center gap-3 flex-1">
+                                {/* Grid / List toggle pills */}
+                                <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 text-xs font-bold">
+                                    <button
+                                        onClick={() => setFolderView('grid')}
+                                        className={cn(
+                                            'px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all',
+                                            folderView === 'grid'
+                                                ? 'bg-[#F59E0B] text-white shadow-xs'
+                                                : 'text-zinc-600 dark:text-zinc-400'
+                                        )}
+                                    >
+                                        <LayoutGrid className="w-3.5 h-3.5" />
+                                        Grid View
+                                    </button>
+                                    <button
+                                        onClick={() => setFolderView('list')}
+                                        className={cn(
+                                            'px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all',
+                                            folderView === 'list'
+                                                ? 'bg-[#F59E0B] text-white shadow-xs'
+                                                : 'text-zinc-600 dark:text-zinc-400'
+                                        )}
+                                    >
+                                        <List className="w-3.5 h-3.5" />
+                                        List View
+                                    </button>
+                                </div>
+
+                                {/* Search requirement folders input */}
+                                <div className="relative w-72">
+                                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search requirement folders..."
+                                        value={folderSearch}
+                                        onChange={(e) => setFolderSearch(e.target.value)}
+                                        className="w-full bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/80 rounded-xl pl-8 pr-3 py-1.5 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                    />
+                                </div>
+
+                                {/* Category filter */}
+                                <select
+                                    value={folderCategory}
+                                    onChange={(e) => setFolderCategory(e.target.value)}
+                                    className="bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200 focus:outline-none"
+                                >
+                                    <option value="all">All Categories</option>
+                                    <option value="Teaching and Learning Requirements">Teaching and Learning</option>
+                                    <option value="Workload and Assignments">Workload and Assignments</option>
+                                    <option value="Course Documents">Course Documents</option>
+                                    <option value="Grading and Assessment">Grading and Assessment</option>
+                                    <option value="Performance Evaluation">Performance Evaluation</option>
+                                    <option value="Research and Extension">Research and Extension</option>
+                                </select>
+
+                                {/* Status filter */}
+                                <select
+                                    value={folderStatus}
+                                    onChange={(e) => setFolderStatus(e.target.value)}
+                                    className="bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200 focus:outline-none"
+                                >
+                                    <option value="all">All Statuses</option>
+                                    <option value="Open">Open</option>
+                                    <option value="Draft">Draft</option>
+                                    <option value="Closed">Closed</option>
+                                    <option value="Archived">Archived</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* GRID VIEW: Requirement Folder Cards matching screenshot */}
+                        {folderView === 'grid' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                {filteredFolders.map((folder) => {
+                                    // Health badge styling
+                                    let healthBadge =
+                                        'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200/80';
+                                    if (folder.health_indicator === 'Needs Attention') {
+                                        healthBadge =
+                                            'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200/80';
+                                    } else if (folder.health_indicator === 'Critical') {
+                                        healthBadge =
+                                            'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200/80';
+                                    }
+
+                                    return (
+                                        <div
+                                            key={folder.id}
+                                            onClick={() => router.visit(`/compliance/requirements/${folder.id}`)}
+                                            className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs hover:shadow-md transition-all p-5 flex flex-col justify-between cursor-pointer group"
+                                        >
+                                            <div>
+                                                <div className="flex items-start justify-between gap-3 mb-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center shrink-0">
+                                                            <Folder className="w-5 h-5 fill-amber-500 text-amber-600" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-base font-black text-zinc-900 dark:text-zinc-100 group-hover:text-amber-600 transition-colors">
+                                                                {folder.title}
+                                                            </h3>
+                                                            <p className="text-[11px] font-semibold text-zinc-400">
+                                                                {folder.category}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <span
+                                                        className={cn(
+                                                            'px-2.5 py-1 rounded-full text-[10px] font-bold border',
+                                                            healthBadge
+                                                        )}
+                                                    >
+                                                        {folder.health_indicator}
+                                                    </span>
+                                                </div>
+
+                                                {/* Assigned, On Time, Late, Overdue counters */}
+                                                <div className="grid grid-cols-4 gap-2 text-center py-3 my-2 border-y border-zinc-100 dark:border-zinc-800">
+                                                    <div>
+                                                        <p className="text-base font-black text-zinc-900 dark:text-zinc-100">
+                                                            {folder.assigned_count}
+                                                        </p>
+                                                        <p className="text-[10px] font-bold text-zinc-400">Assigned</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400">
+                                                            {folder.on_time_count}
+                                                        </p>
+                                                        <p className="text-[10px] font-bold text-zinc-400">On Time</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-base font-black text-amber-600 dark:text-amber-400">
+                                                            {folder.late_count}
+                                                        </p>
+                                                        <p className="text-[10px] font-bold text-zinc-400">Late</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-base font-black text-rose-600 dark:text-rose-400">
+                                                            {folder.overdue_count}
+                                                        </p>
+                                                        <p className="text-[10px] font-bold text-zinc-400">Overdue</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Due Date & Compliance Rate Bar */}
+                                            <div className="pt-2">
+                                                <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                                                    <span className="text-zinc-400 text-[11px]">
+                                                        Due: {folder.due_date}
+                                                    </span>
+                                                    <span className="text-zinc-900 dark:text-zinc-100 font-black">
+                                                        {folder.compliance_rate}%
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={cn(
+                                                            'h-full rounded-full transition-all duration-500',
+                                                            folder.compliance_rate >= 75
+                                                                ? 'bg-emerald-500'
+                                                                : folder.compliance_rate >= 60
+                                                                ? 'bg-amber-400'
+                                                                : 'bg-rose-500'
+                                                        )}
+                                                        style={{ width: `${folder.compliance_rate}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* LIST VIEW: Table with comprehensive columns */}
+                        {folderView === 'list' && (
+                            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-xs border-collapse">
+                                        <thead>
+                                            <tr className="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200/70 dark:border-zinc-800 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
+                                                <th className="py-3 px-4">Requirement Folder</th>
+                                                <th className="py-3 px-4">Category</th>
+                                                <th className="py-3 px-3 text-center">Assigned</th>
+                                                <th className="py-3 px-3 text-center">On Time</th>
+                                                <th className="py-3 px-3 text-center">Late</th>
+                                                <th className="py-3 px-3 text-center">Pending</th>
+                                                <th className="py-3 px-3 text-center">Overdue</th>
+                                                <th className="py-3 px-4">Due Date</th>
+                                                <th className="py-3 px-3 text-center">Compliance Rate</th>
+                                                <th className="py-3 px-3 text-center">Status</th>
+                                                <th className="py-3 px-4 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-zinc-200/70 dark:divide-zinc-800">
+                                            {filteredFolders.map((folder) => (
+                                                <tr
+                                                    key={folder.id}
+                                                    className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors"
+                                                >
+                                                    <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-zinc-100">
+                                                        <Link
+                                                            href={`/compliance/requirements/${folder.id}`}
+                                                            className="flex items-center gap-2.5 hover:text-amber-600 transition-colors"
+                                                        >
+                                                            <Folder className="w-4 h-4 text-amber-500 fill-amber-400" />
+                                                            <span>{folder.title}</span>
+                                                        </Link>
+                                                    </td>
+                                                    <td className="py-3.5 px-4 text-zinc-500 text-[11px] font-medium">
+                                                        {folder.category}
+                                                    </td>
+                                                    <td className="py-3.5 px-3 text-center font-black">
+                                                        {folder.assigned_count}
+                                                    </td>
+                                                    <td className="py-3.5 px-3 text-center font-black text-emerald-600">
+                                                        {folder.on_time_count}
+                                                    </td>
+                                                    <td className="py-3.5 px-3 text-center font-black text-amber-600">
+                                                        {folder.late_count}
+                                                    </td>
+                                                    <td className="py-3.5 px-3 text-center font-black text-zinc-500">
+                                                        {folder.pending_count}
+                                                    </td>
+                                                    <td className="py-3.5 px-3 text-center font-black text-rose-600">
+                                                        {folder.overdue_count}
+                                                    </td>
+                                                    <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-400 font-semibold text-[11px]">
+                                                        {folder.due_date}
+                                                    </td>
+                                                    <td className="py-3.5 px-3 text-center">
+                                                        <span className="font-black text-xs text-zinc-900 dark:text-zinc-100">
+                                                            {folder.compliance_rate}%
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3.5 px-3 text-center">
+                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                            {folder.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3.5 px-4 text-right">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                router.visit(`/compliance/requirements/${folder.id}`)
+                                                            }
+                                                            className="h-7 text-xs font-bold text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                                        >
+                                                            Open
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Create Requirement Folder Modal */}
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                    <DialogContent className="sm:max-w-[480px]">
+                    <DialogContent className="max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl p-6">
                         <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <Plus className="w-5 h-5 text-amber-500" />
-                                Create New Requirement
+                            <DialogTitle className="text-xl font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                                <FolderPlus className="w-5 h-5 text-amber-500" />
+                                Create Requirement Folder
                             </DialogTitle>
-                            <DialogDescription className="text-xs text-muted-foreground">
-                                Add an academic output requirement. A submission record will automatically be generated for assigned faculty members.
+                            <DialogDescription className="text-xs text-zinc-500">
+                                Configure compliance requirements, timeline, policies, and assign eligible faculty submitters.
                             </DialogDescription>
                         </DialogHeader>
 
                         <form onSubmit={handleCreateSubmit} className="flex flex-col gap-4 mt-2">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-semibold text-foreground">
-                                    Title <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    value={createForm.data.title}
-                                    onChange={(e) => createForm.setData('title', e.target.value)}
-                                    placeholder="e.g. Submission of TOS and TQ"
-                                    required
-                                />
-                                {createForm.errors.title && (
-                                    <p className="text-xs text-red-500">{createForm.errors.title}</p>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">
-                                        Document Type <span className="text-red-500">*</span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Folder Name *
                                     </Label>
                                     <Input
-                                        value={createForm.data.document_type}
-                                        onChange={(e) => createForm.setData('document_type', e.target.value)}
-                                        placeholder="e.g. Teaching Load Documents"
+                                        placeholder="e.g. TOS/TQ, Syllabi, IPCR"
+                                        value={data.title}
+                                        onChange={(e) => setData('title', e.target.value)}
                                         required
+                                        className="rounded-xl text-xs"
                                     />
-                                    {createForm.errors.document_type && (
-                                        <p className="text-xs text-red-500">{createForm.errors.document_type}</p>
-                                    )}
                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">
-                                        Assigned Program
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Document / Short Code *
+                                    </Label>
+                                    <Input
+                                        placeholder="e.g. TOS, SYLLABUS, IPCR"
+                                        value={data.document_type}
+                                        onChange={(e) => setData('document_type', e.target.value)}
+                                        required
+                                        className="rounded-xl text-xs"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                    Category *
+                                </Label>
+                                <select
+                                    value={data.category}
+                                    onChange={(e) => setData('category', e.target.value)}
+                                    className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                                >
+                                    <option value="Teaching and Learning Requirements">Teaching and Learning Requirements</option>
+                                    <option value="Workload and Assignments">Workload and Assignments</option>
+                                    <option value="Course Documents">Course Documents</option>
+                                    <option value="Grading and Assessment">Grading and Assessment</option>
+                                    <option value="Performance Evaluation">Performance Evaluation</option>
+                                    <option value="Research and Extension">Research and Extension</option>
+                                </select>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                    Description
+                                </Label>
+                                <textarea
+                                    rows={2}
+                                    placeholder="Provide detailed submission instructions and guidelines..."
+                                    value={data.description}
+                                    onChange={(e) => setData('description', e.target.value)}
+                                    className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Applicable Program(s)
                                     </Label>
                                     <select
-                                        value={createForm.data.program_id}
-                                        onChange={(e) => createForm.setData('program_id', e.target.value)}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        value={data.program_id}
+                                        onChange={(e) => setData('program_id', e.target.value)}
+                                        className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
                                     >
-                                        <option value="">All Programs</option>
-                                        {programs.map((prog) => (
-                                            <option key={prog.id} value={String(prog.id)}>
-                                                {prog.code} — {prog.name}
+                                        <option value="all">All College Programs</option>
+                                        {programs.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.code} - {p.name}
                                             </option>
                                         ))}
                                     </select>
-                                    {createForm.errors.program_id && (
-                                        <p className="text-xs text-red-500">{createForm.errors.program_id}</p>
-                                    )}
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Academic Period
+                                    </Label>
+                                    <Input
+                                        value={data.academic_year}
+                                        onChange={(e) => setData('academic_year', e.target.value)}
+                                        className="rounded-xl text-xs"
+                                    />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">
-                                        Academic Year <span className="text-red-500">*</span>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Open Date
                                     </Label>
                                     <Input
-                                        value={createForm.data.academic_year}
-                                        onChange={(e) => createForm.setData('academic_year', e.target.value)}
-                                        placeholder="e.g. 2026-2027"
-                                        required
+                                        type="datetime-local"
+                                        value={data.open_date}
+                                        onChange={(e) => setData('open_date', e.target.value)}
+                                        className="rounded-xl text-xs"
                                     />
-                                    {createForm.errors.academic_year && (
-                                        <p className="text-xs text-red-500">{createForm.errors.academic_year}</p>
-                                    )}
                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">
-                                        Semester <span className="text-red-500">*</span>
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Due Date *
                                     </Label>
                                     <Input
-                                        value={createForm.data.semester}
-                                        onChange={(e) => createForm.setData('semester', e.target.value)}
-                                        placeholder="e.g. 1st Semester"
+                                        type="datetime-local"
+                                        value={data.due_date}
+                                        onChange={(e) => setData('due_date', e.target.value)}
                                         required
+                                        className="rounded-xl text-xs"
                                     />
-                                    {createForm.errors.semester && (
-                                        <p className="text-xs text-red-500">{createForm.errors.semester}</p>
-                                    )}
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Grace Period (Days)
+                                    </Label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        value={data.grace_period_days}
+                                        onChange={(e) => setData('grace_period_days', parseInt(e.target.value, 10))}
+                                        className="rounded-xl text-xs"
+                                    />
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-semibold text-foreground">
-                                    Deadline <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    type="datetime-local"
-                                    value={createForm.data.due_date}
-                                    onChange={(e) => createForm.setData('due_date', e.target.value)}
-                                    required
-                                />
-                                {createForm.errors.due_date && (
-                                    <p className="text-xs text-red-500">{createForm.errors.due_date}</p>
-                                )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Required File Types
+                                    </Label>
+                                    <Input
+                                        placeholder="pdf,docx,xlsx"
+                                        value={data.required_file_types}
+                                        onChange={(e) => setData('required_file_types', e.target.value)}
+                                        className="rounded-xl text-xs"
+                                    />
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Naming Convention Template
+                                    </Label>
+                                    <Input
+                                        placeholder="e.g. TOS_[Course]_[LastName]"
+                                        value={data.naming_convention}
+                                        onChange={(e) => setData('naming_convention', e.target.value)}
+                                        className="rounded-xl text-xs"
+                                    />
+                                </div>
                             </div>
 
                             <DialogFooter className="mt-4 gap-2">
@@ -943,267 +1480,21 @@ export default function RequirementsIndex({
                                     type="button"
                                     variant="outline"
                                     onClick={() => setIsCreateOpen(false)}
+                                    className="rounded-xl text-xs font-bold"
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
-                                    disabled={createForm.processing}
-                                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
+                                    disabled={processing}
+                                    className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold rounded-xl text-xs px-5"
                                 >
-                                    {createForm.processing ? 'Saving...' : 'Create Requirement'}
+                                    {processing ? 'Creating...' : 'Create Folder & Notify'}
                                 </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
                 </Dialog>
-
-                {/* EDIT REQUIREMENT MODAL */}
-                <Dialog open={!!editingRequirement} onOpenChange={(open) => !open && setEditingRequirement(null)}>
-                    <DialogContent className="sm:max-w-[480px]">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <Edit className="w-5 h-5 text-amber-500" />
-                                Edit Requirement
-                            </DialogTitle>
-                        </DialogHeader>
-
-                        <form onSubmit={handleEditSubmit} className="flex flex-col gap-4 mt-2">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-semibold text-foreground">
-                                    Title <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    value={editForm.data.title}
-                                    onChange={(e) => editForm.setData('title', e.target.value)}
-                                    required
-                                />
-                                {editForm.errors.title && (
-                                    <p className="text-xs text-red-500">{editForm.errors.title}</p>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">
-                                        Document Type <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        value={editForm.data.document_type}
-                                        onChange={(e) => editForm.setData('document_type', e.target.value)}
-                                        required
-                                    />
-                                    {editForm.errors.document_type && (
-                                        <p className="text-xs text-red-500">{editForm.errors.document_type}</p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">
-                                        Assigned Program
-                                    </Label>
-                                    <select
-                                        value={editForm.data.program_id}
-                                        onChange={(e) => editForm.setData('program_id', e.target.value)}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    >
-                                        <option value="">All Programs</option>
-                                        {programs.map((prog) => (
-                                            <option key={prog.id} value={String(prog.id)}>
-                                                {prog.code} — {prog.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {editForm.errors.program_id && (
-                                        <p className="text-xs text-red-500">{editForm.errors.program_id}</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">
-                                        Academic Year <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        value={editForm.data.academic_year}
-                                        onChange={(e) => editForm.setData('academic_year', e.target.value)}
-                                        required
-                                    />
-                                    {editForm.errors.academic_year && (
-                                        <p className="text-xs text-red-500">{editForm.errors.academic_year}</p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">
-                                        Semester <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        value={editForm.data.semester}
-                                        onChange={(e) => editForm.setData('semester', e.target.value)}
-                                        required
-                                    />
-                                    {editForm.errors.semester && (
-                                        <p className="text-xs text-red-500">{editForm.errors.semester}</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-semibold text-foreground">
-                                    Deadline <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    type="datetime-local"
-                                    value={editForm.data.due_date}
-                                    onChange={(e) => editForm.setData('due_date', e.target.value)}
-                                    required
-                                />
-                                {editForm.errors.due_date && (
-                                    <p className="text-xs text-red-500">{editForm.errors.due_date}</p>
-                                )}
-                            </div>
-
-                            <DialogFooter className="mt-4 gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setEditingRequirement(null)}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={editForm.processing}
-                                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
-                                >
-                                    {editForm.processing ? 'Saving...' : 'Update Requirement'}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-
-                {/* VIEW DETAILS MODAL */}
-                <Dialog open={!!viewingRequirement} onOpenChange={(open) => !open && setViewingRequirement(null)}>
-                    <DialogContent className="sm:max-w-[480px]">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <Eye className="w-5 h-5 text-amber-500" />
-                                Requirement Details
-                            </DialogTitle>
-                        </DialogHeader>
-
-                        {viewingRequirement && (
-                            <div className="flex flex-col gap-4 mt-2">
-                                <div className="p-4 rounded-xl bg-muted/40 border border-border space-y-3">
-                                    <div>
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                            Title
-                                        </span>
-                                        <h3 className="text-base font-bold text-foreground">
-                                            {viewingRequirement.title}
-                                        </h3>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2 text-xs">
-                                        <div>
-                                            <span className="text-muted-foreground text-[11px]">Document Type:</span>
-                                            <div className="font-bold text-foreground uppercase">
-                                                {viewingRequirement.document_type}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground text-[11px]">Assigned Program:</span>
-                                            <div className="font-bold text-foreground">
-                                                {viewingRequirement.program?.code || 'All Programs'}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground text-[11px]">Academic Year:</span>
-                                            <div className="font-bold text-foreground">
-                                                {viewingRequirement.academic_year || '—'}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground text-[11px]">Semester:</span>
-                                            <div className="font-bold text-foreground">
-                                                {viewingRequirement.semester || '—'}
-                                            </div>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <span className="text-muted-foreground text-[11px]">Deadline:</span>
-                                            <div className="font-bold text-foreground">
-                                                {viewingRequirement.due_date
-                                                    ? new Date(viewingRequirement.due_date).toLocaleString()
-                                                    : 'No deadline'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-4 rounded-xl border border-border bg-card">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                        Submission Statistics
-                                    </span>
-                                    <div className="mt-2 flex items-center justify-between text-xs">
-                                        <span className="text-muted-foreground">Total Assigned Faculty:</span>
-                                        <span className="font-bold text-foreground">
-                                            {viewingRequirement.submissions?.length || 0}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-xs mt-1">
-                                        <span className="text-muted-foreground">Completed Submissions:</span>
-                                        <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                                            {viewingRequirement.submissions?.filter((s) => s.submitted_at !== null).length || 0}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-xs mt-1">
-                                        <span className="text-muted-foreground">Pending Submissions:</span>
-                                        <span className="font-bold text-amber-600 dark:text-amber-400">
-                                            {viewingRequirement.submissions?.filter((s) => s.submitted_at === null).length || 0}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <DialogFooter className="mt-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setViewingRequirement(null)}
-                                    >
-                                        Close
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        onClick={() => {
-                                            const req = viewingRequirement;
-                                            setViewingRequirement(null);
-                                            openEditDialog(req);
-                                        }}
-                                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold gap-1.5"
-                                    >
-                                        <Edit className="w-3.5 h-3.5" />
-                                        Edit Requirement
-                                    </Button>
-                                </DialogFooter>
-                            </div>
-                        )}
-                    </DialogContent>
-                </Dialog>
-
-                {/* Delete Requirement Confirmation Modal */}
-                <DeleteConfirmDialog
-                    open={!!deletingReq}
-                    onOpenChange={(open) => !open && setDeletingReq(null)}
-                    title="Delete Compliance Requirement"
-                    description="Are you sure you want to permanently delete this requirement? All associated faculty submissions and progress entries will be permanently removed."
-                    itemName={deletingReq ? deletingReq.title : undefined}
-                    confirmLabel="Delete Requirement"
-                    isDeleting={isDeleting}
-                    onConfirm={confirmDeleteReq}
-                />
             </div>
         </AppLayout>
     );

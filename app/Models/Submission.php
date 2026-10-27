@@ -10,13 +10,25 @@ class Submission extends Model
         'requirement_id',
         'faculty_id',
         'status',
+        'submission_state',
         'file_path',
+        'files_count',
         'submitted_at',
+        'days_late',
+        'days_overdue',
+        'days_early',
+        'reviewer_status',
+        'remarks',
+        'excuse_reason',
         'reviewer_comments',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
+        'days_late' => 'integer',
+        'days_overdue' => 'integer',
+        'days_early' => 'integer',
+        'files_count' => 'integer',
     ];
 
     public function requirement()

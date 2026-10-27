@@ -147,6 +147,10 @@ Route::middleware(['auth'])->group(function () {
 
     // Compliance Section
     Route::prefix('compliance')->name('compliance.')->group(function () {
+        Route::post('requirements/{requirement}/extend-deadline', [RequirementController::class, 'extendDeadline'])->name('requirements.extend-deadline');
+        Route::post('requirements/{requirement}/remind', [RequirementController::class, 'sendReminder'])->name('requirements.remind');
+        Route::post('requirements/{requirement}/close', [RequirementController::class, 'closeRequirement'])->name('requirements.close');
+        Route::post('requirements/{requirement}/bulk-action', [RequirementController::class, 'bulkAction'])->name('requirements.bulk-action');
         Route::resource('requirements', RequirementController::class);
         Route::post('submissions/bulk-record', [SubmissionController::class, 'bulkRecord'])->name('submissions.bulk-record');
         Route::resource('submissions', SubmissionController::class);
