@@ -224,4 +224,14 @@ class Faculty extends Model
     {
         return $this->hasMany(FacultyApprovedLeave::class);
     }
+
+    public function locatorSlips()
+    {
+        return $this->hasMany(LocatorSlip::class);
+    }
+
+    public function travelOrders()
+    {
+        return $this->hasMany(TravelOrder::class);
+    }
 }

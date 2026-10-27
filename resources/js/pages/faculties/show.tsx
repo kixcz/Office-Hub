@@ -32,10 +32,13 @@ import {
     UserCheck,
     Users,
     X,
-    AlertCircle,
-    AlertTriangle,
-    Eye,
     Briefcase,
+    Compass,
+    Plane,
+    Navigation,
+    FileCheck2,
+    Filter,
+    Search,
 } from 'lucide-react';
 import React, { useState, useRef, useMemo } from 'react';
 import {
@@ -144,6 +147,43 @@ interface ActivityItem {
     status: string;
 }
 
+interface TravelOrder {
+    id: number;
+    faculty_id?: number | null;
+    faculty_name: string;
+    tracking_number: string;
+    destination: string;
+    purpose: string;
+    start_date: string;
+    end_date: string;
+    status: string;
+    travel_type?: string | null;
+    with_per_diem?: boolean | null;
+    estimated_budget?: number | null;
+    approver_name?: string | null;
+    approved_at?: string | null;
+    remarks?: string | null;
+}
+
+interface LocatorSlip {
+    id: number;
+    faculty_id?: number | null;
+    faculty_name: string;
+    slip_number: string;
+    destination: string;
+    purpose: string;
+    date: string;
+    time_out?: string | null;
+    time_in?: string | null;
+    actual_time_out?: string | null;
+    actual_time_in?: string | null;
+    slip_type?: string | null;
+    status: string;
+    approver_name?: string | null;
+    guard_on_duty?: string | null;
+    remarks?: string | null;
+}
+
 interface UserPermissions {
     is_super_admin: boolean;
     is_dean: boolean;
@@ -202,10 +242,12 @@ interface Props {
             period_label: string;
         } | null;
     };
+    travel_orders?: TravelOrder[];
+    locator_slips?: LocatorSlip[];
     user_permissions: UserPermissions;
 }
 
-type TabType = 'overview' | 'workload' | 'requirements' | 'monitoring' | 'attendance' | 'performance' | 'activity';
+type TabType = 'overview' | 'workload' | 'requirements' | 'monitoring' | 'attendance' | 'travel-orders' | 'locator-slips' | 'performance' | 'activity';
 
 export default function FacultyProfileShow({
     faculty,
@@ -217,6 +259,8 @@ export default function FacultyProfileShow({
     monitoring = [],
     activity_log = [],
     attendance,
+    travel_orders = [],
+    locator_slips = [],
     user_permissions,
 }: Props) {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -581,6 +625,8 @@ export default function FacultyProfileShow({
                         { id: 'overview', label: 'Overview', icon: User },
                         { id: 'workload', label: 'Workload & Schedule', icon: BookOpen },
                         { id: 'requirements', label: 'Requirements', icon: FileCheck },
+                        { id: 'travel-orders', label: 'Travel Orders', icon: Plane },
+                        { id: 'locator-slips', label: 'Locator Slips', icon: Compass },
                         { id: 'monitoring', label: 'Monitoring', icon: Building2 },
                         { id: 'attendance', label: 'Attendance History', icon: Clock },
                         { id: 'performance', label: 'Performance', icon: TrendingUp },
@@ -603,6 +649,16 @@ export default function FacultyProfileShow({
                                 {tab.id === 'requirements' && kpis.overdue_requirements > 0 && (
                                     <span className="h-4 w-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
                                         {kpis.overdue_requirements}
+                                    </span>
+                                )}
+                                {tab.id === 'travel-orders' && travel_orders.length > 0 && (
+                                    <span className="px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[10px] font-bold">
+                                        {travel_orders.length}
+                                    </span>
+                                )}
+                                {tab.id === 'locator-slips' && locator_slips.length > 0 && (
+                                    <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
+                                        {locator_slips.length}
                                     </span>
                                 )}
                             </button>
@@ -789,6 +845,107 @@ export default function FacultyProfileShow({
                                             No active room schedules logged for today.
                                         </p>
                                     )}
+                                </div>
+
+                                {/* Travel Orders & Locator Slips Glance */}
+                                <div className="rounded-2xl border border-border bg-card p-5 shadow-xs">
+                                    <div className="flex items-center justify-between pb-3 border-b border-border">
+                                        <div className="flex items-center gap-2">
+                                            <Plane className="w-4 h-4 text-sky-500" />
+                                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                                Recent Travel & Passes
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-xs font-semibold">
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveTab('travel-orders')}
+                                                className="text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+                                            >
+                                                Travel Orders ({travel_orders.length})
+                                            </button>
+                                            <span className="text-muted-foreground">·</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveTab('locator-slips')}
+                                                className="text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                                            >
+                                                Locator Slips ({locator_slips.length})
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 space-y-2.5">
+                                        {/* Latest Travel Order */}
+                                        {travel_orders.length > 0 ? (
+                                            <div
+                                                onClick={() => setActiveTab('travel-orders')}
+                                                className="p-2.5 rounded-xl bg-sky-500/5 hover:bg-sky-500/10 border border-sky-500/20 transition-colors cursor-pointer"
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-[10px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                                                        Travel Order · {travel_orders[0].tracking_number}
+                                                    </span>
+                                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                                                        travel_orders[0].status?.toLowerCase() === 'approved'
+                                                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
+                                                            : travel_orders[0].status?.toLowerCase() === 'traveling now'
+                                                            ? 'bg-sky-500/10 text-sky-600 border border-sky-500/30 animate-pulse'
+                                                            : 'bg-muted text-muted-foreground'
+                                                    }`}>
+                                                        {travel_orders[0].status}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs font-bold text-foreground mt-1 truncate">
+                                                    {travel_orders[0].destination}
+                                                </p>
+                                                <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                                                    {travel_orders[0].purpose}
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground mt-1 font-mono">
+                                                    {travel_orders[0].start_date} {travel_orders[0].end_date && travel_orders[0].end_date !== travel_orders[0].start_date ? `to ${travel_orders[0].end_date}` : ''}
+                                                </p>
+                                            </div>
+                                        ) : null}
+
+                                        {/* Latest Locator Slip */}
+                                        {locator_slips.length > 0 ? (
+                                            <div
+                                                onClick={() => setActiveTab('locator-slips')}
+                                                className="p-2.5 rounded-xl bg-indigo-500/5 hover:bg-indigo-500/10 border border-indigo-500/20 transition-colors cursor-pointer"
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                                                        Locator Slip · {locator_slips[0].slip_number}
+                                                    </span>
+                                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                                                        locator_slips[0].status?.toLowerCase() === 'approved'
+                                                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
+                                                            : locator_slips[0].status?.toLowerCase() === 'out of office'
+                                                            ? 'bg-indigo-500/10 text-indigo-600 border border-indigo-500/30'
+                                                            : 'bg-muted text-muted-foreground'
+                                                    }`}>
+                                                        {locator_slips[0].status}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs font-bold text-foreground mt-1 truncate">
+                                                    {locator_slips[0].destination}
+                                                </p>
+                                                <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                                                    {locator_slips[0].purpose}
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground mt-1 font-mono">
+                                                    {locator_slips[0].date} ({locator_slips[0].time_out || 'N/A'} - {locator_slips[0].time_in || 'N/A'})
+                                                </p>
+                                            </div>
+                                        ) : null}
+
+                                        {travel_orders.length === 0 && locator_slips.length === 0 && (
+                                            <p className="text-xs text-muted-foreground text-center py-4">
+                                                No travel orders or locator slips recorded.
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1207,6 +1364,296 @@ export default function FacultyProfileShow({
                                                 <tr>
                                                     <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
                                                         No teaching attendance records synced yet for this faculty member. Link the faculty name under Faculty Attendance to synchronize session history.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: TRAVEL ORDERS */}
+                    {activeTab === 'travel-orders' && (
+                        <div className="space-y-6">
+                            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
+                                    <div className="flex items-center gap-2">
+                                        <Plane className="w-4 h-4 text-sky-500" />
+                                        <div>
+                                            <h2 className="text-sm font-bold text-foreground">Official Travel Orders (TO)</h2>
+                                            <p className="text-[11px] text-muted-foreground">Authorized institutional and official travel orders filed for {faculty.title_name}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Link
+                                            href="/travel-orders"
+                                            className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline inline-flex items-center gap-1"
+                                        >
+                                            <span>Travel Orders Registry</span>
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                        </Link>
+                                    </div>
+                                </div>
+
+                                {/* Summary Counters */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Travel Orders</p>
+                                        <p className="text-2xl font-black text-foreground mt-1 tabular-nums">
+                                            {travel_orders.length}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">Filed orders</p>
+                                    </div>
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Approved</p>
+                                        <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
+                                            {travel_orders.filter(t => t.status?.toLowerCase() === 'approved' || t.status?.toLowerCase() === 'completed').length}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">Confirmed travels</p>
+                                    </div>
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Active / In Progress</p>
+                                        <p className="text-2xl font-black text-sky-600 dark:text-sky-400 mt-1 tabular-nums">
+                                            {travel_orders.filter(t => t.status?.toLowerCase() === 'traveling now' || t.status?.toLowerCase() === 'in progress').length}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">Currently on travel</p>
+                                    </div>
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pending / Review</p>
+                                        <p className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1 tabular-nums">
+                                            {travel_orders.filter(t => t.status?.toLowerCase() === 'pending' || t.status?.toLowerCase() === 'endorsed').length}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">Awaiting approval</p>
+                                    </div>
+                                </div>
+
+                                {/* Table */}
+                                <div className="mt-6 border border-border rounded-xl overflow-hidden">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-muted-foreground uppercase bg-muted/40 border-b border-border">
+                                            <tr>
+                                                <th className="px-6 py-3 font-semibold">Tracking #</th>
+                                                <th className="px-6 py-3 font-semibold">Destination</th>
+                                                <th className="px-6 py-3 font-semibold">Purpose</th>
+                                                <th className="px-6 py-3 font-semibold">Travel Dates</th>
+                                                <th className="px-6 py-3 font-semibold text-center">Status</th>
+                                                <th className="px-6 py-3 font-semibold text-right">Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {travel_orders.length > 0 ? (
+                                                travel_orders.map((to) => {
+                                                    const s = to.status?.toLowerCase() || '';
+                                                    const badgeClass =
+                                                        s === 'approved' || s === 'completed'
+                                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                                            : s === 'traveling now'
+                                                            ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30 animate-pulse'
+                                                            : s === 'rejected' || s === 'disapproved'
+                                                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                                            : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
+
+                                                    return (
+                                                        <tr key={to.id} className="hover:bg-muted/40 transition-colors">
+                                                            <td className="px-6 py-3.5 font-mono text-xs font-bold text-foreground">
+                                                                {to.tracking_number}
+                                                                {to.travel_type && (
+                                                                    <div className="text-[10px] text-muted-foreground font-sans font-normal uppercase">
+                                                                        {to.travel_type}
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-3.5 text-xs font-semibold text-foreground">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <MapPin className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                                                                    <span className="truncate max-w-[220px]">{to.destination}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-3.5 text-xs text-muted-foreground max-w-[280px]">
+                                                                <p className="line-clamp-2">{to.purpose}</p>
+                                                            </td>
+                                                            <td className="px-6 py-3.5 text-xs text-foreground whitespace-nowrap">
+                                                                <div className="font-semibold">{to.start_date}</div>
+                                                                {to.end_date && to.end_date !== to.start_date && (
+                                                                    <div className="text-[11px] text-muted-foreground">to {to.end_date}</div>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-3.5 text-center whitespace-nowrap">
+                                                                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
+                                                                    {to.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-3.5 text-right text-xs text-muted-foreground whitespace-nowrap">
+                                                                {to.approver_name && (
+                                                                    <div className="text-[11px]">
+                                                                        <span className="font-medium text-foreground">{to.approver_name}</span>
+                                                                    </div>
+                                                                )}
+                                                                {to.with_per_diem && (
+                                                                    <span className="inline-block mt-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                                        w/ Per Diem
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={6} className="px-6 py-10 text-center text-muted-foreground">
+                                                        <Plane className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
+                                                        No official travel orders filed for this faculty member.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: LOCATOR SLIPS */}
+                    {activeTab === 'locator-slips' && (
+                        <div className="space-y-6">
+                            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
+                                    <div className="flex items-center gap-2">
+                                        <Compass className="w-4 h-4 text-indigo-500" />
+                                        <div>
+                                            <h2 className="text-sm font-bold text-foreground">Official & Personal Locator Slips (Pass Slips)</h2>
+                                            <p className="text-[11px] text-muted-foreground">Movement, campus departure authorizations, and guard log records for {faculty.title_name}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Link
+                                            href="/locator-slips"
+                                            className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1"
+                                        >
+                                            <span>Locator Slips Registry</span>
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                        </Link>
+                                    </div>
+                                </div>
+
+                                {/* Summary Counters */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Passes</p>
+                                        <p className="text-2xl font-black text-foreground mt-1 tabular-nums">
+                                            {locator_slips.length}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">Recorded slips</p>
+                                    </div>
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Approved Passes</p>
+                                        <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
+                                            {locator_slips.filter(l => l.status?.toLowerCase() === 'approved' || l.status?.toLowerCase() === 'completed').length}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">Dean / Head approved</p>
+                                    </div>
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Out of Office</p>
+                                        <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1 tabular-nums">
+                                            {locator_slips.filter(l => l.status?.toLowerCase() === 'out of office').length}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">Currently away</p>
+                                    </div>
+                                    <div className="p-4 rounded-xl border border-border bg-muted/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pending Approval</p>
+                                        <p className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1 tabular-nums">
+                                            {locator_slips.filter(l => l.status?.toLowerCase() === 'pending').length}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">Awaiting sign-off</p>
+                                    </div>
+                                </div>
+
+                                {/* Table */}
+                                <div className="mt-6 border border-border rounded-xl overflow-hidden">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-muted-foreground uppercase bg-muted/40 border-b border-border">
+                                            <tr>
+                                                <th className="px-6 py-3 font-semibold">Slip #</th>
+                                                <th className="px-6 py-3 font-semibold">Type</th>
+                                                <th className="px-6 py-3 font-semibold">Destination</th>
+                                                <th className="px-6 py-3 font-semibold">Purpose</th>
+                                                <th className="px-6 py-3 font-semibold">Date & Scheduled Time</th>
+                                                <th className="px-6 py-3 font-semibold text-center">Status</th>
+                                                <th className="px-6 py-3 font-semibold text-right">Guard Log</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {locator_slips.length > 0 ? (
+                                                locator_slips.map((ls) => {
+                                                    const s = ls.status?.toLowerCase() || '';
+                                                    const badgeClass =
+                                                        s === 'approved' || s === 'completed'
+                                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                                            : s === 'out of office'
+                                                            ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 animate-pulse'
+                                                            : s === 'rejected' || s === 'disapproved'
+                                                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                                            : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
+
+                                                    return (
+                                                        <tr key={ls.id} className="hover:bg-muted/40 transition-colors">
+                                                            <td className="px-6 py-3.5 font-mono text-xs font-bold text-foreground">
+                                                                {ls.slip_number}
+                                                            </td>
+                                                            <td className="px-6 py-3.5 text-xs">
+                                                                <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase ${
+                                                                    ls.slip_type?.toLowerCase() === 'official'
+                                                                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                                                                        : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                                                                }`}>
+                                                                    {ls.slip_type || 'Official'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-3.5 text-xs font-semibold text-foreground">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                                                    <span className="truncate max-w-[200px]">{ls.destination}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-3.5 text-xs text-muted-foreground max-w-[240px]">
+                                                                <p className="line-clamp-2">{ls.purpose}</p>
+                                                            </td>
+                                                            <td className="px-6 py-3.5 text-xs text-foreground whitespace-nowrap">
+                                                                <div className="font-semibold">{ls.date}</div>
+                                                                <div className="text-[11px] text-muted-foreground font-mono">
+                                                                    {ls.time_out || '—'} to {ls.time_in || '—'}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-3.5 text-center whitespace-nowrap">
+                                                                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
+                                                                    {ls.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-3.5 text-right text-xs text-muted-foreground whitespace-nowrap">
+                                                                {ls.actual_time_out || ls.actual_time_in ? (
+                                                                    <div className="font-mono text-[11px]">
+                                                                        {ls.actual_time_out && <span>Out: {ls.actual_time_out}</span>}
+                                                                        {ls.actual_time_in && <span className="ml-1.5">In: {ls.actual_time_in}</span>}
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-muted-foreground/60 italic text-[11px]">No gate scan</span>
+                                                                )}
+                                                                {ls.guard_on_duty && (
+                                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                                        Guard: {ls.guard_on_duty}
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={7} className="px-6 py-10 text-center text-muted-foreground">
+                                                        <Compass className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
+                                                        No locator slips filed for this faculty member.
                                                     </td>
                                                 </tr>
                                             )}

@@ -6,11 +6,13 @@ use App\Models\FacilityMonitoring;
 use App\Models\Faculty;
 use App\Models\FacultyAttendance;
 use App\Models\FacultyAttendanceSummary;
+use App\Models\LocatorSlip;
 use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\Role;
 use App\Models\RoomSchedule;
 use App\Models\Submission;
+use App\Models\TravelOrder;
 use App\Services\ComplianceService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -407,6 +409,18 @@ class FacultyController extends Controller
             }
         })->first();
 
+        $travelOrders = TravelOrder::where(function ($q) use ($faculty) {
+            $q->where('faculty_id', $faculty->id)
+                ->orWhere('faculty_name', 'like', "%{$faculty->first_name}%{$faculty->last_name}%")
+                ->orWhere('faculty_name', 'like', "%{$faculty->last_name}%");
+        })->orderByDesc('start_date')->get();
+
+        $locatorSlips = LocatorSlip::where(function ($q) use ($faculty) {
+            $q->where('faculty_id', $faculty->id)
+                ->orWhere('faculty_name', 'like', "%{$faculty->first_name}%{$faculty->last_name}%")
+                ->orWhere('faculty_name', 'like', "%{$faculty->last_name}%");
+        })->orderByDesc('date')->get();
+
         return Inertia::render('faculties/show', [
             'faculty' => $faculty,
             'current_period' => [
@@ -442,6 +456,8 @@ class FacultyController extends Controller
                 'records' => $attendanceRecords,
                 'summary' => $attendanceSummary,
             ],
+            'travel_orders' => $travelOrders,
+            'locator_slips' => $locatorSlips,
             'user_permissions' => [
                 'is_super_admin' => $isSuperAdmin,
                 'is_dean' => $isDean,

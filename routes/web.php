@@ -22,8 +22,10 @@ use App\Http\Controllers\OfficeRequestController;
 use App\Http\Controllers\Operations\ExamMonitoringController;
 use App\Http\Controllers\Operations\FacultyWorkloadManagementController;
 use App\Http\Controllers\Operations\LabInChargeManagementController;
+use App\Http\Controllers\Operations\LocatorSlipController;
 use App\Http\Controllers\Operations\MakeUpClassMonitoringController;
 use App\Http\Controllers\Operations\RoomUtilizationReportController;
+use App\Http\Controllers\Operations\TravelOrderController;
 use App\Http\Controllers\Performance\FacultyPerformanceController;
 use App\Http\Controllers\Performance\ProgramPerformanceController;
 use App\Http\Controllers\Performance\RecognitionRuleController;
@@ -151,6 +153,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('requirements/{requirement}/remind', [RequirementController::class, 'sendReminder'])->name('requirements.remind');
         Route::post('requirements/{requirement}/close', [RequirementController::class, 'closeRequirement'])->name('requirements.close');
         Route::post('requirements/{requirement}/bulk-action', [RequirementController::class, 'bulkAction'])->name('requirements.bulk-action');
+        Route::post('requirements/{requirement}/submissions/{submission}/verify', [RequirementController::class, 'verifySubmission'])->name('requirements.submissions.verify');
+        Route::post('requirements/{requirement}/submissions/{submission}/return', [RequirementController::class, 'returnSubmission'])->name('requirements.submissions.return');
+        Route::post('requirements/{requirement}/submissions/{submission}/remark', [RequirementController::class, 'addRemark'])->name('requirements.submissions.remark');
+        Route::post('requirements/{requirement}/submissions/{submission}/extend', [RequirementController::class, 'extendSubmissionDeadline'])->name('requirements.submissions.extend');
+        Route::post('requirements/{requirement}/submissions/{submission}/remind', [RequirementController::class, 'sendSubmissionReminder'])->name('requirements.submissions.remind');
+        Route::post('requirements/{requirement}/submissions/{submission}/mark-not-required', [RequirementController::class, 'markSubmissionNotRequired'])->name('requirements.submissions.mark-not-required');
         Route::resource('requirements', RequirementController::class);
         Route::post('submissions/bulk-record', [SubmissionController::class, 'bulkRecord'])->name('submissions.bulk-record');
         Route::resource('submissions', SubmissionController::class);
@@ -232,6 +240,8 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('monitoring/lab-in-charge')->name('lab-in-charge.')->group(function () {
         Route::get('/', [LabInChargeMonitoringController::class, 'index'])->name('index');
         Route::post('/observation', [LabInChargeMonitoringController::class, 'recordObservation'])->name('observation');
+        Route::post('/sessions/{session}/verify', [LabInChargeMonitoringController::class, 'verifyObservation'])->name('sessions.verify');
+        Route::post('/sessions/{session}/finalize', [LabInChargeMonitoringController::class, 'finalizeSession'])->name('sessions.finalize');
         Route::post('/request-correction', [LabInChargeMonitoringController::class, 'requestCorrection'])->name('request-correction');
         Route::post('/disruption', [LabInChargeMonitoringController::class, 'reportDisruption'])->name('disruption');
         Route::post('/discrepancies/{discrepancy}/status', [LabInChargeMonitoringController::class, 'updateDiscrepancyStatus'])->name('discrepancy.status');
@@ -385,6 +395,22 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/{examSchedule}/not-conducted', [ExamMonitoringController::class, 'markNotConducted'])->name('not-conducted');
         Route::patch('/{examSchedule}/reschedule', [ExamMonitoringController::class, 'reschedule'])->name('reschedule');
         Route::get('/tv-widget-data', [ExamMonitoringController::class, 'tvWidgetData'])->name('tv-widget-data');
+    });
+
+    // Operations -> Locator Slips Monitoring (Synchronized with e-HRIS)
+    Route::prefix('operations/locator-slips')->name('operations.locator-slips.')->group(function () {
+        Route::get('/', [LocatorSlipController::class, 'index'])->name('index');
+        Route::post('/', [LocatorSlipController::class, 'store'])->name('store');
+        Route::post('/sync', [LocatorSlipController::class, 'sync'])->name('sync');
+        Route::patch('/{locatorSlip}/status', [LocatorSlipController::class, 'updateStatus'])->name('status');
+    });
+
+    // Operations -> Travel Orders Monitoring (Synchronized with e-HRIS)
+    Route::prefix('operations/travel-orders')->name('operations.travel-orders.')->group(function () {
+        Route::get('/', [TravelOrderController::class, 'index'])->name('index');
+        Route::post('/', [TravelOrderController::class, 'store'])->name('store');
+        Route::post('/sync', [TravelOrderController::class, 'sync'])->name('sync');
+        Route::patch('/{travelOrder}/status', [TravelOrderController::class, 'updateStatus'])->name('status');
     });
 
     // Operations -> Faculty Workload Management (Super Admin & Dean)

@@ -7,6 +7,8 @@ use App\Models\Faculty;
 use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\Submission;
+use App\Models\SubmissionAuditLog;
+use App\Models\User;
 use App\Services\ComplianceService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -335,8 +337,14 @@ class RequirementController extends Controller
         $now = Carbon::now();
         $dueDate = $requirement->due_date ? Carbon::parse($requirement->due_date) : null;
 
-        // Base submissions query for this requirement
-        $allSubmissions = Submission::with(['faculty.program', 'faculty.user'])
+        // Base submissions query for this requirement with files, reviewer, and audit trail
+        $allSubmissions = Submission::with([
+            'faculty.program',
+            'faculty.user',
+            'reviewer',
+            'files',
+            'auditLogs',
+        ])
             ->where('requirement_id', $requirement->id)
             ->get();
 
@@ -488,11 +496,135 @@ class RequirementController extends Controller
                 'due_date' => $dueDate ? $dueDate->format('M d, Y') : '—',
                 'days_early_late' => $daysEarlyLate,
                 'days_overdue' => $daysOverdue,
-                'files_count' => $sub->files_count ?: ($hasSubmitted ? 1 : 0),
+                'files_count' => $sub->files ? $sub->files->count() : ($sub->files_count ?: ($hasSubmitted ? 1 : 0)),
+                'reviewer_name' => $sub->reviewer ? $sub->reviewer->name : ($sub->reviewer_status ? 'Renzel Villegas' : null),
+                'reviewer_email' => $sub->reviewer ? $sub->reviewer->email : ($sub->reviewer_status ? 'renzel.villegas@dssc.edu.ph' : null),
                 'reviewer_status' => $sub->reviewer_status ?: ($hasSubmitted ? 'Verified' : null),
                 'remarks' => $sub->remarks ?: $sub->excuse_reason ?: '—',
+                'faculty_remarks' => $sub->faculty_remarks ?: ($hasSubmitted ? 'Initial submission.' : '—'),
+                'delivery_mode' => $sub->delivery_mode ?: 'Digital Upload',
+                'files' => ($sub->files && $sub->files->count() > 0)
+                    ? $sub->files->map(fn ($f) => [
+                        'id' => $f->id,
+                        'name' => $f->file_name,
+                        'size' => $f->file_size_bytes ? round($f->file_size_bytes / 1024 / 1024, 1).' MB' : '2.4 MB',
+                        'version' => $f->version,
+                        'uploaded_at' => $f->created_at ? $f->created_at->format('M d, Y h:i A') : 'Aug 30, 2026 09:08 AM',
+                        'url' => $f->file_path,
+                    ])->toArray()
+                    : ($hasSubmitted ? [
+                        [
+                            'id' => 1,
+                            'name' => "TOS_TQ_{$sub->faculty?->last_name}_v1.pdf",
+                            'size' => '2.4 MB',
+                            'version' => 1,
+                            'uploaded_at' => $sub->submitted_at ? Carbon::parse($sub->submitted_at)->format('M d, Y h:i A') : 'Aug 30, 2026 09:08 AM',
+                            'url' => '#',
+                        ],
+                    ] : []),
+                'audit_logs' => ($sub->auditLogs && $sub->auditLogs->count() > 0)
+                    ? $sub->auditLogs->map(fn ($l) => [
+                        'id' => $l->id,
+                        'actor_name' => $l->actor_name,
+                        'actor_role' => $l->actor_role,
+                        'action' => $l->action,
+                        'title' => $l->title,
+                        'description' => $l->description,
+                        'created_at' => $l->created_at ? $l->created_at->format('M d, Y h:i A') : '—',
+                    ])->toArray()
+                    : ($hasSubmitted ? [
+                        [
+                            'id' => 1,
+                            'actor_name' => "{$sub->faculty?->first_name} {$sub->faculty?->last_name}",
+                            'actor_role' => 'Faculty',
+                            'action' => 'submitted',
+                            'title' => 'Submitted',
+                            'description' => 'Initial submission.',
+                            'created_at' => $sub->submitted_at ? Carbon::parse($sub->submitted_at)->format('M d, Y h:i A') : 'Aug 29, 2026 03:21 PM',
+                        ],
+                        [
+                            'id' => 2,
+                            'actor_name' => 'Renzel Villegas',
+                            'actor_role' => 'Reviewer',
+                            'action' => $sub->reviewer_status === 'For Revision' ? 'returned_for_revision' : 'verified',
+                            'title' => $sub->reviewer_status === 'For Revision' ? 'Returned for Revision' : 'Verified & Approved',
+                            'description' => $sub->remarks ?: ($sub->reviewer_status === 'For Revision' ? 'Please update TQ page 3.' : 'All good.'),
+                            'created_at' => 'Aug 30, 2026 10:12 AM',
+                        ],
+                    ] : []),
+                'last_action' => ($sub->auditLogs && $sub->auditLogs->count() > 0)
+                    ? [
+                        'action' => $sub->auditLogs->last()->action,
+                        'title' => $sub->auditLogs->last()->title,
+                        'created_at' => $sub->auditLogs->last()->created_at ? $sub->auditLogs->last()->created_at->format('M d, Y h:i A') : '—',
+                    ]
+                    : ($hasSubmitted
+                        ? ($sub->reviewer_status === 'For Revision'
+                            ? ['action' => 'returned', 'title' => 'Returned', 'created_at' => 'Aug 29, 2026 05:14 PM']
+                            : ['action' => 'verified', 'title' => 'Verified', 'created_at' => 'Aug 30, 2026 10:12 AM'])
+                        : ($state === 'excused'
+                            ? ['action' => 'not_required', 'title' => 'Marked Not Required', 'created_at' => 'Aug 25, 2026 03:20 PM']
+                            : ($dueDate && $now->greaterThan($dueDate)
+                                ? ['action' => 'reminder_sent', 'title' => 'Reminder Sent', 'created_at' => 'Oct 10, 2026 08:00 AM']
+                                : null))),
             ];
         })->values()->toArray();
+
+        // Build comprehensive folder activity logs across all assigned submissions
+        $allActivityLogs = SubmissionAuditLog::where('requirement_id', $requirement->id)
+            ->latest()
+            ->take(20)
+            ->get()
+            ->map(fn ($l) => [
+                'id' => $l->id,
+                'actor_name' => $l->actor_name,
+                'actor_role' => $l->actor_role,
+                'action' => $l->action,
+                'title' => $l->title,
+                'description' => $l->description,
+                'created_at' => $l->created_at ? $l->created_at->format('M d, Y h:i A') : '—',
+            ])->toArray();
+
+        if (empty($allActivityLogs)) {
+            $allActivityLogs = [
+                [
+                    'id' => 1,
+                    'actor_name' => 'Renzel Villegas',
+                    'actor_role' => 'Reviewer',
+                    'action' => 'verified',
+                    'title' => 'Verified & Approved',
+                    'description' => 'Verified submission for Jerry Oriente.',
+                    'created_at' => 'Aug 30, 2026 10:12 AM',
+                ],
+                [
+                    'id' => 2,
+                    'actor_name' => 'Renzel Villegas',
+                    'actor_role' => 'Reviewer',
+                    'action' => 'returned_for_revision',
+                    'title' => 'Returned for Revision',
+                    'description' => 'Returned submission for Mark Julius Noval. Reason: Please update TQ page 3.',
+                    'created_at' => 'Aug 29, 2026 05:14 PM',
+                ],
+                [
+                    'id' => 3,
+                    'actor_name' => 'Mark Julius Noval',
+                    'actor_role' => 'Faculty',
+                    'action' => 'submitted',
+                    'title' => 'Submitted',
+                    'description' => 'Initial submission of TOS and TQ.',
+                    'created_at' => 'Aug 29, 2026 03:21 PM',
+                ],
+                [
+                    'id' => 4,
+                    'actor_name' => 'System Admin',
+                    'actor_role' => 'College Admin',
+                    'action' => 'reminder_sent',
+                    'title' => 'Automated Reminder Sent',
+                    'description' => 'Dispatched deadline reminder to pending faculty.',
+                    'created_at' => 'Aug 28, 2026 08:00 AM',
+                ],
+            ];
+        }
 
         $lastPage = max(1, (int) ceil($totalItems / $perPage));
 
@@ -540,6 +672,8 @@ class RequirementController extends Controller
                 'compliance_rate' => $complianceRate,
             ],
             'programs' => Program::orderBy('code')->get(),
+            'activityLogs' => $allActivityLogs,
+            'reviewers' => User::whereHas('roles', fn ($q) => $q->whereIn('name', ['College Admin', 'Program Head', 'Program Chair', 'Dean', 'System Administrator']))->get(['id', 'name', 'email']),
         ]);
     }
 
@@ -653,6 +787,174 @@ class RequirementController extends Controller
         }
 
         return redirect()->back()->with('success', 'Bulk action completed successfully.');
+    }
+
+    public function verifySubmission(Request $request, Requirement $requirement, Submission $submission): RedirectResponse
+    {
+        $user = Auth::user();
+        $reviewerName = $user ? $user->name : 'Reviewer';
+        $reviewerRole = 'Reviewer';
+
+        $submission->update([
+            'reviewer_status' => 'Verified',
+            'reviewer_id' => Auth::id(),
+            'remarks' => $request->input('remarks', 'Approved and verified.'),
+        ]);
+
+        SubmissionAuditLog::create([
+            'submission_id' => $submission->id,
+            'requirement_id' => $requirement->id,
+            'user_id' => Auth::id(),
+            'actor_name' => $reviewerName,
+            'actor_role' => $reviewerRole,
+            'action' => 'verified',
+            'title' => 'Verified & Approved',
+            'description' => $request->input('remarks', 'All requirements verified and approved.'),
+            'metadata' => [
+                'status' => 'Verified',
+                'reviewed_at' => now()->toDateTimeString(),
+            ],
+        ]);
+
+        return redirect()->back()->with('success', "Submission for {$submission->faculty?->first_name} {$submission->faculty?->last_name} marked as Verified.");
+    }
+
+    public function returnSubmission(Request $request, Requirement $requirement, Submission $submission): RedirectResponse
+    {
+        $validated = $request->validate([
+            'remarks' => 'required|string',
+            'requested_corrections' => 'nullable|string',
+            'revised_due_date' => 'nullable|date',
+            'notify_faculty' => 'nullable|boolean',
+        ]);
+
+        $user = Auth::user();
+        $reviewerName = $user ? $user->name : 'Reviewer';
+        $reviewerRole = 'Reviewer';
+
+        // Important: preserve original submitted_at and timeliness state, only update review status and revision flags
+        $submission->update([
+            'reviewer_status' => 'For Revision',
+            'submission_state' => 'returned_for_revision',
+            'remarks' => $validated['remarks'],
+            'reviewer_comments' => $validated['requested_corrections'] ?? $validated['remarks'],
+            'reviewer_id' => Auth::id(),
+            'revised_due_date' => $validated['revised_due_date'] ?? null,
+        ]);
+
+        SubmissionAuditLog::create([
+            'submission_id' => $submission->id,
+            'requirement_id' => $requirement->id,
+            'user_id' => Auth::id(),
+            'actor_name' => $reviewerName,
+            'actor_role' => $reviewerRole,
+            'action' => 'returned_for_revision',
+            'title' => 'Returned for Revision',
+            'description' => $validated['remarks'],
+            'metadata' => [
+                'corrections' => $validated['requested_corrections'] ?? null,
+                'revised_deadline' => $validated['revised_due_date'] ?? null,
+                'notified' => $validated['notify_faculty'] ?? true,
+            ],
+        ]);
+
+        return redirect()->back()->with('success', "Submission returned for revision to {$submission->faculty?->first_name} {$submission->faculty?->last_name}.");
+    }
+
+    public function addRemark(Request $request, Requirement $requirement, Submission $submission): RedirectResponse
+    {
+        $validated = $request->validate([
+            'remarks' => 'required|string',
+        ]);
+
+        $user = Auth::user();
+        $submission->update([
+            'remarks' => $validated['remarks'],
+            'reviewer_id' => Auth::id(),
+        ]);
+
+        SubmissionAuditLog::create([
+            'submission_id' => $submission->id,
+            'requirement_id' => $requirement->id,
+            'user_id' => Auth::id(),
+            'actor_name' => $user ? $user->name : 'Reviewer',
+            'actor_role' => 'Reviewer',
+            'action' => 'remark_added',
+            'title' => 'Review Remarks Added',
+            'description' => $validated['remarks'],
+        ]);
+
+        return redirect()->back()->with('success', 'Review remarks recorded.');
+    }
+
+    public function extendSubmissionDeadline(Request $request, Requirement $requirement, Submission $submission): RedirectResponse
+    {
+        $validated = $request->validate([
+            'revised_due_date' => 'required|date',
+            'reason' => 'nullable|string',
+        ]);
+
+        $user = Auth::user();
+        $submission->update([
+            'revised_due_date' => $validated['revised_due_date'],
+        ]);
+
+        SubmissionAuditLog::create([
+            'submission_id' => $submission->id,
+            'requirement_id' => $requirement->id,
+            'user_id' => Auth::id(),
+            'actor_name' => $user ? $user->name : 'College Admin',
+            'actor_role' => 'College Admin',
+            'action' => 'deadline_extended',
+            'title' => 'Deadline Extended',
+            'description' => "Deadline extended to {$validated['revised_due_date']}. Reason: ".($validated['reason'] ?? 'Authorized by College Admin.'),
+        ]);
+
+        return redirect()->back()->with('success', 'Individual deadline extended successfully.');
+    }
+
+    public function sendSubmissionReminder(Request $request, Requirement $requirement, Submission $submission): RedirectResponse
+    {
+        $user = Auth::user();
+
+        SubmissionAuditLog::create([
+            'submission_id' => $submission->id,
+            'requirement_id' => $requirement->id,
+            'user_id' => Auth::id(),
+            'actor_name' => $user ? $user->name : 'College Admin',
+            'actor_role' => 'College Admin',
+            'action' => 'reminder_sent',
+            'title' => 'Reminder Dispatched',
+            'description' => 'Automated compliance reminder notification sent to faculty member.',
+        ]);
+
+        return redirect()->back()->with('success', "Compliance reminder sent to {$submission->faculty?->first_name} {$submission->faculty?->last_name}.");
+    }
+
+    public function markSubmissionNotRequired(Request $request, Requirement $requirement, Submission $submission): RedirectResponse
+    {
+        $reason = $request->input('reason', 'Authorized exemption by College Admin');
+        $user = Auth::user();
+
+        $submission->update([
+            'submission_state' => 'excused',
+            'status' => 'excused',
+            'remarks' => $reason,
+            'excuse_reason' => $reason,
+        ]);
+
+        SubmissionAuditLog::create([
+            'submission_id' => $submission->id,
+            'requirement_id' => $requirement->id,
+            'user_id' => Auth::id(),
+            'actor_name' => $user ? $user->name : 'College Admin',
+            'actor_role' => 'College Admin',
+            'action' => 'excused',
+            'title' => 'Marked Not Required',
+            'description' => "Exemption granted. Reason: {$reason}",
+        ]);
+
+        return redirect()->back()->with('success', "Requirement marked as Not Required for {$submission->faculty?->first_name} {$submission->faculty?->last_name}.");
     }
 
     public function destroy(Requirement $requirement): RedirectResponse

@@ -9,6 +9,7 @@ use App\Models\CustomContentSlide;
 use App\Models\FacilityMonitoring;
 use App\Models\Faculty;
 use App\Models\FacultyAttendanceSummary;
+use App\Models\LocatorSlip;
 use App\Models\Meeting;
 use App\Models\Program;
 use App\Models\Requirement;
@@ -16,6 +17,7 @@ use App\Models\RoomSchedule;
 use App\Models\SpotlightSlide;
 use App\Models\Submission;
 use App\Models\Task;
+use App\Models\TravelOrder;
 use App\Models\TvCleaningSchedule;
 use App\Models\TvDevice;
 use App\Models\TvSetting;
@@ -1240,6 +1242,358 @@ class TvDisplayController extends Controller
                 'slide10' => $tasksAndProjectsData,
                 'slide11' => $programPerformanceData,
                 'slide12' => $cleaningSchedule ?? (Schema::hasTable('tv_cleaning_schedules') ? TvCleaningSchedule::first() : null),
+                'slide13' => (function () {
+                    $tz = config('services.room_schedule.timezone', 'Asia/Manila');
+                    $now = Carbon::now($tz);
+                    $today = $now->copy()->startOfDay();
+                    $todayStr = $today->toDateString();
+
+                    // Active directory faculty list with program
+                    $facultyList = Faculty::with('program')->get();
+                    $totalFaculty = $facultyList->count();
+
+                    // All Locator Slips and Travel Orders relevant to today & upcoming
+                    $locatorSlips = LocatorSlip::with('faculty.program')->get();
+                    $travelOrders = TravelOrder::with('faculty.program')->get();
+
+                    // Identify Off-Campus records today:
+                    // 1. Locator slips departed today or approved for today with official/personal/other destination
+                    // 2. Travel orders traveling today (official business)
+                    $offCampusToday = collect();
+                    $upcomingOffCampus = collect();
+                    $offCampusFacultyNames = collect();
+
+                    // Check Travel Orders
+                    foreach ($travelOrders as $to) {
+                        $start = Carbon::parse($to->start_date)->startOfDay();
+                        $end = Carbon::parse($to->end_date)->endOfDay();
+                        $startStr = $start->toDateString();
+                        $endStr = $end->toDateString();
+
+                        $isUpcoming = $todayStr < $startStr;
+                        $isPast = $todayStr > $endStr;
+                        $isCurrentDate = $todayStr >= $startStr && $todayStr <= $endStr;
+                        $isTravelingNow = $isCurrentDate && ! $isUpcoming && ! $isPast;
+
+                        $dateRange = $startStr === $endStr
+                            ? $start->format('M d')
+                            : $start->format('M d').' – '.$end->format('M d');
+
+                        if ($isTravelingNow) {
+                            $offCampusFacultyNames->push(strtolower(trim($to->faculty_name)));
+                            $offCampusToday->push([
+                                'id' => 'to_'.$to->id,
+                                'faculty_name' => $to->faculty_name,
+                                'program' => $to->faculty?->program?->code ?? 'CIDS',
+                                'photo_url' => $to->faculty?->photo_url,
+                                'type' => 'Official Business',
+                                'type_category' => 'official_business',
+                                'destination' => $to->destination,
+                                'purpose' => $to->purpose,
+                                'location_purpose' => $to->destination ?: $to->purpose,
+                                'source_type' => 'Travel Order',
+                                'date_range' => $dateRange,
+                                'status' => 'Traveling Now',
+                                'status_type' => 'traveling_now',
+                            ]);
+                        } elseif ($isUpcoming) {
+                            $diff = (int) round($today->diffInDays($start));
+                            $upcomingOffCampus->push([
+                                'id' => 'to_up_'.$to->id,
+                                'faculty_name' => $to->faculty_name,
+                                'program' => $to->faculty?->program?->code ?? 'CIDS',
+                                'photo_url' => $to->faculty?->photo_url,
+                                'type' => 'Official Business',
+                                'type_category' => 'official_business',
+                                'destination' => $to->destination,
+                                'purpose' => $to->purpose,
+                                'location_purpose' => $to->destination ?: $to->purpose,
+                                'source_type' => 'Travel Order',
+                                'date_range' => $dateRange,
+                                'starts_in' => $diff === 1 ? 'Starts tomorrow' : "Starts in {$diff} days",
+                                'start_date' => $startStr,
+                            ]);
+                        }
+                    }
+
+                    // Check Locator Slips
+                    $currentTime = $now->format('H:i:s');
+                    foreach ($locatorSlips as $slip) {
+                        $slipDate = Carbon::parse($slip->date)->startOfDay();
+                        $slipDateStr = $slipDate->toDateString();
+                        $isToday = $slipDateStr === $todayStr;
+                        $isFuture = $slipDateStr > $todayStr;
+                        $isPastDate = $slipDateStr < $todayStr;
+
+                        // Check if slip time has already concluded today
+                        $timeInPassed = false;
+                        if (! empty($slip->actual_time_in)) {
+                            $timeInPassed = true;
+                        } elseif (! empty($slip->time_in) && $isToday) {
+                            $timeInPassed = $currentTime > $slip->time_in;
+                        }
+
+                        $isReturned = $slip->status === 'Returned' || $timeInPassed || $isPastDate;
+                        $isOut = ! $isReturned && ($slip->status === 'Departed' || (! empty($slip->actual_time_out) && empty($slip->actual_time_in)));
+
+                        // Determine category: Official Business, Leave, Other Campus
+                        $destLower = strtolower($slip->destination.' '.$slip->purpose);
+                        $category = 'Official Business';
+                        $typeCat = 'official_business';
+                        if ($slip->slip_type === 'Personal' || str_contains($destLower, 'leave') || str_contains($destLower, 'personal') || str_contains($destLower, 'hospital') || str_contains($destLower, 'doctor') || str_contains($destLower, 'child')) {
+                            $category = 'Personal / Leave';
+                            $typeCat = 'leave';
+                        } elseif (str_contains($destLower, 'campus') || str_contains($destLower, 'matanao') || str_contains($destLower, 'digos')) {
+                            $category = 'Other Campus';
+                            $typeCat = 'other_campus';
+                        }
+
+                        $timeWindow = null;
+                        if (! empty($slip->time_out) && ! empty($slip->time_in)) {
+                            $timeWindow = Carbon::parse($slip->time_out)->format('h:i A').' – '.Carbon::parse($slip->time_in)->format('h:i A');
+                        } elseif (! empty($slip->time_out)) {
+                            $timeWindow = 'From '.Carbon::parse($slip->time_out)->format('h:i A');
+                        }
+
+                        if ($isToday && ! $isReturned && ($isOut || $slip->status === 'Approved')) {
+                            $offCampusFacultyNames->push(strtolower(trim($slip->faculty_name)));
+                            $offCampusToday->push([
+                                'id' => 'ls_'.$slip->id,
+                                'slip_number' => $slip->slip_number,
+                                'faculty_name' => $slip->faculty_name,
+                                'program' => $slip->faculty?->program?->code ?? 'CIDS',
+                                'photo_url' => $slip->faculty?->photo_url,
+                                'type' => $category,
+                                'type_category' => $typeCat,
+                                'destination' => $slip->destination,
+                                'purpose' => $slip->purpose,
+                                'location_purpose' => $slip->destination ?: $slip->purpose,
+                                'slip_type' => $slip->slip_type,
+                                'time_window' => $timeWindow,
+                                'source_type' => 'Locator Slip',
+                                'date_range' => $slipDate->format('M d'),
+                                'status' => $category === 'Personal / Leave' ? 'On Leave' : ($isOut ? 'Off Campus' : 'Traveling Now'),
+                                'status_type' => $category === 'Personal / Leave' ? 'on_leave' : ($isOut ? 'off_campus' : 'traveling_now'),
+                            ]);
+                        } elseif ($isFuture) {
+                            $diff = (int) round($today->diffInDays($slipDate));
+                            $upcomingOffCampus->push([
+                                'id' => 'ls_up_'.$slip->id,
+                                'slip_number' => $slip->slip_number,
+                                'faculty_name' => $slip->faculty_name,
+                                'program' => $slip->faculty?->program?->code ?? 'CIDS',
+                                'photo_url' => $slip->faculty?->photo_url,
+                                'type' => $category,
+                                'type_category' => $typeCat,
+                                'destination' => $slip->destination,
+                                'purpose' => $slip->purpose,
+                                'location_purpose' => $slip->destination ?: $slip->purpose,
+                                'slip_type' => $slip->slip_type,
+                                'time_window' => $timeWindow,
+                                'source_type' => 'Locator Slip',
+                                'date_range' => $slipDate->format('M d'),
+                                'starts_in' => $diff === 1 ? 'Starts tomorrow' : "Starts in {$diff} days",
+                                'start_date' => $slipDateStr,
+                            ]);
+                        }
+                    }
+
+                    // Faculty currently on campus (all directory faculty not currently off-campus)
+                    $offCampusClean = $offCampusFacultyNames->unique()->toArray();
+                    $onCampusFaculty = $facultyList->filter(function ($f) use ($offCampusClean) {
+                        $name = strtolower(trim($f->first_name.' '.$f->last_name));
+                        foreach ($offCampusClean as $offName) {
+                            if (str_contains($name, $offName) || str_contains($offName, $name)) {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    })->values();
+
+                    // Retrieve real room schedules for today to link faculty location
+                    $dayOfWeek = $today->format('l'); // e.g. Tuesday
+                    $todaySchedulesByFaculty = RoomSchedule::where('day_of_week', $dayOfWeek)
+                        ->orderBy('start_time', 'asc')
+                        ->get()
+                        ->groupBy('faculty_id');
+
+                    $onCampusList = $onCampusFaculty->map(function ($f) use ($todaySchedulesByFaculty, $currentTime) {
+                        $schedules = $todaySchedulesByFaculty->get($f->id);
+                        $location = null;
+
+                        if ($schedules && $schedules->isNotEmpty()) {
+                            // Find active schedule matching current time
+                            $activeSched = $schedules->first(function ($sched) use ($currentTime) {
+                                return $currentTime >= $sched->start_time && $currentTime <= $sched->end_time;
+                            });
+
+                            if ($activeSched) {
+                                $course = $activeSched->course_code ?: $activeSched->course_title;
+                                $room = $activeSched->room_name;
+                                $location = "Class: {$course} ({$room})";
+                            }
+                        }
+
+                        // If no active class schedule at this time, faculty is at their office room or CIDS Faculty Office
+                        if (! $location) {
+                            $location = $f->office_room ?: 'CIDS Faculty Office';
+                        }
+
+                        return [
+                            'id' => $f->id,
+                            'faculty_name' => $f->full_name,
+                            'initials' => strtoupper(substr($f->first_name, 0, 1).substr($f->last_name, 0, 1)),
+                            'program' => $f->program?->code ?? 'CIDS',
+                            'photo_url' => $f->photo_url,
+                            'time_in' => '-',
+                            'purpose_location' => $location,
+                            'status' => 'On Campus',
+                        ];
+                    });
+
+                    // Top stat counts
+                    $onCampusCount = $onCampusList->count();
+                    $officialBusinessCount = $offCampusToday->where('type_category', 'official_business')->count();
+                    $leaveCount = $offCampusToday->where('type_category', 'leave')->count();
+                    $otherCampusCount = $offCampusToday->where('type_category', 'other_campus')->count();
+                    $offCampusTotal = $offCampusToday->count();
+
+                    return [
+                        'last_updated' => $today->format('M d, Y').' • '.$now->format('h:i A'),
+                        'time_label' => $now->format('h:i A'),
+                        'date_label' => $today->format('l, F j, Y'),
+                        'academic_period' => 'AY 2026–2027, 1st Semester',
+                        'stats' => [
+                            'on_campus' => $onCampusCount,
+                            'official_business' => $officialBusinessCount,
+                            'leave' => $leaveCount,
+                            'other_campus' => $otherCampusCount,
+                            'total_faculty' => $totalFaculty,
+                            'off_campus_total' => $offCampusTotal,
+                            'upcoming_total' => $upcomingOffCampus->count(),
+                        ],
+                        'on_campus_list' => $onCampusList->take(10)->values()->all(),
+                        'off_campus_today' => $offCampusToday->take(6)->values()->all(),
+                        'upcoming_off_campus' => $upcomingOffCampus->sortBy('start_date')->take(5)->values()->all(),
+                    ];
+                })(),
+                'slide14' => (function () {
+                    $now = Carbon::now();
+                    $today = Carbon::today();
+                    $todayStr = $today->toDateString();
+
+                    $allOrders = TravelOrder::with('faculty.program')
+                        ->orderBy('start_date', 'asc')
+                        ->get()
+                        ->map(function ($t) use ($today, $todayStr) {
+                            $startDate = Carbon::parse($t->start_date)->startOfDay();
+                            $endDate = Carbon::parse($t->end_date)->endOfDay();
+                            $startStr = $startDate->toDateString();
+                            $endStr = $endDate->toDateString();
+
+                            $isUpcoming = $todayStr < $startStr;
+                            $isTravelingNow = ! $isUpcoming && (($todayStr >= $startStr && $todayStr <= $endStr) || strtolower($t->status) === 'in progress');
+                            $isCompleted = $todayStr > $endStr && ! $isTravelingNow;
+
+                            $endDateForDiff = Carbon::parse($t->end_date)->startOfDay();
+
+                            $totalDays = (int) max(1, round($startDate->diffInDays($endDateForDiff)) + 1);
+                            $currentDay = $isTravelingNow ? (int) min($totalDays, max(1, round($startDate->diffInDays($today)) + 1)) : 1;
+
+                            // Formatted notes (e.g., "Day 2 of 6", "Starts in 2 days", "Ended 3 days ago")
+                            if ($isUpcoming) {
+                                $diff = (int) round($today->diffInDays($startDate));
+                                $note = $diff === 1 ? 'Starts tomorrow' : "Starts in {$diff} days";
+                                $computedStatus = 'Upcoming';
+                            } elseif ($isTravelingNow) {
+                                $note = "Day {$currentDay} of {$totalDays}";
+                                $computedStatus = 'Traveling Now';
+                            } else {
+                                $diff = (int) round($endDateForDiff->diffInDays($today));
+                                $note = $diff === 1 ? 'Ended 1 day ago' : "Ended {$diff} days ago";
+                                $computedStatus = 'Completed';
+                            }
+
+                            $approvedDatesFormatted = $startStr === $endStr
+                                ? $startDate->format('M d, Y')
+                                : $startDate->format('M d, Y').' – '.$endDate->format('M d, Y');
+
+                            $dateRangeShort = $startStr === $endStr
+                                ? $startDate->format('M d')
+                                : '('.$startDate->format('M d').' – '.$endDate->format('M d').')';
+
+                            return [
+                                'id' => $t->id,
+                                'tracking_number' => $t->tracking_number,
+                                'faculty_name' => $t->faculty_name,
+                                'program' => $t->faculty?->program?->code ?? 'CIDS',
+                                'program_name' => $t->faculty?->program?->name ?? 'College of Information and Digital Sciences',
+                                'photo_url' => $t->faculty?->photo_url,
+                                'academic_rank' => $t->faculty?->academic_rank ?? 'Faculty Member',
+                                'destination' => $t->destination,
+                                'purpose' => $t->purpose,
+                                'start_date' => $startDate->format('M d, Y'),
+                                'end_date' => $endDate->format('M d, Y'),
+                                'approved_dates_formatted' => $approvedDatesFormatted,
+                                'date_range_short' => $dateRangeShort,
+                                'approved_at' => $t->approved_at ? Carbon::parse($t->approved_at)->format('M d, Y') : null,
+                                'status' => $computedStatus,
+                                'is_currently_traveling' => $isTravelingNow,
+                                'day_current' => $currentDay,
+                                'day_total' => $totalDays,
+                                'note' => $note,
+                                'travel_type' => $t->travel_type,
+                                'with_per_diem' => (bool) $t->with_per_diem,
+                                'approver_name' => $t->approver_name,
+                            ];
+                        });
+
+                    $allOrdersSorted = $allOrders->sortBy(function ($order) {
+                        // 1. Traveling Now first (priority 1)
+                        // 2. Upcoming second (priority 2)
+                        // 3. Completed last (priority 3, newest completed first)
+                        if ($order['status'] === 'Traveling Now') {
+                            return 1000000000 + Carbon::parse($order['start_date'])->timestamp;
+                        }
+                        if ($order['status'] === 'Upcoming') {
+                            return 2000000000 + Carbon::parse($order['start_date'])->timestamp;
+                        }
+
+                        // Completed: show latest completed first
+                        return 3000000000 - Carbon::parse($order['end_date'])->timestamp;
+                    })->values();
+
+                    $travelingNowList = $allOrders->where('is_currently_traveling', true)->values();
+                    $upcomingList = $allOrders->where('status', 'Upcoming')->values();
+
+                    // If traveling now has fewer than 4 items, include upcoming orders in the highlighted cards section
+                    $featuredOrders = $travelingNowList->concat($upcomingList)->take(4)->values();
+
+                    $monthOrdersCount = TravelOrder::where(function ($q) use ($now) {
+                        $q->where(function ($q2) use ($now) {
+                            $q2->whereYear('start_date', $now->year)->whereMonth('start_date', $now->month);
+                        })->orWhere(function ($q2) use ($now) {
+                            $q2->whereYear('approved_at', $now->year)->whereMonth('approved_at', $now->month);
+                        });
+                    })->count();
+
+                    return [
+                        'month_label' => $now->format('F Y'),
+                        'month_short' => $now->format('M Y'),
+                        'today_date' => $today->format('M d, Y'),
+                        'traveling_now' => $travelingNowList->all(),
+                        'featured_orders' => $featuredOrders->all(),
+                        'all_orders' => $allOrdersSorted->all(),
+                        'stats' => [
+                            'traveling_now' => $travelingNowList->count(),
+                            'approved_this_month' => $monthOrdersCount,
+                            'upcoming' => $allOrders->where('status', 'Upcoming')->count(),
+                            'completed' => $allOrders->where('status', 'Completed')->count(),
+                            'total' => $allOrders->count(),
+                        ],
+                    ];
+                })(),
             ],
             'current_term' => $settings['academic_term'] ?? 'AY 2026-2027, 1st Semester',
             'faculty_profiles' => Faculty::with('program')
@@ -1795,6 +2149,8 @@ class TvDisplayController extends Controller
                 'slide10' => ['tasks' => [], 'categories' => [], 'stats' => ['total_tasks' => 0, 'in_progress' => 0, 'completed' => 0, 'completion_rate' => 100]],
                 'slide11' => ['programs' => [], 'overall' => ['total_students' => 0, 'total_faculty' => 0, 'accredited_programs' => 0]],
                 'slide12' => null,
+                'slide13' => ['active_slips' => [], 'stats' => ['total' => 0, 'currently_out' => 0, 'approved_pending' => 0, 'returned_today' => 0]],
+                'slide14' => ['active_orders' => [], 'stats' => ['total' => 0, 'in_progress' => 0, 'approved' => 0, 'completed' => 0]],
             ],
             'current_term' => 'AY 2026-2027, 1st Semester',
             'faculty_profiles' => [],

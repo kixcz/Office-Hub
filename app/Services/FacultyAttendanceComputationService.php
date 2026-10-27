@@ -169,6 +169,12 @@ class FacultyAttendanceComputationService
         $attendedMinutes = 0;
         $unexcusedAbsentMinutes = 0;
         $approvedLeaveMinutes = 0;
+        $travelOrderMinutes = 0;
+        $locatorSlipMinutes = 0;
+        $otherObMinutes = 0;
+        $suspensionMinutes = 0;
+        $holidayMinutes = 0;
+        $deliveredOriginalMinutes = 0;
 
         $presentSessionsCount = 0;
         $onTimeSessionsCount = 0;
@@ -181,68 +187,57 @@ class FacultyAttendanceComputationService
             $duration = $session->scheduled_duration_minutes ?: self::parseDurationMinutes($session->time_slot, $session->roomSchedule);
             $totalScheduledMinutes += $duration;
 
-            // Strict status check: prioritize status field if primary_status was inaccurately set to present
-            $rawStatus = strtolower(trim((string) $session->status));
-            $primaryStatus = in_array($rawStatus, ['absent', 'unexcused'])
-                ? 'unexcused_absence'
-                : ($session->primary_status ?: self::normalizePrimaryStatus($session->status));
-
             // Check if session falls outside the faculty member's effective employment/teaching assignment window
             if ($facultyId && ! empty($session->session_date)) {
                 $sessionCarbonDate = Carbon::parse($session->session_date);
                 $isEffective = self::isSessionWithinEffectiveWindow($sessionCarbonDate, $facultyId, $session->course_id ?? null, $session->section_id ?? null);
                 if (! $isEffective) {
-                    $primaryStatus = 'not_yet_employed';
+                    $totalScheduledMinutes -= $duration;
+
+                    continue;
                 }
             }
 
             $lateMinutes = (int) ($session->late_minutes ?? 0);
+            $delivered = (int) ($session->delivered_minutes ?? 0);
+            $deliveredOriginalMinutes += $delivered;
 
-            switch ($primaryStatus) {
-                case 'not_yet_employed':
-                    // Do not count toward scheduled or eligible obligations
-                    $duration = 0;
-                    break;
+            // Check new exception type and attendance status
+            $exceptionType = $session->exception_type;
+            $overlapMins = (int) ($session->exception_overlap_minutes ?? 0);
+            $attStatus = $session->attendance_status ?? '';
 
-                case 'present':
-                    $presentSessionsCount++;
-                    $attendedMinutes += $duration;
-                    if ($lateMinutes > 0) {
-                        $lateSessionsCount++;
-                        $totalLateMinutes += $lateMinutes;
-                    } else {
-                        $onTimeSessionsCount++;
-                    }
-                    break;
-
-                case 'unexcused_absence':
-                    $unexcusedSessionsCount++;
-                    $unexcusedAbsentMinutes += $duration;
-                    break;
-
-                case 'approved_leave':
-                    $approvedLeaveSessionsCount++;
-                    $approvedLeaveMinutes += $duration;
-                    $excludedMinutes += $duration;
-                    break;
-
-                case 'official_business':
-                case 'class_suspended':
-                case 'holiday':
-                case 'cancelled_institution':
-                    $excludedMinutes += $duration;
-                    break;
-
-                default:
-                    $presentSessionsCount++;
-                    $attendedMinutes += $duration;
-                    if ($lateMinutes > 0) {
-                        $lateSessionsCount++;
-                        $totalLateMinutes += $lateMinutes;
-                    } else {
-                        $onTimeSessionsCount++;
-                    }
-                    break;
+            if ($exceptionType === 'Travel Order' || $attStatus === 'Excused – Travel Order') {
+                $mins = $overlapMins > 0 ? min($duration, $overlapMins) : $duration;
+                $travelOrderMinutes += $mins;
+                $excludedMinutes += $mins;
+            } elseif ($exceptionType === 'Locator Slip' || $attStatus === 'Excused – Locator Slip') {
+                $mins = $overlapMins > 0 ? min($duration, $overlapMins) : $duration;
+                $locatorSlipMinutes += $mins;
+                $excludedMinutes += $mins;
+            } elseif ($exceptionType === 'Approved Leave' || $attStatus === 'Excused – Leave' || $session->primary_status === 'approved_leave') {
+                $approvedLeaveSessionsCount++;
+                $approvedLeaveMinutes += $duration;
+                $excludedMinutes += $duration;
+            } elseif (in_array($exceptionType, ['Institutional Suspension']) || $session->primary_status === 'class_suspended') {
+                $suspensionMinutes += $duration;
+                $excludedMinutes += $duration;
+            } elseif ($exceptionType === 'Holiday' || $session->primary_status === 'holiday') {
+                $holidayMinutes += $duration;
+                $excludedMinutes += $duration;
+            } elseif ($attStatus === 'Unexcused Absence' || strtolower((string) $session->status) === 'absent') {
+                $unexcusedSessionsCount++;
+                $unexcusedAbsentMinutes += $duration;
+            } else {
+                // Attended session
+                $presentSessionsCount++;
+                $attendedMinutes += ($delivered > 0 ? $delivered : $duration);
+                if ($lateMinutes > 0) {
+                    $lateSessionsCount++;
+                    $totalLateMinutes += $lateMinutes;
+                } else {
+                    $onTimeSessionsCount++;
+                }
             }
         }
 
@@ -257,12 +252,14 @@ class FacultyAttendanceComputationService
         $makeUpCompletedMinutes = 0;
         $makeUpRequests = $makeUpQuery->get();
         foreach ($makeUpRequests as $mu) {
-            if ($mu->conducted_at || strtolower($mu->status) === 'conducted' || strtolower($mu->status) === 'approved') {
-                $makeUpCompletedMinutes += (int) (($mu->required_contact_hours ?? 1.5) * 60);
+            if ($mu->lab_in_charge_verified_at || $mu->conducted_at || strtolower((string) $mu->status) === 'conducted') {
+                $makeUpCompletedMinutes += (int) ($mu->completed_recovery_minutes ?: (($mu->required_contact_hours ?? 1.5) * 60));
             }
         }
 
-        $makeUpRequiredMinutes = $unexcusedAbsentMinutes + $approvedLeaveMinutes;
+        // Make-up required is calculated from sessions that require make-up
+        $sessionsMakeupRequired = $sessions->sum('makeup_required_minutes');
+        $makeUpRequiredMinutes = $sessionsMakeupRequired > 0 ? $sessionsMakeupRequired : ($unexcusedAbsentMinutes + $approvedLeaveMinutes);
 
         // Zero-denominator safe rates:
         // Attendance Coverage: Attended Eligible Minutes / Eligible Scheduled Minutes * 100
@@ -281,9 +278,11 @@ class FacultyAttendanceComputationService
             ? min(100.0, round(($makeUpCompletedMinutes / $makeUpRequiredMinutes) * 100, 2))
             : null; // N/A if none required
 
-        // Instructional Completion Rate: (Attended Mins + Verified Make-Up Mins) / Total Required Scheduled Mins * 100
-        $instructionalCompletionRate = $totalScheduledMinutes > 0
-            ? min(100.0, round((($attendedMinutes + $makeUpCompletedMinutes) / $totalScheduledMinutes) * 100, 2))
+        // Instructional Completion: (Delivered Original Minutes + Verified Make-Up Minutes) / Required Instructional Minutes * 100
+        // Required Instructional Minutes = Scheduled Time excluding only institutional cancellations/suspensions/holidays, not personal exceptions
+        $requiredInstructionalMinutes = max(1, $totalScheduledMinutes - ($suspensionMinutes + $holidayMinutes));
+        $instructionalCompletionRate = $requiredInstructionalMinutes > 0
+            ? min(100.0, round((($deliveredOriginalMinutes + $makeUpCompletedMinutes) / $requiredInstructionalMinutes) * 100, 2))
             : null;
 
         // Check Minimum Teaching Load Threshold for Ranking Eligibility (>= 12 hrs/month or >= 3 hrs/week)
@@ -297,7 +296,13 @@ class FacultyAttendanceComputationService
             'eligible_minutes' => $eligibleScheduledMinutes,
             'attended_minutes' => $attendedMinutes,
             'approved_leave_minutes' => $approvedLeaveMinutes,
+            'travel_order_minutes' => $travelOrderMinutes,
+            'locator_slip_minutes' => $locatorSlipMinutes,
+            'other_ob_minutes' => $otherObMinutes,
+            'suspension_minutes' => $suspensionMinutes,
+            'holiday_minutes' => $holidayMinutes,
             'unexcused_absent_minutes' => $unexcusedAbsentMinutes,
+            'delivered_original_minutes' => $deliveredOriginalMinutes,
             'late_sessions' => $lateSessionsCount,
             'late_minutes' => $totalLateMinutes,
             'make_up_required_minutes' => $makeUpRequiredMinutes,
@@ -321,6 +326,8 @@ class FacultyAttendanceComputationService
             'eligible_scheduled_hours' => round($eligibleScheduledMinutes / 60, 2),
             'attended_hours' => round($attendedMinutes / 60, 2),
             'approved_leave_hours' => round($approvedLeaveMinutes / 60, 2),
+            'travel_order_hours' => round($travelOrderMinutes / 60, 2),
+            'locator_slip_hours' => round($locatorSlipMinutes / 60, 2),
             'unexcused_absent_hours' => round($unexcusedAbsentMinutes / 60, 2),
             'make_up_required_hours' => round($makeUpRequiredMinutes / 60, 2),
             'make_up_completed_hours' => round($makeUpCompletedMinutes / 60, 2),

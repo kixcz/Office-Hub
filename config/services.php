@@ -45,4 +45,10 @@ return [
         'key' => env('GEMINI_API_KEY'),
     ],
 
+    'ehris' => [
+        'base_url' => env('EHRIS_BASE_URL', 'http://e-hris.test/api/v1'),
+        'travel_order_token' => env('EHRIS_TRAVEL_ORDER_TOKEN', 'SbKZPf9ielpjqLyPc5wUq4YfENWrR6zIfnyomukWQ3D68pKfm7wARIRPfLa5'),
+        'locator_slip_token' => env('EHRIS_LOCATOR_SLIP_TOKEN', 'QsHyg9PjH2TNyY4YFZ6jxUnZ1UuHtu7YSm8S9dm37LYVTOG3c6Cj1Q1TRPl2'),
+    ],
+
 ];

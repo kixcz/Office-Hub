@@ -115,6 +115,11 @@ interface FacultyAttendanceSummary {
     eligible_minutes?: number;
     attended_minutes?: number;
     approved_leave_minutes?: number;
+    travel_order_minutes?: number;
+    locator_slip_minutes?: number;
+    other_ob_minutes?: number;
+    suspension_minutes?: number;
+    holiday_minutes?: number;
     unexcused_absent_minutes?: number;
     late_sessions_count?: number;
     make_up_required_minutes?: number;
@@ -336,12 +341,15 @@ export default function FacultyAttendanceIndex({
             // Compute atomic minute baselines
             const scheduledMin = s.scheduled_minutes || (s.total_scheduled_hours ? Math.round(s.total_scheduled_hours * 60) : scheduledSessions * 90);
             const leaveMin = s.approved_leave_minutes || (s.approved_leave_hours ? Math.round(s.approved_leave_hours * 60) : onLeave * 90);
+            const travelOrderMin = s.travel_order_minutes || 0;
+            const locatorSlipMin = s.locator_slip_minutes || 0;
+            const otherObMin = s.other_ob_minutes || 0;
             const absentMin = s.unexcused_absent_minutes || (s.unexcused_absent_hours ? Math.round(s.unexcused_absent_hours * 60) : absent * 90);
-            const eligibleMin = s.eligible_minutes ?? (s.eligible_scheduled_hours ? Math.round(s.eligible_scheduled_hours * 60) : Math.max(0, scheduledMin - leaveMin));
+            const eligibleMin = s.eligible_minutes ?? (s.eligible_scheduled_hours ? Math.round(s.eligible_scheduled_hours * 60) : Math.max(0, scheduledMin - leaveMin - travelOrderMin - locatorSlipMin - otherObMin));
             const attendedMin = s.attended_minutes || (s.attended_hours ? Math.round(s.attended_hours * 60) : present * 90);
 
             // Matched make-up completed minutes
-            let makeUpReqMin = s.make_up_required_minutes ?? (s.make_up_required_hours ? Math.round(s.make_up_required_hours * 60) : absentMin + leaveMin);
+            let makeUpReqMin = s.make_up_required_minutes ?? (s.make_up_required_hours ? Math.round(s.make_up_required_hours * 60) : absentMin + leaveMin + travelOrderMin + locatorSlipMin);
             let makeUpDoneMin = s.make_up_completed_minutes || (s.make_up_completed_hours ? Math.round(s.make_up_completed_hours * 60) : 0);
             if (s.faculty_id) {
                 const completedMUs = (weekly_sessions as any[]).filter(ws => ws.faculty_id === s.faculty_id && ws.make_up_request_id);
@@ -429,6 +437,9 @@ export default function FacultyAttendanceIndex({
                 eligibleMin: isNotYetEmployed ? 0 : eligibleMin,
                 attendedMin: isNotYetEmployed ? 0 : attendedMin,
                 leaveMin: isNotYetEmployed ? 0 : leaveMin,
+                travelOrderMin: isNotYetEmployed ? 0 : travelOrderMin,
+                locatorSlipMin: isNotYetEmployed ? 0 : locatorSlipMin,
+                otherObMin: isNotYetEmployed ? 0 : otherObMin,
                 absentMin: isNotYetEmployed ? 0 : absentMin,
                 makeUpReqMin: isNotYetEmployed ? 0 : makeUpReqMin,
                 makeUpDoneMin: isNotYetEmployed ? 0 : makeUpDoneMin,
@@ -1593,9 +1604,12 @@ export default function FacultyAttendanceIndex({
                                                 <th className="py-2.5 px-3">Faculty Name</th>
                                                 <th className="py-2.5 px-2 text-center">Prog</th>
                                                 <th className="py-2.5 px-2 text-right" title="Total Scheduled Duration">Scheduled</th>
+                                                <th className="py-2.5 px-2 text-right" title="Approved Leave Duration">Leave</th>
+                                                <th className="py-2.5 px-2 text-right text-indigo-600 dark:text-indigo-400" title="Travel Order (Official Travel)">TO</th>
+                                                <th className="py-2.5 px-2 text-right text-sky-600 dark:text-sky-400" title="Locator Slip (Official Business)">LS</th>
+                                                <th className="py-2.5 px-2 text-right" title="Other Official Business">Other OB</th>
                                                 <th className="py-2.5 px-2 text-right" title="Eligible Duration = Scheduled - Approved Exclusions">Eligible</th>
                                                 <th className="py-2.5 px-2 text-right" title="Attended Time">Attended</th>
-                                                <th className="py-2.5 px-2 text-right" title="Approved Leave Duration">Leave</th>
                                                 <th className="py-2.5 px-2 text-right" title="Unexcused Absence Duration">Absence</th>
                                                 <th className="py-2.5 px-2 text-center" title="Late Attended Sessions">Late Sess</th>
                                                 <th className="py-2.5 px-2 text-right" title="Late Minutes">Late Time</th>
@@ -1604,7 +1618,7 @@ export default function FacultyAttendanceIndex({
                                                 <th className="py-2.5 px-2 text-center font-bold text-foreground" title="Attended ÷ Eligible">Coverage</th>
                                                 <th className="py-2.5 px-2 text-center" title="On-Time Arrival Rate">On-Time</th>
                                                 <th className="py-2.5 px-2 text-center font-bold text-foreground" title="(Attended + Make-Up) ÷ Scheduled">Completion</th>
-                                                <th className="py-2.5 px-3 text-center">Remarks</th>
+                                                <th className="py-2.5 px-3 text-left">Status / Remarks</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border font-medium">
@@ -1615,7 +1629,7 @@ export default function FacultyAttendanceIndex({
                                                 if (paginatedRows.length === 0) {
                                                     return (
                                                         <tr>
-                                                            <td colSpan={16} className="py-12 text-center text-muted-foreground italic">
+                                                            <td colSpan={19} className="py-12 text-center text-muted-foreground italic">
                                                                 No faculty records found for this week.
                                                             </td>
                                                         </tr>
@@ -1624,6 +1638,7 @@ export default function FacultyAttendanceIndex({
 
                                                 return paginatedRows.map((row, idx) => {
                                                     const globalIdx = startIndex + idx + 1;
+                                                    const outstandingRecovery = Math.max(0, (row.makeUpReqMin || 0) - (row.makeUpDoneMin || 0));
                                                     return (
                                                         <tr key={row.id || idx} className="hover:bg-muted/30 transition-colors">
                                                             <td className="py-2 px-2 text-center font-mono text-[11px] text-muted-foreground">
@@ -1643,14 +1658,23 @@ export default function FacultyAttendanceIndex({
                                                             <td className="py-2 px-2 text-right font-mono tabular-nums text-foreground">
                                                                 {row.isNotYetEmployed ? 'N/A' : formatDuration(row.scheduledMin)}
                                                             </td>
+                                                            <td className="py-2 px-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
+                                                                {row.isNotYetEmployed ? 'N/A' : (row.leaveMin > 0 ? formatDuration(row.leaveMin) : '0m')}
+                                                            </td>
+                                                            <td className="py-2 px-2 text-right font-mono tabular-nums text-indigo-600 dark:text-indigo-400">
+                                                                {row.isNotYetEmployed ? 'N/A' : ((row.travelOrderMin || 0) > 0 ? formatDuration(row.travelOrderMin) : '0m')}
+                                                            </td>
+                                                            <td className="py-2 px-2 text-right font-mono tabular-nums text-sky-600 dark:text-sky-400">
+                                                                {row.isNotYetEmployed ? 'N/A' : ((row.locatorSlipMin || 0) > 0 ? formatDuration(row.locatorSlipMin) : '0m')}
+                                                            </td>
+                                                            <td className="py-2 px-2 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                                                                {row.isNotYetEmployed ? 'N/A' : ((row.otherObMin || 0) > 0 ? formatDuration(row.otherObMin) : '0m')}
+                                                            </td>
                                                             <td className="py-2 px-2 text-right font-mono tabular-nums font-semibold text-foreground">
                                                                 {row.isNotYetEmployed ? 'N/A' : formatDuration(row.eligibleMin)}
                                                             </td>
                                                             <td className="py-2 px-2 text-right font-mono tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
                                                                 {row.isNotYetEmployed ? 'N/A' : formatDuration(row.attendedMin)}
-                                                            </td>
-                                                            <td className="py-2 px-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
-                                                                {row.isNotYetEmployed ? 'N/A' : (row.leaveMin > 0 ? formatDuration(row.leaveMin) : '0m')}
                                                             </td>
                                                             <td className="py-2 px-2 text-right font-mono tabular-nums text-rose-600 dark:text-rose-400">
                                                                 {row.isNotYetEmployed ? 'N/A' : (row.absentMin > 0 ? formatDuration(row.absentMin) : '0m')}
@@ -1676,13 +1700,24 @@ export default function FacultyAttendanceIndex({
                                                             <td className="py-2 px-2 text-center font-mono tabular-nums font-bold text-foreground">
                                                                 {row.instructionalCompletion !== null ? `${row.instructionalCompletion}%` : 'N/A'}
                                                             </td>
-                                                            <td className="py-2 px-3 text-center whitespace-nowrap">
-                                                                <span className={cn(
-                                                                    "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border",
-                                                                    getCoverageBadgeStyle(row.statusCategory)
-                                                                )}>
-                                                                    {row.statusCategory}
-                                                                </span>
+                                                            <td className="py-2 px-3 text-left whitespace-nowrap">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className={cn(
+                                                                        "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border",
+                                                                        getCoverageBadgeStyle(row.statusCategory)
+                                                                    )}>
+                                                                        {row.statusCategory}
+                                                                    </span>
+                                                                </div>
+                                                                {outstandingRecovery > 0 ? (
+                                                                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold block mt-0.5">
+                                                                        Instr: {formatDuration(outstandingRecovery)} Make-Up Req
+                                                                    </span>
+                                                                ) : row.instructionalCompletion !== null && row.instructionalCompletion >= 100 ? (
+                                                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium block mt-0.5">
+                                                                        Instr: Complete
+                                                                    </span>
+                                                                ) : null}
                                                             </td>
                                                         </tr>
                                                     );
@@ -1875,9 +1910,12 @@ export default function FacultyAttendanceIndex({
                                             <th className="py-2.5 px-3">Faculty Name</th>
                                             <th className="py-2.5 px-2 text-center">Prog</th>
                                             <th className="py-2.5 px-2 text-right">Scheduled</th>
+                                            <th className="py-2.5 px-2 text-right">Leave</th>
+                                            <th className="py-2.5 px-2 text-right text-indigo-600 dark:text-indigo-400" title="Travel Order (Official Travel)">TO</th>
+                                            <th className="py-2.5 px-2 text-right text-sky-600 dark:text-sky-400" title="Locator Slip (Official Business)">LS</th>
+                                            <th className="py-2.5 px-2 text-right" title="Other Official Business">Other OB</th>
                                             <th className="py-2.5 px-2 text-right">Eligible</th>
                                             <th className="py-2.5 px-2 text-right">Attended</th>
-                                            <th className="py-2.5 px-2 text-right">Leave</th>
                                             <th className="py-2.5 px-2 text-right">Absence</th>
                                             <th className="py-2.5 px-2 text-center">Late Sess</th>
                                             <th className="py-2.5 px-2 text-right">Late Time</th>
@@ -1886,7 +1924,7 @@ export default function FacultyAttendanceIndex({
                                             <th className="py-2.5 px-2 text-center font-bold text-foreground">Coverage</th>
                                             <th className="py-2.5 px-2 text-center">On-Time</th>
                                             <th className="py-2.5 px-2 text-center font-bold text-foreground">Completion</th>
-                                            <th className="py-2.5 px-3 text-center">Remarks</th>
+                                            <th className="py-2.5 px-3 text-left">Status / Remarks</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border font-medium">
@@ -1897,7 +1935,7 @@ export default function FacultyAttendanceIndex({
                                             if (paginatedRows.length === 0) {
                                                 return (
                                                     <tr>
-                                                        <td colSpan={16} className="py-12 text-center text-muted-foreground italic">
+                                                        <td colSpan={19} className="py-12 text-center text-muted-foreground italic">
                                                             No faculty records found for {selectedPeriod}.
                                                         </td>
                                                     </tr>
@@ -1906,6 +1944,7 @@ export default function FacultyAttendanceIndex({
 
                                             return paginatedRows.map((row, idx) => {
                                                 const globalIdx = startIndex + idx + 1;
+                                                const outstandingRecovery = Math.max(0, (row.makeUpReqMin || 0) - (row.makeUpDoneMin || 0));
                                                 return (
                                                     <tr key={row.id || idx} className="hover:bg-muted/30 transition-colors">
                                                         <td className="py-2 px-2 text-center font-mono text-[11px] text-muted-foreground">
@@ -1925,14 +1964,23 @@ export default function FacultyAttendanceIndex({
                                                         <td className="py-2 px-2 text-right font-mono tabular-nums text-foreground">
                                                             {row.isNotYetEmployed ? 'N/A' : formatDuration(row.scheduledMin)}
                                                         </td>
+                                                        <td className="py-2 px-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
+                                                            {row.isNotYetEmployed ? 'N/A' : (row.leaveMin > 0 ? formatDuration(row.leaveMin) : '0m')}
+                                                        </td>
+                                                        <td className="py-2 px-2 text-right font-mono tabular-nums text-indigo-600 dark:text-indigo-400">
+                                                            {row.isNotYetEmployed ? 'N/A' : ((row.travelOrderMin || 0) > 0 ? formatDuration(row.travelOrderMin) : '0m')}
+                                                        </td>
+                                                        <td className="py-2 px-2 text-right font-mono tabular-nums text-sky-600 dark:text-sky-400">
+                                                            {row.isNotYetEmployed ? 'N/A' : ((row.locatorSlipMin || 0) > 0 ? formatDuration(row.locatorSlipMin) : '0m')}
+                                                        </td>
+                                                        <td className="py-2 px-2 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                                                            {row.isNotYetEmployed ? 'N/A' : ((row.otherObMin || 0) > 0 ? formatDuration(row.otherObMin) : '0m')}
+                                                        </td>
                                                         <td className="py-2 px-2 text-right font-mono tabular-nums font-semibold text-foreground">
                                                             {row.isNotYetEmployed ? 'N/A' : formatDuration(row.eligibleMin)}
                                                         </td>
                                                         <td className="py-2 px-2 text-right font-mono tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
                                                             {row.isNotYetEmployed ? 'N/A' : formatDuration(row.attendedMin)}
-                                                        </td>
-                                                        <td className="py-2 px-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
-                                                            {row.isNotYetEmployed ? 'N/A' : (row.leaveMin > 0 ? formatDuration(row.leaveMin) : '0m')}
                                                         </td>
                                                         <td className="py-2 px-2 text-right font-mono tabular-nums text-rose-600 dark:text-rose-400">
                                                             {row.isNotYetEmployed ? 'N/A' : (row.absentMin > 0 ? formatDuration(row.absentMin) : '0m')}
@@ -1958,13 +2006,24 @@ export default function FacultyAttendanceIndex({
                                                         <td className="py-2 px-2 text-center font-mono tabular-nums font-bold text-foreground">
                                                             {row.instructionalCompletion !== null ? `${row.instructionalCompletion}%` : 'N/A'}
                                                         </td>
-                                                        <td className="py-2 px-3 text-center whitespace-nowrap">
-                                                            <span className={cn(
-                                                                "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border",
-                                                                getCoverageBadgeStyle(row.statusCategory)
-                                                            )}>
-                                                                {row.statusCategory}
-                                                            </span>
+                                                        <td className="py-2 px-3 text-left whitespace-nowrap">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className={cn(
+                                                                    "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border",
+                                                                    getCoverageBadgeStyle(row.statusCategory)
+                                                                )}>
+                                                                    {row.statusCategory}
+                                                                </span>
+                                                            </div>
+                                                            {outstandingRecovery > 0 ? (
+                                                                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold block mt-0.5">
+                                                                    Instr: {formatDuration(outstandingRecovery)} Make-Up Req
+                                                                </span>
+                                                            ) : row.instructionalCompletion !== null && row.instructionalCompletion >= 100 ? (
+                                                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium block mt-0.5">
+                                                                    Instr: Complete
+                                                                </span>
+                                                            ) : null}
                                                         </td>
                                                     </tr>
                                                 );

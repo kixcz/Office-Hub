@@ -23,6 +23,7 @@ import {
     X,
     FileSpreadsheet,
     FileText,
+    FileCheck,
     ChevronLeft,
     ChevronRight,
     Sparkles,
@@ -81,6 +82,17 @@ export interface LabScheduleSession {
     photo_url?: string | null;
     transferred_to_room?: string | null;
     is_historical_reconciliation?: boolean;
+    administrative_exception?: {
+        has_exception: boolean;
+        exception_type: string | null;
+        exception_reference: string | null;
+        exception_overlap_minutes: number;
+        banner_text: string | null;
+        details?: any;
+    };
+    verification_status?: string;
+    observed_outcome?: string;
+    makeup_required_minutes?: number;
 }
 
 interface LabSchedulesModuleProps {
@@ -230,6 +242,10 @@ export default function LabSchedulesModule({
                     has_discrepancy: hasDiscrepancy,
                     remarks: remarks,
                     photo_url: photoUrl,
+                    administrative_exception: matchedToday?.administrative_exception,
+                    verification_status: matchedToday?.verification_status,
+                    observed_outcome: matchedToday?.observed_outcome,
+                    makeup_required_minutes: matchedToday?.makeup_required_minutes,
                 });
             });
         });
@@ -247,16 +263,16 @@ export default function LabSchedulesModule({
                     time_label: s.scheduled_time,
                     course_code: s.course_code,
                     course_title: s.course_title,
-                    program_code: (s as any).program_code || 'BSIT',
-                    program_name: (s as any).program_name || 'Information Technology',
+                    program_code: s.program_code || 'BSIT',
+                    program_name: s.program_name || 'Information Technology',
                     section: s.section,
                     faculty_name: s.expected_faculty,
                     faculty_id: s.faculty_id,
                     room_id: s.room_id,
                     room_name: s.room_name,
-                    session_type: (s as any).session_type || 'Laboratory Class',
-                    scheduled_minutes: s.scheduled_minutes,
-                    mapping_confidence: (s as any).mapping_confidence ?? 1.0,
+                    session_type: s.session_type || 'Laboratory Class',
+                    scheduled_minutes: s.scheduled_minutes || 90,
+                    mapping_confidence: s.mapping_confidence ?? 1.0,
                     observation_status: s.observation_status,
                     room_condition: s.room_condition,
                     actual_start_time: s.actual_start_time,
@@ -267,6 +283,10 @@ export default function LabSchedulesModule({
                     has_discrepancy: s.has_discrepancy,
                     remarks: s.remarks,
                     photo_url: s.photo_url,
+                    administrative_exception: s.administrative_exception,
+                    verification_status: s.verification_status,
+                    observed_outcome: s.observed_outcome,
+                    makeup_required_minutes: s.makeup_required_minutes,
                 });
             }
         });
@@ -1060,6 +1080,16 @@ export default function LabSchedulesModule({
                                                                 : "border-border hover:border-border/80"
                                                         )}
                                                     >
+                                                        {/* Contextual Administrative Exception Banner */}
+                                                        {session.administrative_exception?.has_exception && (
+                                                            <div className="mb-2 px-2 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-[10px] font-bold flex items-center gap-1.5 shadow-2xs">
+                                                                <FileCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                                                                <span className="truncate leading-tight">
+                                                                    {session.administrative_exception.banner_text || `${session.administrative_exception.exception_type} overlaps session`}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
                                                         {/* Top row: Time + Session Type Badge */}
                                                         <div className="flex items-center justify-between gap-1 mb-1.5">
                                                             <div className="flex items-center gap-1 text-[11px] font-bold text-foreground">
@@ -1214,6 +1244,12 @@ export default function LabSchedulesModule({
                                                 <td className="p-3 whitespace-nowrap">
                                                     <div className="font-medium text-foreground">{session.faculty_name}</div>
                                                     <div className="text-[10px] text-muted-foreground">{session.program_code}</div>
+                                                    {session.administrative_exception?.has_exception && (
+                                                        <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300 font-bold text-[9px]">
+                                                            <FileCheck className="w-2.5 h-2.5 text-amber-500 shrink-0" />
+                                                            <span>{session.administrative_exception.exception_type} ({session.administrative_exception.exception_overlap_minutes}m)</span>
+                                                        </div>
+                                                    )}
                                                 </td>
 
                                                 {/* Duration */}

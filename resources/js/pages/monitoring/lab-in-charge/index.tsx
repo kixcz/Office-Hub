@@ -114,6 +114,8 @@ export interface ExpectedSession {
     section: string;
     expected_faculty: string;
     faculty_id: number;
+    academic_period_id?: number;
+    schedule_version?: string;
     session_type?: string;
     mapping_confidence?: number;
     scheduled_time: string;
@@ -124,15 +126,30 @@ export interface ExpectedSession {
     actual_end_time?: string | null;
     late_minutes: number;
     observed_minutes: number;
+    delivered_minutes?: number;
     variance_minutes: number;
     student_headcount?: number | null;
     observation_status: string;
     room_condition: string;
     session_outcome: string;
+    observed_outcome?: string;
+    observed_modality?: string;
+    observed_faculty_id?: number | null;
     has_discrepancy: boolean;
     remarks?: string | null;
     photo_url?: string | null;
     monitoring_session_id?: number | null;
+    administrative_exception?: {
+        has_exception: boolean;
+        exception_type: string | null;
+        exception_reference: string | null;
+        exception_overlap_minutes: number;
+        banner_text: string | null;
+        details?: any;
+    };
+    verification_status?: string;
+    contradiction_flags?: string[];
+    makeup_required_minutes?: number;
     can_edit?: boolean;
 }
 
@@ -379,7 +396,8 @@ export default function LabInChargeMonitoring({
     const [obsActualEnd, setObsActualEnd] = useState('');
     const [obsStatus, setObsStatus] = useState('In Progress');
     const [obsRoomCondition, setObsRoomCondition] = useState('In Use as Scheduled');
-    const [obsSessionOutcome, setObsSessionOutcome] = useState('Conducted as Scheduled');
+    const [obsSessionOutcome, setObsSessionOutcome] = useState('Class Conducted by Scheduled Faculty');
+    const [obsModality, setObsModality] = useState('Face-to-Face');
     const [obsAlternativeRoomId, setObsAlternativeRoomId] = useState('');
     const [obsHeadcount, setObsHeadcount] = useState('');
     const [obsFacultyId, setObsFacultyId] = useState('');
@@ -457,7 +475,8 @@ export default function LabInChargeMonitoring({
         setObsActualEnd(session.actual_end_time || session.scheduled_end);
         setObsStatus(session.observation_status === 'Upcoming' || session.observation_status === 'Ready to Monitor' ? 'In Progress' : session.observation_status);
         setObsRoomCondition(session.room_condition || 'In Use as Scheduled');
-        setObsSessionOutcome(session.session_outcome || 'Conducted as Scheduled');
+        setObsSessionOutcome(session.observed_outcome || session.session_outcome || 'Class Conducted by Scheduled Faculty');
+        setObsModality(session.observed_modality || 'Face-to-Face');
         setObsAlternativeRoomId('');
         setObsHeadcount(session.student_headcount ? String(session.student_headcount) : '');
         setObsFacultyId(session.faculty_id ? String(session.faculty_id) : '');
@@ -497,7 +516,10 @@ export default function LabInChargeMonitoring({
             observation_status: obsStatus,
             room_condition: obsRoomCondition,
             session_outcome: obsSessionOutcome,
+            observed_outcome: obsSessionOutcome,
+            observed_modality: obsModality,
             alternative_room_id: obsAlternativeRoomId ? Number(obsAlternativeRoomId) : null,
+            observed_room_id: obsAlternativeRoomId ? Number(obsAlternativeRoomId) : targetSession.room_id,
             student_headcount: obsHeadcount ? Number(obsHeadcount) : null,
             observed_faculty_id: obsFacultyId && Number(obsFacultyId) !== targetSession.faculty_id ? Number(obsFacultyId) : null,
             observed_course_code: obsCourseCode || null,
@@ -1619,45 +1641,45 @@ export default function LabInChargeMonitoring({
 
             {/* 4. MODALS & DIALOGS */}
 
-            {/* LIVE SESSION MONITORING MODAL (Expected vs Observed side-by-side) */}
+            {/* LIVE SESSION MONITORING MODAL: THREE SEPARATED PANELS (Expected Session, Administrative Exception, Observed Outcome) */}
             <Dialog open={monitoringModalOpen} onOpenChange={setMonitoringModalOpen}>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-black flex items-center gap-2">
                             <MonitorPlay className="h-5 w-5 text-amber-500" />
-                            Live Session Monitoring: Expected vs Observed
+                            Session Monitoring & Reconciliation: Expected · Administrative Exception · Observed Outcome
                         </DialogTitle>
                         <DialogDescription className="text-xs">
-                            Verify what is actually happening in the laboratory against the verified expected timetable.
+                            OfficeHub reconciles three independent facts: published schedule, official administrative exceptions, and observed classroom delivery.
                         </DialogDescription>
                     </DialogHeader>
 
                     {targetSession && (
                         <form onSubmit={handleSubmitObservation} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* LEFT SIDE: EXPECTED (Verified Timetable - Read-only) */}
-                                <div className="space-y-3 bg-muted/30 p-4 rounded-xl border">
-                                    <div className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                                        <CalendarDays className="h-4 w-4" />
-                                        Verified Expected Schedule
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+                                {/* PANEL 1: EXPECTED SESSION (Published master timetable - Read-only) */}
+                                <div className="space-y-3 bg-muted/30 p-3.5 rounded-xl border border-border">
+                                    <div className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 pb-2 border-b border-border">
+                                        <CalendarDays className="h-4 w-4 text-primary" />
+                                        <span>1. Expected Session</span>
                                     </div>
                                     <div className="space-y-2 text-xs">
                                         <div>
-                                            <span className="text-muted-foreground block text-[10px] uppercase">Laboratory:</span>
+                                            <span className="text-muted-foreground block text-[10px] uppercase font-bold">Scheduled Laboratory:</span>
                                             <strong className="text-sm font-black text-foreground">{targetSession.room_name}</strong>
                                         </div>
                                         <div>
-                                            <span className="text-muted-foreground block text-[10px] uppercase">Course:</span>
+                                            <span className="text-muted-foreground block text-[10px] uppercase font-bold">Course Offering:</span>
                                             <strong className="text-sm font-black text-foreground">{targetSession.course_code}</strong>
-                                            <div className="text-muted-foreground text-[11px]">{targetSession.course_title}</div>
+                                            <div className="text-muted-foreground text-[11px] leading-tight">{targetSession.course_title}</div>
                                         </div>
                                         <div>
-                                            <span className="text-muted-foreground block text-[10px] uppercase">Section:</span>
+                                            <span className="text-muted-foreground block text-[10px] uppercase font-bold">Section:</span>
                                             <strong className="text-foreground">{targetSession.section}</strong>
                                         </div>
                                         <div>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-muted-foreground block text-[10px] uppercase">Expected Faculty:</span>
+                                                <span className="text-muted-foreground block text-[10px] uppercase font-bold">Expected Faculty:</span>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -1666,28 +1688,128 @@ export default function LabInChargeMonitoring({
                                                     }}
                                                     className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-bold flex items-center gap-0.5 cursor-pointer"
                                                 >
-                                                    <UserCog className="h-3 w-3" /> Remap Faculty
+                                                    <UserCog className="h-3 w-3" /> Remap
                                                 </button>
                                             </div>
                                             <strong className="text-foreground">{targetSession.expected_faculty}</strong>
                                         </div>
                                         <div>
-                                            <span className="text-muted-foreground block text-[10px] uppercase">Scheduled Time & Duration:</span>
+                                            <span className="text-muted-foreground block text-[10px] uppercase font-bold">Published Schedule & Duration:</span>
                                             <span className="font-mono font-bold text-foreground">{targetSession.scheduled_time} ({targetSession.scheduled_minutes}m)</span>
+                                        </div>
+                                        <div className="pt-1.5 border-t border-border/60 text-[10px] text-muted-foreground">
+                                            <span>Period: {academicPeriod?.name}</span>
+                                            <br />
+                                            <span>Version: {scheduleVersion}</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* RIGHT SIDE: OBSERVED (Completed by Lab In-Charge) */}
-                                <div className="space-y-3 bg-card p-4 rounded-xl border border-amber-500/30">
-                                    <div className="text-xs font-black uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+                                {/* PANEL 2: ADMINISTRATIVE EXCEPTION (Official Business, Leave, Suspensions - Read-only Source) */}
+                                <div className="space-y-3 bg-card p-3.5 rounded-xl border border-blue-500/30">
+                                    <div className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5 pb-2 border-b border-blue-500/20">
+                                        <ShieldCheck className="h-4 w-4" />
+                                        <span>2. Administrative Exception</span>
+                                    </div>
+
+                                    {targetSession.administrative_exception?.has_exception ? (
+                                        <div className="space-y-2.5 text-xs">
+                                            <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 space-y-1">
+                                                <div className="font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1.5 text-xs">
+                                                    <FileCheck className="w-3.5 h-3.5" />
+                                                    <span>{targetSession.administrative_exception.exception_type} Detected</span>
+                                                </div>
+                                                <div className="text-[11px] text-muted-foreground font-mono">
+                                                    Ref: <strong>{targetSession.administrative_exception.exception_reference}</strong>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-muted-foreground text-[10px] uppercase font-bold">Overlap Window:</span>
+                                                    <strong className="font-mono text-foreground text-xs">
+                                                        {targetSession.administrative_exception.exception_overlap_minutes} of {targetSession.scheduled_minutes} min
+                                                    </strong>
+                                                </div>
+                                                <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                                    <div
+                                                        className="bg-blue-600 h-full rounded-full transition-all"
+                                                        style={{
+                                                            width: `${Math.min(100, Math.round((targetSession.administrative_exception.exception_overlap_minutes / targetSession.scheduled_minutes) * 100))}%`
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="text-[11px] text-muted-foreground bg-muted/40 p-2 rounded-lg border leading-tight">
+                                                {targetSession.administrative_exception.banner_text}
+                                            </div>
+
+                                            <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-900 dark:text-amber-200 leading-tight">
+                                                <strong>Note:</strong> Attendance is excused for overlapping minutes. Your job as Lab In-Charge is only to observe whether teaching actually occurred.
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-48 text-center p-3 text-muted-foreground space-y-1">
+                                            <CheckCircle2 className="w-8 h-8 text-emerald-500/40 mb-1" />
+                                            <span className="text-xs font-bold text-foreground">No Official Exceptions</span>
+                                            <p className="text-[10px] text-muted-foreground max-w-[200px]">
+                                                No approved Leave, Travel Order, Locator Slip, or Suspension intersects this class. Standard attendance policy applies.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* PANEL 3: OBSERVED OUTCOME (Recorded by Lab In-Charge) */}
+                                <div className="space-y-3 bg-card p-3.5 rounded-xl border border-amber-500/40">
+                                    <div className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pb-2 border-b border-amber-500/20">
                                         <Eye className="h-4 w-4" />
-                                        Observed Reality in Laboratory
+                                        <span>3. Observed Outcome</span>
+                                    </div>
+
+                                    {/* Outcome Selector */}
+                                    <div className="space-y-1">
+                                        <Label className="text-xs font-bold">Actual Class Outcome</Label>
+                                        <Select value={obsSessionOutcome} onValueChange={setObsSessionOutcome}>
+                                            <SelectTrigger className="h-8 text-xs font-medium">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Class Conducted by Scheduled Faculty">Class Conducted by Scheduled Faculty</SelectItem>
+                                                <SelectItem value="Class Conducted by Substitute Faculty">Class Conducted by Substitute Faculty</SelectItem>
+                                                <SelectItem value="Transferred to Another Room">Transferred to Another Room</SelectItem>
+                                                <SelectItem value="Switched to Online Modality">Switched to Online Modality</SelectItem>
+                                                <SelectItem value="Partially Conducted">Partially Conducted</SelectItem>
+                                                <SelectItem value="Rescheduled">Rescheduled</SelectItem>
+                                                <SelectItem value="Not Conducted – Official Business">Not Conducted – Official Business</SelectItem>
+                                                <SelectItem value="Not Conducted – Faculty Absent">Not Conducted – Faculty Absent</SelectItem>
+                                                <SelectItem value="Cancelled">Cancelled</SelectItem>
+                                                <SelectItem value="Institutionally Suspended">Institutionally Suspended</SelectItem>
+                                                <SelectItem value="Different Class Observed">Different Class Observed</SelectItem>
+                                                <SelectItem value="Unable to Verify">Unable to Verify</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Modality Selector */}
+                                    <div className="space-y-1">
+                                        <Label className="text-xs font-bold">Observed Modality</Label>
+                                        <Select value={obsModality} onValueChange={setObsModality}>
+                                            <SelectTrigger className="h-8 text-xs">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Face-to-Face">Face-to-Face (Laboratory)</SelectItem>
+                                                <SelectItem value="Online - Synchronous">Online - Synchronous (Meet/Zoom)</SelectItem>
+                                                <SelectItem value="Online - Asynchronous">Online - Asynchronous</SelectItem>
+                                                <SelectItem value="Hybrid">Hybrid</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     {/* Room Condition */}
                                     <div className="space-y-1">
-                                        <Label className="text-xs font-bold">1. Room Condition (Facility State)</Label>
+                                        <Label className="text-xs font-bold">Room Condition (Facility)</Label>
                                         <Select value={obsRoomCondition} onValueChange={setObsRoomCondition}>
                                             <SelectTrigger className="h-8 text-xs">
                                                 <SelectValue />
@@ -1705,33 +1827,10 @@ export default function LabInChargeMonitoring({
                                         </Select>
                                     </div>
 
-                                    {/* Session Outcome */}
-                                    <div className="space-y-1">
-                                        <Label className="text-xs font-bold">2. Session Outcome (Academic Delivery)</Label>
-                                        <Select value={obsSessionOutcome} onValueChange={setObsSessionOutcome}>
-                                            <SelectTrigger className="h-8 text-xs">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Conducted as Scheduled">Conducted as Scheduled</SelectItem>
-                                                <SelectItem value="Late Start">Late Start</SelectItem>
-                                                <SelectItem value="Conducted in Alternate Room">Conducted in Alternate Room</SelectItem>
-                                                <SelectItem value="Switched to Online">Switched to Online</SelectItem>
-                                                <SelectItem value="Partially Conducted">Partially Conducted</SelectItem>
-                                                <SelectItem value="Rescheduled">Rescheduled</SelectItem>
-                                                <SelectItem value="Cancelled">Cancelled</SelectItem>
-                                                <SelectItem value="Faculty Not Present">Faculty Not Present</SelectItem>
-                                                <SelectItem value="Different Faculty Observed">Different Faculty Observed</SelectItem>
-                                                <SelectItem value="Different Class Observed">Different Class Observed</SelectItem>
-                                                <SelectItem value="Pending Resolution">Pending Resolution</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    {/* Actual Times */}
+                                    {/* Actual Start and End Times */}
                                     <div className="grid grid-cols-2 gap-2">
                                         <div className="space-y-1">
-                                            <Label className="text-xs font-bold">Actual Start Time</Label>
+                                            <Label className="text-xs font-bold">Actual Start</Label>
                                             <Input
                                                 type="time"
                                                 className="h-8 text-xs font-mono"
@@ -1740,7 +1839,7 @@ export default function LabInChargeMonitoring({
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <Label className="text-xs font-bold">Actual End Time</Label>
+                                            <Label className="text-xs font-bold">Actual End</Label>
                                             <Input
                                                 type="time"
                                                 className="h-8 text-xs font-mono"
@@ -1758,10 +1857,10 @@ export default function LabInChargeMonitoring({
                                         </span>
                                     </div>
 
-                                    {/* Different Faculty if observed */}
-                                    {obsSessionOutcome === 'Different Faculty Observed' && (
+                                    {/* Different / Substitute Faculty if observed */}
+                                    {(obsSessionOutcome === 'Class Conducted by Substitute Faculty' || obsSessionOutcome === 'Different Faculty Observed') && (
                                         <div className="space-y-1">
-                                            <Label className="text-xs font-bold text-purple-600">Observed Faculty</Label>
+                                            <Label className="text-xs font-bold text-purple-600 dark:text-purple-400">Observed Substitute / Alternate Faculty</Label>
                                             <Select value={obsFacultyId} onValueChange={setObsFacultyId}>
                                                 <SelectTrigger className="h-8 text-xs">
                                                     <SelectValue placeholder="Select faculty present" />
@@ -1778,12 +1877,12 @@ export default function LabInChargeMonitoring({
                                     )}
 
                                     {/* Alternate room if transferred */}
-                                    {obsSessionOutcome === 'Conducted in Alternate Room' && (
+                                    {(obsSessionOutcome === 'Transferred to Another Room' || obsSessionOutcome === 'Conducted in Alternate Room') && (
                                         <div className="space-y-1">
-                                            <Label className="text-xs font-bold text-blue-600">Alternate Room Transferred To</Label>
+                                            <Label className="text-xs font-bold text-blue-600 dark:text-blue-400">Actual Room Transferred To</Label>
                                             <Select value={obsAlternativeRoomId} onValueChange={setObsAlternativeRoomId}>
                                                 <SelectTrigger className="h-8 text-xs">
-                                                    <SelectValue placeholder="Select alternate room" />
+                                                    <SelectValue placeholder="Select actual room" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {assignedRooms.map((r: any) => (

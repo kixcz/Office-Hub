@@ -15,6 +15,7 @@ use App\Models\ScheduleFacultyReassignment;
 use App\Models\User;
 use App\Models\VerifiedSchedule;
 use App\Notifications\ScheduleFacultyReassignedNotification;
+use App\Services\ThreeWayAttendanceReconciliationService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,10 @@ use Inertia\Response;
 
 class LabInChargeMonitoringController extends Controller
 {
+    public function __construct(
+        protected ThreeWayAttendanceReconciliationService $reconciliationService
+    ) {}
+
     /**
      * Display the operational Lab In-Charge Operational Workspace.
      */
@@ -181,8 +186,8 @@ class LabInChargeMonitoringController extends Controller
             ->get()
             ->keyBy('verified_schedule_id');
 
-        // 4. Build Today's Session List with automatically computed statuses and variances
-        $sessionsList = $todayExpectedSchedules->map(function ($sched) use ($todayMonitoringSessions, $now) {
+        // 4. Build Today's Session List with automatically computed statuses, variances, and administrative exceptions
+        $sessionsList = $todayExpectedSchedules->map(function ($sched) use ($todayMonitoringSessions, $now, $todayDateStr) {
             $session = $todayMonitoringSessions->get($sched->id);
 
             $startTime = Carbon::parse($sched->scheduled_start_time);
@@ -199,7 +204,10 @@ class LabInChargeMonitoringController extends Controller
             }
 
             $roomCondition = $session?->room_condition ?? 'Available';
-            $sessionOutcome = $session?->session_outcome ?? 'Conducted as Scheduled';
+            $sessionOutcome = $session?->session_outcome ?? $session?->observed_outcome ?? 'Class Conducted by Scheduled Faculty';
+
+            // Detect administrative exception (Leave, Travel Order, Locator Slip, Suspension)
+            $exception = $this->reconciliationService->detectAdministrativeExceptions($sched, Carbon::parse($todayDateStr));
 
             return [
                 'verified_schedule_id' => $sched->id,
@@ -212,6 +220,8 @@ class LabInChargeMonitoringController extends Controller
                 'section' => $sched->section->code,
                 'expected_faculty' => "{$sched->faculty->first_name} {$sched->faculty->last_name}",
                 'faculty_id' => $sched->faculty_id,
+                'academic_period_id' => $sched->academic_period_id,
+                'schedule_version' => 'Verified Master Timetable v1',
                 'session_type' => $sched->session_type ?? 'Laboratory Class',
                 'mapping_confidence' => $sched->mapping_confidence ?? 1.0,
                 'scheduled_time' => Carbon::parse($sched->scheduled_start_time)->format('h:i A').' – '.Carbon::parse($sched->scheduled_end_time)->format('h:i A'),
@@ -221,16 +231,24 @@ class LabInChargeMonitoringController extends Controller
                 'actual_start_time' => $session?->actual_start_time,
                 'actual_end_time' => $session?->actual_end_time,
                 'late_minutes' => $session?->late_minutes ?? 0,
-                'observed_minutes' => $session?->observed_minutes ?? 0,
+                'observed_minutes' => $session?->observed_minutes ?? $session?->delivered_minutes ?? 0,
+                'delivered_minutes' => $session?->delivered_minutes ?? $session?->observed_minutes ?? 0,
                 'variance_minutes' => $session?->variance_minutes ?? 0,
                 'student_headcount' => $session?->student_headcount,
                 'observation_status' => $status,
                 'room_condition' => $roomCondition,
                 'session_outcome' => $sessionOutcome,
+                'observed_outcome' => $session?->observed_outcome ?? $sessionOutcome,
+                'observed_modality' => $session?->observed_modality ?? 'Face-to-Face',
+                'observed_faculty_id' => $session?->observed_faculty_id,
                 'has_discrepancy' => $session?->has_discrepancy ?? false,
                 'remarks' => $session?->remarks,
                 'photo_url' => $session?->photo_url,
                 'monitoring_session_id' => $session?->id,
+                'administrative_exception' => $exception,
+                'verification_status' => $session?->verification_status ?? 'Pending',
+                'contradiction_flags' => $session?->contradiction_flags ?? [],
+                'makeup_required_minutes' => $session?->makeup_required_minutes ?? 0,
                 'can_edit' => $session ? $session->created_at->diffInHours($now) < 12 : true,
             ];
         });
@@ -1094,10 +1112,13 @@ class LabInChargeMonitoringController extends Controller
             'room_id' => 'required|exists:rooms,id',
             'actual_start_time' => 'nullable|string',
             'actual_end_time' => 'nullable|string',
-            'observation_status' => 'required|string',
+            'observation_status' => 'nullable|string',
             'room_condition' => 'required|string',
-            'session_outcome' => 'required|string',
+            'session_outcome' => 'nullable|string',
+            'observed_outcome' => 'nullable|string',
+            'observed_modality' => 'nullable|string',
             'alternative_room_id' => 'nullable|exists:rooms,id',
+            'observed_room_id' => 'nullable|exists:rooms,id',
             'student_headcount' => 'nullable|integer',
             'observed_faculty_id' => 'nullable|exists:faculties,id',
             'observed_course_code' => 'nullable|string',
@@ -1117,96 +1138,78 @@ class LabInChargeMonitoringController extends Controller
             $photoPath = $request->file('photo')->store('monitoring/evidence', 'public');
         }
 
-        // 1. Calculate late minutes and observed minutes automatically
-        $lateMinutes = 0;
-        $observedMinutes = $verified->scheduled_minutes;
+        // Map outcome
+        $outcome = $validated['observed_outcome'] ?? $validated['session_outcome'] ?? 'Class Conducted by Scheduled Faculty';
+        $modality = $validated['observed_modality'] ?? 'Face-to-Face';
+        $obsRoomId = $validated['observed_room_id'] ?? $validated['alternative_room_id'] ?? $validated['room_id'];
 
-        if (! empty($validated['actual_start_time'])) {
-            $schedStart = Carbon::parse($verified->scheduled_start_time);
-            $actualStart = Carbon::parse($validated['actual_start_time']);
+        $existingSession = LabMonitoringSession::where('verified_schedule_id', $verified->id)
+            ->whereDate('monitoring_date', $now->toDateString())
+            ->first();
 
-            if ($actualStart->greaterThan($schedStart)) {
-                $lateMinutes = $schedStart->diffInMinutes($actualStart);
-            }
+        // 1. Reconcile three independent facts via ThreeWayAttendanceReconciliationService
+        $reconciliationResult = $this->reconciliationService->reconcileSession(
+            $verified,
+            $now,
+            [
+                'observation_status' => $validated['observation_status'] ?? null,
+                'room_condition' => $validated['room_condition'] ?? 'In Use as Scheduled',
+                'observed_outcome' => $outcome,
+                'observed_modality' => $modality,
+                'observed_room_id' => $obsRoomId,
+                'observed_faculty_id' => $validated['observed_faculty_id'] ?? null,
+                'actual_start_time' => $validated['actual_start_time'] ?? null,
+                'actual_end_time' => $validated['actual_end_time'] ?? null,
+                'remarks' => $validated['remarks'] ?? null,
+                'students_count' => $validated['student_headcount'] ?? null,
+                'evidence_image_path' => $photoPath,
+                'verification_status' => 'Observed',
+                'monitored_by_id' => $request->user()->id,
+            ],
+            $existingSession
+        );
 
-            if (! empty($validated['actual_end_time'])) {
-                $actualEnd = Carbon::parse($validated['actual_end_time']);
-                $observedMinutes = max(0, $actualStart->diffInMinutes($actualEnd));
-            } else {
-                $schedEnd = Carbon::parse($verified->scheduled_end_time);
-                $observedMinutes = max(0, $actualStart->diffInMinutes($schedEnd));
-            }
+        $session = $reconciliationResult['lab_monitoring_session'];
+        $lateMinutes = $session->late_minutes ?? 0;
+        $deliveredMinutes = $reconciliationResult['delivered_minutes'];
+        $makeupMinutes = $reconciliationResult['makeup_required_minutes'];
+
+        // Synchronize legacy fields on session for backwards compatibility with End-of-Day report
+        $session->scheduled_start_time = $verified->scheduled_start_time;
+        $session->scheduled_end_time = $verified->scheduled_end_time;
+        $session->scheduled_minutes = $verified->scheduled_minutes;
+        $session->monitored_by_user_id = $request->user()->id;
+        $session->observation_status = $validated['observation_status'] ?? 'Observed';
+        $session->room_condition = $validated['room_condition'];
+        $session->session_outcome = $outcome;
+        $session->observed_minutes = $deliveredMinutes;
+        $session->variance_minutes = $deliveredMinutes - $verified->scheduled_minutes;
+        $session->student_headcount = $validated['student_headcount'] ?? null;
+        $session->observed_faculty_id = $validated['observed_faculty_id'] ?? null;
+        $session->alternative_room_id = $obsRoomId != $validated['room_id'] ? $obsRoomId : null;
+        $session->is_historical_reconciliation = (bool) ($validated['is_historical_reconciliation'] ?? false);
+        if ($photoPath) {
+            $session->photo_path = $photoPath;
         }
+        $session->save();
 
-        $varianceMinutes = $observedMinutes - $verified->scheduled_minutes;
-
-        // 2. Automated Discrepancy Detection & Evidence Chain
+        // Create discrepancy if room condition or faculty mismatch is flagged
         $hasDiscrepancy = false;
         $discrepancyType = null;
         $severity = 'Needs Attention';
-        $expectedState = "Scheduled: {$verified->course->code} ({$verified->section->code}) with {$verified->faculty->first_name} {$verified->faculty->last_name} in {$verified->room->room_name}";
-        $observedState = "Room Condition: {$validated['room_condition']} · Session Outcome: {$validated['session_outcome']}";
 
         if (! empty($validated['observed_faculty_id']) && $validated['observed_faculty_id'] != $verified->faculty_id) {
             $hasDiscrepancy = true;
-            $observedFac = Faculty::find($validated['observed_faculty_id']);
             $discrepancyType = 'Expected Faculty ≠ Observed Faculty';
-            $observedState .= " · Observed Faculty: {$observedFac->first_name} {$observedFac->last_name}";
         }
-
-        if ($validated['room_condition'] === 'Occupied by Another Class' || $validated['room_condition'] === 'Unscheduled Use') {
-            $hasDiscrepancy = true;
-            $discrepancyType = 'Unscheduled Room Use / Double Occupancy';
-            $severity = 'Blocking';
-        }
-
         if (in_array($validated['room_condition'], ['Equipment Failure', 'Power/Network Issue', 'Maintenance'])) {
             $hasDiscrepancy = true;
             $discrepancyType = 'Facility / Equipment Failure';
         }
-
-        if ($validated['session_outcome'] === 'Faculty Not Present') {
+        if (! empty($reconciliationResult['contradiction_flags'])) {
             $hasDiscrepancy = true;
-            $discrepancyType = 'Scheduled Room Empty / Faculty Not Present';
+            $discrepancyType = 'Workflow Contradiction Detected';
         }
-
-        $isHistorical = (bool) ($validated['is_historical_reconciliation'] ?? false);
-
-        $sessionData = [
-            'room_id' => $validated['room_id'],
-            'monitored_by_user_id' => $request->user()->id,
-            'scheduled_start_time' => $verified->scheduled_start_time,
-            'scheduled_end_time' => $verified->scheduled_end_time,
-            'scheduled_minutes' => $verified->scheduled_minutes,
-            'actual_start_time' => $validated['actual_start_time'] ?? null,
-            'actual_end_time' => $validated['actual_end_time'] ?? null,
-            'late_minutes' => $lateMinutes,
-            'observed_minutes' => $observedMinutes,
-            'variance_minutes' => $varianceMinutes,
-            'student_headcount' => $validated['student_headcount'] ?? null,
-            'observation_status' => $validated['observation_status'],
-            'room_condition' => $validated['room_condition'],
-            'session_outcome' => $validated['session_outcome'],
-            'alternative_room_id' => $validated['alternative_room_id'] ?? null,
-            'observed_faculty_id' => $validated['observed_faculty_id'] ?? null,
-            'observed_course_code' => $validated['observed_course_code'] ?? null,
-            'observed_section_name' => $validated['observed_section_name'] ?? null,
-            'remarks' => $validated['remarks'] ?? null,
-            'has_discrepancy' => $hasDiscrepancy,
-            'is_historical_reconciliation' => $isHistorical,
-        ];
-
-        if ($photoPath) {
-            $sessionData['photo_path'] = $photoPath;
-        }
-
-        $session = LabMonitoringSession::updateOrCreate(
-            [
-                'verified_schedule_id' => $verified->id,
-                'monitoring_date' => $now->toDateString(),
-            ],
-            $sessionData
-        );
 
         if ($hasDiscrepancy) {
             LabMonitoringDiscrepancy::create([
@@ -1216,71 +1219,67 @@ class LabInChargeMonitoringController extends Controller
                 'reported_by_user_id' => $request->user()->id,
                 'discrepancy_type' => $discrepancyType ?? 'Operational Discrepancy',
                 'severity' => $severity,
-                'expected_state' => $expectedState,
-                'observed_state' => $observedState,
-                'remarks' => $validated['remarks'] ?? 'Reported by Lab In-Charge on live monitoring.',
-                'evidence_details' => 'Evidence recorded during real-time operational check by '.$request->user()->name.($photoPath ? ' (Photo Attached)' : ''),
+                'expected_state' => "Scheduled: {$verified->course->code} with {$verified->faculty->first_name} {$verified->faculty->last_name}",
+                'observed_state' => "Observed: {$outcome} · Modality: {$modality}".(! empty($reconciliationResult['contradiction_flags']) ? ' · Flags: '.implode('; ', $reconciliationResult['contradiction_flags']) : ''),
+                'remarks' => $validated['remarks'] ?? 'Flagged during monitoring reconciliation.',
+                'evidence_details' => 'Recorded by '.$request->user()->name.($photoPath ? ' (Photo Attached)' : ''),
                 'photo_path' => $photoPath,
                 'resolution_status' => 'Reported',
             ]);
         }
 
-        // Direct synchronization to Faculty Member's "My Attendance" module
-        $facultyIdToSync = $validated['observed_faculty_id'] ?? $verified->faculty_id;
-        $facultyRecord = Faculty::find($facultyIdToSync);
+        $msg = "Observation submitted for {$verified->course->code}. Attendance: {$reconciliationResult['attendance_status']}, Delivery: {$reconciliationResult['instructional_status']}.";
 
-        if ($facultyRecord) {
-            $facultyStatus = 'present';
-            $sessionOutcome = $validated['session_outcome'] ?? '';
-            $obsStatus = $validated['observation_status'] ?? '';
+        return back()->with('success', $msg);
+    }
 
-            if ($obsStatus === 'Late' || $lateMinutes > 0 || str_contains(strtolower($sessionOutcome), 'late')) {
-                $facultyStatus = 'late';
-            } elseif ($sessionOutcome === 'Faculty Not Present' || $obsStatus === 'Faculty Not Present') {
-                $facultyStatus = 'absent';
-            } elseif (str_contains(strtolower($sessionOutcome), 'online') || str_contains(strtolower($obsStatus), 'online')) {
-                $facultyStatus = 'online';
-            }
-
-            // Determine week label (e.g. "October 19-25, 2026")
-            $startOfWeek = $now->copy()->startOfWeek(Carbon::MONDAY);
-            $endOfWeek = $now->copy()->endOfWeek(Carbon::FRIDAY);
-            $weekLabel = $startOfWeek->format('F d').'-'.$endOfWeek->format('d, Y');
-
-            $timeSlotLabel = Carbon::parse($verified->scheduled_start_time)->format('h:i A').' – '.Carbon::parse($verified->scheduled_end_time)->format('h:i A');
-
-            FacultyAttendance::updateOrCreate(
-                [
-                    'faculty_id' => $facultyRecord->id,
-                    'session_date' => $now->toDateString(),
-                    'time_slot' => $timeSlotLabel,
-                ],
-                [
-                    'instructor_name' => $facultyRecord->first_name.' '.$facultyRecord->last_name,
-                    'day_of_week' => $verified->day_of_week ?? $now->format('l'),
-                    'scheduled_start_time' => $verified->scheduled_start_time,
-                    'scheduled_end_time' => $verified->scheduled_end_time,
-                    'scheduled_duration_minutes' => $verified->scheduled_minutes ?? 90,
-                    'actual_arrival_time' => $validated['actual_start_time'] ?? null,
-                    'delivered_minutes' => $observedMinutes,
-                    'section' => $verified->section?->code ?? $verified->section?->name ?? 'BSIT',
-                    'subject' => $verified->course?->code ?? 'Lab Class',
-                    'room' => $verified->room?->room_name ?? $verified->room?->name ?? 'Laboratory',
-                    'week_label' => $weekLabel,
-                    'status' => $facultyStatus,
-                    'primary_status' => ucfirst($facultyStatus),
-                    'late_minutes' => $lateMinutes,
-                    'remarks' => $validated['remarks'] ?? 'Verified by Lab In-Charge '.$request->user()->name,
-                    'academic_year' => 'AY 2026–2027',
-                    'semester' => '1st Semester',
-                    'source' => 'Lab In-Charge Operational Monitoring',
-                ]
-            );
+    /**
+     * Head Lab In-Charge verifies the monitored session.
+     */
+    public function verifyObservation(Request $request, LabMonitoringSession $session): RedirectResponse
+    {
+        $user = $request->user();
+        if (! in_array($user->role ?? '', ['Super Admin', 'Dean', 'Program Head', 'Head Lab In-Charge', 'admin'])) {
+            return back()->with('error', 'Unauthorized. Only Head Lab In-Charge or Administrators can verify observations.');
         }
 
-        $msg = $isHistorical ? 'Historical observation recorded' : 'Live observation recorded';
+        $session->verification_status = 'Head Lab In-Charge Verification';
+        $session->verified_by_user_id = $user->id;
+        $session->verified_at = now();
+        $session->save();
 
-        return back()->with('success', "{$msg} for {$verified->course->code}. Late: {$lateMinutes}m, Observed: {$observedMinutes}m.");
+        // Update corresponding FacultyAttendance record
+        FacultyAttendance::where('verified_schedule_id', $session->verified_schedule_id)
+            ->where('date', $session->monitored_date ?? $session->monitoring_date)
+            ->update([
+                'verification_status' => 'Head Lab In-Charge Verification',
+            ]);
+
+        return back()->with('success', "Session observation verified by Head Lab In-Charge {$user->name}.");
+    }
+
+    /**
+     * Finalize the verified monitoring session.
+     */
+    public function finalizeSession(Request $request, LabMonitoringSession $session): RedirectResponse
+    {
+        $user = $request->user();
+        if (! in_array($user->role ?? '', ['Super Admin', 'Dean', 'Program Head', 'Head Lab In-Charge', 'admin'])) {
+            return back()->with('error', 'Unauthorized. Only Administrators can finalize sessions.');
+        }
+
+        $session->verification_status = 'Finalized';
+        $session->verified_by_user_id = $user->id;
+        $session->verified_at = now();
+        $session->save();
+
+        FacultyAttendance::where('verified_schedule_id', $session->verified_schedule_id)
+            ->where('date', $session->monitored_date ?? $session->monitoring_date)
+            ->update([
+                'verification_status' => 'Finalized',
+            ]);
+
+        return back()->with('success', 'Session attendance and instructional recovery obligations finalized.');
     }
 
     /**

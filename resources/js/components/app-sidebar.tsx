@@ -67,6 +67,8 @@ import {
     Network,
     Compass,
     FileSearch,
+    MapPin,
+    Plane,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -95,6 +97,8 @@ const adminNavGroups: NavGroup[] = [
         items: [
             { title: 'Faculty Members', url: '/faculties', icon: Users },
             { title: 'Compliance', url: '/compliance/requirements', icon: CheckSquare },
+            { title: 'Locator Slips', url: '/operations/locator-slips', icon: MapPin },
+            { title: 'Travel Orders', url: '/operations/travel-orders', icon: Plane },
             { title: 'Faculty Workload', url: '/operations/faculty-workload', icon: Briefcase },
             { title: 'Make-Up Classes', url: '/operations/make-up-classes', icon: RefreshCw },
             { title: 'Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },
@@ -345,6 +349,8 @@ const deanNavGroups: NavGroup[] = [
         title: 'COLLEGE OVERSIGHT',
         items: [
             { title: 'College Requirements', url: '/compliance/requirements', icon: LibraryBig },
+            { title: 'Locator Slips', url: '/operations/locator-slips', icon: MapPin },
+            { title: 'Travel Orders', url: '/operations/travel-orders', icon: Plane },
             { title: 'Faculty Attendance Monitor', url: '/faculty-attendance', icon: ClipboardCheck },
             { title: 'Make-Up Class Approvals', url: '/operations/make-up-classes', icon: RefreshCw },
             { title: 'College Exam Monitoring', url: '/operations/exam-monitoring', icon: CalendarDays },

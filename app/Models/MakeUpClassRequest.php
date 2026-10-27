@@ -46,6 +46,13 @@ class MakeUpClassRequest extends Model
         'actual_attendance_count',
         'completion_remarks',
         'evidence_path',
+        'verified_schedule_id',
+        'source_reason',
+        'required_recovery_minutes',
+        'completed_recovery_minutes',
+        'lab_monitoring_session_id',
+        'lab_in_charge_verified_at',
+        'lab_in_charge_verified_by_id',
     ];
 
     /**

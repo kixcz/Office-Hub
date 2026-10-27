@@ -24,6 +24,9 @@ import {
     Laptop,
     Lightbulb,
     MapPin,
+    Navigation,
+    Compass,
+    Plane,
     Medal,
     Megaphone,
     Monitor,
@@ -50,7 +53,16 @@ import {
     FolderGit2,
     ListTodo,
     Paperclip,
+    Briefcase,
+    Send,
+    Brush,
+    Paintbrush,
     Heart,
+    Handshake,
+    Leaf,
+    Sprout,
+    Trash2,
+    PartyPopper,
     type LucideIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, createContext, useContext, type ReactNode } from 'react';
@@ -77,6 +89,8 @@ const SLIDE_TYPES = {
     ten: 'Slide 10 - Tasks & Projects',
     eleven: 'Slide 11 - Program Performance',
     twelve: 'Slide 12 - Cleaners Duty',
+    thirteen: 'Slide 13 - Locator Slips',
+    fourteen: 'Slide 14 - Travel Orders',
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -257,6 +271,8 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
                 {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.ten || currentSlide.type.includes('Tasks & Projects') || currentSlide.type.includes('Tasks and Projects')) && <SlideTen data={data.slide10} isDark={isDark} />}
                 {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.eleven || currentSlide.type.includes('Program Performance')) && <SlideEleven data={data.slide11} isDark={isDark} />}
                 {!currentSlide.is_spotlight && (currentSlide.is_cleaners || currentSlide.type === SLIDE_TYPES.twelve || currentSlide.type.includes('Cleaners Duty') || currentSlide.type.includes('Cleaning Schedule')) && <SlideTwelve data={data.slide12} isDark={isDark} />}
+                {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.thirteen || currentSlide.type.includes('Locator Slip') || currentSlide.type.includes('Locator Slips')) && <SlideThirteen data={data.slide13} isDark={isDark} />}
+                {!currentSlide.is_spotlight && (currentSlide.type === SLIDE_TYPES.fourteen || currentSlide.type.includes('Travel Order') || currentSlide.type.includes('Travel Orders')) && <SlideFourteen data={data.slide14} isDark={isDark} />}
             </div>
 
             {/* Footer - Styled precisely as in reference images */}
@@ -5139,46 +5155,36 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                     ? "bg-[#101726]/90 border-white/10 text-white" 
                     : "bg-gradient-to-r from-amber-50/70 via-white to-amber-50/50 border-amber-200/80 text-slate-900"
             )}>
-                {/* Left: Institute & Logos */}
+                {/* Left: Logos & OFFICE CLEANING SCHEDULES title */}
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 shrink-0">
                         <img src="/DSSC.jpg" alt="DSSC" className="h-10 w-10 object-contain rounded-full shadow-xs" />
                         <img src="/CIDS_Logo.png" alt="CIDS" className="h-10 w-10 object-contain rounded-full shadow-xs" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                            DAVAO DEL SUR STATE COLLEGE
-                        </p>
-                        <p className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-amber-400">
-                            COLLEGE OF INFORMATION AND DIGITAL SCIENCES
-                        </p>
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="w-5 h-5 text-amber-500 shrink-0" />
+                            <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white drop-shadow-xs">
+                                OFFICE CLEANING SCHEDULES
+                            </h1>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[11px] font-black tracking-widest uppercase text-amber-700 dark:text-amber-400">
+                                {subtitle}
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded-full bg-amber-400/90 text-slate-950 font-black text-[9px] uppercase tracking-wider shadow-xs">
+                                {scope_badge}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Center: Main Banner Title */}
-                <div className="flex flex-col items-center text-center">
-                    <div className="flex items-center gap-2">
-                        <span className="text-2xl animate-bounce">🧹</span>
-                        <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white drop-shadow-xs">
-                            {title}
-                        </h1>
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[11px] font-black tracking-widest uppercase text-amber-700 dark:text-amber-400">
-                            {subtitle}
-                        </span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-amber-400/90 text-slate-950 font-black text-[9px] uppercase tracking-wider shadow-xs">
-                            {scope_badge}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Right: Cheerful Banner & Live Badge */}
+                {/* Right: Cheerful Banner & Cleaning Week */}
                 <div className="flex items-center gap-3">
                     <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100/80 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/50 text-[10px] font-bold text-amber-900 dark:text-amber-200 shadow-2xs">
-                        <span>✨</span>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                         <span>Same Team, Cleaner Spaces!</span>
-                        <span>💛</span>
+                        <Heart className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                     </div>
                     <div className="text-right">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
@@ -5200,8 +5206,8 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                         ? "bg-[#131b2e] border-white/10" 
                         : "bg-white border-slate-200/90"
                 )}>
-                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-xl shrink-0 shadow-xs">
-                        🥰
+                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0 shadow-xs">
+                        <Heart className="w-5 h-5 text-amber-600 dark:text-amber-400 fill-amber-500/20" />
                     </div>
                     <div className="min-w-0">
                         <p className="text-xs font-black tracking-tight text-slate-900 dark:text-white leading-tight">
@@ -5216,29 +5222,32 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                 {/* Right 4 Pillar Badges (8 cols) */}
                 <div className="col-span-8 grid grid-cols-4 gap-2">
                     {[
-                        { title: 'CLEAN WORKSPACE', icon: '✨', sub: 'Spotless Desks' },
-                        { title: 'BETTER COLLABORATION', icon: '🤝', sub: 'Organized Labs' },
-                        { title: 'HEALTHIER COMMUNITY', icon: '🌿', sub: 'Safe & Fresh' },
-                        { title: 'A STRONGER CIDS', icon: '🛡️', sub: 'Excellence' },
-                    ].map((pill, idx) => (
-                        <div
-                            key={idx}
-                            className={cn(
-                                "rounded-xl px-2 py-2 border shadow-2xs flex flex-col items-center justify-center text-center transition-all",
-                                isDark 
-                                    ? "bg-[#131b2e] border-white/10" 
-                                    : "bg-white border-slate-200/80"
-                            )}
-                        >
-                            <span className="text-base leading-none mb-0.5">{pill.icon}</span>
-                            <span className="text-[9px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 leading-tight">
-                                {pill.title}
-                            </span>
-                            <span className="text-[8px] font-medium text-slate-400 dark:text-slate-500">
-                                {pill.sub}
-                            </span>
-                        </div>
-                    ))}
+                        { title: 'CLEAN WORKSPACE', icon: Sparkles, sub: 'Spotless Desks', color: 'text-amber-500' },
+                        { title: 'BETTER COLLABORATION', icon: Handshake, sub: 'Organized Labs', color: 'text-amber-600' },
+                        { title: 'HEALTHIER COMMUNITY', icon: Leaf, sub: 'Safe & Fresh', color: 'text-emerald-500' },
+                        { title: 'A STRONGER CIDS', icon: ShieldCheck, sub: 'Excellence', color: 'text-sky-500' },
+                    ].map((pill, idx) => {
+                        const IconComponent = pill.icon;
+                        return (
+                            <div
+                                key={idx}
+                                className={cn(
+                                    "rounded-xl px-2 py-2 border shadow-2xs flex flex-col items-center justify-center text-center transition-all",
+                                    isDark 
+                                        ? "bg-[#131b2e] border-white/10" 
+                                        : "bg-white border-slate-200/80"
+                                )}
+                            >
+                                <IconComponent className={cn("w-4 h-4 mb-0.5", pill.color)} />
+                                <span className="text-[9px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 leading-tight">
+                                    {pill.title}
+                                </span>
+                                <span className="text-[8px] font-medium text-slate-400 dark:text-slate-500">
+                                    {pill.sub}
+                                </span>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -5297,7 +5306,7 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                                     isToday
                                         ? "bg-slate-950/20 text-slate-950"
                                         : "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-                                )}>
+                                    )}>
                                     <Users size={10} />
                                     <span>{cleaners.length} CLEANERS</span>
                                 </div>
@@ -5340,7 +5349,6 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                                                 }}
                                             />
 
-
                                             {/* Cleaner Name & Role */}
                                             <div className="min-w-0 flex-1">
                                                 <p className={cn(
@@ -5360,12 +5368,16 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
 
                             {/* Card Slogan Footer */}
                             <div className={cn(
-                                "px-2 py-1.5 border-t text-center shrink-0 flex items-center justify-center gap-1",
+                                "px-2 py-1.5 border-t text-center shrink-0 flex items-center justify-center gap-1.5",
                                 isToday
                                     ? "bg-amber-400/20 border-amber-400/40 text-amber-900 dark:text-amber-300 font-black text-[9px]"
                                     : "bg-slate-50/50 dark:bg-white/[0.02] border-slate-100 dark:border-white/5 text-slate-500 dark:text-slate-400 font-bold text-[8.5px]"
                             )}>
-                                <span>{dayIdx === 0 ? '🧹' : dayIdx === 1 ? '🗑️' : dayIdx === 2 ? '🧼' : dayIdx === 3 ? '🧽' : '🎉'}</span>
+                                {dayIdx === 0 && <Brush className="w-3 h-3 text-amber-500" />}
+                                {dayIdx === 1 && <Trash2 className="w-3 h-3 text-amber-500" />}
+                                {dayIdx === 2 && <Sparkles className="w-3 h-3 text-amber-500" />}
+                                {dayIdx === 3 && <Heart className="w-3 h-3 text-amber-500" />}
+                                {dayIdx === 4 && <PartyPopper className="w-3 h-3 text-amber-500" />}
                                 <span className="italic">{dayItem.slogan || 'Keep it clean!'}</span>
                             </div>
                         </div>
@@ -5373,7 +5385,7 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                 })}
             </div>
 
-            {/* Bottom Slogan Bar matching Reference Image */}
+            {/* Bottom Slogan Bar */}
             <div className={cn(
                 "rounded-xl px-5 py-1.5 border shadow-2xs flex items-center justify-between shrink-0",
                 isDark 
@@ -5394,23 +5406,929 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
 
                 {/* Mid Values */}
                 <div className="hidden md:flex items-center gap-5 text-[9px] font-bold text-slate-300">
-                    <span className="flex items-center gap-1">
-                        <span className="text-amber-400">💼</span> ORGANIZED OFFICE
+                    <span className="flex items-center gap-1.5">
+                        <Briefcase className="w-3.5 h-3.5 text-amber-400" /> ORGANIZED OFFICE
                     </span>
-                    <span className="flex items-center gap-1">
-                        <span className="text-amber-400">👥</span> PRODUCTIVE PEOPLE
+                    <span className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-amber-400" /> PRODUCTIVE PEOPLE
                     </span>
-                    <span className="flex items-center gap-1">
-                        <span className="text-amber-400">🌱</span> HEALTHIER ENVIRONMENT
+                    <span className="flex items-center gap-1.5">
+                        <Sprout className="w-3.5 h-3.5 text-amber-400" /> HEALTHIER ENVIRONMENT
                     </span>
-                    <span className="flex items-center gap-1">
-                        <span className="text-amber-400">📈</span> A STRONGER CIDS
+                    <span className="flex items-center gap-1.5">
+                        <TrendingUp className="w-3.5 h-3.5 text-amber-400" /> A STRONGER CIDS
                     </span>
                 </div>
 
                 {/* Right Motto */}
                 <div className="text-[9px] font-black tracking-widest text-amber-400 uppercase">
                     DISCIPLINE · COLLABORATION · SERVICE
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Slide 13: Faculty Locator Slips Live Monitoring Slide (Reference Match)   */
+/* -------------------------------------------------------------------------- */
+
+function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
+    const stats = data?.stats || {
+        on_campus: 0,
+        official_business: 0,
+        leave: 0,
+        other_campus: 0,
+        total_faculty: 0,
+        off_campus_total: 0,
+        upcoming_total: 0,
+    };
+    const onCampusList = data?.on_campus_list || [];
+    const offCampusToday = data?.off_campus_today || [];
+    const upcomingOffCampus = data?.upcoming_off_campus || [];
+    const lastUpdated = data?.last_updated || 'Oct 27, 2026 • 03:42 PM';
+
+    return (
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3 select-none overflow-hidden font-['Poppins',sans-serif]">
+            {/* 1. Top Section: 5 Metric Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 shrink-0 items-stretch">
+                {/* Stat 1: On Campus (Green) */}
+                <div className={cn(
+                    "rounded-2xl p-3 sm:p-3.5 border flex items-center gap-3 shadow-xs transition-colors",
+                    isDark ? "bg-slate-900/90 border-slate-800 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                )}>
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
+                        <Users className="w-6 h-6" />
+                    </div>
+                    <div className="min-w-0">
+                        <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white leading-none block">
+                            {stats.on_campus}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                                On Campus
+                            </span>
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stat 2: Official Business (Yellow/Amber) */}
+                <div className={cn(
+                    "rounded-2xl p-3 sm:p-3.5 border flex items-center gap-3 shadow-xs transition-colors",
+                    isDark ? "bg-slate-900/90 border-slate-800 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                )}>
+                    <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center shrink-0 text-amber-500 dark:text-amber-400">
+                        <Plane className="w-6 h-6 fill-amber-500/20 -rotate-45" />
+                    </div>
+                    <div className="min-w-0">
+                        <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white leading-none block">
+                            {stats.official_business}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">
+                                Official Business
+                            </span>
+                            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stat 3: Leave (Blue) */}
+                <div className={cn(
+                    "rounded-2xl p-3 sm:p-3.5 border flex items-center gap-3 shadow-xs transition-colors",
+                    isDark ? "bg-slate-900/90 border-slate-800 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                )}>
+                    <div className="w-11 h-11 rounded-xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center shrink-0 text-sky-600 dark:text-sky-400">
+                        <Briefcase className="w-6 h-6" />
+                    </div>
+                    <div className="min-w-0">
+                        <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white leading-none block">
+                            {stats.leave}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                                Leave
+                            </span>
+                            <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stat 4: Other Campus (Purple) */}
+                <div className={cn(
+                    "rounded-2xl p-3 sm:p-3.5 border flex items-center gap-3 shadow-xs transition-colors",
+                    isDark ? "bg-slate-900/90 border-slate-800 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                )}>
+                    <div className="w-11 h-11 rounded-xl bg-purple-50 dark:bg-purple-950/60 flex items-center justify-center shrink-0 text-purple-600 dark:text-purple-400">
+                        <Building2 className="w-6 h-6" />
+                    </div>
+                    <div className="min-w-0">
+                        <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white leading-none block">
+                            {stats.other_campus}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                                Other Campus
+                            </span>
+                            <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stat 5: Total Faculty (Slate) */}
+                <div className={cn(
+                    "col-span-2 sm:col-span-1 rounded-2xl p-3 sm:p-3.5 border flex items-center gap-3 shadow-xs transition-colors",
+                    isDark ? "bg-slate-900/90 border-slate-800 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                )}>
+                    <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
+                        <Users className="w-6 h-6" />
+                    </div>
+                    <div className="min-w-0">
+                        <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white leading-none block">
+                            {stats.total_faculty}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                                Total Faculty
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. Main Two-Column Layout */}
+            <div className="grid grid-cols-12 gap-3.5 flex-1 min-h-0 overflow-hidden">
+                {/* Left Column: On Campus Today Table (6 cols) */}
+                <div className={cn(
+                    "col-span-12 lg:col-span-6 rounded-2xl border p-4 sm:p-5 flex flex-col justify-between shadow-xs overflow-hidden",
+                    isDark ? "bg-slate-900/90 border-slate-800 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                )}>
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3 mb-3 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-emerald-100/80 dark:bg-emerald-950/80 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
+                                <Users className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black tracking-tight text-slate-950 dark:text-white leading-tight">
+                                    ON CAMPUS TODAY
+                                </h3>
+                                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Faculty currently inside the campus based on submitted locator slips.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Green Count Pill */}
+                        <span className="shrink-0 px-3 py-1 rounded-full text-xs font-black tracking-wide bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800">
+                            {stats.on_campus} Faculty
+                        </span>
+                    </div>
+
+                    {/* Table */}
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                        <table className="w-full text-left text-xs">
+                            <thead>
+                                <tr className={cn(
+                                    "border-b text-[10px] font-black uppercase tracking-wider",
+                                    isDark ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-400"
+                                    )}>
+                                    <th className="pb-2 w-7">#</th>
+                                    <th className="pb-2">Faculty</th>
+                                    <th className="pb-2">Program</th>
+                                    <th className="pb-2">Time In</th>
+                                    <th className="pb-2">Purpose / Location</th>
+                                    <th className="pb-2 text-right pr-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                {onCampusList.slice(0, 8).map((f: any, idx: number) => (
+                                    <tr key={f.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <td className="py-2 text-slate-400 font-bold">{idx + 1}</td>
+                                        <td className="py-2">
+                                            <div className="flex items-center gap-2">
+                                                {f.photo_url ? (
+                                                    <img
+                                                        src={f.photo_url}
+                                                        alt={f.faculty_name}
+                                                        className="w-7 h-7 rounded-full object-cover shrink-0 border border-slate-200 dark:border-slate-700"
+                                                    />
+                                                ) : (
+                                                    <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-black text-[10px] flex items-center justify-center shrink-0">
+                                                        {f.initials || f.faculty_name?.charAt(0) || 'F'}
+                                                    </div>
+                                                )}
+                                                <span className="font-extrabold text-slate-950 dark:text-white truncate">
+                                                    {f.faculty_name}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="py-2 font-bold text-slate-600 dark:text-slate-300">
+                                            {f.program}
+                                        </td>
+                                        <td className="py-2 font-semibold text-slate-600 dark:text-slate-300 text-[11px]">
+                                            {f.time_in}
+                                        </td>
+                                        <td className="py-2 font-medium text-slate-700 dark:text-slate-300 truncate max-w-[180px]">
+                                            {f.purpose_location}
+                                        </td>
+                                        <td className="py-2 text-right pr-2">
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                                On Campus
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Bottom Action / Last updated line */}
+                    <div className="pt-2.5 border-t flex items-center justify-between text-[11px] text-slate-400 shrink-0">
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-200 text-xs">
+                            <span>View All On-Campus Faculty</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex items-center gap-1.5 font-medium">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <span>Last updated: {lastUpdated}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Column: Off-Campus Today & Upcoming Off-Campus (6 cols) */}
+                <div className="col-span-12 lg:col-span-6 flex flex-col gap-3.5 min-h-0 overflow-hidden">
+                    {/* Top Card: Off Campus Today */}
+                    <div className={cn(
+                        "flex-1 min-h-0 rounded-2xl border p-4 sm:p-4.5 flex flex-col justify-between shadow-xs overflow-hidden",
+                        isDark ? "bg-slate-900/90 border-slate-800 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                    )}>
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-3 mb-2.5 shrink-0">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center shrink-0 text-rose-500 dark:text-rose-400">
+                                    <Send className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black tracking-tight text-slate-950 dark:text-white leading-tight">
+                                        OFF CAMPUS TODAY
+                                    </h4>
+                                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Faculty who are currently on Official Business, Leave, or in Other Campus.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Pink Pill */}
+                            <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide bg-rose-50 dark:bg-rose-950/60 text-rose-500 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60">
+                                {stats.off_campus_total} Faculty
+                            </span>
+                        </div>
+
+                        {/* Off Campus Cards List */}
+                        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-2.5 pr-0.5">
+                            {offCampusToday.length === 0 ? (
+                                <div className="py-8 text-center text-slate-400 text-xs">
+                                    No faculty off-campus at this time.
+                                </div>
+                            ) : (
+                                offCampusToday.slice(0, 4).map((f: any) => (
+                                    <div
+                                        key={f.id}
+                                        className={cn(
+                                            "rounded-xl border p-2.5 sm:p-3 transition-all",
+                                            isDark 
+                                                ? "bg-slate-800/40 border-slate-700/80 hover:border-amber-400/50" 
+                                                : "bg-amber-50/20 border-amber-300/80 hover:border-amber-400"
+                                        )}
+                                    >
+                                        {/* Top Row: Avatar + Faculty Name + Badges + Date + Status */}
+                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                {f.photo_url ? (
+                                                    <img
+                                                        src={f.photo_url}
+                                                        alt={f.faculty_name}
+                                                        className="w-8 h-8 rounded-full object-cover shrink-0 border border-amber-300 dark:border-amber-600 shadow-2xs"
+                                                    />
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 font-black text-xs flex items-center justify-center shrink-0 border border-amber-300 dark:border-amber-700">
+                                                        {f.faculty_name?.charAt(0) || 'F'}
+                                                    </div>
+                                                )}
+                                                <div className="min-w-0">
+                                                    <p className="font-extrabold text-xs text-slate-950 dark:text-white leading-tight truncate">
+                                                        {f.faculty_name}
+                                                    </p>
+                                                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-tight">
+                                                        {f.program}
+                                                    </p>
+                                                </div>
+                                                {/* Type Badge */}
+                                                <span className={cn(
+                                                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold border shrink-0",
+                                                    f.type === 'Official Business'
+                                                        ? "bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700"
+                                                        : f.type_category === 'leave'
+                                                        ? "bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-700"
+                                                        : "bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700"
+                                                )}>
+                                                    <FileText className="w-2.5 h-2.5" />
+                                                    {f.type}
+                                                </span>
+                                            </div>
+
+                                            {/* Right: Date Range + Status */}
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                                                    <CalendarIcon className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                                                    <span>{f.date_range}</span>
+                                                </div>
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                                                    {f.status}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Bottom Row: Destination (Left) & Purpose (Right) */}
+                                        <div className="grid grid-cols-12 gap-3 pt-1 text-[10px] leading-tight border-t border-slate-100 dark:border-slate-800/60">
+                                            {/* Destination */}
+                                            <div className="col-span-5 flex items-start gap-1.5 min-w-0">
+                                                <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                                <div className="min-w-0">
+                                                    <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">
+                                                        Destination
+                                                    </span>
+                                                    <span className="font-extrabold text-slate-800 dark:text-slate-200 break-words">
+                                                        {f.destination || f.location_purpose || 'Off Campus'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Purpose / Activity */}
+                                            <div className="col-span-7 flex items-start gap-1.5 min-w-0">
+                                                <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                                <div className="min-w-0">
+                                                    <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">
+                                                        Purpose / Activity
+                                                    </span>
+                                                    <p className="font-medium text-slate-600 dark:text-slate-300 break-words line-clamp-2">
+                                                        {f.purpose || f.destination || 'Authorized official activity'}
+                                                    </p>
+                                                    {f.time_window && (
+                                                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 block">
+                                                            {f.time_window}
+                                                        </span>
+                                                    )}
+                                                    {f.slip_number && (
+                                                        <span className="text-[8.5px] font-mono text-slate-400 dark:text-slate-500 block">
+                                                            Slip: {f.slip_number}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Bottom Link */}
+                        <div className="pt-2 border-t shrink-0">
+                            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-200 text-[10px]">
+                                <span>View All Off-Campus Faculty</span>
+                                <ChevronRight className="w-3 h-3" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Card: Upcoming Off-Campus Engagements */}
+                    <div className={cn(
+                        "flex-1 min-h-0 rounded-2xl border p-4 sm:p-4.5 flex flex-col justify-between shadow-xs overflow-hidden",
+                        isDark ? "bg-slate-900/90 border-slate-800 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                    )}>
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-3 mb-2.5 shrink-0">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center shrink-0 text-amber-500 dark:text-amber-400">
+                                    <CalendarIcon className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black tracking-tight text-slate-950 dark:text-white leading-tight">
+                                        UPCOMING OFF-CAMPUS ENGAGEMENTS
+                                    </h4>
+                                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Faculty with approved locator slips for the coming days.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Orange Pill */}
+                            <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60">
+                                {stats.upcoming_total} Upcoming
+                            </span>
+                        </div>
+
+                        {/* Upcoming Cards List */}
+                        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-2.5 pr-0.5">
+                            {upcomingOffCampus.length === 0 ? (
+                                <div className="py-8 text-center text-slate-400 text-xs">
+                                    No upcoming off-campus engagements.
+                                </div>
+                            ) : (
+                                upcomingOffCampus.slice(0, 3).map((f: any) => (
+                                    <div
+                                        key={f.id}
+                                        className={cn(
+                                            "rounded-xl border p-2.5 sm:p-3 transition-all",
+                                            isDark 
+                                                ? "bg-slate-800/40 border-slate-700/80 hover:border-amber-400/50" 
+                                                : "bg-amber-50/20 border-amber-300/80 hover:border-amber-400"
+                                        )}
+                                    >
+                                        {/* Top Row: Avatar + Faculty Name + Badges + Date + Starts In */}
+                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                {f.photo_url ? (
+                                                    <img
+                                                        src={f.photo_url}
+                                                        alt={f.faculty_name}
+                                                        className="w-8 h-8 rounded-full object-cover shrink-0 border border-amber-300 dark:border-amber-600 shadow-2xs"
+                                                    />
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 font-black text-xs flex items-center justify-center shrink-0 border border-amber-300 dark:border-amber-700">
+                                                        {f.faculty_name?.charAt(0) || 'F'}
+                                                    </div>
+                                                )}
+                                                <div className="min-w-0">
+                                                    <p className="font-extrabold text-xs text-slate-950 dark:text-white leading-tight truncate">
+                                                        {f.faculty_name}
+                                                    </p>
+                                                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-tight">
+                                                        {f.program}
+                                                    </p>
+                                                </div>
+                                                {/* Type Badge */}
+                                                <span className={cn(
+                                                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold border shrink-0",
+                                                    f.type === 'Official Business'
+                                                        ? "bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700"
+                                                        : f.type_category === 'leave'
+                                                        ? "bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-700"
+                                                        : "bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700"
+                                                )}>
+                                                    <FileText className="w-2.5 h-2.5" />
+                                                    {f.type}
+                                                </span>
+                                            </div>
+
+                                            {/* Right: Date + Starts In Badge */}
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                                                    <CalendarIcon className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                                                    <span>{f.date_range}</span>
+                                                </div>
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                                                    <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                                                    {f.starts_in}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Bottom Row: Destination (Left) & Purpose (Right) */}
+                                        <div className="grid grid-cols-12 gap-3 pt-1 text-[10px] leading-tight border-t border-slate-100 dark:border-slate-800/60">
+                                            {/* Destination */}
+                                            <div className="col-span-5 flex items-start gap-1.5 min-w-0">
+                                                <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                                <div className="min-w-0">
+                                                    <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">
+                                                        Destination
+                                                    </span>
+                                                    <span className="font-extrabold text-slate-800 dark:text-slate-200 break-words">
+                                                        {f.destination || f.location_purpose || 'Off Campus'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Purpose / Activity */}
+                                            <div className="col-span-7 flex items-start gap-1.5 min-w-0">
+                                                <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                                <div className="min-w-0">
+                                                    <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">
+                                                        Purpose / Activity
+                                                    </span>
+                                                    <p className="font-medium text-slate-600 dark:text-slate-300 break-words line-clamp-2">
+                                                        {f.purpose || f.destination || 'Authorized official activity'}
+                                                    </p>
+                                                    {f.time_window && (
+                                                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 block">
+                                                            {f.time_window}
+                                                        </span>
+                                                    )}
+                                                    {f.slip_number && (
+                                                        <span className="text-[8.5px] font-mono text-slate-400 dark:text-slate-500 block">
+                                                            Slip: {f.slip_number}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Slide 14: Faculty Travel Orders Live TV Slide (Matches Exact Reference)  */
+/* -------------------------------------------------------------------------- */
+
+function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
+    const featuredOrders = data?.featured_orders || data?.traveling_now || [];
+    const allOrders = data?.all_orders || [];
+    const stats = data?.stats || {
+        traveling_now: 0,
+        approved_this_month: 0,
+        upcoming: 0,
+        completed: 0,
+        total: 0,
+    };
+
+    return (
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3.5 select-none overflow-hidden font-['Poppins',sans-serif]">
+            {/* 1. Top Section: Header Hero Banner & 4 Stat Cards */}
+            <div className="grid grid-cols-12 gap-3.5 shrink-0 items-stretch">
+                {/* Left Hero Yellow Banner */}
+                <div className={cn(
+                    "col-span-12 lg:col-span-6 rounded-2xl p-4 sm:p-5 flex items-center gap-4 border shadow-xs transition-colors",
+                    isDark
+                        ? "bg-[#FFF9E6]/10 border-[#FACC15]/50 text-white ring-1 ring-[#FACC15]/20"
+                        : "bg-[#FFF9E6] border-[#FDE68A] text-slate-900"
+                )}>
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#FACC15] flex items-center justify-center shrink-0 shadow-xs">
+                        <Plane className="w-7 h-7 sm:w-8 sm:h-8 text-slate-950 fill-slate-950 -rotate-45" />
+                    </div>
+                    <div className="min-w-0">
+                        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950 dark:text-white leading-none">
+                            Traveling Now
+                        </h2>
+                        <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 mt-1.5 leading-snug">
+                            Faculty whose approved travel date range includes today are considered traveling; upcoming travels start soon.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Right 4 Stat Cards */}
+                <div className="col-span-12 lg:col-span-6 grid grid-cols-2 sm:grid-cols-4 gap-3 items-stretch">
+                    {/* Stat 1: Traveling Now (Highlighted Yellow) */}
+                    <div className={cn(
+                        "rounded-2xl p-3 border-2 flex items-center gap-3 shadow-xs",
+                        isDark
+                            ? "bg-amber-950/40 border-[#FACC15] text-white ring-1 ring-yellow-400/20"
+                            : "bg-[#FFF9E6] border-[#FACC15] text-slate-950"
+                    )}>
+                        <div className="w-10 h-10 rounded-full bg-[#FACC15] flex items-center justify-center shrink-0 shadow-2xs">
+                            <Plane className="w-5 h-5 text-slate-950 fill-slate-950 -rotate-45" />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-300 leading-tight block">
+                                Traveling Now
+                            </span>
+                            <span className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white leading-none block mt-0.5">
+                                {stats.traveling_now}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Stat 2: Approved Orders This Month */}
+                    <div className={cn(
+                        "rounded-2xl p-3 border flex items-center gap-2.5 shadow-xs",
+                        isDark ? "bg-slate-900/90 border-[#FACC15]/40 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                    )}>
+                        <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
+                            <FileText className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-tight block">
+                                Approved Orders This Month
+                            </span>
+                            <span className="text-lg sm:text-xl font-black text-slate-950 dark:text-white leading-none block mt-0.5">
+                                {stats.approved_this_month}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Stat 3: Upcoming */}
+                    <div className={cn(
+                        "rounded-2xl p-3 border flex items-center gap-2.5 shadow-xs",
+                        isDark ? "bg-slate-900/90 border-[#FACC15]/40 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                    )}>
+                        <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center shrink-0 text-sky-600 dark:text-sky-400">
+                            <CalendarIcon className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-tight block">
+                                Upcoming
+                            </span>
+                            <span className="text-lg sm:text-xl font-black text-slate-950 dark:text-white leading-none block mt-0.5">
+                                {stats.upcoming}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Stat 4: Completed */}
+                    <div className={cn(
+                        "rounded-2xl p-3 border flex items-center gap-2.5 shadow-xs",
+                        isDark ? "bg-slate-900/90 border-[#FACC15]/40 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                    )}>
+                        <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-tight block">
+                                Completed
+                            </span>
+                            <span className="text-lg sm:text-xl font-black text-slate-950 dark:text-white leading-none block mt-0.5">
+                                {stats.completed}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. Middle Row: 4 Traveling Now / Upcoming Faculty Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 shrink-0">
+                {featuredOrders.length === 0 ? (
+                    <div className="col-span-full py-8 px-4 rounded-2xl border border-dashed border-amber-300 dark:border-[#FACC15]/50 text-center text-slate-400 bg-white/50 dark:bg-slate-900/40">
+                        <p className="text-sm font-semibold">No faculty members currently traveling or scheduled today.</p>
+                    </div>
+                ) : (
+                    featuredOrders.slice(0, 4).map((f: any) => {
+                        const isCardUpcoming = f.status === 'Upcoming';
+
+                        return (
+                            <div
+                                key={f.id}
+                                className={cn(
+                                    "rounded-2xl border p-4 flex flex-col justify-between shadow-xs transition-colors relative overflow-hidden",
+                                    isDark
+                                        ? "bg-slate-900/90 border-[#FACC15]/40 text-white ring-1 ring-[#FACC15]/10"
+                                        : "bg-white border-slate-200/90 text-slate-900"
+                                )}
+                            >
+                                {/* Card Top: Avatar, Name, Program, Rank, Traveling / Upcoming Pill */}
+                                <div>
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            {f.photo_url ? (
+                                                <img
+                                                    src={f.photo_url}
+                                                    alt={f.faculty_name}
+                                                    className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200 dark:border-slate-700"
+                                                />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-800 font-black text-sm flex items-center justify-center shrink-0">
+                                                    {f.faculty_name?.charAt(0) || 'F'}
+                                                </div>
+                                            )}
+                                            <div className="min-w-0">
+                                                <h3 className="font-extrabold text-sm text-slate-950 dark:text-white truncate leading-tight">
+                                                    {f.faculty_name}
+                                                </h3>
+                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{f.program}</span>
+                                                    {' • '}
+                                                    <span>{f.academic_rank}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Status Badge: Yellow Traveling Now or Sky Upcoming */}
+                                        {isCardUpcoming ? (
+                                            <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700 flex items-center gap-1 shadow-2xs">
+                                                <CalendarIcon className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+                                                Upcoming
+                                            </span>
+                                        ) : (
+                                            <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide bg-[#FACC15] text-slate-950 flex items-center gap-1 shadow-2xs">
+                                                <Plane className="w-3 h-3 fill-slate-950 -rotate-45" />
+                                                Traveling Now
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Destination */}
+                                    <div className="mt-3 flex items-start gap-2">
+                                        <MapPin className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0 mt-0.5" />
+                                        <div className="min-w-0">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">
+                                                DESTINATION
+                                            </span>
+                                            <p className="text-xs font-bold text-slate-950 dark:text-slate-100 truncate mt-1">
+                                                {f.destination}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Purpose / Activity */}
+                                    <div className="mt-2.5 flex items-start gap-2">
+                                        <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                        <div className="min-w-0">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">
+                                                PURPOSE / ACTIVITY
+                                            </span>
+                                            <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 mt-1 leading-snug">
+                                                {f.purpose}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Approved Dates */}
+                                    <div className="mt-2.5 flex items-start gap-2">
+                                        <CalendarIcon className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                        <div className="min-w-0">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">
+                                                APPROVED DATES
+                                            </span>
+                                            <p className="text-xs font-extrabold text-slate-950 dark:text-white mt-1">
+                                                {f.approved_dates_formatted}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Card Footer: Days to come or Day X of Y */}
+                                <div className={cn(
+                                    "mt-3.5 px-3 py-1.5 rounded-xl flex items-center justify-between text-[11px] font-bold",
+                                    isCardUpcoming
+                                        ? (isDark
+                                            ? "bg-sky-950/40 border border-sky-500/30 text-sky-300"
+                                            : "bg-sky-50 border border-sky-200 text-sky-900")
+                                        : (isDark
+                                            ? "bg-amber-950/40 border border-[#FACC15]/30 text-amber-300"
+                                            : "bg-[#FFF9E6] border border-[#FDE68A] text-slate-900")
+                                )}>
+                                    <span className={cn(
+                                        "flex items-center gap-1.5 font-black",
+                                        isCardUpcoming
+                                            ? "text-sky-700 dark:text-sky-300"
+                                            : "text-slate-950 dark:text-amber-300"
+                                    )}>
+                                        <CalendarIcon className={cn("w-3.5 h-3.5", isCardUpcoming ? "text-sky-500" : "text-amber-500")} />
+                                        {typeof f.note === 'string'
+                                            ? f.note.replace(/\b(\d+)\.\d+\b/g, (_, intPart) => intPart)
+                                            : f.note}
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                                        {f.date_range_short}
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+
+            {/* 3. Bottom Table Section: All Travel Orders */}
+            <div className={cn(
+                "flex-1 min-h-0 rounded-2xl border p-4 flex flex-col justify-between shadow-xs overflow-hidden",
+                isDark ? "bg-slate-900/90 border-[#FACC15]/40 text-white ring-1 ring-[#FACC15]/10" : "bg-white border-slate-200/90 text-slate-900"
+            )}>
+                {/* Table Header Row */}
+                <div className="flex items-center justify-between gap-4 mb-2.5 shrink-0">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-[#FACC15] flex items-center justify-center shrink-0 text-slate-950 font-black shadow-2xs">
+                            <ListTodo className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h4 className="text-base font-extrabold text-slate-950 dark:text-white flex items-center gap-2">
+                                All Travel Orders
+                                <span className="text-xs font-normal text-slate-500 dark:text-slate-400 hidden sm:inline">
+                                    Listed by approved start date (earliest to latest).
+                                </span>
+                            </h4>
+                        </div>
+                    </div>
+
+                    {/* Status Logic Legend Info Pill */}
+                    <div className={cn(
+                        "hidden md:flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-xl border shrink-0",
+                        isDark ? "bg-slate-800/60 border-slate-700 text-slate-300" : "bg-sky-50/70 border-sky-100 text-slate-600"
+                    )}>
+                        <Info className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                        <span>
+                            <strong className="text-slate-800 dark:text-slate-200">Status Logic:</strong> Traveling Now if today falls within approved date range; Upcoming if start date is in future; Completed if end date has passed.
+                        </span>
+                    </div>
+                </div>
+
+                {/* Table Records */}
+                <div className="flex-1 min-h-0 overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                        <thead>
+                            <tr className={cn(
+                                "border-b text-[10px] font-black uppercase tracking-wider",
+                                isDark ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-400"
+                            )}>
+                                <th className="pb-2 w-8">#</th>
+                                <th className="pb-2">FACULTY</th>
+                                <th className="pb-2">PROGRAM</th>
+                                <th className="pb-2">DESTINATION</th>
+                                <th className="pb-2">
+                                    <span className="inline-flex items-center gap-1">
+                                        APPROVED DATE RANGE
+                                        <span className="text-[8px]">▲</span>
+                                    </span>
+                                </th>
+                                <th className="pb-2">STATUS</th>
+                                <th className="pb-2 text-right pr-2">NOTES</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                            {allOrders.slice(0, 6).map((order: any, idx: number) => {
+                                const isNow = order.status === 'Traveling Now';
+                                const isUpcoming = order.status === 'Upcoming';
+                                const isCompleted = order.status === 'Completed';
+
+                                return (
+                                    <tr key={order.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <td className="py-2 text-slate-400 font-bold">{idx + 1}</td>
+                                        <td className="py-2">
+                                            <div className="flex items-center gap-2">
+                                                {order.photo_url ? (
+                                                    <img
+                                                        src={order.photo_url}
+                                                        alt={order.faculty_name}
+                                                        className="w-6 h-6 rounded-full object-cover shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold flex items-center justify-center shrink-0">
+                                                        {order.faculty_name?.charAt(0) || 'F'}
+                                                    </div>
+                                                )}
+                                                <span className="font-extrabold text-slate-950 dark:text-white truncate">
+                                                    {order.faculty_name}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="py-2 font-bold text-slate-600 dark:text-slate-300">
+                                            {order.program}
+                                        </td>
+                                        <td className="py-2 font-medium text-slate-700 dark:text-slate-300 truncate max-w-[220px]">
+                                            {order.destination}
+                                        </td>
+                                        <td className="py-2 font-semibold text-slate-600 dark:text-slate-300">
+                                            {order.approved_dates_formatted}
+                                        </td>
+                                        <td className="py-2">
+                                            {isNow && (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#FEF08A] text-slate-950 shadow-2xs">
+                                                    <Plane className="w-3 h-3 fill-slate-950 -rotate-45" />
+                                                    Traveling Now
+                                                </span>
+                                            )}
+                                            {isUpcoming && (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                                                    <CalendarIcon className="w-3 h-3 text-sky-600" />
+                                                    Upcoming
+                                                </span>
+                                            )}
+                                            {isCompleted && (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                                    Completed
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="py-2 text-right pr-2 text-slate-500 dark:text-slate-400 font-medium text-[11px]">
+                                            {typeof order.note === 'string'
+                                                ? order.note.replace(/\b(\d+)\.\d+\b/g, (_, intPart) => intPart)
+                                                : order.note}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Footer attribution line */}
+                <div className="pt-2 border-t flex items-center justify-between text-[11px] text-slate-400 shrink-0">
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span>All travel orders shown are officially approved and monitored by the college.</span>
+                    </div>
+                    <div>
+                        CIDS OfficeHub | College of Information and Digital Sciences
+                    </div>
                 </div>
             </div>
         </div>

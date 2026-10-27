@@ -35,7 +35,9 @@ import {
     PhoneCall,
     Info,
     ChevronDown,
-    Sparkles
+    Sparkles,
+    MapPin,
+    Plane,
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -307,7 +309,33 @@ export default function SlideConfigIndex({
                         <CalendarIcon className="w-5 h-5 text-indigo-400" />
                     </div>
                 );
+            case 14:
+                return (
+                    <div className="w-13 h-9 rounded-lg bg-blue-950 border border-blue-800 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                        <MapPin className="w-5 h-5 text-blue-400" />
+                    </div>
+                );
+            case 15:
+                return (
+                    <div className="w-13 h-9 rounded-lg bg-emerald-950 border border-emerald-800 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                        <Plane className="w-5 h-5 text-emerald-400" />
+                    </div>
+                );
             default:
+                if (type?.toLowerCase().includes('locator')) {
+                    return (
+                        <div className="w-13 h-9 rounded-lg bg-blue-950 border border-blue-800 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                            <MapPin className="w-5 h-5 text-blue-400" />
+                        </div>
+                    );
+                }
+                if (type?.toLowerCase().includes('travel')) {
+                    return (
+                        <div className="w-13 h-9 rounded-lg bg-emerald-950 border border-emerald-800 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                            <Plane className="w-5 h-5 text-emerald-400" />
+                        </div>
+                    );
+                }
                 return (
                     <div className="w-13 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 shadow-2xs">
                         <Tv className="w-4 h-4 text-slate-500" />
@@ -317,7 +345,9 @@ export default function SlideConfigIndex({
     };
 
     // Subtitle descriptions for each slide
-    const getSlideSubtitle = (order: number) => {
+    const getSlideSubtitle = (order: number, type?: string) => {
+        if (type?.toLowerCase().includes('locator')) return 'Monitor faculty currently on approved locator slips';
+        if (type?.toLowerCase().includes('travel')) return 'Monitor faculty on official travel orders and conferences';
         switch (order) {
             case 1: return 'Daily overview, key statistics a...';
             case 2: return 'Upcoming meetings and schedule';
@@ -330,6 +360,8 @@ export default function SlideConfigIndex({
             case 9: return 'Institutional overview and program compliance matrix';
             case 10: return 'Workflow Kanban board and assignment tracker';
             case 11: return 'Program performance ranking and comparative metrics';
+            case 14: return 'Monitor faculty currently on approved locator slips';
+            case 15: return 'Monitor faculty on official travel orders and conferences';
             default: return 'Custom slide configuration';
         }
     };
@@ -472,7 +504,7 @@ export default function SlideConfigIndex({
                                     const orderNumber = index + 1;
                                     const isSelected = slide.id === selectedSlideId;
                                     const cleanTitle = getSlideCleanTitle(slide.title, orderNumber);
-                                    const subtitle = getSlideSubtitle(orderNumber);
+                                    const subtitle = getSlideSubtitle(orderNumber, slide.type);
 
                                     return (
                                         <div

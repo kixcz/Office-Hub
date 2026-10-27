@@ -41,6 +41,21 @@ class Submission extends Model
         return $this->belongsTo(Faculty::class);
     }
 
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewer_id');
+    }
+
+    public function files()
+    {
+        return $this->hasMany(RequirementSubmissionFile::class)->orderBy('version', 'desc');
+    }
+
+    public function auditLogs()
+    {
+        return $this->hasMany(SubmissionAuditLog::class)->orderBy('created_at', 'asc');
+    }
+
     public function getIsLateAttribute()
     {
         if (! $this->submitted_at) {
