@@ -5943,9 +5943,115 @@ function SlideThirteen({ data, isDark }: { data: any; isDark: boolean }) {
 /* -------------------------------------------------------------------------- */
 
 function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
-    const featuredOrders = data?.featured_orders || data?.traveling_now || [];
-    const allOrders = data?.all_orders || [];
-    const stats = data?.stats || {
+    // Dynamically evaluate orders against local client date (supports live 24/7 TV transitions across midnight)
+    const { processedAllOrders, processedFeaturedOrders, dynamicStats } = useMemo(() => {
+        const rawAll = (data?.all_orders || []) as any[];
+        // Fallback to local client date or backend's today date
+        const todayStr = localDateString();
+
+        const parseToYmd = (val: any): string | null => {
+            if (!val) return null;
+            if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+                return val.slice(0, 10);
+            }
+            try {
+                const d = new Date(val);
+                if (!isNaN(d.getTime())) {
+                    return localDateString(d);
+                }
+            } catch {
+                // Ignore parse errors
+            }
+            return null;
+        };
+
+        const processed = rawAll.map((order) => {
+            const startStr = parseToYmd(order.start_date_raw) || parseToYmd(order.start_date);
+            const endStr = parseToYmd(order.end_date_raw) || parseToYmd(order.end_date) || startStr;
+
+            let status = order.status;
+            let isCurrentlyTraveling = order.is_currently_traveling;
+            let note = order.note;
+
+            if (startStr && endStr) {
+                const isUpcoming = todayStr < startStr;
+                const isNow = todayStr >= startStr && todayStr <= endStr;
+                const isCompleted = todayStr > endStr;
+
+                if (isUpcoming) {
+                    status = 'Upcoming';
+                    isCurrentlyTraveling = false;
+                    const startDateObj = new Date(startStr + 'T00:00:00');
+                    const todayObj = new Date(todayStr + 'T00:00:00');
+                    const diffDays = Math.round((startDateObj.getTime() - todayObj.getTime()) / (1000 * 60 * 60 * 24));
+                    note = diffDays === 1 ? 'Starts tomorrow' : `Starts in ${diffDays} days`;
+                } else if (isNow) {
+                    status = 'Traveling Now';
+                    isCurrentlyTraveling = true;
+                    const startDateObj = new Date(startStr + 'T00:00:00');
+                    const endDateObj = new Date(endStr + 'T00:00:00');
+                    const todayObj = new Date(todayStr + 'T00:00:00');
+                    const totalDays = Math.max(1, Math.round((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+                    const currentDay = Math.min(totalDays, Math.max(1, Math.round((todayObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1));
+                    note = `Day ${currentDay} of ${totalDays}`;
+                } else if (isCompleted) {
+                    status = 'Completed';
+                    isCurrentlyTraveling = false;
+                    const endDateObj = new Date(endStr + 'T00:00:00');
+                    const todayObj = new Date(todayStr + 'T00:00:00');
+                    const diffDays = Math.round((todayObj.getTime() - endDateObj.getTime()) / (1000 * 60 * 60 * 24));
+                    note = diffDays === 1 ? 'Ended 1 day ago' : `Ended ${diffDays} days ago`;
+                }
+            }
+
+            return {
+                ...order,
+                status,
+                is_currently_traveling: isCurrentlyTraveling,
+                note,
+            };
+        });
+
+        // Re-sort: Traveling Now first, then Upcoming, then Completed
+        const sorted = [...processed].sort((a, b) => {
+            const getPriority = (item: any) => {
+                if (item.status === 'Traveling Now') return 1;
+                if (item.status === 'Upcoming') return 2;
+                return 3;
+            };
+            const pA = getPriority(a);
+            const pB = getPriority(b);
+            if (pA !== pB) return pA - pB;
+
+            const dateA = new Date((a.start_date_raw || a.start_date) + 'T00:00:00').getTime();
+            const dateB = new Date((b.start_date_raw || b.start_date) + 'T00:00:00').getTime();
+            return dateA - dateB;
+        });
+
+        const travelingNowList = sorted.filter((o) => o.is_currently_traveling || o.status === 'Traveling Now');
+        const upcomingList = sorted.filter((o) => o.status === 'Upcoming');
+        const completedList = sorted.filter((o) => o.status === 'Completed');
+
+        const featured = travelingNowList.concat(upcomingList).slice(0, 4);
+
+        const stats = {
+            traveling_now: travelingNowList.length,
+            approved_this_month: data?.stats?.approved_this_month ?? 0,
+            upcoming: upcomingList.length,
+            completed: completedList.length,
+            total: sorted.length,
+        };
+
+        return {
+            processedAllOrders: sorted,
+            processedFeaturedOrders: featured,
+            dynamicStats: stats,
+        };
+    }, [data]);
+
+    const featuredOrders = processedFeaturedOrders.length > 0 ? processedFeaturedOrders : (data?.featured_orders || data?.traveling_now || []);
+    const allOrders = processedAllOrders.length > 0 ? processedAllOrders : (data?.all_orders || []);
+    const stats = dynamicStats || data?.stats || {
         traveling_now: 0,
         approved_this_month: 0,
         upcoming: 0,

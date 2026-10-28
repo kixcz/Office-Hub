@@ -53,11 +53,13 @@ class TvDisplayController extends Controller
         }
 
         $displayKey = $device ? (string) $device->id : ($displayId ?: 'default');
-        $cacheKey = 'tv_display_payload_v1_'.$displayKey;
+        $tz = config('services.room_schedule.timezone', 'Asia/Manila');
+        $today = Carbon::now($tz)->toDateString();
+        $cacheKey = 'tv_display_payload_v2_'.$displayKey.'_'.$today;
 
-        // Cache the entire display payload for 10 minutes so TV responds in < 10ms
+        // Cache the entire display payload for 5 minutes (invalidates automatically across midnight)
         try {
-            $payload = Cache::remember($cacheKey, 600, function () use ($device, $displayId) {
+            $payload = Cache::remember($cacheKey, 300, function () use ($device, $displayId) {
                 return $this->buildTvPayload($device, $displayId);
             });
         } catch (\Throwable $e) {
@@ -86,10 +88,12 @@ class TvDisplayController extends Controller
         }
 
         $displayKey = $device ? (string) $device->id : ($displayId ?: 'default');
-        $cacheKey = 'tv_display_payload_v1_'.$displayKey;
+        $tz = config('services.room_schedule.timezone', 'Asia/Manila');
+        $today = Carbon::now($tz)->toDateString();
+        $cacheKey = 'tv_display_payload_v2_'.$displayKey.'_'.$today;
 
         try {
-            $payload = Cache::remember($cacheKey, 600, function () use ($device, $displayId) {
+            $payload = Cache::remember($cacheKey, 300, function () use ($device, $displayId) {
                 return $this->buildTvPayload($device, $displayId);
             });
         } catch (\Throwable $e) {
@@ -105,7 +109,8 @@ class TvDisplayController extends Controller
      */
     private function buildTvPayload($device = null, $displayId = null): array
     {
-        $now = Carbon::now();
+        $tz = config('services.room_schedule.timezone', 'Asia/Manila');
+        $now = Carbon::now($tz);
         $today = $now->format('Y-m-d');
 
         $globalSettings = TvSetting::pluck('value', 'key')->toArray();
@@ -1479,24 +1484,25 @@ class TvDisplayController extends Controller
                     ];
                 })(),
                 'slide14' => (function () {
-                    $now = Carbon::now();
-                    $today = Carbon::today();
+                    $tz = config('services.room_schedule.timezone', 'Asia/Manila');
+                    $now = Carbon::now($tz);
+                    $today = $now->copy()->startOfDay();
                     $todayStr = $today->toDateString();
 
                     $allOrders = TravelOrder::with('faculty.program')
                         ->orderBy('start_date', 'asc')
                         ->get()
-                        ->map(function ($t) use ($today, $todayStr) {
-                            $startDate = Carbon::parse($t->start_date)->startOfDay();
-                            $endDate = Carbon::parse($t->end_date)->endOfDay();
+                        ->map(function ($t) use ($today, $todayStr, $tz) {
+                            $startDate = Carbon::parse($t->start_date, $tz)->startOfDay();
+                            $endDate = Carbon::parse($t->end_date, $tz)->endOfDay();
                             $startStr = $startDate->toDateString();
                             $endStr = $endDate->toDateString();
 
                             $isUpcoming = $todayStr < $startStr;
-                            $isTravelingNow = ! $isUpcoming && (($todayStr >= $startStr && $todayStr <= $endStr) || strtolower($t->status) === 'in progress');
-                            $isCompleted = $todayStr > $endStr && ! $isTravelingNow;
+                            $isTravelingNow = $todayStr >= $startStr && $todayStr <= $endStr;
+                            $isCompleted = $todayStr > $endStr;
 
-                            $endDateForDiff = Carbon::parse($t->end_date)->startOfDay();
+                            $endDateForDiff = Carbon::parse($t->end_date, $tz)->startOfDay();
 
                             $totalDays = (int) max(1, round($startDate->diffInDays($endDateForDiff)) + 1);
                             $currentDay = $isTravelingNow ? (int) min($totalDays, max(1, round($startDate->diffInDays($today)) + 1)) : 1;
@@ -1535,9 +1541,12 @@ class TvDisplayController extends Controller
                                 'purpose' => $t->purpose,
                                 'start_date' => $startDate->format('M d, Y'),
                                 'end_date' => $endDate->format('M d, Y'),
+                                'start_date_raw' => $startStr,
+                                'end_date_raw' => $endStr,
+                                'raw_status' => $t->status,
                                 'approved_dates_formatted' => $approvedDatesFormatted,
                                 'date_range_short' => $dateRangeShort,
-                                'approved_at' => $t->approved_at ? Carbon::parse($t->approved_at)->format('M d, Y') : null,
+                                'approved_at' => $t->approved_at ? Carbon::parse($t->approved_at, $tz)->format('M d, Y') : null,
                                 'status' => $computedStatus,
                                 'is_currently_traveling' => $isTravelingNow,
                                 'day_current' => $currentDay,
