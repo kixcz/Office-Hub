@@ -42,16 +42,26 @@ class FacultyWorkloadManagementController extends Controller
 
         $faculties = $query->get();
 
-        // Compute or fetch workloads for each faculty member
-        $workloadRecords = $faculties->map(function ($faculty) use ($currentPeriod) {
-            $workload = FacultyWorkload::where('faculty_id', $faculty->id)
-                ->where('academic_period_id', $currentPeriod ? $currentPeriod->id : null)
-                ->first();
+        // Preload all workloads for current period and all RoomSchedules once to avoid N+1 queries
+        $workloadsByFaculty = FacultyWorkload::where('academic_period_id', $currentPeriod ? $currentPeriod->id : null)
+            ->get()
+            ->keyBy('faculty_id');
 
-            // Find current semester teaching assignments from RoomSchedule
-            $assignments = RoomSchedule::where('faculty_id', $faculty->id)
-                ->orWhere('instructor', 'like', "%{$faculty->last_name}%")
-                ->get();
+        $allRoomSchedules = RoomSchedule::all();
+
+        // Compute or fetch workloads for each faculty member
+        $workloadRecords = $faculties->map(function ($faculty) use ($workloadsByFaculty, $allRoomSchedules) {
+            $workload = $workloadsByFaculty->get($faculty->id);
+
+            // Find current semester teaching assignments from preloaded RoomSchedule collection
+            $lastNameLower = strtolower((string) $faculty->last_name);
+            $assignments = $allRoomSchedules->filter(function ($s) use ($faculty, $lastNameLower) {
+                if ((int) $s->faculty_id === (int) $faculty->id) {
+                    return true;
+                }
+
+                return $lastNameLower !== '' && $s->instructor && str_contains(strtolower($s->instructor), $lastNameLower);
+            })->values();
 
             $teachingUnits = $assignments->count() * 3.0; // 3 units per standard subject
             $teachingHours = $assignments->sum(function ($s) {

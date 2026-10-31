@@ -402,16 +402,19 @@ class TvDisplayController extends Controller
             ->orderBy('due_date')->take(5)->get();
 
         // Data for Slide 3 (Compliance)
-        $requirements = Requirement::withCount('submissions')->get();
-        $totalSubmissions = Submission::count();
-        $compliedSubmissions = Submission::whereNotNull('submitted_at')->count();
+        $requirements = Requirement::withCount([
+            'submissions',
+            'submissions as complied_submissions_count' => fn ($q) => $q->whereNotNull('submitted_at'),
+        ])->get();
+        $totalSubmissions = (int) $requirements->sum('submissions_count');
+        $compliedSubmissions = (int) $requirements->sum('complied_submissions_count');
         $overallCompliance = $totalSubmissions > 0 ? round(($compliedSubmissions / $totalSubmissions) * 100, 1) : 0;
 
         $complianceSummary = $requirements->map(fn ($r) => [
             'id' => $r->id,
             'title' => $r->title,
             'total' => $r->submissions_count,
-            'complied' => $r->submissions()->whereNotNull('submitted_at')->count(),
+            'complied' => $r->complied_submissions_count,
         ])->map(function ($r) {
             $r['rate'] = $r['total'] > 0 ? round(($r['complied'] / $r['total']) * 100, 1) : 0;
 
@@ -449,17 +452,21 @@ class TvDisplayController extends Controller
                 $fTotal = 0;
                 $fComplied = 0;
                 $fOnTime = 0;
+                $fOverdue = 0;
 
                 foreach ($f->submissions as $s) {
                     $pTotal++;
                     $fTotal++;
+                    $dueDate = $s->requirement ? Carbon::parse($s->requirement->due_date) : $now;
                     if ($s->submitted_at) {
                         $pComplied++;
                         $fComplied++;
-                        if (! Carbon::parse($s->submitted_at)->greaterThan(Carbon::parse($s->requirement->due_date))) {
+                        if (! Carbon::parse($s->submitted_at)->greaterThan($dueDate)) {
                             $pOnTime++;
                             $fOnTime++;
                         }
+                    } elseif ($dueDate->lessThan($now)) {
+                        $fOverdue++;
                     }
                 }
 
@@ -474,7 +481,7 @@ class TvDisplayController extends Controller
                         'on_time' => $fOnTime,
                         'on_time_rate' => round(($fOnTime / $fTotal) * 100, 1),
                         'compliance_rate' => round(($fComplied / $fTotal) * 100, 1),
-                        'overdue_count' => $f->submissions()->whereNull('submitted_at')->whereHas('requirement', fn ($q) => $q->where('due_date', '<', $now))->count(),
+                        'overdue_count' => $fOverdue,
                     ];
                 }
             }

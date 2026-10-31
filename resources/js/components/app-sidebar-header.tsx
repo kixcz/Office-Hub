@@ -78,7 +78,7 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                         {breadcrumbs && breadcrumbs.length > 0 ? (
                             <div className="flex items-center gap-1.5">
                                 {breadcrumbs.map((crumb, idx) => (
-                                    <React.Fragment key={crumb.href || idx}>
+                                    <React.Fragment key={`${crumb.title}-${crumb.href || idx}-${idx}`}>
                                         {idx > 0 && <span className="text-muted-foreground/50 font-normal">&gt;</span>}
                                         {idx === breadcrumbs.length - 1 ? (
                                             <span className="font-bold text-foreground">{crumb.title}</span>

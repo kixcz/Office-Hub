@@ -211,11 +211,14 @@ class SemesterScheduleController extends Controller
         $currentPeriod = AcademicPeriod::current();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
         $faculties = Faculty::with('program')->orderBy('last_name')->get();
+        $schedulesByFaculty = RoomSchedule::whereNotNull('faculty_id')
+            ->get()
+            ->groupBy('faculty_id');
 
         // Calculate load for each faculty
-        $facultyLoads = $faculties->map(function ($faculty) {
-            // Count teaching hours from room_schedules
-            $assignedClasses = RoomSchedule::where('faculty_id', $faculty->id)->get();
+        $facultyLoads = $faculties->map(function ($faculty) use ($schedulesByFaculty) {
+            // Count teaching hours from preloaded room_schedules
+            $assignedClasses = $schedulesByFaculty->get($faculty->id, collect());
             $teachingUnits = $assignedClasses->count() * 3; // Approx 3 units per block
 
             // Credited non-teaching hours based on designation
@@ -517,21 +520,21 @@ class SemesterScheduleController extends Controller
     public function masterDataRooms(Request $request): Response
     {
         $currentPeriod = AcademicPeriod::current();
-        $rawRooms = RoomSchedule::select('room_name')
-            ->distinct()
+        $roomCounts = RoomSchedule::selectRaw('room_name, COUNT(*) as scheduled_count')
             ->whereNotNull('room_name')
             ->where('room_name', '!=', '')
-            ->pluck('room_name');
+            ->groupBy('room_name')
+            ->get();
 
-        $rooms = $rawRooms->map(function ($name) {
+        $rooms = $roomCounts->map(function ($row) {
+            $name = $row->room_name;
             $isLab = str_contains(strtolower($name), 'lab') || str_contains(strtolower($name), 'clr') || str_contains(strtolower($name), 'chs');
-            $count = RoomSchedule::where('room_name', $name)->count();
 
             return [
                 'room_name' => $name,
                 'type' => $isLab ? 'Laboratory' : 'Lecture',
                 'capacity' => $isLab ? 40 : 50,
-                'scheduled_count' => $count,
+                'scheduled_count' => (int) $row->scheduled_count,
             ];
         });
 

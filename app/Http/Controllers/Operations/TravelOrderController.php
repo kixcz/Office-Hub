@@ -9,6 +9,7 @@ use App\Services\EhrisIntegrationService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,12 +21,18 @@ class TravelOrderController extends Controller
 
     /**
      * Display the Travel Orders monitoring hub.
+     * Serves local synchronized snapshot data immediately and triggers non-blocking background sync if stale.
      */
     public function index(Request $request): Response
     {
-        $this->ehrisService->syncTravelOrders();
+        if (! app()->runningUnitTests()) {
+            $this->ehrisService->queueSyncIfStale('travel_orders');
+        }
 
-        $query = TravelOrder::with(['faculty.program'])
+        $query = TravelOrder::with([
+            'faculty:id,first_name,last_name,faculty_id,program_id,profile_picture',
+            'faculty.program:id,code',
+        ])
             ->orderBy('start_date', 'desc')
             ->orderBy('created_at', 'desc');
 
@@ -81,29 +88,38 @@ class TravelOrderController extends Controller
             ];
         });
 
-        $faculties = Faculty::with('program')
-            ->orderBy('last_name')
-            ->get()
-            ->map(fn ($f) => [
-                'id' => $f->id,
-                'name' => $f->first_name.' '.$f->last_name,
-                'faculty_id' => $f->faculty_id,
-                'program' => $f->program?->code ?? 'CIDS',
-                'photo_url' => $f->photo_url,
-            ]);
+        $faculties = Cache::remember('officehub_faculty_dropdown_options_v2', 300, function () {
+            return Faculty::with('program:id,code')
+                ->orderBy('last_name')
+                ->get(['id', 'first_name', 'last_name', 'faculty_id', 'program_id', 'profile_picture'])
+                ->map(fn ($f) => [
+                    'id' => $f->id,
+                    'name' => $f->first_name.' '.$f->last_name,
+                    'faculty_id' => $f->faculty_id,
+                    'program' => $f->program?->code ?? 'CIDS',
+                    'photo_url' => $f->photo_url,
+                ]);
+        });
 
-        $allOrders = TravelOrder::all();
+        $agg = TravelOrder::selectRaw("
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'In Progress' THEN 1 ELSE 0 END) as in_progress_count,
+            SUM(CASE WHEN status = 'Approved' THEN 1 ELSE 0 END) as approved_count,
+            SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_count
+        ")->first();
+
         $metrics = [
-            'total' => $allOrders->count(),
-            'in_progress' => $allOrders->where('status', 'In Progress')->count(),
-            'approved' => $allOrders->where('status', 'Approved')->count(),
-            'completed' => $allOrders->where('status', 'Completed')->count(),
+            'total' => (int) ($agg->total ?? 0),
+            'in_progress' => (int) ($agg->in_progress_count ?? 0),
+            'approved' => (int) ($agg->approved_count ?? 0),
+            'completed' => (int) ($agg->completed_count ?? 0),
         ];
 
         return Inertia::render('operations/travel-orders/index', [
             'travelOrders' => $travelOrders,
             'faculties' => $faculties,
             'metrics' => $metrics,
+            'sync_status' => $this->ehrisService->getSyncStatus('travel_orders'),
             'filters' => $request->only(['status', 'faculty_id', 'search']),
         ]);
     }
@@ -172,7 +188,12 @@ class TravelOrderController extends Controller
     public function sync(): RedirectResponse
     {
         $this->ehrisService->syncTravelOrders();
+        $stats = $this->ehrisService->lastSyncStats;
 
-        return redirect()->back()->with('success', 'Travel Orders synced with e-HRIS API successfully.');
+        if ($stats['error']) {
+            return redirect()->back()->with('error', 'e-HRIS sync failed: '.$stats['error']);
+        }
+
+        return redirect()->back()->with('success', "e-HRIS sync done: {$stats['fetched']} fetched, {$stats['matched']} matched to OfficeHub faculty.");
     }
 }

@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/dialog';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Faculty Operations', href: '/operations/travel-orders' },
+    { title: 'Faculty Operations', href: '/compliance/requirements' },
     { title: 'Travel Orders', href: '/operations/travel-orders' },
 ];
 
@@ -75,10 +75,20 @@ interface Metrics {
     completed: number;
 }
 
+interface SyncStatus {
+    last_synced_at?: string | null;
+    is_stale?: boolean;
+    status?: string;
+    last_error?: string | null;
+    fetched?: number;
+    matched?: number;
+}
+
 interface Props {
     travelOrders: TravelOrder[];
     faculties: FacultyOption[];
     metrics: Metrics;
+    sync_status?: SyncStatus;
     filters: {
         status?: string;
         faculty_id?: string;
@@ -86,13 +96,15 @@ interface Props {
     };
 }
 
-export default function TravelOrdersIndex({ travelOrders = [], faculties = [], metrics, filters }: Props) {
+export default function TravelOrdersIndex({ travelOrders = [], faculties = [], metrics, sync_status, filters }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [statusFilter, setStatusFilter] = useState(filters.status || 'all');
     const [facultyFilter, setFacultyFilter] = useState(filters.faculty_id || 'all');
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<TravelOrder | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [isFiltering, setIsFiltering] = useState(false);
+    const [syncBanner, setSyncBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
     // Create Travel Order Form
     const { data, setData, post, processing, reset, errors } = useForm({
@@ -118,8 +130,23 @@ export default function TravelOrdersIndex({ travelOrders = [], faculties = [], m
     };
 
     const handleSync = () => {
+        if (isSyncing) return;
         setIsSyncing(true);
+        setSyncBanner(null);
         router.post('/operations/travel-orders/sync', {}, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: (page) => {
+                const flash = (page.props as { flash?: { success?: string; error?: string } }).flash;
+                if (flash?.error) {
+                    setSyncBanner({ type: 'error', message: `${flash.error} Showing preserved local snapshot.` });
+                } else {
+                    setSyncBanner({ type: 'success', message: flash?.success || 'e-HRIS Travel Orders synchronized.' });
+                }
+            },
+            onError: () => {
+                setSyncBanner({ type: 'error', message: 'e-HRIS sync could not complete. Showing preserved local snapshot.' });
+            },
             onFinish: () => setIsSyncing(false),
         });
     };
@@ -140,13 +167,17 @@ export default function TravelOrdersIndex({ travelOrders = [], faculties = [], m
     const handleFilterChange = (status: string, facId: string) => {
         setStatusFilter(status);
         setFacultyFilter(facId);
+        setIsFiltering(true);
         router.get('/operations/travel-orders', {
             status,
             faculty_id: facId,
             search,
         }, {
+            only: ['travelOrders', 'metrics', 'filters', 'sync_status'],
             preserveState: true,
+            preserveScroll: true,
             replace: true,
+            onFinish: () => setIsFiltering(false),
         });
     };
 
@@ -178,12 +209,23 @@ export default function TravelOrdersIndex({ travelOrders = [], faculties = [], m
                             <Plane className="w-6 h-6 stroke-[2.2]" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
                                     Faculty Travel Orders
                                 </h1>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
-                                    e-HRIS Synced
+                                <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
+                                        sync_status?.status === 'offline_snapshot'
+                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'
+                                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300'
+                                    }`}
+                                    title={sync_status?.last_error || (sync_status?.last_synced_at ? `Last synced: ${sync_status.last_synced_at}` : 'Local snapshot active')}
+                                >
+                                    {sync_status?.status === 'offline_snapshot'
+                                        ? 'Local Snapshot (e-HRIS Offline)'
+                                        : sync_status?.last_synced_at
+                                        ? `e-HRIS Synced · ${sync_status.last_synced_at}`
+                                        : 'e-HRIS Snapshot Active'}
                                 </span>
                             </div>
                             <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
@@ -200,7 +242,7 @@ export default function TravelOrdersIndex({ travelOrders = [], faculties = [], m
                             className="h-10 px-4 rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-300 shadow-xs"
                         >
                             <RefreshCw className={`w-3.5 h-3.5 mr-2 text-zinc-500 ${isSyncing ? 'animate-spin' : ''}`} />
-                            Sync with e-HRIS
+                            {isSyncing ? 'Syncing e-HRIS...' : 'Sync with e-HRIS'}
                         </Button>
                         <Button
                             onClick={() => setCreateModalOpen(true)}
@@ -211,6 +253,40 @@ export default function TravelOrdersIndex({ travelOrders = [], faculties = [], m
                         </Button>
                     </div>
                 </div>
+
+                {syncBanner && (
+                    <div
+                        className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-xs font-semibold ${
+                            syncBanner.type === 'error'
+                                ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200'
+                                : 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-200'
+                        }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <CheckCircle2 className={`w-4 h-4 shrink-0 ${syncBanner.type === 'error' ? 'text-amber-600' : 'text-emerald-600'}`} />
+                            <span>{syncBanner.message}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {syncBanner.type === 'error' && (
+                                <button
+                                    type="button"
+                                    onClick={handleSync}
+                                    disabled={isSyncing}
+                                    className="rounded-lg bg-amber-500 px-2.5 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-400 cursor-pointer"
+                                >
+                                    Retry Sync
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setSyncBanner(null)}
+                                className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* 4 Metric KPI Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -324,7 +400,7 @@ export default function TravelOrdersIndex({ travelOrders = [], faculties = [], m
                 </div>
 
                 {/* Travel Orders Table */}
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+                <div className={`bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs overflow-hidden transition-opacity ${isFiltering ? 'opacity-60' : 'opacity-100'}`}>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs border-collapse">
                             <thead>

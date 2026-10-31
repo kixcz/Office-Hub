@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 
 class FacultyAttendance extends Model
 {
@@ -87,38 +88,72 @@ class FacultyAttendance extends Model
         return $this->belongsTo(MakeUpClassRequest::class, 'make_up_request_id');
     }
 
+    protected static ?Collection $cachedRoomSchedules = null;
+
     /**
-     * Resolve matching RoomSchedule for this session.
+     * Preload RoomSchedules into memory to prevent N+1 queries during bulk session serialization.
+     */
+    public static function getCachedRoomSchedules(): Collection
+    {
+        if (static::$cachedRoomSchedules === null) {
+            static::$cachedRoomSchedules = RoomSchedule::all();
+        }
+
+        return static::$cachedRoomSchedules;
+    }
+
+    public static function flushScheduleCache(): void
+    {
+        static::$cachedRoomSchedules = null;
+    }
+
+    /**
+     * Resolve matching RoomSchedule for this session using in-memory lookup (zero N+1 queries).
      */
     public function resolveSchedule(): ?RoomSchedule
     {
+        if ($this->relationLoaded('roomSchedule') && $this->getRelation('roomSchedule')) {
+            return $this->getRelation('roomSchedule');
+        }
+
+        $schedules = static::getCachedRoomSchedules();
+        if ($schedules->isEmpty()) {
+            return null;
+        }
+
         $parts = explode('-', (string) ($this->time_slot ?? ''));
         $startRaw = trim($parts[0] ?? '');
         $startFormatted = $startRaw ? date('H:i', strtotime($startRaw)) : '';
+        $instructorLower = strtolower(trim((string) $this->instructor_name));
 
-        $query = RoomSchedule::query();
+        $schedule = $schedules->first(function (RoomSchedule $rs) use ($startFormatted, $instructorLower): bool {
+            if ($this->faculty_id) {
+                if ((int) $rs->faculty_id !== (int) $this->faculty_id) {
+                    return false;
+                }
+            } elseif ($instructorLower !== '') {
+                if (! str_contains(strtolower((string) $rs->instructor), $instructorLower)) {
+                    return false;
+                }
+            }
 
-        if ($this->faculty_id) {
-            $query->where('faculty_id', $this->faculty_id);
-        } elseif ($this->instructor_name) {
-            $query->where('instructor', 'like', "%{$this->instructor_name}%");
-        }
+            if ($this->day_of_week && strcasecmp((string) $rs->day_of_week, (string) $this->day_of_week) !== 0) {
+                return false;
+            }
 
-        if ($this->day_of_week) {
-            $query->where('day_of_week', $this->day_of_week);
-        }
+            if ($startFormatted !== '' && ! str_starts_with((string) $rs->start_time, $startFormatted)) {
+                return false;
+            }
 
-        if ($startFormatted) {
-            $query->where('start_time', 'like', $startFormatted.'%');
-        }
-
-        $schedule = $query->first();
+            return true;
+        });
 
         // Fallback: match by faculty and day of week
         if (! $schedule && $this->faculty_id && $this->day_of_week) {
-            $schedule = RoomSchedule::where('faculty_id', $this->faculty_id)
-                ->where('day_of_week', $this->day_of_week)
-                ->first();
+            $schedule = $schedules->first(function (RoomSchedule $rs): bool {
+                return (int) $rs->faculty_id === (int) $this->faculty_id
+                    && strcasecmp((string) $rs->day_of_week, (string) $this->day_of_week) === 0;
+            });
         }
 
         return $schedule;

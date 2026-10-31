@@ -7,6 +7,8 @@ use App\Models\Faculty;
 use App\Models\FacultyAttendance;
 use App\Models\FacultyAttendanceSummary;
 use Carbon\Carbon;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -18,6 +20,8 @@ class GoogleSheetsAttendanceService
     public const DEFAULT_SPREADSHEET_ID = '15m7NI4joQRBi9X7gdpqkF7SRZFFn61wXMhv5EkfyBY0';
 
     public const DEFAULT_GID = '623072317';
+
+    public const SYNC_STATUS_CACHE_KEY = 'officehub_gsheets_attendance_sync_status_v1';
 
     /**
      * Known faculty tab mapping for individual attendance pages.
@@ -54,6 +58,69 @@ class GoogleSheetsAttendanceService
     ];
 
     /**
+     * Get the synchronization status metadata for Google Sheets Attendance.
+     *
+     * @return array{last_synced_at: ?string, is_stale: bool, status: string, last_error: ?string, synced_records: int, synced_summaries: int}
+     */
+    public function getSyncStatus(): array
+    {
+        $cached = Cache::get(self::SYNC_STATUS_CACHE_KEY);
+        $lastSync = Cache::get('faculty_attendance_last_sync');
+
+        if (! is_array($cached)) {
+            return [
+                'last_synced_at' => $lastSync ? Carbon::parse($lastSync)->format('M d, Y h:i A') : null,
+                'is_stale' => ! $lastSync || Carbon::parse($lastSync)->diffInMinutes(now()) > 15,
+                'status' => $lastSync ? 'ok' : 'idle',
+                'last_error' => null,
+                'synced_records' => 0,
+                'synced_summaries' => 0,
+            ];
+        }
+
+        $timestamp = (int) ($cached['timestamp'] ?? 0);
+        $isStale = (time() - $timestamp) > 900; // 15 minutes
+
+        return [
+            'last_synced_at' => $lastSync ? Carbon::parse($lastSync)->format('M d, Y h:i A') : ($cached['last_synced_at'] ?? null),
+            'is_stale' => $isStale,
+            'status' => $cached['status'] ?? 'ok',
+            'last_error' => $cached['last_error'] ?? null,
+            'synced_records' => (int) ($cached['synced_records'] ?? 0),
+            'synced_summaries' => (int) ($cached['synced_summaries'] ?? 0),
+        ];
+    }
+
+    /**
+     * Queue a non-blocking background synchronization job if stale and not already queued.
+     */
+    public function queueSyncIfStale(): void
+    {
+        $status = $this->getSyncStatus();
+        $isEmpty = FacultyAttendanceSummary::count() === 0 && FacultyAttendance::count() === 0;
+
+        if (! $status['is_stale'] && ! $isEmpty) {
+            return;
+        }
+
+        $dispatchGuardKey = 'officehub_gsheets_attendance_sync_queued';
+        if (Cache::has($dispatchGuardKey)) {
+            return;
+        }
+
+        Cache::put($dispatchGuardKey, true, 900);
+
+        $previous = Cache::get(self::SYNC_STATUS_CACHE_KEY, []);
+        Cache::put(self::SYNC_STATUS_CACHE_KEY, array_merge(is_array($previous) ? $previous : [], [
+            'status' => $previous['status'] ?? 'syncing',
+            'timestamp' => time(),
+            'last_error' => $previous['last_error'] ?? null,
+        ]), 3600);
+
+        \App\Jobs\SyncGoogleSheetsAttendanceJob::dispatch();
+    }
+
+    /**
      * Synchronize faculty attendance from Google Sheets.
      *
      * @return array{success: bool, message: string, synced_records: int, synced_summaries: int}
@@ -79,7 +146,7 @@ class GoogleSheetsAttendanceService
 
             // 1. Fetch Primary Lab Sheet (sessions across rooms and schedules)
             $labUrl = "https://docs.google.com/spreadsheets/d/{$spreadsheetId}/export?format=csv&gid={$gid}";
-            $labResponse = Http::withoutVerifying()->timeout(25)->get($labUrl);
+            $labResponse = Http::withoutVerifying()->connectTimeout(4)->timeout(10)->get($labUrl);
 
             if ($labResponse->successful()) {
                 $lines = explode("\n", $labResponse->body());
@@ -549,14 +616,38 @@ class GoogleSheetsAttendanceService
                     );
                 }
 
-                // 3. Clean and replace summaries with verified recalculated metrics
-                FacultyAttendanceSummary::query()->delete();
-                foreach ($parsedMonthlySummaries as $summary) {
-                    FacultyAttendanceSummary::create($summary);
+                // 3. Clean and replace summaries ONLY if valid summaries were parsed (prevents wiping local snapshots on network failure)
+                if (! empty($parsedMonthlySummaries)) {
+                    FacultyAttendanceSummary::query()->delete();
+                    foreach ($parsedMonthlySummaries as $summary) {
+                        FacultyAttendanceSummary::create($summary);
+                    }
                 }
             });
 
+            if (empty($parsedSessions) && empty($parsedMonthlySummaries)) {
+                Cache::put(self::SYNC_STATUS_CACHE_KEY, [
+                    'status' => 'offline_snapshot',
+                    'last_error' => 'Google Sheets returned no reachable data; preserved existing local snapshot.',
+                    'timestamp' => time(),
+                ], 3600);
+
+                return [
+                    'success' => false,
+                    'message' => 'Google Sheets was unreachable or returned empty data. Preserved existing local attendance snapshot.',
+                    'synced_records' => 0,
+                    'synced_summaries' => 0,
+                ];
+            }
+
             Cache::put('faculty_attendance_last_sync', Carbon::now()->toIso8601String(), 86400);
+            Cache::put(self::SYNC_STATUS_CACHE_KEY, [
+                'status' => 'ok',
+                'last_error' => null,
+                'timestamp' => time(),
+                'synced_records' => count($parsedSessions),
+                'synced_summaries' => count($parsedMonthlySummaries),
+            ], 3600);
 
             return [
                 'success' => true,
@@ -581,48 +672,50 @@ class GoogleSheetsAttendanceService
     }
 
     /**
-     * Discover faculty tab names and GIDs from Google Sheets HTML.
+     * Discover faculty tab names and GIDs from Google Sheets HTML (cached for 1 hour).
      *
      * @return array<string, string>
      */
     private function discoverFacultyTabs(string $spreadsheetId): array
     {
-        try {
-            $url = "https://docs.google.com/spreadsheets/d/{$spreadsheetId}/edit";
-            $response = Http::withoutVerifying()->timeout(15)->get($url);
+        return Cache::remember("officehub_gsheets_faculty_tabs_{$spreadsheetId}", 3600, function () use ($spreadsheetId): array {
+            try {
+                $url = "https://docs.google.com/spreadsheets/d/{$spreadsheetId}/edit";
+                $response = Http::withoutVerifying()->connectTimeout(4)->timeout(8)->get($url);
 
-            if ($response->successful()) {
-                $html = $response->body();
-                $pos = strpos($html, '"topsnapshot"');
-                if ($pos !== false) {
-                    $snippet = substr($html, $pos, 45000);
-                    preg_match_all('/\\\\\"(\d+)\\\\\",\[\{\\\\\"1\\\\\":\[\[\d+,\d+,\\\\\"([^\\\\\"]+)\\\\\"\]/', $snippet, $matches, PREG_SET_ORDER);
+                if ($response->successful()) {
+                    $html = $response->body();
+                    $pos = strpos($html, '"topsnapshot"');
+                    if ($pos !== false) {
+                        $snippet = substr($html, $pos, 45000);
+                        preg_match_all('/\\\\\"(\d+)\\\\\",\[\{\\\\\"1\\\\\":\[\[\d+,\d+,\\\\\"([^\\\\\"]+)\\\\\"\]/', $snippet, $matches, PREG_SET_ORDER);
 
-                    $tabs = [];
-                    foreach ($matches as $m) {
-                        $gid = $m[1];
-                        $title = $m[2];
+                        $tabs = [];
+                        foreach ($matches as $m) {
+                            $gid = $m[1];
+                            $title = $m[2];
 
-                        // Exclude summary and lab sheets, keep individual faculty sheets
-                        if (! in_array(strtolower($title), ['summary', 'lab-chs', 'lab-com1', 'clr_1', 'clr_2', 'clr_3', 'clr_4', 'clr_5'])) {
-                            $tabs[$title] = $gid;
+                            // Exclude summary and lab sheets, keep individual faculty sheets
+                            if (! in_array(strtolower($title), ['summary', 'lab-chs', 'lab-com1', 'clr_1', 'clr_2', 'clr_3', 'clr_4', 'clr_5'])) {
+                                $tabs[$title] = $gid;
+                            }
+                        }
+
+                        if (! empty($tabs)) {
+                            return $tabs;
                         }
                     }
-
-                    if (! empty($tabs)) {
-                        return $tabs;
-                    }
                 }
+            } catch (\Throwable $e) {
+                Log::warning('Could not dynamically discover Google Sheets tabs: '.$e->getMessage());
             }
-        } catch (\Throwable $e) {
-            Log::warning('Could not dynamically discover Google Sheets tabs: '.$e->getMessage());
-        }
 
-        return self::FACULTY_TABS;
+            return self::FACULTY_TABS;
+        });
     }
 
     /**
-     * Fetch multiple CSV tabs reliably with redirection handling.
+     * Fetch multiple CSV tabs concurrently using Http::pool in controlled batches.
      *
      * @param  array<string, string>  $tabs
      * @return array<string, string>
@@ -631,29 +724,37 @@ class GoogleSheetsAttendanceService
     {
         $results = [];
 
-        foreach ($tabs as $name => $gid) {
-            $url = "https://docs.google.com/spreadsheets/d/{$spreadsheetId}/export?format=csv&gid={$gid}";
-            $csv = '';
+        foreach (array_chunk($tabs, 15, true) as $batch) {
+            try {
+                $responses = Http::pool(function (Pool $pool) use ($spreadsheetId, $batch) {
+                    $requests = [];
+                    foreach ($batch as $name => $gid) {
+                        $url = "https://docs.google.com/spreadsheets/d/{$spreadsheetId}/export?format=csv&gid={$gid}";
+                        $requests[] = $pool->as($name)
+                            ->withoutVerifying()
+                            ->connectTimeout(3)
+                            ->timeout(6)
+                            ->retry(1, 200, throw: false)
+                            ->get($url);
+                    }
 
-            for ($attempt = 0; $attempt < 3; $attempt++) {
-                $ch = curl_init($url);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-                curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-                curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-                $response = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
+                    return $requests;
+                });
 
-                if ($httpCode === 200 && strlen($response) > 100) {
-                    $csv = $response;
-                    break;
+                foreach ($batch as $name => $gid) {
+                    $response = $responses[$name] ?? null;
+                    if ($response instanceof Response && $response->successful() && strlen($response->body()) > 100) {
+                        $results[$name] = $response->body();
+                    } else {
+                        $results[$name] = '';
+                    }
                 }
-                usleep(150000);
+            } catch (\Throwable $e) {
+                Log::warning('Batch fetch of Google Sheets attendance tabs failed: '.$e->getMessage());
+                foreach ($batch as $name => $gid) {
+                    $results[$name] = $results[$name] ?? '';
+                }
             }
-
-            $results[$name] = $csv;
         }
 
         return $results;

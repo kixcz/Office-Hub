@@ -9,6 +9,7 @@ use App\Services\EhrisIntegrationService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,13 +21,18 @@ class LocatorSlipController extends Controller
 
     /**
      * Display the Locator Slips monitoring hub.
+     * Serves local synchronized snapshot data immediately and triggers non-blocking background sync if stale.
      */
     public function index(Request $request): Response
     {
-        // Sync or ensure records
-        $this->ehrisService->syncLocatorSlips();
+        if (! app()->runningUnitTests()) {
+            $this->ehrisService->queueSyncIfStale('locator_slips');
+        }
 
-        $query = LocatorSlip::with(['faculty.program'])
+        $query = LocatorSlip::with([
+            'faculty:id,first_name,last_name,faculty_id,program_id,profile_picture',
+            'faculty.program:id,code',
+        ])
             ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc');
 
@@ -83,31 +89,42 @@ class LocatorSlipController extends Controller
         });
 
         // Faculty directory list for filter and modal dropdowns
-        $faculties = Faculty::with('program')
-            ->orderBy('last_name')
-            ->get()
-            ->map(fn ($f) => [
-                'id' => $f->id,
-                'name' => $f->first_name.' '.$f->last_name,
-                'faculty_id' => $f->faculty_id,
-                'program' => $f->program?->code ?? 'CIDS',
-                'photo_url' => $f->photo_url,
-            ]);
+        $faculties = Cache::remember('officehub_faculty_dropdown_options_v2', 300, function () {
+            return Faculty::with('program:id,code')
+                ->orderBy('last_name')
+                ->get(['id', 'first_name', 'last_name', 'faculty_id', 'program_id', 'profile_picture'])
+                ->map(fn ($f) => [
+                    'id' => $f->id,
+                    'name' => $f->first_name.' '.$f->last_name,
+                    'faculty_id' => $f->faculty_id,
+                    'program' => $f->program?->code ?? 'CIDS',
+                    'photo_url' => $f->photo_url,
+                ]);
+        });
 
-        // Key metrics
-        $allSlips = LocatorSlip::all();
+        // Key metrics aggregated via single SQL query
+        $today = Carbon::today()->toDateString();
+        $agg = LocatorSlip::selectRaw("
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'Departed' THEN 1 ELSE 0 END) as active_out,
+            SUM(CASE WHEN status = 'Returned' THEN 1 ELSE 0 END) as returned_count,
+            SUM(CASE WHEN status = 'Approved' THEN 1 ELSE 0 END) as approved_count,
+            SUM(CASE WHEN date = ? THEN 1 ELSE 0 END) as today_count
+        ", [$today])->first();
+
         $metrics = [
-            'total' => $allSlips->count(),
-            'active_out' => $allSlips->where('status', 'Departed')->count(),
-            'returned' => $allSlips->where('status', 'Returned')->count(),
-            'approved' => $allSlips->where('status', 'Approved')->count(),
-            'today_count' => $allSlips->where('date', Carbon::today()->toDateString())->count(),
+            'total' => (int) ($agg->total ?? 0),
+            'active_out' => (int) ($agg->active_out ?? 0),
+            'returned' => (int) ($agg->returned_count ?? 0),
+            'approved' => (int) ($agg->approved_count ?? 0),
+            'today_count' => (int) ($agg->today_count ?? 0),
         ];
 
         return Inertia::render('operations/locator-slips/index', [
             'slips' => $slips,
             'faculties' => $faculties,
             'metrics' => $metrics,
+            'sync_status' => $this->ehrisService->getSyncStatus('locator_slips'),
             'filters' => $request->only(['status', 'faculty_id', 'date', 'search']),
         ]);
     }
@@ -184,7 +201,12 @@ class LocatorSlipController extends Controller
     public function sync(): RedirectResponse
     {
         $this->ehrisService->syncLocatorSlips();
+        $stats = $this->ehrisService->lastSyncStats;
 
-        return redirect()->back()->with('success', 'Locator Slips synced with e-HRIS API successfully.');
+        if ($stats['error']) {
+            return redirect()->back()->with('error', 'e-HRIS sync failed: '.$stats['error']);
+        }
+
+        return redirect()->back()->with('success', "e-HRIS sync done: {$stats['fetched']} fetched, {$stats['matched']} matched to OfficeHub faculty.");
     }
 }

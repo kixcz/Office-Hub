@@ -4,10 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class AcademicPeriod extends Model
 {
     use HasFactory;
+
+    public const CURRENT_PERIOD_CACHE_KEY = 'officehub_current_academic_period_v1';
+
+    protected static function booted(): void
+    {
+        $flush = static function (): void {
+            Cache::forget(self::CURRENT_PERIOD_CACHE_KEY);
+            Cache::forget('officehub_available_academic_periods_v1');
+        };
+
+        static::saved($flush);
+        static::deleted($flush);
+    }
 
     protected $fillable = [
         'academic_year',
@@ -64,9 +78,11 @@ class AcademicPeriod extends Model
      */
     public static function current(): ?self
     {
-        return self::where('is_current', true)->first()
-            ?? self::where('status', 'Active')->first()
-            ?? self::latest('start_date')->first();
+        return Cache::remember(self::CURRENT_PERIOD_CACHE_KEY, 600, function (): ?self {
+            return self::where('is_current', true)->first()
+                ?? self::where('status', 'Active')->first()
+                ?? self::latest('start_date')->first();
+        });
     }
 
     /**

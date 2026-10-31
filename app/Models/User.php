@@ -57,10 +57,29 @@ class User extends Authenticatable
 
     /**
      * Check if the user has a specific role.
+     * Uses the loaded roles collection to avoid N+1 database queries.
      */
     public function hasRole(string $role): bool
     {
-        return $this->roles()->where('name', $role)->exists();
+        if (! $this->relationLoaded('roles')) {
+            $this->load('roles');
+        }
+
+        return $this->roles->contains('name', $role);
+    }
+
+    /**
+     * Check if the user has any of the given roles.
+     *
+     * @param  array<int, string>  $roles
+     */
+    public function hasAnyRole(array $roles): bool
+    {
+        if (! $this->relationLoaded('roles')) {
+            $this->load('roles');
+        }
+
+        return $this->roles->whereIn('name', $roles)->isNotEmpty();
     }
 
     /**
@@ -68,6 +87,10 @@ class User extends Authenticatable
      */
     public function hasPermissionTo(string $permission): bool
     {
+        if ($this->relationLoaded('roles') && $this->roles->every(fn ($role) => $role->relationLoaded('permissions'))) {
+            return $this->roles->contains(fn ($role) => $role->permissions->contains('name', $permission));
+        }
+
         return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
             $query->where('name', $permission);
         })->exists();
@@ -86,7 +109,15 @@ class User extends Authenticatable
      */
     public function isFaculty(): bool
     {
-        return $this->hasRole('Faculty Member') || $this->faculty()->exists();
+        if ($this->hasRole('Faculty Member')) {
+            return true;
+        }
+
+        if ($this->relationLoaded('faculty')) {
+            return $this->faculty !== null;
+        }
+
+        return $this->faculty()->exists();
     }
 
     /**
@@ -111,10 +142,12 @@ class User extends Authenticatable
      */
     public function isCollegeAdmin(): bool
     {
-        return $this->hasRole('College Admin')
-            || $this->hasRole('System Administrator')
-            || $this->hasRole('Super Admin')
-            || $this->isInstitutionSuperAdmin();
+        return $this->hasAnyRole([
+            'College Admin',
+            'System Administrator',
+            'Super Admin',
+            'Institution Super Admin',
+        ]);
     }
 
     /**
@@ -122,10 +155,14 @@ class User extends Authenticatable
      */
     public function canSwitchTvChannels(): bool
     {
-        return $this->isInstitutionSuperAdmin()
-            || $this->isVpaf()
-            || $this->isCollegeAdmin()
-            || $this->hasRole('Institution TV / Communications Manager')
-            || $this->hasRole('Dean');
+        return $this->hasAnyRole([
+            'Institution Super Admin',
+            'VPAF / Executive Oversight',
+            'College Admin',
+            'System Administrator',
+            'Super Admin',
+            'Institution TV / Communications Manager',
+            'Dean',
+        ]);
     }
 }

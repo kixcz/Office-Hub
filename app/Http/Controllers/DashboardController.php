@@ -253,11 +253,17 @@ class DashboardController extends Controller
             ? round(($totalCollegeComplied / $totalCollegeSubmissions) * 100, 1)
             : $complianceRate;
 
-        // 9. Key Metrics Distribution from DB (Computed dynamically per category)
-        $allTargetFaculty = Faculty::with(['attendances', 'submissions'])
+        // 9. Key Metrics Distribution from DB (Computed dynamically via SQL aggregates without loading full relation collections)
+        $allTargetFaculty = Faculty::query()
+            ->withCount([
+                'submissions as total_submissions_count',
+                'submissions as complied_submissions_count' => fn ($q) => $q->whereNotNull('submitted_at'),
+                'attendances as total_attendances_count',
+                'attendances as attended_sessions_count' => fn ($q) => $q->whereIn('status', ['Present', 'Late', 'Online']),
+            ])
             ->when($selectedProgramId !== 'all', fn ($q) => $q->where('program_id', $selectedProgramId))
             ->when($selectedFacultyId !== 'all', fn ($q) => $q->where('id', $selectedFacultyId))
-            ->get();
+            ->get(['id', 'program_id']);
         $targetFacultyCount = $allTargetFaculty->count() ?: 1;
 
         // Distribution by Compliance
@@ -267,9 +273,8 @@ class DashboardController extends Controller
         $compFacultyNonCompliant = 0;
 
         foreach ($allTargetFaculty as $f) {
-            $fSubs = $f->submissions;
-            $fTotal = $fSubs->count();
-            $fComplied = $fSubs->whereNotNull('submitted_at')->count();
+            $fTotal = (int) $f->total_submissions_count;
+            $fComplied = (int) $f->complied_submissions_count;
             $rate = $fTotal > 0 ? ($fComplied / $fTotal) * 100 : 100;
 
             if ($rate >= 85) {
@@ -290,9 +295,8 @@ class DashboardController extends Controller
         $attFacultyNonCompliant = 0;
 
         foreach ($allTargetFaculty as $f) {
-            $fAtts = $f->attendances;
-            $fTotal = $fAtts->count();
-            $fAttended = $fAtts->whereIn('status', ['Present', 'Late', 'Online'])->count();
+            $fTotal = (int) $f->total_attendances_count;
+            $fAttended = (int) $f->attended_sessions_count;
             $rate = $fTotal > 0 ? ($fAttended / $fTotal) * 100 : 100;
 
             if ($rate >= 90) {
@@ -346,25 +350,33 @@ class DashboardController extends Controller
             ],
         ];
 
-        // 10. Monthly Trend Data for College-Wide Productivity Line Chart
+        // 10. Monthly Trend Data for College-Wide Productivity Line Chart (batched outside loop to avoid 15 queries)
         $months = ['Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         $monthNumbers = [8, 9, 10, 11, 12];
         $trendData = [];
 
+        $allFilteredAtts = FacultyAttendance::select(['session_date', 'status', 'faculty_id'])
+            ->when($selectedFacultyId !== 'all', fn ($q) => $q->where('faculty_id', $selectedFacultyId))
+            ->when($selectedProgramId !== 'all', fn ($q) => $q->whereHas('faculty', fn ($fq) => $fq->where('program_id', $selectedProgramId)))
+            ->get()
+            ->groupBy(fn ($item) => (int) Carbon::parse($item->session_date)->month);
+
+        $allFilteredSubs = Submission::select(['submitted_at', 'faculty_id'])
+            ->whereNotNull('submitted_at')
+            ->when($selectedFacultyId !== 'all', fn ($q) => $q->where('faculty_id', $selectedFacultyId))
+            ->when($selectedProgramId !== 'all', fn ($q) => $q->whereHas('faculty', fn ($fq) => $fq->where('program_id', $selectedProgramId)))
+            ->get()
+            ->groupBy(fn ($item) => (int) Carbon::parse($item->submitted_at)->month);
+
         foreach ($monthNumbers as $idx => $m) {
-            // Attendance for month
-            $mAtts = FacultyAttendance::whereMonth('session_date', $m)
-                ->when($selectedFacultyId !== 'all', fn ($q) => $q->where('faculty_id', $selectedFacultyId))
-                ->when($selectedProgramId !== 'all', fn ($q) => $q->whereHas('faculty', fn ($fq) => $fq->where('program_id', $selectedProgramId)));
-            $mAttTotal = $mAtts->count();
-            $mAttAttended = (clone $mAtts)->whereIn('status', ['Present', 'Late', 'Online'])->count();
+            // Attendance for month from preloaded grouped collection
+            $mAttGroup = $allFilteredAtts->get($m, collect());
+            $mAttTotal = $mAttGroup->count();
+            $mAttAttended = $mAttGroup->whereIn('status', ['Present', 'Late', 'Online'])->count();
             $mAttRate = $mAttTotal > 0 ? round(($mAttAttended / $mAttTotal) * 100) : ($attendanceRate ?: 90);
 
-            // Compliance for month
-            $mSubs = Submission::whereMonth('submitted_at', $m)
-                ->when($selectedFacultyId !== 'all', fn ($q) => $q->where('faculty_id', $selectedFacultyId))
-                ->when($selectedProgramId !== 'all', fn ($q) => $q->whereHas('faculty', fn ($fq) => $fq->where('program_id', $selectedProgramId)));
-            $mSubCount = $mSubs->count();
+            // Compliance for month from preloaded grouped collection
+            $mSubCount = $allFilteredSubs->get($m, collect())->count();
             $mCompRate = $mSubCount > 0 ? min(100, round(($mSubCount / max(1, $totalSubmissions / 5)) * 100)) : max(50, round($complianceRate * 0.9));
 
             // Tasks rate
@@ -382,14 +394,19 @@ class DashboardController extends Controller
             ];
         }
 
-        // Attendance Weekly/Monthly Curve Data
-        $weeklyAttendanceRates = FacultyAttendance::selectRaw('WEEK(session_date) as w, sum(case when status in ("Present", "Late", "Online") then 1 else 0 end) as attended, count(*) as total')
-            ->when($selectedFacultyId !== 'all', fn ($q) => $q->where('faculty_id', $selectedFacultyId))
-            ->when($selectedProgramId !== 'all', fn ($q) => $q->whereHas('faculty', fn ($fq) => $fq->where('program_id', $selectedProgramId)))
-            ->groupBy('w')
-            ->orderBy('w')
-            ->get()
-            ->map(fn ($r) => $r->total > 0 ? round(($r->attended / $r->total) * 100) : 90)
+        // Attendance Weekly/Monthly Curve Data (computed in memory from $allFilteredAtts for SQLite/MySQL portability)
+        $weeklyAttendanceRates = $allFilteredAtts->flatten(1)
+            ->groupBy(fn ($item) => Carbon::parse($item->session_date)->weekOfYear)
+            ->sortKeys()
+            ->map(function ($weekItems) {
+                $total = $weekItems->count();
+                if ($total === 0) {
+                    return 90;
+                }
+                $attended = $weekItems->whereIn('status', ['Present', 'Late', 'Online'])->count();
+
+                return round(($attended / $total) * 100);
+            })
             ->values()
             ->toArray();
 

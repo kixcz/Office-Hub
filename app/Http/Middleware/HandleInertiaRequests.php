@@ -39,24 +39,26 @@ class HandleInertiaRequests extends Middleware
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
+        $user = $request->user();
+        if ($user) {
+            $user->loadMissing(['roles', 'faculty.program']);
+        }
+
         return array_merge(parent::share($request), [
-            ...parent::share($request),
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
-                'user' => $request->user() ? array_merge($request->user()->toArray(), [
-                    'roles' => $request->user()->roles->pluck('name'),
-                    'is_faculty' => $request->user()->isFaculty(),
-                    'is_college_admin' => $request->user()->isCollegeAdmin(),
-                    'is_institution_super_admin' => $request->user()->isInstitutionSuperAdmin(),
-                    'is_vpaf' => $request->user()->isVpaf(),
-                    'can_switch_channels' => $request->user()->canSwitchTvChannels(),
-                    'faculty' => $request->user()->faculty?->load('program'),
+                'user' => $user ? array_merge($user->toArray(), [
+                    'roles' => $user->roles->pluck('name'),
+                    'is_faculty' => $user->isFaculty(),
+                    'is_college_admin' => $user->isCollegeAdmin(),
+                    'is_institution_super_admin' => $user->isInstitutionSuperAdmin(),
+                    'is_vpaf' => $user->isVpaf(),
+                    'can_switch_channels' => $user->canSwitchTvChannels(),
+                    'faculty' => $user->faculty,
                 ]) : null,
             ],
-            'currentAcademicPeriod' => function () {
-                return AcademicPeriod::current();
-            },
+            'currentAcademicPeriod' => fn () => AcademicPeriod::current(),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

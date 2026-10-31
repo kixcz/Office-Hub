@@ -9,6 +9,7 @@ use App\Models\FacultyAttendance;
 use App\Models\FacultyAttendanceSummary;
 use App\Models\LocatorSlip;
 use App\Models\MakeUpClassRequest;
+use App\Models\Meeting;
 use App\Models\Program;
 use App\Models\TravelOrder;
 use App\Services\GoogleSheetsAttendanceService;
@@ -27,13 +28,19 @@ class FacultyAttendanceController extends Controller
 
     public function index(Request $request): Response
     {
-        // Auto-seed if table is empty
-        if (FacultyAttendanceSummary::count() === 0 && FacultyAttendance::count() === 0) {
-            $this->sheetsService->sync();
+        if (! app()->runningUnitTests()) {
+            $this->sheetsService->queueSyncIfStale();
         }
 
-        $programs = Program::orderBy('name')->get();
-        $faculties = Faculty::with('program')->orderBy('last_name')->get();
+        // Preload RoomSchedules into static memory cache so FacultyAttendance accessors execute 0 additional SQL queries
+        FacultyAttendance::getCachedRoomSchedules();
+
+        $programs = Cache::remember(
+            Meeting::PROGRAMS_LOOKUP_CACHE_KEY,
+            300,
+            fn () => Program::orderBy('name')->get()
+        );
+        $faculties = Faculty::with('program:id,code,name')->orderBy('last_name')->get();
 
         // Filters
         $selectedProgram = $request->query('program');
@@ -43,7 +50,25 @@ class FacultyAttendanceController extends Controller
         $selectedWeek = $request->query('week', 'August 10-14, 2026');
         $search = $request->query('search', '');
 
-        // Available periods ordered chronologically
+        // Fetch all summaries and all weekly sessions once (eliminating duplicate filtered + unfiltered queries)
+        $allSummaries = FacultyAttendanceSummary::with([
+            'faculty:id,first_name,last_name,email,profile_picture,academic_rank,employment_type,spreadsheet_name,program_id,employment_start_date,employment_end_date,teaching_assignment_effective_from,teaching_assignment_effective_until',
+            'faculty.program:id,code,name',
+        ])
+            ->orderBy('instructor_name')
+            ->get();
+
+        $allWeeklySessions = FacultyAttendance::with([
+            'faculty:id,first_name,last_name,program_id,profile_picture',
+            'faculty.program:id,code,name',
+            'roomSchedule',
+            'makeUpRequest',
+        ])
+            ->orderBy('session_date')
+            ->orderBy('time_slot')
+            ->get();
+
+        // Available periods ordered chronologically (derived in-memory from $allSummaries and $allWeeklySessions)
         $monthOrder = [
             'August 2026' => 1,
             'September 2026' => 2,
@@ -53,7 +78,7 @@ class FacultyAttendanceController extends Controller
             'January 2027' => 6,
         ];
 
-        $monthlyPeriods = FacultyAttendanceSummary::where('period_type', 'monthly')
+        $monthlyPeriods = $allSummaries->where('period_type', 'monthly')
             ->pluck('period_label')
             ->unique()
             ->sortBy(fn ($label) => $monthOrder[$label] ?? 99)
@@ -63,11 +88,11 @@ class FacultyAttendanceController extends Controller
             $monthlyPeriods = collect(['August 2026', 'September 2026', 'October 2026', 'November 2026', 'December 2026']);
         }
 
-        $weeklyPeriods = FacultyAttendanceSummary::where('period_type', 'weekly')
+        $weeklyPeriods = $allSummaries->where('period_type', 'weekly')
             ->pluck('period_label')
-            ->concat(FacultyAttendance::pluck('week_label'))
+            ->concat($allWeeklySessions->pluck('week_label'))
             ->unique()
-            ->filter(fn ($label) => ! preg_match('/\(\d{5}\)/', $label))
+            ->filter(fn ($label) => $label && ! preg_match('/\(\d{5}\)/', (string) $label))
             ->values();
 
         if ($weeklyPeriods->isEmpty()) {
@@ -85,55 +110,26 @@ class FacultyAttendanceController extends Controller
             ]);
         }
 
-        // Monthly Summaries Query
-        $summariesQuery = FacultyAttendanceSummary::with(['faculty.program'])
-            ->where('period_label', $selectedPeriod);
+        // Filter summaries in-memory for KPI computation
+        $summaries = $allSummaries->filter(function (FacultyAttendanceSummary $s) use ($selectedPeriod, $selectedProgram, $search): bool {
+            if ($s->period_label !== $selectedPeriod) {
+                return false;
+            }
+            if ($selectedProgram && $selectedProgram !== 'all') {
+                if ((string) $s->faculty?->program_id !== (string) $selectedProgram && $s->faculty?->program?->code !== $selectedProgram) {
+                    return false;
+                }
+            }
+            if ($search !== '' && ! str_contains(strtolower((string) $s->instructor_name), strtolower((string) $search))) {
+                return false;
+            }
 
-        if ($selectedProgram && $selectedProgram !== 'all') {
-            $summariesQuery->whereHas('faculty', function ($q) use ($selectedProgram) {
-                $q->where('program_id', $selectedProgram);
-            });
+            return true;
+        })->values();
+
+        if ($summaries->isEmpty() && $allSummaries->isNotEmpty()) {
+            $summaries = $allSummaries->where('period_label', $selectedPeriod)->values();
         }
-
-        if ($search) {
-            $summariesQuery->where('instructor_name', 'like', "%{$search}%");
-        }
-
-        $summaries = $summariesQuery->orderBy('instructor_name')->get();
-
-        // Weekly Session Records Query
-        $sessionsQuery = FacultyAttendance::with(['faculty.program'])
-            ->where('week_label', $selectedWeek);
-
-        if ($selectedProgram && $selectedProgram !== 'all') {
-            $sessionsQuery->whereHas('faculty', function ($q) use ($selectedProgram) {
-                $q->where('program_id', $selectedProgram);
-            });
-        }
-
-        if ($selectedInstructor && $selectedInstructor !== 'all') {
-            $sessionsQuery->where(function ($q) use ($selectedInstructor) {
-                $q->where('faculty_id', $selectedInstructor)
-                    ->orWhere('instructor_name', 'like', "%{$selectedInstructor}%");
-            });
-        }
-
-        if ($selectedStatus && $selectedStatus !== 'all') {
-            $sessionsQuery->where('status', strtolower($selectedStatus));
-        }
-
-        if ($search) {
-            $sessionsQuery->where(function ($q) use ($search) {
-                $q->where('instructor_name', 'like', "%{$search}%")
-                    ->orWhere('subject', 'like', "%{$search}%")
-                    ->orWhere('room', 'like', "%{$search}%")
-                    ->orWhere('section', 'like', "%{$search}%");
-            });
-        }
-
-        $weeklySessions = $sessionsQuery->orderBy('session_date')
-            ->orderBy('time_slot')
-            ->get();
 
         // Calculate Instructional KPI Metrics for the selected period
         $totalTracked = $summaries->count() ?: 25;
@@ -160,41 +156,38 @@ class FacultyAttendanceController extends Controller
 
         $lastSync = Cache::get('faculty_attendance_last_sync');
 
-        // Data quality & staging snapshot statistics
-        $syncStats = [
-            'total_snapshots' => AttendanceSourceSnapshot::count(),
-            'matched_count' => AttendanceSourceSnapshot::where('match_status', 'matched')->count(),
-            'unmatched_count' => AttendanceSourceSnapshot::where('match_status', 'unmatched')->count(),
-            'anomalies_count' => AttendanceSourceSnapshot::where('has_anomaly', true)->count(),
-            'last_sync_batch' => AttendanceSourceSnapshot::latest('synced_at')->value('sync_batch_id'),
-        ];
+        // Data quality & staging snapshot statistics cached briefly & aggregated in a single SQL query
+        $syncStats = Cache::remember('officehub_attendance_snapshot_stats_v1', 120, function (): array {
+            $snapshotAgg = AttendanceSourceSnapshot::selectRaw("
+                COUNT(*) as total_snapshots,
+                SUM(CASE WHEN match_status = 'matched' THEN 1 ELSE 0 END) as matched_count,
+                SUM(CASE WHEN match_status = 'unmatched' THEN 1 ELSE 0 END) as unmatched_count,
+                SUM(CASE WHEN has_anomaly = 1 THEN 1 ELSE 0 END) as anomalies_count
+            ")->first();
 
-        $makeUpRequests = MakeUpClassRequest::with('faculty')
+            return [
+                'total_snapshots' => (int) ($snapshotAgg->total_snapshots ?? 0),
+                'matched_count' => (int) ($snapshotAgg->matched_count ?? 0),
+                'unmatched_count' => (int) ($snapshotAgg->unmatched_count ?? 0),
+                'anomalies_count' => (int) ($snapshotAgg->anomalies_count ?? 0),
+                'last_sync_batch' => AttendanceSourceSnapshot::latest('synced_at')->value('sync_batch_id'),
+            ];
+        });
+
+        $makeUpRequests = MakeUpClassRequest::with('faculty:id,first_name,last_name,program_id,profile_picture')
             ->orderByDesc('created_at')
             ->get();
 
-        $activePeriod = AcademicPeriod::where('is_current', true)->first()
-            ?? AcademicPeriod::where('status', 'Active')->first()
-            ?? AcademicPeriod::find(1);
+        $activePeriod = AcademicPeriod::current();
 
-        // Fetch all summaries and all weekly sessions (with eager loading) so client can calculate matrices and trends matching report exactly
-        $allSummaries = FacultyAttendanceSummary::with(['faculty.program'])
-            ->orderBy('instructor_name')
-            ->get();
-
-        $allWeeklySessions = FacultyAttendance::with(['faculty.program', 'roomSchedule', 'makeUpRequest'])
-            ->orderBy('session_date')
-            ->orderBy('time_slot')
-            ->get();
-
-        $travelOrders = TravelOrder::with('faculty.program')->get();
-        $locatorSlips = LocatorSlip::with('faculty.program')->get();
+        $travelOrders = TravelOrder::with(['faculty:id,first_name,last_name,program_id,profile_picture', 'faculty.program:id,code'])->get();
+        $locatorSlips = LocatorSlip::with(['faculty:id,first_name,last_name,program_id,profile_picture', 'faculty.program:id,code'])->get();
 
         return Inertia::render('attendance/index', [
             'programs' => $programs,
             'faculties' => $faculties,
-            'summaries' => $allSummaries->isNotEmpty() ? $allSummaries : $summaries,
-            'weekly_sessions' => $allWeeklySessions->isNotEmpty() ? $allWeeklySessions : $weeklySessions,
+            'summaries' => $allSummaries,
+            'weekly_sessions' => $allWeeklySessions,
             'travel_orders' => $travelOrders,
             'locator_slips' => $locatorSlips,
             'make_up_requests' => $makeUpRequests,
@@ -216,6 +209,7 @@ class FacultyAttendanceController extends Controller
                 'instructional_completion_rate' => $overallCompletionRate,
             ],
             'sync_stats' => $syncStats,
+            'sync_status' => $this->sheetsService->getSyncStatus(),
             'filters' => [
                 'program' => $selectedProgram ?: 'all',
                 'instructor' => $selectedInstructor ?: 'all',
@@ -233,12 +227,25 @@ class FacultyAttendanceController extends Controller
 
     public function report(Request $request): Response
     {
-        $programs = Program::orderBy('name')->get();
+        // Preload RoomSchedules into static memory cache so FacultyAttendance accessors execute 0 additional SQL queries
+        FacultyAttendance::getCachedRoomSchedules();
+
+        $programs = Cache::remember(
+            Meeting::PROGRAMS_LOOKUP_CACHE_KEY,
+            300,
+            fn () => Program::orderBy('name')->get()
+        );
+
+        // Return summaries across all periods so frontend can switch periods seamlessly client-side or filtered
+        $summaries = FacultyAttendanceSummary::with(['faculty.program'])
+            ->orderBy('instructor_name')
+            ->get();
 
         // Get unique faculty IDs that exist in the attendance summaries
-        $summaryFacultyIds = FacultyAttendanceSummary::whereNotNull('faculty_id')
-            ->pluck('faculty_id')
+        $summaryFacultyIds = $summaries->pluck('faculty_id')
+            ->filter()
             ->unique()
+            ->values()
             ->all();
 
         // Only include faculty members who have individual attendance summaries in the spreadsheet
@@ -264,7 +271,12 @@ class FacultyAttendanceController extends Controller
             'January 2027' => 6,
         ];
 
-        $monthlyPeriods = FacultyAttendanceSummary::where('period_type', 'monthly')
+        $weeklySessions = FacultyAttendance::with(['faculty.program', 'roomSchedule', 'makeUpRequest'])
+            ->orderBy('session_date')
+            ->orderBy('time_slot')
+            ->get();
+
+        $monthlyPeriods = $summaries->where('period_type', 'monthly')
             ->pluck('period_label')
             ->unique()
             ->sortBy(fn ($label) => $monthOrder[$label] ?? 99)
@@ -275,11 +287,11 @@ class FacultyAttendanceController extends Controller
         }
 
         // Available weekly periods from summaries or attendance sessions, excluding raw Excel serial dates
-        $weeklyPeriods = FacultyAttendanceSummary::where('period_type', 'weekly')
+        $weeklyPeriods = $summaries->where('period_type', 'weekly')
             ->pluck('period_label')
-            ->concat(FacultyAttendance::pluck('week_label'))
+            ->concat($weeklySessions->pluck('week_label'))
             ->unique()
-            ->filter(fn ($label) => ! preg_match('/\(\d{5}\)/', $label))
+            ->filter(fn ($label) => $label && ! preg_match('/\(\d{5}\)/', (string) $label))
             ->values();
 
         if ($weeklyPeriods->isEmpty()) {
@@ -297,16 +309,6 @@ class FacultyAttendanceController extends Controller
             ]);
         }
 
-        // Return summaries across all periods so frontend can switch periods seamlessly client-side or filtered
-        $summaries = FacultyAttendanceSummary::with(['faculty.program'])
-            ->orderBy('instructor_name')
-            ->get();
-
-        $weeklySessions = FacultyAttendance::with(['faculty.program', 'roomSchedule', 'makeUpRequest'])
-            ->orderBy('session_date')
-            ->orderBy('time_slot')
-            ->get();
-
         $makeUpRequests = MakeUpClassRequest::with('faculty')
             ->orderByDesc('created_at')
             ->get();
@@ -316,9 +318,7 @@ class FacultyAttendanceController extends Controller
 
         $lastSync = Cache::get('faculty_attendance_last_sync');
 
-        $activePeriod = AcademicPeriod::where('is_current', true)->first()
-            ?? AcademicPeriod::where('status', 'Active')->first()
-            ?? AcademicPeriod::find(1);
+        $activePeriod = AcademicPeriod::current();
 
         return Inertia::render('attendance/report', [
             'programs' => $programs,

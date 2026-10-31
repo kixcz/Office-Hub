@@ -162,6 +162,15 @@ interface SyncStats {
     last_sync_batch?: string | null;
 }
 
+interface SyncStatus {
+    last_synced_at?: string | null;
+    is_stale?: boolean;
+    status?: string;
+    last_error?: string | null;
+    synced_records?: number;
+    synced_summaries?: number;
+}
+
 interface Props {
     programs: Program[];
     faculties: Faculty[];
@@ -175,6 +184,7 @@ interface Props {
     academic_period?: any;
     kpis: KPIs;
     sync_stats?: SyncStats;
+    sync_status?: SyncStatus;
     filters: {
         program: string;
         instructor?: string;
@@ -223,6 +233,7 @@ export default function FacultyAttendanceIndex({
     academic_period = null,
     kpis,
     sync_stats,
+    sync_status,
     filters,
     last_synced_at,
     academic_year = 'AY 2026–2027',
@@ -237,6 +248,7 @@ export default function FacultyAttendanceIndex({
     const [selectedPeriod, setSelectedPeriod] = useState(filters.period || (monthly_periods[0] || 'August 2026'));
     const [selectedWeek, setSelectedWeek] = useState(filters.week || (weekly_periods[0] || 'August Week 5 (8/31/2026)'));
     const [isSyncing, setIsSyncing] = useState(false);
+    const [syncBanner, setSyncBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [selectedRows, setSelectedRows] = useState<number[]>([]);
 
     // Pagination states for Weekly and Monthly tabs
@@ -300,9 +312,23 @@ export default function FacultyAttendanceIndex({
     };
 
     const handleSync = () => {
+        if (isSyncing) return;
         setIsSyncing(true);
+        setSyncBanner(null);
         router.post('/faculty-attendance/sync', {}, {
             preserveScroll: true,
+            preserveState: true,
+            onSuccess: (page) => {
+                const flash = (page.props as { flash?: { success?: string; error?: string } }).flash;
+                if (flash?.error) {
+                    setSyncBanner({ type: 'error', message: `${flash.error} Preserved local attendance snapshot.` });
+                } else {
+                    setSyncBanner({ type: 'success', message: flash?.success || 'Google Sheets attendance synchronized.' });
+                }
+            },
+            onError: () => {
+                setSyncBanner({ type: 'error', message: 'Google Sheets sync failed. Preserved local attendance snapshot.' });
+            },
             onFinish: () => setIsSyncing(false),
         });
     };
@@ -941,10 +967,62 @@ export default function FacultyAttendanceIndex({
                     </div>
 
                     <div className="text-[11px] font-medium text-muted-foreground flex items-center gap-2">
+                        <span
+                            className={cn(
+                                "px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide",
+                                sync_status?.status === 'offline_snapshot'
+                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                                    : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                            )}
+                            title={sync_status?.last_error || `Last Synced: ${last_synced_at}`}
+                        >
+                            {sync_status?.status === 'offline_snapshot'
+                                ? 'Local Snapshot Active'
+                                : 'Google Sheets Synced'}
+                        </span>
                         <span>Last Synced:</span>
                         <strong className="text-foreground">{last_synced_at}</strong>
                     </div>
                 </div>
+
+                {syncBanner && (
+                    <div
+                        className={cn(
+                            "flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-xs font-semibold",
+                            syncBanner.type === 'error'
+                                ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200"
+                                : "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-200"
+                        )}
+                    >
+                        <div className="flex items-center gap-2">
+                            {syncBanner.type === 'error' ? (
+                                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                            ) : (
+                                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                            )}
+                            <span>{syncBanner.message}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {syncBanner.type === 'error' && (
+                                <button
+                                    type="button"
+                                    onClick={handleSync}
+                                    disabled={isSyncing}
+                                    className="rounded-lg bg-amber-400 px-2.5 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-500 cursor-pointer"
+                                >
+                                    Retry Sync
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setSyncBanner(null)}
+                                className="text-muted-foreground hover:text-foreground cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* 3. REPLACED KPI ROW: 7 EXECUTIVE DECISION DASHBOARD METRICS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3.5">
@@ -1717,7 +1795,6 @@ export default function FacultyAttendanceIndex({
                                                 <th className="py-2.5 px-2 text-right" title="Approved Leave Duration">Leave</th>
                                                 <th className="py-2.5 px-2 text-right text-indigo-600 dark:text-indigo-400" title="Travel Order (Official Travel)">TO</th>
                                                 <th className="py-2.5 px-2 text-right text-sky-600 dark:text-sky-400" title="Locator Slip (Official Business)">LS</th>
-                                                <th className="py-2.5 px-2 text-right" title="Other Official Business">Other OB</th>
                                                 <th className="py-2.5 px-2 text-right" title="Eligible Duration = Scheduled - Approved Exclusions">Eligible</th>
                                                 <th className="py-2.5 px-2 text-right" title="Attended Time">Attended</th>
                                                 <th className="py-2.5 px-2 text-right" title="Unexcused Absence Duration">Absence</th>
@@ -1739,7 +1816,7 @@ export default function FacultyAttendanceIndex({
                                                 if (paginatedRows.length === 0) {
                                                     return (
                                                         <tr>
-                                                            <td colSpan={19} className="py-12 text-center text-muted-foreground italic">
+                                                            <td colSpan={18} className="py-12 text-center text-muted-foreground italic">
                                                                 No faculty records found for this week.
                                                             </td>
                                                         </tr>
@@ -1776,9 +1853,6 @@ export default function FacultyAttendanceIndex({
                                                             </td>
                                                             <td className="py-2 px-2 text-right font-mono tabular-nums text-sky-600 dark:text-sky-400">
                                                                 {row.isNotYetEmployed ? 'N/A' : ((row.locatorSlipMin || 0) > 0 ? formatDuration(row.locatorSlipMin) : '0m')}
-                                                            </td>
-                                                            <td className="py-2 px-2 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
-                                                                {row.isNotYetEmployed ? 'N/A' : ((row.otherObMin || 0) > 0 ? formatDuration(row.otherObMin) : '0m')}
                                                             </td>
                                                             <td className="py-2 px-2 text-right font-mono tabular-nums font-semibold text-foreground">
                                                                 {row.isNotYetEmployed ? 'N/A' : formatDuration(row.eligibleMin)}

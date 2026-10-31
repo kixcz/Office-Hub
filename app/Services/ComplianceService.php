@@ -6,19 +6,37 @@ use App\Models\Faculty;
 use App\Models\Requirement;
 use App\Models\Submission;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class ComplianceService
 {
+    public const SYNC_CACHE_KEY = 'officehub_compliance_submissions_synced_v1';
+
     /**
      * Ensure every eligible faculty member has a submission record for every active requirement.
      * Missing submission records are created with status = 'pending' and submitted_at = null.
+     * Gated behind a cache signature so it only runs when Requirement or Faculty counts/timestamps change.
      */
-    public static function syncPendingSubmissions(): void
+    public static function syncPendingSubmissions(bool $force = false): void
     {
+        $signature = sprintf(
+            'req:%d:%s|fac:%d:%s',
+            Requirement::count(),
+            (string) Requirement::max('updated_at'),
+            Faculty::count(),
+            (string) Faculty::max('updated_at')
+        );
+
+        if (! $force && Cache::get(self::SYNC_CACHE_KEY) === $signature) {
+            return;
+        }
+
         $requirements = Requirement::select(['id', 'program_id'])->get();
         $faculties = Faculty::select(['id', 'program_id'])->get();
 
         if ($requirements->isEmpty() || $faculties->isEmpty()) {
+            Cache::put(self::SYNC_CACHE_KEY, $signature, 900);
+
             return;
         }
 
@@ -62,6 +80,16 @@ class ComplianceService
                 Submission::insertOrIgnore($chunk);
             }
         }
+
+        Cache::put(self::SYNC_CACHE_KEY, $signature, 900);
+    }
+
+    /**
+     * Flush the compliance sync cache signature so the next check re-evaluates.
+     */
+    public static function flushSyncCache(): void
+    {
+        Cache::forget(self::SYNC_CACHE_KEY);
     }
 
     /**

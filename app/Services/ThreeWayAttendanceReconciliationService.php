@@ -12,10 +12,81 @@ use App\Models\MakeUpClassRequest;
 use App\Models\TravelOrder;
 use App\Models\VerifiedSchedule;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class ThreeWayAttendanceReconciliationService
 {
+    /**
+     * In-memory cache of administrative exception records keyed by date string (Y-m-d)
+     * to prevent N+1 queries when checking many schedules on the same date.
+     *
+     * @var array<string, array{
+     *     calendar_event: ?AcademicCalendarImportEvent,
+     *     leaves_by_faculty: Collection,
+     *     travel_orders_by_faculty: Collection,
+     *     locator_slips_by_faculty: Collection
+     * }>
+     */
+    protected array $dateExceptionsCache = [];
+
+    /**
+     * Preload and memoize administrative exception records for a specific date.
+     *
+     * @return array{
+     *     calendar_event: ?AcademicCalendarImportEvent,
+     *     leaves_by_faculty: Collection,
+     *     travel_orders_by_faculty: Collection,
+     *     locator_slips_by_faculty: Collection
+     * }
+     */
+    protected function getExceptionsContextForDate(string $sessionDateStr): array
+    {
+        if (isset($this->dateExceptionsCache[$sessionDateStr])) {
+            return $this->dateExceptionsCache[$sessionDateStr];
+        }
+
+        $calendarEvent = AcademicCalendarImportEvent::query()
+            ->where('status', 'Confirmed')
+            ->whereDate('start_date', '<=', $sessionDateStr)
+            ->whereDate('end_date', '>=', $sessionDateStr)
+            ->where(function ($q) {
+                $q->where('category', 'like', '%Holiday%')
+                    ->orWhere('category', 'like', '%Suspension%')
+                    ->orWhere('title', 'like', '%Holiday%')
+                    ->orWhere('title', 'like', '%Suspension%')
+                    ->orWhere('confirmed_scheduling_effect', 'no_classes');
+            })
+            ->first();
+
+        $leavesByFaculty = FacultyApprovedLeave::query()
+            ->whereIn('status', ['Approved', 'approved'])
+            ->whereDate('start_date', '<=', $sessionDateStr)
+            ->whereDate('end_date', '>=', $sessionDateStr)
+            ->get()
+            ->groupBy('faculty_id');
+
+        $travelOrdersByFaculty = TravelOrder::query()
+            ->whereIn('status', ['Approved', 'approved', 'Traveling Now', 'traveling now', 'In Progress', 'in progress'])
+            ->whereDate('start_date', '<=', $sessionDateStr)
+            ->whereDate('end_date', '>=', $sessionDateStr)
+            ->get()
+            ->groupBy('faculty_id');
+
+        $locatorSlipsByFaculty = LocatorSlip::query()
+            ->whereIn('status', ['Approved', 'approved'])
+            ->whereDate('date', $sessionDateStr)
+            ->get()
+            ->groupBy('faculty_id');
+
+        return $this->dateExceptionsCache[$sessionDateStr] = [
+            'calendar_event' => $calendarEvent,
+            'leaves_by_faculty' => $leavesByFaculty,
+            'travel_orders_by_faculty' => $travelOrdersByFaculty,
+            'locator_slips_by_faculty' => $locatorSlipsByFaculty,
+        ];
+    }
+
     /**
      * Check if a session falls within the faculty member's active employment and assignment window.
      */
@@ -63,19 +134,10 @@ class ThreeWayAttendanceReconciliationService
         $sessionEnd = Carbon::parse($sessionDateStr.' '.substr($schedule->scheduled_end_time, 0, 5));
         $scheduledMinutes = max(1, (int) round($sessionEnd->diffInMinutes($sessionStart)));
 
+        $ctx = $this->getExceptionsContextForDate($sessionDateStr);
+
         // 1. Check Institutional Suspensions or Holidays
-        $calendarEvent = AcademicCalendarImportEvent::query()
-            ->where('status', 'Confirmed')
-            ->whereDate('start_date', '<=', $sessionDateStr)
-            ->whereDate('end_date', '>=', $sessionDateStr)
-            ->where(function ($q) {
-                $q->where('category', 'like', '%Holiday%')
-                    ->orWhere('category', 'like', '%Suspension%')
-                    ->orWhere('title', 'like', '%Holiday%')
-                    ->orWhere('title', 'like', '%Suspension%')
-                    ->orWhere('confirmed_scheduling_effect', 'no_classes');
-            })
-            ->first();
+        $calendarEvent = $ctx['calendar_event'];
 
         if ($calendarEvent) {
             $isSuspension = str_contains(strtolower($calendarEvent->title.$calendarEvent->category), 'suspension');
@@ -108,12 +170,7 @@ class ThreeWayAttendanceReconciliationService
         }
 
         // 2. Check Approved Faculty Leave
-        $approvedLeave = FacultyApprovedLeave::query()
-            ->where('faculty_id', $facultyId)
-            ->whereIn('status', ['Approved', 'approved'])
-            ->whereDate('start_date', '<=', $sessionDateStr)
-            ->whereDate('end_date', '>=', $sessionDateStr)
-            ->first();
+        $approvedLeave = $ctx['leaves_by_faculty']->get($facultyId)?->first();
 
         if ($approvedLeave) {
             $ref = $approvedLeave->approval_reference ?: ($approvedLeave->leave_type ?? 'Approved Leave');
@@ -134,12 +191,7 @@ class ThreeWayAttendanceReconciliationService
         }
 
         // 3. Check Approved Travel Orders
-        $travelOrder = TravelOrder::query()
-            ->where('faculty_id', $facultyId)
-            ->whereIn('status', ['Approved', 'approved', 'Traveling Now', 'traveling now', 'In Progress', 'in progress'])
-            ->whereDate('start_date', '<=', $sessionDateStr)
-            ->whereDate('end_date', '>=', $sessionDateStr)
-            ->first();
+        $travelOrder = $ctx['travel_orders_by_faculty']->get($facultyId)?->first();
 
         if ($travelOrder) {
             $tracking = $travelOrder->tracking_number ?: "TO-{$travelOrder->id}";
@@ -160,38 +212,35 @@ class ThreeWayAttendanceReconciliationService
         }
 
         // 4. Check Approved Locator Slips
-        $locatorSlip = LocatorSlip::query()
-            ->where('faculty_id', $facultyId)
-            ->whereIn('status', ['Approved', 'approved'])
-            ->whereDate('date', $sessionDateStr)
-            ->first();
+        $locatorSlips = $ctx['locator_slips_by_faculty']->get($facultyId, collect());
+        foreach ($locatorSlips as $locatorSlip) {
+            if ($locatorSlip && $locatorSlip->time_out && $locatorSlip->time_in) {
+                $slipStart = Carbon::parse($sessionDateStr.' '.substr($locatorSlip->time_out, 0, 5));
+                $slipEnd = Carbon::parse($sessionDateStr.' '.substr($locatorSlip->time_in, 0, 5));
 
-        if ($locatorSlip && $locatorSlip->time_out && $locatorSlip->time_in) {
-            $slipStart = Carbon::parse($sessionDateStr.' '.substr($locatorSlip->time_out, 0, 5));
-            $slipEnd = Carbon::parse($sessionDateStr.' '.substr($locatorSlip->time_in, 0, 5));
+                // Calculate overlap window
+                $overlapStart = $sessionStart->max($slipStart);
+                $overlapEnd = $sessionEnd->min($slipEnd);
 
-            // Calculate overlap window
-            $overlapStart = $sessionStart->max($slipStart);
-            $overlapEnd = $sessionEnd->min($slipEnd);
+                if ($overlapStart < $overlapEnd) {
+                    $overlapMinutes = (int) round($overlapEnd->diffInMinutes($overlapStart));
+                    $slipNum = $locatorSlip->slip_number ?: "LS-{$locatorSlip->id}";
 
-            if ($overlapStart < $overlapEnd) {
-                $overlapMinutes = (int) round($overlapEnd->diffInMinutes($overlapStart));
-                $slipNum = $locatorSlip->slip_number ?: "LS-{$locatorSlip->id}";
-
-                return [
-                    'has_exception' => true,
-                    'exception_type' => 'Locator Slip',
-                    'exception_reference' => $slipNum,
-                    'exception_overlap_minutes' => $overlapMinutes,
-                    'banner_text' => "Official Business Detected – Locator Slip {$slipNum} overlaps {$overlapMinutes} of {$scheduledMinutes} scheduled minutes",
-                    'details' => [
-                        'source' => 'locator_slip',
-                        'slip_number' => $slipNum,
-                        'time_out' => $locatorSlip->time_out,
-                        'time_in' => $locatorSlip->time_in,
-                        'purpose' => $locatorSlip->purpose,
-                    ],
-                ];
+                    return [
+                        'has_exception' => true,
+                        'exception_type' => 'Locator Slip',
+                        'exception_reference' => $slipNum,
+                        'exception_overlap_minutes' => $overlapMinutes,
+                        'banner_text' => "Official Business Detected – Locator Slip {$slipNum} overlaps {$overlapMinutes} of {$scheduledMinutes} scheduled minutes",
+                        'details' => [
+                            'source' => 'locator_slip',
+                            'slip_number' => $slipNum,
+                            'time_out' => $locatorSlip->time_out,
+                            'time_in' => $locatorSlip->time_in,
+                            'purpose' => $locatorSlip->purpose,
+                        ],
+                    ];
+                }
             }
         }
 

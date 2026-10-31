@@ -9,16 +9,25 @@ use Carbon\Carbon;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class SyncFacilityMonitoring implements ShouldQueue
+class SyncFacilityMonitoring implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
+
+    public int $tries = 2;
+
+    public int $timeout = 60;
+
+    public int $uniqueFor = 180;
 
     /**
      * Map of spreadsheet day headers to full day names.
@@ -56,13 +65,26 @@ class SyncFacilityMonitoring implements ShouldQueue
 
             $schedules = [];
 
-            foreach ($tabs as $tabName => $gid) {
-                $response = Http::withoutVerifying()->get(
-                    "https://docs.google.com/spreadsheets/d/{$spreadsheetId}/htmlview/sheet",
-                    ['headers' => 'false', 'gid' => $gid]
-                );
+            $responses = Http::pool(function (Pool $pool) use ($spreadsheetId, $tabs) {
+                $requests = [];
+                foreach ($tabs as $tabName => $gid) {
+                    $requests[] = $pool->as($tabName)
+                        ->withoutVerifying()
+                        ->connectTimeout(4)
+                        ->timeout(10)
+                        ->get("https://docs.google.com/spreadsheets/d/{$spreadsheetId}/htmlview/sheet", [
+                            'headers' => 'false',
+                            'gid' => $gid,
+                        ]);
+                }
 
-                if (! $response->successful()) {
+                return $requests;
+            });
+
+            foreach ($tabs as $tabName => $gid) {
+                $response = $responses[$tabName] ?? null;
+
+                if (! ($response instanceof Response) || ! $response->successful()) {
                     Log::warning("Failed to fetch room schedule tab [{$tabName}].");
 
                     continue;
@@ -116,7 +138,7 @@ class SyncFacilityMonitoring implements ShouldQueue
      */
     public function fetchRoomTabs(string $spreadsheetId): array
     {
-        $response = Http::withoutVerifying()->get("https://docs.google.com/spreadsheets/d/{$spreadsheetId}/htmlview");
+        $response = Http::withoutVerifying()->connectTimeout(4)->timeout(10)->get("https://docs.google.com/spreadsheets/d/{$spreadsheetId}/htmlview");
 
         if (! $response->successful()) {
             return [];

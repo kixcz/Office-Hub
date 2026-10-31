@@ -2,26 +2,113 @@
 
 namespace App\Services;
 
+use App\Jobs\SyncEhrisDataJob;
 use App\Models\Faculty;
 use App\Models\LocatorSlip;
 use App\Models\TravelOrder;
 use Carbon\Carbon;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class EhrisIntegrationService
 {
+    public const LOCATOR_SLIPS_SYNC_CACHE_KEY = 'officehub_ehris_locator_slips_sync_status_v1';
+
+    public const TRAVEL_ORDERS_SYNC_CACHE_KEY = 'officehub_ehris_travel_orders_sync_status_v1';
+
+    public const SYNC_FRESHNESS_SECONDS = 300; // 5 minutes
+
     protected string $baseUrl;
 
     protected string $travelOrderToken;
 
     protected string $locatorSlipToken;
 
+    /**
+     * @var array{fetched: int, matched: int, error: ?string}
+     */
+    public array $lastSyncStats = ['fetched' => 0, 'matched' => 0, 'error' => null];
+
     public function __construct()
     {
-        $this->baseUrl = config('services.ehris.base_url', 'http://hris2.dssc.edu.ph:1952/api/v1');
-        $this->travelOrderToken = config('services.ehris.travel_order_token', 'SbKZPf9ielpjqLyPc5wUq4YfENWrR6zIfnyomukWQ3D68pKfm7wARIRPfLa5');
-        $this->locatorSlipToken = config('services.ehris.locator_slip_token', 'QsHyg9PjH2TNyY4YFZ6jxUnZ1UuHtu7YSm8S9dm37LYVTOG3c6Cj1Q1TRPl2');
+        $this->baseUrl = rtrim((string) config('services.ehris.base_url', 'http://hris2.dssc.edu.ph:1952/api/v1'), '/');
+        $this->travelOrderToken = (string) config('services.ehris.travel_order_token', 'SbKZPf9ielpjqLyPc5wUq4YfENWrR6zIfnyomukWQ3D68pKfm7wARIRPfLa5');
+        $this->locatorSlipToken = (string) config('services.ehris.locator_slip_token', 'QsHyg9PjH2TNyY4YFZ6jxUnZ1UuHtu7YSm8S9dm37LYVTOG3c6Cj1Q1TRPl2');
+    }
+
+    /**
+     * Get the synchronization status metadata for Locator Slips or Travel Orders.
+     *
+     * @return array{last_synced_at: ?string, is_stale: bool, status: string, last_error: ?string, fetched: int, matched: int}
+     */
+    public function getSyncStatus(string $type = 'locator_slips'): array
+    {
+        $key = $type === 'travel_orders' ? self::TRAVEL_ORDERS_SYNC_CACHE_KEY : self::LOCATOR_SLIPS_SYNC_CACHE_KEY;
+        $cached = Cache::get($key);
+
+        if (! is_array($cached)) {
+            return [
+                'last_synced_at' => null,
+                'is_stale' => true,
+                'status' => 'idle',
+                'last_error' => null,
+                'fetched' => 0,
+                'matched' => 0,
+            ];
+        }
+
+        $timestamp = $cached['timestamp'] ?? 0;
+        $isStale = (time() - (int) $timestamp) > self::SYNC_FRESHNESS_SECONDS;
+
+        return [
+            'last_synced_at' => $cached['last_synced_at'] ?? null,
+            'is_stale' => $isStale,
+            'status' => $cached['status'] ?? 'ok',
+            'last_error' => $cached['last_error'] ?? null,
+            'fetched' => (int) ($cached['fetched'] ?? 0),
+            'matched' => (int) ($cached['matched'] ?? 0),
+        ];
+    }
+
+    /**
+     * Check whether the given integration resource is stale and should be synced in the background.
+     */
+    public function isSyncStale(string $type = 'locator_slips'): bool
+    {
+        return $this->getSyncStatus($type)['is_stale'];
+    }
+
+    /**
+     * Queue a non-blocking background synchronization job if stale and not already queued.
+     */
+    public function queueSyncIfStale(string $type = 'locator_slips'): void
+    {
+        if (! $this->isSyncStale($type)) {
+            return;
+        }
+
+        $dispatchGuardKey = "officehub_ehris_sync_queued_{$type}";
+        if (Cache::has($dispatchGuardKey)) {
+            return;
+        }
+
+        Cache::put($dispatchGuardKey, true, self::SYNC_FRESHNESS_SECONDS);
+
+        $key = $type === 'travel_orders' ? self::TRAVEL_ORDERS_SYNC_CACHE_KEY : self::LOCATOR_SLIPS_SYNC_CACHE_KEY;
+        $previous = Cache::get($key, []);
+        Cache::put($key, array_merge(is_array($previous) ? $previous : [], [
+            'last_synced_at' => $previous['last_synced_at'] ?? null,
+            'timestamp' => time(),
+            'status' => $previous['status'] ?? 'syncing',
+            'last_error' => $previous['last_error'] ?? null,
+            'fetched' => (int) ($previous['fetched'] ?? 0),
+            'matched' => (int) ($previous['matched'] ?? 0),
+        ]), 3600);
+
+        SyncEhrisDataJob::dispatch($type);
     }
 
     /**
@@ -114,44 +201,67 @@ class EhrisIntegrationService
 
     /**
      * Sync Locator Slips from live e-HRIS API for directory faculty.
+     * Uses concurrent HTTP pooling and bounded timeouts while preserving local snapshots on failure.
      */
     public function syncLocatorSlips(): array
     {
         [$byName, $byLastName, $byEmail, $byId] = $this->getFacultyLookup();
         $slipsList = [];
+        $syncError = null;
+        $startTime = microtime(true);
 
         try {
-            // Fetch multiple pages (up to 300 recent slips) to ensure we find all faculty slips
-            for ($page = 1; $page <= 3; $page++) {
-                $response = Http::withHeaders([
+            $responses = Http::pool(fn (Pool $pool) => [
+                $pool->as('page_1')->withHeaders([
                     'Authorization' => 'Bearer '.$this->locatorSlipToken,
                     'Accept' => 'application/json',
-                ])->timeout(8)->get($this->baseUrl.'/locator-slips', [
-                    'page' => $page,
+                ])->connectTimeout(3)->timeout(6)->get($this->baseUrl.'/locator-slips', [
+                    'page' => 1,
                     'per_page' => 100,
-                ]);
+                ]),
+                $pool->as('page_2')->withHeaders([
+                    'Authorization' => 'Bearer '.$this->locatorSlipToken,
+                    'Accept' => 'application/json',
+                ])->connectTimeout(3)->timeout(6)->get($this->baseUrl.'/locator-slips', [
+                    'page' => 2,
+                    'per_page' => 100,
+                ]),
+                $pool->as('page_3')->withHeaders([
+                    'Authorization' => 'Bearer '.$this->locatorSlipToken,
+                    'Accept' => 'application/json',
+                ])->connectTimeout(3)->timeout(6)->get($this->baseUrl.'/locator-slips', [
+                    'page' => 3,
+                    'per_page' => 100,
+                ]),
+            ]);
 
-                if ($response->successful()) {
+            foreach (['page_1', 'page_2', 'page_3'] as $pageKey) {
+                $response = $responses[$pageKey] ?? null;
+                if ($response instanceof Response && $response->successful()) {
                     $json = $response->json();
                     $items = $json['data']['locator_slips'] ?? $json['data'] ?? [];
-                    if (empty($items)) {
-                        break;
+                    if (! empty($items) && is_array($items)) {
+                        $slipsList = array_merge($slipsList, $items);
                     }
-                    $slipsList = array_merge($slipsList, $items);
-                } else {
-                    break;
+                } elseif ($response instanceof \Throwable && $pageKey === 'page_1') {
+                    throw $response;
                 }
             }
         } catch (\Throwable $e) {
-            Log::error('e-HRIS locator slips sync failed: '.$e->getMessage());
+            Log::warning('e-HRIS locator slips sync failed (preserving local snapshot): '.$e->getMessage(), [
+                'duration_ms' => round((microtime(true) - $startTime) * 1000, 1),
+            ]);
+            $syncError = $e->getMessage();
         }
 
+        $matched = 0;
         foreach ($slipsList as $item) {
             $employee = $item['employee'] ?? [];
             $faculty = $this->matchFaculty($employee, $byName, $byLastName, $byEmail, $byId);
 
             // Filter strictly to faculty present in the local database directory
             if ($faculty) {
+                $matched++;
                 $trackingNumber = $item['tracking_number'] ?? ('LS-'.$item['id']);
                 $guardDep = $item['guard_logs']['departure'] ?? [];
                 $guardArr = $item['guard_logs']['arrival'] ?? [];
@@ -214,42 +324,77 @@ class EhrisIntegrationService
             }
         }
 
+        $this->lastSyncStats = ['fetched' => count($slipsList), 'matched' => $matched, 'error' => $syncError ?? null];
+
+        $previousStatus = Cache::get(self::LOCATOR_SLIPS_SYNC_CACHE_KEY, []);
+        Cache::put(self::LOCATOR_SLIPS_SYNC_CACHE_KEY, [
+            'last_synced_at' => $syncError ? ($previousStatus['last_synced_at'] ?? now()->format('M d, Y h:i A')) : now()->format('M d, Y h:i A'),
+            'timestamp' => time(),
+            'status' => $syncError ? 'offline_snapshot' : 'ok',
+            'last_error' => $syncError,
+            'fetched' => count($slipsList),
+            'matched' => $matched,
+        ], 3600);
+
         return LocatorSlip::with('faculty.program')->orderBy('date', 'desc')->get()->toArray();
     }
 
     /**
      * Sync Travel Orders from live e-HRIS API for directory faculty.
+     * Uses concurrent HTTP pooling and bounded timeouts while preserving local snapshots on failure.
      */
     public function syncTravelOrders(): array
     {
         [$byName, $byLastName, $byEmail, $byId] = $this->getFacultyLookup();
         $travelList = [];
+        $syncError = null;
+        $startTime = microtime(true);
 
         try {
-            for ($page = 1; $page <= 3; $page++) {
-                $response = Http::withHeaders([
+            $responses = Http::pool(fn (Pool $pool) => [
+                $pool->as('page_1')->withHeaders([
                     'Authorization' => 'Bearer '.$this->travelOrderToken,
                     'Accept' => 'application/json',
-                ])->timeout(8)->get($this->baseUrl.'/travel-orders', [
-                    'page' => $page,
+                ])->connectTimeout(3)->timeout(6)->get($this->baseUrl.'/travel-orders', [
+                    'page' => 1,
                     'per_page' => 100,
-                ]);
+                ]),
+                $pool->as('page_2')->withHeaders([
+                    'Authorization' => 'Bearer '.$this->travelOrderToken,
+                    'Accept' => 'application/json',
+                ])->connectTimeout(3)->timeout(6)->get($this->baseUrl.'/travel-orders', [
+                    'page' => 2,
+                    'per_page' => 100,
+                ]),
+                $pool->as('page_3')->withHeaders([
+                    'Authorization' => 'Bearer '.$this->travelOrderToken,
+                    'Accept' => 'application/json',
+                ])->connectTimeout(3)->timeout(6)->get($this->baseUrl.'/travel-orders', [
+                    'page' => 3,
+                    'per_page' => 100,
+                ]),
+            ]);
 
-                if ($response->successful()) {
+            foreach (['page_1', 'page_2', 'page_3'] as $pageKey) {
+                $response = $responses[$pageKey] ?? null;
+                if ($response instanceof Response && $response->successful()) {
                     $json = $response->json();
                     $items = $json['data']['travel_orders'] ?? $json['data'] ?? [];
-                    if (empty($items)) {
-                        break;
+                    if (! empty($items) && is_array($items)) {
+                        $travelList = array_merge($travelList, $items);
                     }
-                    $travelList = array_merge($travelList, $items);
-                } else {
-                    break;
+                } elseif ($response instanceof \Throwable && $pageKey === 'page_1') {
+                    throw $response;
                 }
             }
         } catch (\Throwable $e) {
-            Log::error('e-HRIS travel orders sync failed: '.$e->getMessage());
+            Log::warning('e-HRIS travel orders sync failed (preserving local snapshot): '.$e->getMessage(), [
+                'duration_ms' => round((microtime(true) - $startTime) * 1000, 1),
+            ]);
+            $syncError = $e->getMessage();
         }
 
+        $matched = 0;
         foreach ($travelList as $item) {
             $traveler = $item['primary_traveler'] ?? [];
             $faculty = $this->matchFaculty($traveler, $byName, $byLastName, $byEmail, $byId);
@@ -266,6 +411,7 @@ class EhrisIntegrationService
             }
 
             if ($faculty) {
+                $matched++;
                 $trackingNumber = $item['tracking_number'] ?? ('TO-'.$item['id']);
                 $dates = $item['dates'] ?? [];
                 $startDate = ! empty($dates['departure_date']) ? Carbon::parse($dates['departure_date'])->toDateString() : now()->toDateString();
@@ -314,6 +460,18 @@ class EhrisIntegrationService
                 );
             }
         }
+
+        $this->lastSyncStats = ['fetched' => count($travelList), 'matched' => $matched, 'error' => $syncError ?? null];
+
+        $previousStatus = Cache::get(self::TRAVEL_ORDERS_SYNC_CACHE_KEY, []);
+        Cache::put(self::TRAVEL_ORDERS_SYNC_CACHE_KEY, [
+            'last_synced_at' => $syncError ? ($previousStatus['last_synced_at'] ?? now()->format('M d, Y h:i A')) : now()->format('M d, Y h:i A'),
+            'timestamp' => time(),
+            'status' => $syncError ? 'offline_snapshot' : 'ok',
+            'last_error' => $syncError,
+            'fetched' => count($travelList),
+            'matched' => $matched,
+        ], 3600);
 
         return TravelOrder::with('faculty.program')->orderBy('start_date', 'desc')->get()->toArray();
     }

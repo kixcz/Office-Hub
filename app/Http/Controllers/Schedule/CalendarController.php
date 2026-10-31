@@ -12,11 +12,16 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class CalendarController extends Controller
 {
+    public const BASELINE_EVENTS_CACHE_KEY = 'officehub_calendar_baseline_seeded_v1';
+
+    public const CALENDAR_DATA_CACHE_KEY = 'officehub_consolidated_calendar_data_v1';
+
     public function index(Request $request): Response
     {
         $data = self::getCalendarData();
@@ -34,109 +39,109 @@ class CalendarController extends Controller
      */
     public static function getCalendarData(): array
     {
-        if (Meeting::count() === 0 && Activity::count() === 0) {
-            self::ensureBaselineEvents();
-        }
+        self::ensureBaselineEvents();
 
-        $meetings = Meeting::with('program')->get()->map(function ($m) {
-            $programs = $m->programs;
-            $programCode = 'All';
-            if ($programs->isNotEmpty()) {
-                $programCode = $programs->pluck('code')->filter()->implode(', ');
-            } elseif ($m->program) {
-                $programCode = $m->program->code;
+        return Cache::remember(self::CALENDAR_DATA_CACHE_KEY, 180, function (): array {
+            $meetings = Meeting::with('program')->get()->map(function ($m) {
+                $programs = $m->programs;
+                $programCode = 'All';
+                if ($programs->isNotEmpty()) {
+                    $programCode = $programs->pluck('code')->filter()->implode(', ');
+                } elseif ($m->program) {
+                    $programCode = $m->program->code;
+                }
+
+                return [
+                    'id' => 'm_'.$m->id,
+                    'raw_id' => $m->id,
+                    'type' => 'meeting',
+                    'title' => $m->title,
+                    'date' => Carbon::parse($m->date)->format('Y-m-d'),
+                    'start_time' => Carbon::parse($m->start_time)->format('h:i A'),
+                    'end_time' => Carbon::parse($m->end_time)->format('h:i A'),
+                    'venue' => $m->venue ?: 'N/A',
+                    'status' => $m->status ?: 'Scheduled',
+                    'program' => $programCode,
+                    'program_id' => $m->program_id,
+                    'program_ids' => $m->program_ids ?: ($m->program_id ? [$m->program_id] : []),
+                    'description' => $m->agenda ?: $m->notes,
+                ];
+            });
+
+            $activities = Activity::with('program')->get()->map(function ($a) {
+                $cat = strtolower($a->category ?: '');
+                $type = 'activity';
+                if (str_contains($cat, 'exam') || str_contains(strtolower($a->title), 'exam')) {
+                    $type = 'examination';
+                } elseif ($cat === 'others') {
+                    $type = 'others';
+                }
+
+                return [
+                    'id' => 'a_'.$a->id,
+                    'raw_id' => $a->id,
+                    'type' => $type,
+                    'title' => $a->title,
+                    'date' => Carbon::parse($a->date)->format('Y-m-d'),
+                    'start_time' => Carbon::parse($a->start_time)->format('h:i A'),
+                    'end_time' => Carbon::parse($a->end_time)->format('h:i A'),
+                    'venue' => $a->venue ?: 'N/A',
+                    'status' => $a->status ?: 'Scheduled',
+                    'program' => $a->program ? $a->program->code : 'All',
+                    'program_id' => $a->program_id,
+                    'description' => $a->description,
+                ];
+            });
+
+            $requirements = Requirement::with('program')->get()->map(function ($r) {
+                $due = Carbon::parse($r->due_date);
+
+                return [
+                    'id' => 'r_'.$r->id,
+                    'raw_id' => $r->id,
+                    'type' => 'deadline',
+                    'title' => $r->title,
+                    'date' => $due->format('Y-m-d'),
+                    'start_time' => '03:00 PM',
+                    'end_time' => '05:00 PM',
+                    'venue' => 'N/A',
+                    'status' => 'Scheduled',
+                    'program' => $r->program ? $r->program->code : 'All',
+                    'program_id' => $r->program_id,
+                    'description' => 'Documentary compliance deadline: '.$r->document_type,
+                ];
+            });
+
+            $events = collect()
+                ->merge($meetings)
+                ->merge($activities)
+                ->merge($requirements)
+                ->sortBy(function ($item) {
+                    return $item['date'].' '.$item['start_time'];
+                })
+                ->values();
+
+            $programs = Program::select('id', 'code', 'name')->orderBy('code')->get();
+
+            $venues = $events->pluck('venue')
+                ->filter(fn ($v) => $v && $v !== 'N/A')
+                ->unique()
+                ->values()
+                ->all();
+
+            foreach (['Conference Room A', "Dean's Office", 'University Campus', 'AVR', 'University Gym'] as $v) {
+                if (! in_array($v, $venues)) {
+                    $venues[] = $v;
+                }
             }
 
             return [
-                'id' => 'm_'.$m->id,
-                'raw_id' => $m->id,
-                'type' => 'meeting',
-                'title' => $m->title,
-                'date' => Carbon::parse($m->date)->format('Y-m-d'),
-                'start_time' => Carbon::parse($m->start_time)->format('h:i A'),
-                'end_time' => Carbon::parse($m->end_time)->format('h:i A'),
-                'venue' => $m->venue ?: 'N/A',
-                'status' => $m->status ?: 'Scheduled',
-                'program' => $programCode,
-                'program_id' => $m->program_id,
-                'program_ids' => $m->program_ids ?: ($m->program_id ? [$m->program_id] : []),
-                'description' => $m->agenda ?: $m->notes,
+                'events' => $events,
+                'programs' => $programs,
+                'venues' => array_values($venues),
+                'defaultDate' => now()->toDateString(),
             ];
         });
-
-        $activities = Activity::with('program')->get()->map(function ($a) {
-            $cat = strtolower($a->category ?: '');
-            $type = 'activity';
-            if (str_contains($cat, 'exam') || str_contains(strtolower($a->title), 'exam')) {
-                $type = 'examination';
-            } elseif ($cat === 'others') {
-                $type = 'others';
-            }
-
-            return [
-                'id' => 'a_'.$a->id,
-                'raw_id' => $a->id,
-                'type' => $type,
-                'title' => $a->title,
-                'date' => Carbon::parse($a->date)->format('Y-m-d'),
-                'start_time' => Carbon::parse($a->start_time)->format('h:i A'),
-                'end_time' => Carbon::parse($a->end_time)->format('h:i A'),
-                'venue' => $a->venue ?: 'N/A',
-                'status' => $a->status ?: 'Scheduled',
-                'program' => $a->program ? $a->program->code : 'All',
-                'program_id' => $a->program_id,
-                'description' => $a->description,
-            ];
-        });
-
-        $requirements = Requirement::with('program')->get()->map(function ($r) {
-            $due = Carbon::parse($r->due_date);
-
-            return [
-                'id' => 'r_'.$r->id,
-                'raw_id' => $r->id,
-                'type' => 'deadline',
-                'title' => $r->title,
-                'date' => $due->format('Y-m-d'),
-                'start_time' => '03:00 PM',
-                'end_time' => '05:00 PM',
-                'venue' => 'N/A',
-                'status' => 'Scheduled',
-                'program' => $r->program ? $r->program->code : 'All',
-                'program_id' => $r->program_id,
-                'description' => 'Documentary compliance deadline: '.$r->document_type,
-            ];
-        });
-
-        $events = collect()
-            ->merge($meetings)
-            ->merge($activities)
-            ->merge($requirements)
-            ->sortBy(function ($item) {
-                return $item['date'].' '.$item['start_time'];
-            })
-            ->values();
-
-        $programs = Program::select('id', 'code', 'name')->orderBy('code')->get();
-
-        $venues = $events->pluck('venue')
-            ->filter(fn ($v) => $v && $v !== 'N/A')
-            ->unique()
-            ->values()
-            ->all();
-
-        foreach (['Conference Room A', "Dean's Office", 'University Campus', 'AVR', 'University Gym'] as $v) {
-            if (! in_array($v, $venues)) {
-                $venues[] = $v;
-            }
-        }
-
-        return [
-            'events' => $events,
-            'programs' => $programs,
-            'venues' => array_values($venues),
-            'defaultDate' => now()->toDateString(),
-        ];
     }
 
     public function store(Request $request): RedirectResponse
@@ -192,6 +197,8 @@ class CalendarController extends Controller
             ]);
         }
 
+        Cache::forget(self::CALENDAR_DATA_CACHE_KEY);
+
         return redirect()->back()->with('success', 'Event successfully scheduled in Consolidated Calendar.');
     }
 
@@ -211,6 +218,8 @@ class CalendarController extends Controller
             Requirement::where('id', $numId)->delete();
         }
 
+        Cache::forget(self::CALENDAR_DATA_CACHE_KEY);
+
         return redirect()->back()->with('success', 'Event deleted from calendar.');
     }
 
@@ -219,6 +228,16 @@ class CalendarController extends Controller
      */
     public static function ensureBaselineEvents(): void
     {
+        if (Cache::get(self::BASELINE_EVENTS_CACHE_KEY)) {
+            return;
+        }
+
+        if (Meeting::where('date', '>=', '2026-10-01')->count() >= 5 && Activity::where('date', '>=', '2026-10-01')->count() >= 6) {
+            Cache::put(self::BASELINE_EVENTS_CACHE_KEY, true, 3600);
+
+            return;
+        }
+
         $bsit = Program::where('code', 'BSIT')->first();
 
         $organizer = User::first();
@@ -457,5 +476,7 @@ class CalendarController extends Controller
                 'due_date' => Carbon::parse('2026-10-30 23:59:00'),
             ]
         );
+
+        Cache::put(self::BASELINE_EVENTS_CACHE_KEY, true, 3600);
     }
 }
