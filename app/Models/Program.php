@@ -12,6 +12,7 @@ class Program extends Model
     use HasFactory;
 
     protected $fillable = [
+        'college_id',
         'code',
         'name',
         'degree_level',
@@ -20,6 +21,11 @@ class Program extends Model
         'status',
         'description',
     ];
+
+    public function college()
+    {
+        return $this->belongsTo(College::class);
+    }
 
     public function faculties()
     {

@@ -19,9 +19,17 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'institutional_id',
         'name',
         'email',
+        'phone',
         'password',
+        'account_status',
+        'mfa_required',
+        'force_password_reset',
+        'last_login_at',
+        'effective_from',
+        'effective_until',
     ];
 
     /**
@@ -44,7 +52,20 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'mfa_required' => 'boolean',
+            'force_password_reset' => 'boolean',
+            'last_login_at' => 'datetime',
+            'effective_from' => 'date',
+            'effective_until' => 'date',
         ];
+    }
+
+    /**
+     * Scoped role assignments for this canonical user identity.
+     */
+    public function scopedRoleAssignments()
+    {
+        return $this->hasMany(ScopedRoleAssignment::class);
     }
 
     /**
@@ -137,6 +158,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is an Entity Admin (Campus / Entity coordinator).
+     */
+    public function isEntityAdmin(): bool
+    {
+        return $this->hasRole('Entity Admin');
+    }
+
+    /**
      * Check if user is a College Admin (operational administrator for a college).
      * Includes backward-compatible aliases 'System Administrator' and 'Super Admin'.
      */
@@ -144,6 +173,7 @@ class User extends Authenticatable
     {
         return $this->hasAnyRole([
             'College Admin',
+            'Entity Admin',
             'System Administrator',
             'Super Admin',
             'Institution Super Admin',

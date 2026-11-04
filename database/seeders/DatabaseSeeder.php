@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             AcademicPeriodSeeder::class,
             SemesterSchedulingSeeder::class,
             CompassRolesAndCredentialsSeeder::class,
+            InstitutionGovernanceSeeder::class,
         ]);
     }
 }

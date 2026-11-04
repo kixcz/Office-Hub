@@ -7,7 +7,7 @@ export default function AppLogo() {
                 <AppLogoIcon className="size-full object-contain" />
             </div>
             <div className="ml-1 grid flex-1 text-left text-sm group-data-[collapsible=icon]:hidden">
-                <span className="mb-0.5 truncate leading-none font-semibold">CIDS Office Hub</span>
+                <span className="mb-0.5 truncate leading-none font-bold tracking-tight">Velora</span>
             </div>
         </>
     );

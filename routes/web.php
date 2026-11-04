@@ -529,26 +529,67 @@ Route::middleware(['auth'])->group(function () {
         Route::post('lab-inventory/maintenance', [LabInventoryManagementController::class, 'storeMaintenanceTicket'])->name('lab-inventory.maintenance.store');
     });
 
-    // Institution Super Admin Platform Governance Ecosystem
+    // Institution Super Admin Platform Governance Ecosystem (Velora Central Authority)
     Route::prefix('institution')->name('institution.')->group(function () {
         Route::get('/dashboard', [InstitutionGovernanceController::class, 'dashboard'])->name('dashboard');
 
-        // Institution Management
+        // 1. Organization Management (Institution -> Entities/Campuses -> Colleges -> Structure Tree)
         Route::get('/profile', [InstitutionGovernanceController::class, 'profile'])->name('profile');
-        Route::post('/profile', [InstitutionGovernanceController::class, 'updateProfile'])->name('profile.update');
+        Route::match(['post', 'put'], '/profile', [InstitutionGovernanceController::class, 'updateProfile'])->name('profile.update');
         Route::get('/colleges', [InstitutionGovernanceController::class, 'colleges'])->name('colleges');
         Route::post('/colleges', [InstitutionGovernanceController::class, 'storeCollege'])->name('colleges.store');
+        Route::put('/colleges/{college}', [InstitutionGovernanceController::class, 'updateCollege'])->name('colleges.update');
+        Route::post('/colleges/{college}/reorganize', [InstitutionGovernanceController::class, 'reorganizeCollege'])->name('colleges.reorganize');
         Route::get('/colleges/setup/{college?}', [InstitutionGovernanceController::class, 'collegeSetup'])->name('colleges.setup');
         Route::put('/colleges/{college}/setup', [InstitutionGovernanceController::class, 'updateCollegeSetup'])->name('colleges.setup.update');
 
-        // Users & Scoped Roles
+        // 2. Users, Canonical Identity, Role Management, Permission Matrix, Scoped Assignments & Access Requests
+        Route::get('/users', [InstitutionGovernanceController::class, 'users'])->name('users');
+        Route::post('/users', [InstitutionGovernanceController::class, 'storeUser'])->name('users.store');
+        Route::put('/users/{user}', [InstitutionGovernanceController::class, 'updateUser'])->name('users.update');
+        Route::post('/users/{user}/status', [InstitutionGovernanceController::class, 'updateUserStatus'])->name('users.status');
+
+        Route::get('/roles', [InstitutionGovernanceController::class, 'roles'])->name('roles');
+        Route::post('/roles', [InstitutionGovernanceController::class, 'storeRole'])->name('roles.store');
+        Route::post('/roles/{role}/permissions/toggle', [InstitutionGovernanceController::class, 'toggleRolePermission'])->name('roles.permissions.toggle');
+
         Route::get('/scoped-roles', [InstitutionGovernanceController::class, 'scopedRoles'])->name('scoped-roles');
         Route::post('/scoped-roles', [InstitutionGovernanceController::class, 'storeScopedRole'])->name('scoped-roles.store');
+        Route::patch('/scoped-roles/{assignment}/status', [InstitutionGovernanceController::class, 'updateScopedRoleStatus'])->name('scoped-roles.status');
+        Route::post('/access-requests', [InstitutionGovernanceController::class, 'storeAccessRequest'])->name('access-requests.store');
+        Route::post('/access-requests/{accessRequest}/review', [InstitutionGovernanceController::class, 'reviewAccessRequest'])->name('access-requests.review');
 
-        // Platform Configuration
+        // 3. Platform Configuration: Modules, Feature Flags, Terminology, Policies & Workflow Builder
         Route::get('/modules', [InstitutionGovernanceController::class, 'modules'])->name('modules');
+        Route::post('/modules/feature-flags', [InstitutionGovernanceController::class, 'toggleFeatureFlag'])->name('modules.feature-flags');
+        Route::post('/modules/college-toggle', [InstitutionGovernanceController::class, 'toggleCollegeModule'])->name('modules.college-toggle');
+
         Route::get('/terminology', [InstitutionGovernanceController::class, 'terminology'])->name('terminology');
-        Route::post('/terminology', [InstitutionGovernanceController::class, 'updateTerminology'])->name('terminology.update');
+        Route::match(['post', 'put'], '/terminology', [InstitutionGovernanceController::class, 'updateTerminology'])->name('terminology.update');
+
+        Route::get('/policies', [InstitutionGovernanceController::class, 'policies'])->name('policies');
+        Route::post('/policies', [InstitutionGovernanceController::class, 'storePolicy'])->name('policies.store');
+        Route::put('/policies/{policy}', [InstitutionGovernanceController::class, 'updatePolicy'])->name('policies.update');
+
+        Route::get('/workflows', [InstitutionGovernanceController::class, 'workflows'])->name('workflows');
+        Route::post('/workflows', [InstitutionGovernanceController::class, 'storeWorkflow'])->name('workflows.store');
+        Route::put('/workflows/{workflow}', [InstitutionGovernanceController::class, 'updateWorkflow'])->name('workflows.update');
+
+        Route::get('/global-defaults', [InstitutionGovernanceController::class, 'globalDefaults'])->name('global-defaults');
+        Route::match(['post', 'put'], '/global-defaults', [InstitutionGovernanceController::class, 'updateGlobalDefaults'])->name('global-defaults.update');
+
+        Route::get('/academic-governance', [InstitutionGovernanceController::class, 'academicGovernance'])->name('academic-governance');
+
+        // 4. Data Sources, Integrations & Sync/Reconciliation Standards
+        Route::get('/integrations', [InstitutionGovernanceController::class, 'integrations'])->name('integrations');
+        Route::match(['post', 'put'], '/integrations/sync-config', [InstitutionGovernanceController::class, 'updateSyncConfig'])->name('integrations.sync-config');
+
+        // 5. Data Quality, Audit Logs, Security/Privacy & Structural Reports
+        Route::get('/data-quality', [InstitutionGovernanceController::class, 'dataQuality'])->name('data-quality');
+        Route::get('/audit', [InstitutionGovernanceController::class, 'audit'])->name('audit');
+        Route::match(['post', 'put'], '/security', [InstitutionGovernanceController::class, 'updateSecuritySettings'])->name('security.update');
+        Route::match(['post', 'put'], '/audit/security', [InstitutionGovernanceController::class, 'updateSecuritySettings'])->name('audit.security.update');
+        Route::get('/reports', [InstitutionGovernanceController::class, 'reports'])->name('reports');
     });
 });
 

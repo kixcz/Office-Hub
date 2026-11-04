@@ -55,19 +55,26 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                 <div className="flex items-center gap-3 min-w-0">
                     <SidebarTrigger className="h-8 w-8 text-foreground hover:bg-muted" />
 
-                    <Link href="/dashboard" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity shrink-0">
+                    <Link
+                        href={user?.roles?.includes('Institution Super Admin') ? '/institution/dashboard' : '/dashboard'}
+                        className="flex items-center gap-2.5 hover:opacity-90 transition-opacity shrink-0"
+                    >
                         <img
-                            src="/CIDS_Logo.jpg"
-                            alt="CIDS Logo"
+                            src={user?.roles?.includes('Institution Super Admin') ? '/DSSC.jpg' : '/CIDS_Logo.jpg'}
+                            alt="Velora Logo"
                             className="h-9 w-9 rounded-full object-contain shrink-0 border border-amber-500/20 shadow-2xs"
                         />
                         <div className="hidden sm:flex flex-col text-left">
                             <div className="flex items-center gap-1 leading-none">
-                                <span className="text-base font-black tracking-tight text-foreground">CIDS</span>
-                                <span className="text-base font-black tracking-tight text-amber-500">OfficeHub</span>
+                                <span className="text-base font-black tracking-tight text-foreground">Velora</span>
+                                <span className="text-base font-black tracking-tight text-amber-500">
+                                    {user?.roles?.includes('Institution Super Admin') ? 'Governance' : 'CIDS'}
+                                </span>
                             </div>
                             <span className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase leading-none mt-1">
-                                COLLEGE OF INFORMATION AND DIGITAL SCIENCES
+                                {user?.roles?.includes('Institution Super Admin')
+                                    ? 'DAVAO DEL SUR STATE COLLEGE · CENTRAL PLATFORM AUTHORITY'
+                                    : 'COLLEGE OF INFORMATION AND DIGITAL SCIENCES'}
                             </span>
                         </div>
                     </Link>
