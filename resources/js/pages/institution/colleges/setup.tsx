@@ -2,6 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { BreadcrumbItem } from '@/types';
+import ProgramsConfigurationStage, {
+    SetupProgram,
+    CandidateUser,
+    TemplateProgram,
+} from './programs-configuration-stage';
+import FacilitiesConfigurationStage, {
+    SetupFacility,
+    TemplateFacility,
+} from './facilities-configuration-stage';
 import {
     Bell,
     BookOpen,
@@ -68,6 +77,11 @@ interface Props {
     colleges: College[];
     currentCollege: College;
     initialStage?: string | null;
+    programs?: SetupProgram[];
+    candidateProgramHeads?: CandidateUser[];
+    otherCollegesPrograms?: TemplateProgram[];
+    facilities?: SetupFacility[];
+    otherCollegesFacilities?: TemplateFacility[];
 }
 
 const STAGES = [
@@ -162,7 +176,16 @@ function getContrastText(hex: string): string {
     return yiq >= 155 ? '#17152E' : '#FFFFFF';
 }
 
-export default function CollegeSetup({ colleges, currentCollege, initialStage }: Props) {
+export default function CollegeSetup({
+    colleges,
+    currentCollege,
+    initialStage,
+    programs = [],
+    candidateProgramHeads = [],
+    otherCollegesPrograms = [],
+    facilities = [],
+    otherCollegesFacilities = [],
+}: Props) {
     const defaultBranding: CollegeBranding = currentCollege.branding || {
         primary_color: currentCollege.code === 'CAS' ? '#F9C400' : '#7C3AED',
         secondary_color: currentCollege.code === 'CAS' ? '#4B2E83' : '#4C1D95',
@@ -1270,10 +1293,31 @@ export default function CollegeSetup({ colleges, currentCollege, initialStage }:
                                 </div>
                             )}
 
-                            {/* Other Stages (Admins, Programs, Facilities, Policies, Workflows, Reports, TV) */}
+                            {/* Stage 5: Programs Configuration */}
+                            {activeStage === 'Programs' && (
+                                <ProgramsConfigurationStage
+                                    college={currentCollege}
+                                    programs={programs}
+                                    candidateProgramHeads={candidateProgramHeads}
+                                    otherCollegesPrograms={otherCollegesPrograms}
+                                />
+                            )}
+
+                            {/* Stage 6: Facilities Configuration */}
+                            {activeStage === 'Facilities' && (
+                                <FacilitiesConfigurationStage
+                                    college={currentCollege}
+                                    facilities={facilities}
+                                    otherCollegesFacilities={otherCollegesFacilities}
+                                />
+                            )}
+
+                            {/* Other Stages (Admins, Policies, Workflows, Reports, TV) */}
                             {activeStage !== 'Branding' &&
                                 activeStage !== 'Identity' &&
                                 activeStage !== 'Modules' &&
+                                activeStage !== 'Programs' &&
+                                activeStage !== 'Facilities' &&
                                 activeStage !== 'Activation' && (
                                     <div className="space-y-5">
                                         <div className="flex items-center justify-between border-b border-border/60 pb-4">

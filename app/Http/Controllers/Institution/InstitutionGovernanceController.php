@@ -487,11 +487,137 @@ class InstitutionGovernanceController extends Controller
             ?? $allColleges->where('type', '!=', 'Entity')->first()
             ?? $allColleges->first();
 
+        // Load programs with curricula count, year levels and program head
+        $programs = [];
+        $otherCollegesPrograms = [];
+        $candidateProgramHeads = [];
+        $facilities = [];
+        $otherCollegesFacilities = [];
+
+        if ($targetCollege) {
+            $programs = Program::where('college_id', $targetCollege->id)
+                ->with(['curricula'])
+                ->get()
+                ->map(function ($prog) {
+                    $progHeadAssignment = ScopedRoleAssignment::with('user')
+                        ->where('program_id', $prog->id)
+                        ->where('status', 'Active')
+                        ->whereHas('role', fn ($q) => $q->whereIn('name', ['Program Head', 'Program Chair']))
+                        ->first();
+
+                    $activeCurriculum = $prog->curricula->firstWhere('status', 'Active') ?? $prog->curricula->first();
+
+                    return [
+                        'id' => $prog->id,
+                        'college_id' => $prog->college_id,
+                        'code' => $prog->code,
+                        'name' => $prog->name,
+                        'degree_level' => $prog->degree_level,
+                        'department' => $prog->department,
+                        'duration_years' => $prog->duration_years,
+                        'year_levels' => $prog->duration_years, // standard mapping
+                        'status' => $prog->status,
+                        'description' => $prog->description,
+                        'program_head' => $progHeadAssignment ? [
+                            'user_id' => $progHeadAssignment->user?->id,
+                            'name' => $progHeadAssignment->user?->name,
+                            'email' => $progHeadAssignment->user?->email,
+                        ] : null,
+                        'curriculum_status' => $activeCurriculum ? 'Active ('.$activeCurriculum->version_name.')' : 'Not Configured',
+                        'has_curriculum' => (bool) $activeCurriculum,
+                    ];
+                });
+
+            // Potential candidate program heads (Users who are faculty, coordinators, chairs, or leaders)
+            $candidateProgramHeads = User::where('is_active', true)
+                ->where('status', '!=', 'Suspended')
+                ->orderBy('name')
+                ->get(['id', 'name', 'email', 'avatar', 'profile_photo_url']);
+
+            // Programs from other colleges that can be copied/templated
+            $otherCollegesPrograms = Program::where('college_id', '!=', $targetCollege->id)
+                ->with('college:id,name,code')
+                ->get()
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'college_id' => $p->college_id,
+                    'college_code' => $p->college?->code,
+                    'college_name' => $p->college?->name,
+                    'code' => $p->code,
+                    'name' => $p->name,
+                    'degree_level' => $p->degree_level,
+                    'duration_years' => $p->duration_years,
+                ]);
+
+            // Stage 6: College Facilities (Rooms)
+            $facilities = Room::where('college_id', $targetCollege->id)
+                ->orderBy('room_name')
+                ->get()
+                ->map(function ($room) {
+                    $hasSchedulingBaseline = ! empty($room->capacity) && $room->capacity > 0 && ! empty($room->type);
+                    $readiness = $room->setup_readiness ?: ($hasSchedulingBaseline ? 'Ready' : 'Incomplete');
+
+                    return [
+                        'id' => $room->id,
+                        'college_id' => $room->college_id,
+                        'facility_code' => $room->room_code ?: $room->room_name,
+                        'facility_name' => $room->room_name,
+                        'facility_type' => $room->type,
+                        'custom_type' => $room->custom_type,
+                        'building' => $room->building ?: 'Main Campus',
+                        'floor' => $room->floor ?: 'Ground Floor',
+                        'capacity' => (int) $room->capacity,
+                        'is_shared' => (bool) $room->is_shared,
+                        'status' => $room->status ?: 'Available',
+                        'condition' => $room->condition ?: 'Good',
+                        'operational_status' => $room->operational_status ?: 'Available',
+                        'setup_readiness' => $readiness,
+                        'operating_hours' => $room->operating_hours ?: '7:00 AM - 7:00 PM',
+                        'supported_activities' => $room->supported_activities ?: ['Lecture', 'Laboratory'],
+                        'capabilities' => $room->capabilities ?: [
+                            'has_projector' => false,
+                            'num_workstations' => 0,
+                            'internet_type' => 'Campus Wi-Fi',
+                            'specialized_software' => [],
+                            'has_aircon' => true,
+                            'power_redundancy' => 'Standard Grid',
+                            'specialized_equipment' => '',
+                        ],
+                        'is_accessible' => (bool) $room->is_accessible,
+                        'notes' => $room->notes,
+                    ];
+                });
+
+            // Facilities from other colleges for copying / templating
+            $otherCollegesFacilities = Room::where('college_id', '!=', $targetCollege->id)
+                ->with('college:id,name,code')
+                ->get()
+                ->map(fn ($r) => [
+                    'id' => $r->id,
+                    'college_id' => $r->college_id,
+                    'college_code' => $r->college?->code,
+                    'college_name' => $r->college?->name,
+                    'facility_code' => $r->room_code ?: $r->room_name,
+                    'facility_name' => $r->room_name,
+                    'facility_type' => $r->type,
+                    'building' => $r->building,
+                    'floor' => $r->floor,
+                    'capacity' => (int) $r->capacity,
+                    'condition' => $r->condition ?: 'Good',
+                    'status' => $r->status ?: 'Available',
+                ]);
+        }
+
         return Inertia::render('institution/colleges/setup', [
             'colleges' => $allColleges,
             'currentCollege' => $targetCollege,
             'modulesCatalog' => $this->getModulesCatalog(),
             'initialStage' => $request->query('stage'),
+            'programs' => $programs,
+            'candidateProgramHeads' => $candidateProgramHeads,
+            'otherCollegesPrograms' => $otherCollegesPrograms,
+            'facilities' => $facilities,
+            'otherCollegesFacilities' => $otherCollegesFacilities,
         ]);
     }
 
@@ -630,6 +756,760 @@ class InstitutionGovernanceController extends Controller
         );
 
         return back()->with('success', "Branding and setup configuration saved for {$college->code}.");
+    }
+
+    /**
+     * Store a new program specifically during College Setup (Stage 5)
+     */
+    public function storeCollegeProgram(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:30|unique:programs,code',
+            'name' => 'required|string|max:255',
+            'degree_level' => 'required|string|max:100',
+            'department' => 'nullable|string|max:255',
+            'duration_years' => 'required|integer|min:1|max:8',
+            'program_head_id' => 'nullable|exists:users,id',
+            'effective_academic_year' => 'nullable|string|max:50',
+            'status' => 'required|string|in:Active,Inactive,Phased Out',
+            'notes' => 'nullable|string',
+        ]);
+
+        $program = Program::create([
+            'college_id' => $college->id,
+            'code' => strtoupper(trim($validated['code'])),
+            'name' => trim($validated['name']),
+            'degree_level' => $validated['degree_level'],
+            'department' => $validated['department'] ?: $college->name,
+            'duration_years' => $validated['duration_years'],
+            'status' => $validated['status'],
+            'description' => $validated['notes'] ?? null,
+        ]);
+
+        // If Program Head is selected, assign ScopedRoleAssignment
+        if (! empty($validated['program_head_id'])) {
+            $progHeadRole = Role::firstOrCreate(['name' => 'Program Head'], [
+                'tier' => 'Operational',
+                'scope_level' => 'Program',
+                'description' => 'Academic leadership for a degree program',
+            ]);
+
+            ScopedRoleAssignment::updateOrCreate(
+                [
+                    'program_id' => $program->id,
+                    'role_id' => $progHeadRole->id,
+                    'status' => 'Active',
+                ],
+                [
+                    'user_id' => $validated['program_head_id'],
+                    'college_id' => $college->id,
+                    'scope_level' => 'Program',
+                    'designation_type' => 'Primary',
+                    'appointment_reference' => 'Setup Stage 5 Program Head Assignment',
+                    'effective_from' => now()->toDateString(),
+                    'assigned_by_user_id' => $request->user()?->id,
+                ]
+            );
+        }
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Created Program during College Onboarding',
+            targetName: "{$program->code} - {$program->name} ({$college->code})",
+            actor: $request->user(),
+            previousValue: null,
+            newValue: $program->toArray(),
+            reason: "Program {$program->code} added to {$college->code} during onboarding.",
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'Program',
+        );
+
+        return back()->with('success', "Program {$program->code} established successfully.");
+    }
+
+    /**
+     * Update an existing program from College Setup (Stage 5)
+     */
+    public function updateCollegeProgram(Request $request, College $college, Program $program): RedirectResponse
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:30|unique:programs,code,'.$program->id,
+            'name' => 'required|string|max:255',
+            'degree_level' => 'required|string|max:100',
+            'department' => 'nullable|string|max:255',
+            'duration_years' => 'required|integer|min:1|max:8',
+            'program_head_id' => 'nullable',
+            'status' => 'required|string|in:Active,Inactive,Phased Out',
+            'notes' => 'nullable|string',
+        ]);
+
+        $prev = $program->toArray();
+
+        $program->update([
+            'code' => strtoupper(trim($validated['code'])),
+            'name' => trim($validated['name']),
+            'degree_level' => $validated['degree_level'],
+            'department' => $validated['department'] ?: $college->name,
+            'duration_years' => $validated['duration_years'],
+            'status' => $validated['status'],
+            'description' => $validated['notes'] ?? $program->description,
+        ]);
+
+        $progHeadRole = Role::firstOrCreate(['name' => 'Program Head'], [
+            'tier' => 'Operational',
+            'scope_level' => 'Program',
+            'description' => 'Academic leadership for a degree program',
+        ]);
+
+        if (! empty($validated['program_head_id'])) {
+            ScopedRoleAssignment::updateOrCreate(
+                [
+                    'program_id' => $program->id,
+                    'role_id' => $progHeadRole->id,
+                    'status' => 'Active',
+                ],
+                [
+                    'user_id' => (int) $validated['program_head_id'],
+                    'college_id' => $college->id,
+                    'scope_level' => 'Program',
+                    'designation_type' => 'Primary',
+                    'assigned_by_user_id' => $request->user()?->id,
+                ]
+            );
+        } elseif ($validated['program_head_id'] === null || $validated['program_head_id'] === '' || $validated['program_head_id'] === 0) {
+            // Unassign
+            ScopedRoleAssignment::where('program_id', $program->id)
+                ->where('role_id', $progHeadRole->id)
+                ->delete();
+        }
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Updated Program from College Setup',
+            targetName: "{$program->code} ({$college->code})",
+            actor: $request->user(),
+            previousValue: $prev,
+            newValue: $program->toArray(),
+            reason: "Program {$program->code} updated in Stage 5 onboarding.",
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'Program',
+        );
+
+        return back()->with('success', "Program {$program->code} updated successfully.");
+    }
+
+    /**
+     * Delete a program from College Setup (Stage 5)
+     */
+    public function destroyCollegeProgram(Request $request, College $college, Program $program): RedirectResponse
+    {
+        $code = $program->code;
+        $name = $program->name;
+
+        // Remove ScopedRoleAssignments for this program
+        ScopedRoleAssignment::where('program_id', $program->id)->delete();
+
+        // Disassociate related models
+        $program->curricula()->delete();
+        $program->courses()->update(['program_id' => null]);
+        $program->sections()->update(['program_id' => null]);
+        $program->courseOfferings()->update(['program_id' => null]);
+        $program->faculties()->update(['program_id' => null]);
+
+        $program->delete();
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Removed Program from College Onboarding',
+            targetName: "{$code} - {$name} ({$college->code})",
+            actor: $request->user(),
+            previousValue: null,
+            newValue: null,
+            reason: "Program {$code} deleted during Stage 5 onboarding.",
+            severity: 'warning',
+            collegeScope: $college->code,
+            targetType: 'Program',
+        );
+
+        return back()->with('success', "Program {$code} removed successfully.");
+    }
+
+    /**
+     * Bulk Import Programs via parsed CSV records (Stage 5)
+     */
+    public function bulkImportCollegePrograms(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'programs' => 'required|array|min:1',
+            'programs.*.program_code' => 'required|string|max:30',
+            'programs.*.program_name' => 'required|string|max:255',
+            'programs.*.degree_level' => 'nullable|string|max:100',
+            'programs.*.department' => 'nullable|string|max:255',
+            'programs.*.duration_years' => 'nullable|integer|min:1|max:8',
+            'programs.*.program_head_email' => 'nullable|string|max:255',
+            'programs.*.status' => 'nullable|string|in:Active,Inactive,Phased Out',
+        ]);
+
+        $progHeadRole = Role::firstOrCreate(['name' => 'Program Head'], [
+            'tier' => 'Operational',
+            'scope_level' => 'Program',
+            'description' => 'Academic leadership for a degree program',
+        ]);
+
+        $createdCount = 0;
+        $updatedCount = 0;
+
+        foreach ($validated['programs'] as $row) {
+            $code = strtoupper(trim($row['program_code']));
+            $name = trim($row['program_name']);
+            $degreeLevel = ! empty($row['degree_level']) ? trim($row['degree_level']) : "Bachelor's Degree";
+            $department = ! empty($row['department']) ? trim($row['department']) : $college->name;
+            $durationYears = ! empty($row['duration_years']) ? (int) $row['duration_years'] : 4;
+            $status = ! empty($row['status']) ? $row['status'] : 'Active';
+
+            $program = Program::where('code', $code)->first();
+
+            if ($program) {
+                $program->update([
+                    'college_id' => $college->id,
+                    'name' => $name,
+                    'degree_level' => $degreeLevel,
+                    'department' => $department,
+                    'duration_years' => $durationYears,
+                    'status' => $status,
+                ]);
+                $updatedCount++;
+            } else {
+                $program = Program::create([
+                    'college_id' => $college->id,
+                    'code' => $code,
+                    'name' => $name,
+                    'degree_level' => $degreeLevel,
+                    'department' => $department,
+                    'duration_years' => $durationYears,
+                    'status' => $status,
+                ]);
+                $createdCount++;
+            }
+
+            // Match Program Head by email if supplied
+            if (! empty($row['program_head_email'])) {
+                $user = User::where('email', trim($row['program_head_email']))->first();
+                if ($user) {
+                    ScopedRoleAssignment::updateOrCreate(
+                        [
+                            'program_id' => $program->id,
+                            'role_id' => $progHeadRole->id,
+                            'status' => 'Active',
+                        ],
+                        [
+                            'user_id' => $user->id,
+                            'college_id' => $college->id,
+                            'scope_level' => 'Program',
+                            'designation_type' => 'Primary',
+                            'assigned_by_user_id' => $request->user()?->id,
+                        ]
+                    );
+                }
+            }
+        }
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Bulk Imported Programs via CSV',
+            targetName: "{$college->code} ({$createdCount} added, {$updatedCount} updated)",
+            actor: $request->user(),
+            previousValue: null,
+            newValue: ['created' => $createdCount, 'updated' => $updatedCount],
+            reason: "Bulk imported {$createdCount} new program(s) and updated {$updatedCount} program(s) from CSV.",
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'Program',
+        );
+
+        return back()->with('success', "Import completed: {$createdCount} program(s) created, {$updatedCount} updated.");
+    }
+
+    /**
+     * Copy programs from an existing college template (Stage 5)
+     */
+    public function copyProgramsFromTemplate(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'source_program_ids' => 'required|array|min:1',
+            'source_program_ids.*' => 'required|exists:programs,id',
+        ]);
+
+        $sources = Program::whereIn('id', $validated['source_program_ids'])->get();
+        $copiedCount = 0;
+
+        foreach ($sources as $src) {
+            $targetCode = $src->code;
+
+            // Check if already in this college
+            $existsInCollege = Program::where('college_id', $college->id)->where('code', $targetCode)->exists();
+            if ($existsInCollege) {
+                continue;
+            }
+
+            // If code exists globally in another college, append a campus/college modifier if needed or keep if unique
+            if (Program::where('code', $targetCode)->exists()) {
+                $targetCode = "{$src->code}-{$college->code}";
+            }
+
+            Program::create([
+                'college_id' => $college->id,
+                'code' => $targetCode,
+                'name' => $src->name,
+                'degree_level' => $src->degree_level,
+                'department' => $college->name,
+                'duration_years' => $src->duration_years,
+                'status' => 'Active',
+                'description' => "Cloned from {$src->code} baseline definition during College Setup.",
+            ]);
+
+            $copiedCount++;
+        }
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Copied Programs from Existing Template',
+            targetName: "{$college->code} ({$copiedCount} programs)",
+            actor: $request->user(),
+            previousValue: null,
+            newValue: ['copied_count' => $copiedCount],
+            reason: "Copied {$copiedCount} program blueprint(s) into {$college->code}.",
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'Program',
+        );
+
+        return back()->with('success', "Successfully copied {$copiedCount} program blueprint(s) into {$college->code}.");
+    }
+
+    /**
+     * Update Stage 5 Programs settings (e.g. allow college admin to modify definitions, require head)
+     */
+    public function updateProgramsSettings(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'allow_admin_modify_programs' => 'nullable|boolean',
+            'require_head_before_activation' => 'nullable|boolean',
+        ]);
+
+        $inheritance = is_array($college->inheritance_settings) ? $college->inheritance_settings : [];
+        $inheritance['allow_admin_modify_programs'] = $request->boolean('allow_admin_modify_programs', true);
+        $inheritance['require_head_before_activation'] = $request->boolean('require_head_before_activation', false);
+
+        $college->update([
+            'inheritance_settings' => $inheritance,
+        ]);
+
+        return back()->with('success', "Program governance settings updated for {$college->code}.");
+    }
+
+    /**
+     * Store a new facility for a college (Stage 6)
+     */
+    public function storeCollegeFacility(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'facility_code' => 'required|string|max:50',
+            'facility_name' => 'required|string|max:150',
+            'facility_type' => 'required|string|max:100',
+            'custom_type' => 'nullable|string|max:100',
+            'building' => 'nullable|string|max:100',
+            'floor' => 'nullable|string|max:50',
+            'capacity' => 'required|integer|min:0|max:1000',
+            'is_shared' => 'nullable|boolean',
+            'status' => 'required|string|in:Available,In Use,Maintenance,Under Repair,Reserved,Closed',
+            'condition' => 'required|string|in:Good,Fair,Needs Repair,For Replacement',
+            'operational_status' => 'nullable|string|max:100',
+            'operating_hours' => 'nullable|string|max:100',
+            'supported_activities' => 'nullable|array',
+            'capabilities' => 'nullable|array',
+            'is_accessible' => 'nullable|boolean',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $code = trim($validated['facility_code']);
+        $name = trim($validated['facility_name']);
+
+        // Check if duplicate code or name exists in this college
+        $exists = Room::where('college_id', $college->id)
+            ->where(function ($q) use ($code, $name) {
+                $q->where('room_code', $code)->orWhere('room_name', $name);
+            })
+            ->exists();
+
+        if ($exists) {
+            return back()->withErrors(['facility_code' => "A facility with code '{$code}' or name '{$name}' already exists in {$college->code}."]);
+        }
+
+        $hasSchedulingBaseline = ($validated['capacity'] > 0) && ! empty($validated['facility_type']);
+        $readiness = $hasSchedulingBaseline ? 'Ready' : 'Incomplete';
+
+        $room = Room::create([
+            'college_id' => $college->id,
+            'room_code' => $code,
+            'room_name' => $name,
+            'type' => $validated['facility_type'],
+            'custom_type' => $validated['custom_type'] ?? null,
+            'building' => $validated['building'] ?: 'Main Campus',
+            'floor' => $validated['floor'] ?: 'Ground Floor',
+            'capacity' => (int) $validated['capacity'],
+            'is_shared' => $request->boolean('is_shared', false),
+            'status' => $validated['status'],
+            'condition' => $validated['condition'],
+            'operational_status' => $validated['operational_status'] ?: 'Available',
+            'setup_readiness' => $readiness,
+            'operating_hours' => $validated['operating_hours'] ?: '7:00 AM - 7:00 PM',
+            'supported_activities' => $validated['supported_activities'] ?? ['Lecture', 'Laboratory'],
+            'capabilities' => $validated['capabilities'] ?? [
+                'has_projector' => false,
+                'num_workstations' => 0,
+                'internet_type' => 'Campus Wi-Fi',
+                'specialized_software' => [],
+                'has_aircon' => true,
+                'power_redundancy' => 'Standard Grid',
+                'specialized_equipment' => '',
+            ],
+            'is_accessible' => $request->boolean('is_accessible', true),
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Created Facility in College Setup',
+            targetName: "{$room->room_code} ({$college->code})",
+            actor: $request->user(),
+            previousValue: null,
+            newValue: $room->toArray(),
+            reason: "Facility {$room->room_code} established in Stage 6 onboarding.",
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'Room',
+        );
+
+        return back()->with('success', "Facility {$room->room_code} created successfully.");
+    }
+
+    /**
+     * Update an existing college facility (Stage 6)
+     */
+    public function updateCollegeFacility(Request $request, College $college, Room $room): RedirectResponse
+    {
+        $validated = $request->validate([
+            'facility_code' => 'required|string|max:50',
+            'facility_name' => 'required|string|max:150',
+            'facility_type' => 'required|string|max:100',
+            'custom_type' => 'nullable|string|max:100',
+            'building' => 'nullable|string|max:100',
+            'floor' => 'nullable|string|max:50',
+            'capacity' => 'required|integer|min:0|max:1000',
+            'is_shared' => 'nullable|boolean',
+            'status' => 'required|string|in:Available,In Use,Maintenance,Under Repair,Reserved,Closed',
+            'condition' => 'required|string|in:Good,Fair,Needs Repair,For Replacement',
+            'operational_status' => 'nullable|string|max:100',
+            'operating_hours' => 'nullable|string|max:100',
+            'supported_activities' => 'nullable|array',
+            'capabilities' => 'nullable|array',
+            'is_accessible' => 'nullable|boolean',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $code = trim($validated['facility_code']);
+        $name = trim($validated['facility_name']);
+
+        // Check duplicate excluding self
+        $exists = Room::where('college_id', $college->id)
+            ->where('id', '!=', $room->id)
+            ->where(function ($q) use ($code, $name) {
+                $q->where('room_code', $code)->orWhere('room_name', $name);
+            })
+            ->exists();
+
+        if ($exists) {
+            return back()->withErrors(['facility_code' => "Another facility with code '{$code}' or name '{$name}' already exists in {$college->code}."]);
+        }
+
+        $prev = $room->toArray();
+        $hasSchedulingBaseline = ($validated['capacity'] > 0) && ! empty($validated['facility_type']);
+        $readiness = $hasSchedulingBaseline ? 'Ready' : 'Incomplete';
+
+        $room->update([
+            'room_code' => $code,
+            'room_name' => $name,
+            'type' => $validated['facility_type'],
+            'custom_type' => $validated['custom_type'] ?? null,
+            'building' => $validated['building'] ?: 'Main Campus',
+            'floor' => $validated['floor'] ?: 'Ground Floor',
+            'capacity' => (int) $validated['capacity'],
+            'is_shared' => $request->boolean('is_shared', false),
+            'status' => $validated['status'],
+            'condition' => $validated['condition'],
+            'operational_status' => $validated['operational_status'] ?: 'Available',
+            'setup_readiness' => $readiness,
+            'operating_hours' => $validated['operating_hours'] ?: '7:00 AM - 7:00 PM',
+            'supported_activities' => $validated['supported_activities'] ?? $room->supported_activities,
+            'capabilities' => $validated['capabilities'] ?? $room->capabilities,
+            'is_accessible' => $request->boolean('is_accessible', true),
+            'notes' => $validated['notes'] ?? $room->notes,
+        ]);
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Updated Facility from College Setup',
+            targetName: "{$room->room_code} ({$college->code})",
+            actor: $request->user(),
+            previousValue: $prev,
+            newValue: $room->toArray(),
+            reason: "Facility {$room->room_code} updated in Stage 6 onboarding.",
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'Room',
+        );
+
+        return back()->with('success', "Facility {$room->room_code} updated successfully.");
+    }
+
+    /**
+     * Delete a facility from College Setup (Stage 6)
+     */
+    public function destroyCollegeFacility(Request $request, College $college, Room $room): RedirectResponse
+    {
+        $code = $room->room_code ?: $room->room_name;
+        $prev = $room->toArray();
+
+        $room->delete();
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Deleted Facility from College Setup',
+            targetName: "{$code} ({$college->code})",
+            actor: $request->user(),
+            previousValue: $prev,
+            newValue: null,
+            reason: "Facility {$code} deleted during Stage 6 setup.",
+            severity: 'warning',
+            collegeScope: $college->code,
+            targetType: 'Room',
+        );
+
+        return back()->with('success', "Facility {$code} removed successfully.");
+    }
+
+    /**
+     * Bulk Import Facilities via CSV (Stage 6)
+     */
+    public function bulkImportCollegeFacilities(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'rows' => 'required|array|min:1',
+            'rows.*.facility_code' => 'required|string|max:50',
+            'rows.*.facility_name' => 'required|string|max:150',
+            'rows.*.facility_type' => 'nullable|string|max:100',
+            'rows.*.building' => 'nullable|string|max:100',
+            'rows.*.floor' => 'nullable|string|max:50',
+            'rows.*.capacity' => 'nullable|numeric|min:0|max:1000',
+            'rows.*.operating_start' => 'nullable|string|max:20',
+            'rows.*.operating_end' => 'nullable|string|max:20',
+            'rows.*.status' => 'nullable|string|max:50',
+            'rows.*.condition' => 'nullable|string|max:50',
+            'rows.*.shared' => 'nullable',
+            'rows.*.notes' => 'nullable|string|max:1000',
+        ]);
+
+        $createdCount = 0;
+        $updatedCount = 0;
+
+        foreach ($validated['rows'] as $row) {
+            $code = trim($row['facility_code']);
+            $name = trim($row['facility_name']);
+            $type = ! empty($row['facility_type']) ? trim($row['facility_type']) : 'Classroom';
+            $building = ! empty($row['building']) ? trim($row['building']) : ($college->name.' Building');
+            $floor = ! empty($row['floor']) ? trim($row['floor']) : 'Ground Floor';
+            $capacity = isset($row['capacity']) ? (int) $row['capacity'] : 40;
+
+            $opStart = ! empty($row['operating_start']) ? trim($row['operating_start']) : '7:00 AM';
+            $opEnd = ! empty($row['operating_end']) ? trim($row['operating_end']) : '7:00 PM';
+            $operatingHours = "{$opStart} - {$opEnd}";
+
+            $status = ! empty($row['status']) ? trim($row['status']) : 'Available';
+            $condition = ! empty($row['condition']) ? trim($row['condition']) : 'Good';
+            $isShared = filter_var($row['shared'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            $hasSchedulingBaseline = ($capacity > 0) && ! empty($type);
+            $readiness = $hasSchedulingBaseline ? 'Ready' : 'Incomplete';
+
+            $existing = Room::where('college_id', $college->id)
+                ->where(function ($q) use ($code, $name) {
+                    $q->where('room_code', $code)->orWhere('room_name', $name);
+                })
+                ->first();
+
+            if ($existing) {
+                $existing->update([
+                    'room_code' => $code,
+                    'room_name' => $name,
+                    'type' => $type,
+                    'building' => $building,
+                    'floor' => $floor,
+                    'capacity' => $capacity,
+                    'is_shared' => $isShared,
+                    'operating_hours' => $operatingHours,
+                    'status' => $status,
+                    'condition' => $condition,
+                    'setup_readiness' => $readiness,
+                    'notes' => $row['notes'] ?? $existing->notes,
+                ]);
+                $updatedCount++;
+            } else {
+                Room::create([
+                    'college_id' => $college->id,
+                    'room_code' => $code,
+                    'room_name' => $name,
+                    'type' => $type,
+                    'building' => $building,
+                    'floor' => $floor,
+                    'capacity' => $capacity,
+                    'is_shared' => $isShared,
+                    'operating_hours' => $operatingHours,
+                    'status' => $status,
+                    'condition' => $condition,
+                    'setup_readiness' => $readiness,
+                    'operational_status' => 'Available',
+                    'supported_activities' => ['Lecture', 'Laboratory'],
+                    'capabilities' => [
+                        'has_projector' => true,
+                        'num_workstations' => ($type === 'Computer Lab' || $type === 'Laboratory') ? $capacity : 0,
+                        'internet_type' => 'Campus Wi-Fi',
+                        'specialized_software' => [],
+                        'has_aircon' => true,
+                        'power_redundancy' => 'Standard Grid',
+                        'specialized_equipment' => '',
+                    ],
+                    'is_accessible' => true,
+                    'notes' => $row['notes'] ?? null,
+                ]);
+                $createdCount++;
+            }
+        }
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Bulk Imported Facilities via CSV',
+            targetName: "{$college->code} ({$createdCount} added, {$updatedCount} updated)",
+            actor: $request->user(),
+            previousValue: null,
+            newValue: ['created' => $createdCount, 'updated' => $updatedCount],
+            reason: "Bulk imported {$createdCount} facility(ies) and updated {$updatedCount} in Stage 6 setup.",
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'Room',
+        );
+
+        return back()->with('success', "Import completed: {$createdCount} facility(ies) created, {$updatedCount} updated.");
+    }
+
+    /**
+     * Copy facilities from existing templates or other colleges (Stage 6)
+     */
+    public function copyFacilitiesFromTemplate(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'source_room_ids' => 'required|array|min:1',
+            'source_room_ids.*' => 'required|exists:rooms,id',
+        ]);
+
+        $sources = Room::whereIn('id', $validated['source_room_ids'])->get();
+        $copiedCount = 0;
+
+        foreach ($sources as $src) {
+            $targetCode = $src->room_code ?: $src->room_name;
+
+            // Check if already in this college
+            $existsInCollege = Room::where('college_id', $college->id)
+                ->where(function ($q) use ($targetCode) {
+                    $q->where('room_code', $targetCode)->orWhere('room_name', $targetCode);
+                })
+                ->exists();
+
+            if ($existsInCollege) {
+                continue;
+            }
+
+            // If code exists in another college, append college code to ensure uniqueness
+            if (Room::where('room_name', $targetCode)->exists()) {
+                $targetCode = "{$targetCode}-{$college->code}";
+            }
+
+            Room::create([
+                'college_id' => $college->id,
+                'room_code' => $targetCode,
+                'room_name' => $targetCode,
+                'type' => $src->type,
+                'custom_type' => $src->custom_type,
+                'building' => $src->building ?: ($college->name.' Hall'),
+                'floor' => $src->floor ?: 'Ground Floor',
+                'capacity' => $src->capacity ?: 40,
+                'is_shared' => (bool) $src->is_shared,
+                'status' => 'Available',
+                'condition' => $src->condition ?: 'Good',
+                'operational_status' => 'Available',
+                'setup_readiness' => 'Ready',
+                'operating_hours' => $src->operating_hours ?: '7:00 AM - 7:00 PM',
+                'supported_activities' => $src->supported_activities ?: ['Lecture', 'Laboratory'],
+                'capabilities' => $src->capabilities ?: [
+                    'has_projector' => true,
+                    'num_workstations' => 0,
+                    'internet_type' => 'Campus Wi-Fi',
+                    'specialized_software' => [],
+                    'has_aircon' => true,
+                    'power_redundancy' => 'Standard Grid',
+                    'specialized_equipment' => '',
+                ],
+                'is_accessible' => (bool) $src->is_accessible,
+                'notes' => "Cloned from {$src->room_name} standard specification during College Setup.",
+            ]);
+
+            $copiedCount++;
+        }
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Copied Facilities from Existing Template',
+            targetName: "{$college->code} ({$copiedCount} facilities)",
+            actor: $request->user(),
+            previousValue: null,
+            newValue: ['copied_count' => $copiedCount],
+            reason: "Copied {$copiedCount} facility template(s) into {$college->code}.",
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'Room',
+        );
+
+        return back()->with('success', "Successfully copied {$copiedCount} facility template(s) into {$college->code}.");
+    }
+
+    /**
+     * Update Stage 6 Facilities settings (allow college admin to modify, scheduling prerequisites, shared pool)
+     */
+    public function updateFacilitiesSettings(Request $request, College $college): RedirectResponse
+    {
+        $inheritance = is_array($college->inheritance_settings) ? $college->inheritance_settings : [];
+        $inheritance['allow_admin_modify_facilities'] = $request->boolean('allow_admin_modify_facilities', true);
+        $inheritance['require_capacity_before_scheduling'] = $request->boolean('require_capacity_before_scheduling', true);
+        $inheritance['require_room_type_for_scheduling'] = $request->boolean('require_room_type_for_scheduling', true);
+        $inheritance['allow_shared_facilities_across_colleges'] = $request->boolean('allow_shared_facilities_across_colleges', true);
+
+        $college->update([
+            'inheritance_settings' => $inheritance,
+        ]);
+
+        return back()->with('success', "Facility governance settings updated for {$college->code}.");
     }
 
     /**

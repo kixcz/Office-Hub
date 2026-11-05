@@ -562,6 +562,20 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/colleges/{college}/reorganize', [InstitutionGovernanceController::class, 'reorganizeCollege'])->name('colleges.reorganize');
         Route::get('/colleges/setup/{college?}', [InstitutionGovernanceController::class, 'collegeSetup'])->name('colleges.setup');
         Route::match(['post', 'put'], '/colleges/{college}/setup', [InstitutionGovernanceController::class, 'updateCollegeSetup'])->name('colleges.setup.update');
+        Route::post('/colleges/{college}/programs', [InstitutionGovernanceController::class, 'storeCollegeProgram'])->name('colleges.programs.store');
+        Route::put('/colleges/{college}/programs/{program}', [InstitutionGovernanceController::class, 'updateCollegeProgram'])->name('colleges.programs.update');
+        Route::delete('/colleges/{college}/programs/{program}', [InstitutionGovernanceController::class, 'destroyCollegeProgram'])->name('colleges.programs.destroy');
+        Route::post('/colleges/{college}/programs/bulk-import', [InstitutionGovernanceController::class, 'bulkImportCollegePrograms'])->name('colleges.programs.bulk-import');
+        Route::post('/colleges/{college}/programs/copy-template', [InstitutionGovernanceController::class, 'copyProgramsFromTemplate'])->name('colleges.programs.copy-template');
+        Route::post('/colleges/{college}/programs/settings', [InstitutionGovernanceController::class, 'updateProgramsSettings'])->name('colleges.programs.settings');
+
+        // Stage 6: Facilities Configuration endpoints
+        Route::post('/colleges/{college}/facilities', [InstitutionGovernanceController::class, 'storeCollegeFacility'])->name('colleges.facilities.store');
+        Route::put('/colleges/{college}/facilities/{room}', [InstitutionGovernanceController::class, 'updateCollegeFacility'])->name('colleges.facilities.update');
+        Route::delete('/colleges/{college}/facilities/{room}', [InstitutionGovernanceController::class, 'destroyCollegeFacility'])->name('colleges.facilities.destroy');
+        Route::post('/colleges/{college}/facilities/bulk-import', [InstitutionGovernanceController::class, 'bulkImportCollegeFacilities'])->name('colleges.facilities.bulk-import');
+        Route::post('/colleges/{college}/facilities/copy-template', [InstitutionGovernanceController::class, 'copyFacilitiesFromTemplate'])->name('colleges.facilities.copy-template');
+        Route::post('/colleges/{college}/facilities/settings', [InstitutionGovernanceController::class, 'updateFacilitiesSettings'])->name('colleges.facilities.settings');
 
         // 2. Users, Canonical Identity, Role Management, Permission Matrix, Scoped Assignments & Access Requests
         Route::get('/users', [InstitutionGovernanceController::class, 'users'])->name('users');

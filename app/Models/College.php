@@ -144,6 +144,16 @@ class College extends Model
         return $this->hasMany(Program::class, 'college_id');
     }
 
+    public function rooms(): HasMany
+    {
+        return $this->hasMany(Room::class, 'college_id');
+    }
+
+    public function facilities(): HasMany
+    {
+        return $this->hasMany(Room::class, 'college_id');
+    }
+
     public function scopedRoles(): HasMany
     {
         return $this->hasMany(ScopedRoleAssignment::class, 'college_id');
