@@ -19,6 +19,7 @@ import {
     Calendar,
     Phone,
     Mail,
+    AlertTriangle,
     Building2,
     ShieldCheck,
     FileText,

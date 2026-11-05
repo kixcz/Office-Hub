@@ -545,7 +545,7 @@ export default function FacultyPerformanceIndex({
                         {/* Add Recognition Rule Button */}
                         <Link
                             href="/performance/rules"
-                            className="h-9.5 px-4 text-xs font-black rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 flex items-center gap-2 cursor-pointer shadow-2xs transition-colors"
+                            className="h-9.5 px-4 text-xs font-black rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2 cursor-pointer shadow-2xs transition-colors"
                         >
                             <Plus className="w-3.5 h-3.5 stroke-[3]" />
                             <span>Add Recognition Rule</span>
@@ -600,7 +600,7 @@ export default function FacultyPerformanceIndex({
                                         className={cn(
                                             "p-1.5 rounded-md text-xs transition-colors",
                                             viewMode === 'list'
-                                                ? "bg-amber-500 text-slate-950 font-black"
+                                                ? "bg-primary text-primary-foreground font-black"
                                                 : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                                         )}
                                         title="List View"
@@ -612,7 +612,7 @@ export default function FacultyPerformanceIndex({
                                         className={cn(
                                             "p-1.5 rounded-md text-xs transition-colors",
                                             viewMode === 'grid'
-                                                ? "bg-amber-500 text-slate-950 font-black"
+                                                ? "bg-primary text-primary-foreground font-black"
                                                 : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                                         )}
                                         title="Grid View"
@@ -941,7 +941,7 @@ export default function FacultyPerformanceIndex({
                                         className={cn(
                                             "w-7 h-7 rounded-lg text-xs font-bold transition-colors",
                                             currentPage === page
-                                                ? "bg-amber-500 text-slate-950 font-black shadow-2xs"
+                                                ? "bg-primary text-primary-foreground font-black shadow-2xs"
                                                 : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                                         )}
                                     >

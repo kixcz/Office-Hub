@@ -185,7 +185,7 @@ export default function InstitutionIntegrations({
                                             </td>
                                             <td className="px-4 py-3">{item.provider}</td>
                                             <td className="px-4 py-3">{item.owner}</td>
-                                            <td className="px-4 py-3 font-mono text-[11px] text-amber-600">
+                                            <td className="px-4 py-3 font-mono text-[11px] text-[#5B21B6]">
                                                 {item.masked_credential || 'VAULT-SEALED'}
                                             </td>
                                             <td className="px-4 py-3 font-mono">{item.last_sync}</td>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { BreadcrumbItem, SharedData } from '@/types';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     CheckCircle2,
     Clock,
@@ -328,28 +328,57 @@ export default function SuperAdminDashboard({
     const needsAttnOffset = -(compliantDash + minorDash);
     const nonCompliantOffset = -(compliantDash + minorDash + needsAttnDash);
 
+    const { auth } = usePage<SharedData>().props;
+    const activeCollege = auth?.user?.active_college;
+    const collegeBranding = activeCollege?.branding;
+    const collegeCode = activeCollege?.code || 'CIDS';
+
     const dashboardTitle = isProgramHead
         ? `${program_code || 'Program'} Operational Command Center`
         : isDean
-        ? 'College Executive Oversight Dashboard'
-        : 'Institutional Performance Dashboard';
+        ? `${collegeCode} Executive Oversight Dashboard`
+        : `${collegeCode} Performance Dashboard`;
 
     const dashboardSubtitle = isProgramHead
         ? `Operational command workspace for ${program_name || 'your academic program'}. Monitor program faculty, attendance, compliance outputs, make-up classes, exam schedules, and scheduling reviews.`
         : isDean
-        ? 'College-wide executive oversight across all programs: compliance rates, workload equity, timetable endorsements, make-up class approvals, and institutional performance.'
-        : 'Live overview of compliance, attendance, productivity, schedules, meetings, research, extension, and faculty activity for the selected academic period.';
+        ? `${activeCollege?.name || 'College-wide'} executive oversight across all programs: compliance rates, workload equity, timetable endorsements, make-up class approvals, and institutional performance.`
+        : `Live overview of compliance, attendance, productivity, schedules, meetings, research, extension, and faculty activity for ${activeCollege?.name || 'the selected academic period'}.`;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`${dashboardTitle} - CIDS OfficeHub`} />
+            <Head title={`${dashboardTitle} - ${collegeCode} OfficeHub`} />
 
             <div className="p-4 md:p-6 lg:p-7 space-y-6 max-w-[1600px] mx-auto font-sans">
                 {/* 1. Header with Compact Persistent Filters Row */}
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card rounded-2xl border border-border p-5 shadow-2xs">
+                <div
+                    className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card rounded-2xl border border-border p-5 shadow-2xs"
+                    style={
+                        collegeBranding
+                            ? {
+                                  borderColor: `${collegeBranding.primary_color}45`,
+                              }
+                            : undefined
+                    }
+                >
                     <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
-                            <TrendingUp className="w-6 h-6" />
+                        <div
+                            className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20 overflow-hidden p-1.5"
+                            style={
+                                collegeBranding
+                                    ? {
+                                          backgroundColor: collegeBranding.accent_color,
+                                          color: collegeBranding.secondary_color,
+                                          borderColor: `${collegeBranding.primary_color}50`,
+                                      }
+                                    : undefined
+                            }
+                        >
+                            {activeCollege?.logo_url ? (
+                                <img src={activeCollege.logo_url} alt={collegeCode} className="w-full h-full object-contain" />
+                            ) : (
+                                <TrendingUp className="w-6 h-6" />
+                            )}
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
@@ -369,6 +398,14 @@ export default function SuperAdminDashboard({
                             <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
                                 {dashboardSubtitle}
                             </p>
+                            {collegeBranding?.slogan && (
+                                <p
+                                    className="text-[11px] font-bold italic mt-1"
+                                    style={{ color: collegeBranding.secondary_color }}
+                                >
+                                    &ldquo;{collegeBranding.slogan}&rdquo;
+                                </p>
+                            )}
                             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 mt-1.5">
                                 <span>🎓 AY {academicYear} • {semester}</span>
                                 {program_code && (

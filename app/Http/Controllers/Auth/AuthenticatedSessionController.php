@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\PortalContextService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,19 +39,31 @@ class AuthenticatedSessionController extends Controller
             $user->forceFill(['last_login_at' => now()])->saveQuietly();
         }
 
-        if ($user->isInstitutionSuperAdmin()) {
-            return redirect()->intended(route('institution.dashboard', absolute: false));
-        }
-
-        if ($user->hasRole('Display Screen') || $user->hasRole('tv_display') || $user->email === 'tv@cids.edu.ph') {
+        if ($user && ($user->hasRole('Display Screen') || $user->hasRole('tv_display') || $user->email === 'tv@cids.edu.ph')) {
             return redirect()->intended(route('tv-display', absolute: false));
         }
 
-        if ($user->hasRole('Faculty Member') && ! $user->isCollegeAdmin() && ! $user->hasRole('Dean') && ! $user->hasRole('Program Head')) {
-            return redirect()->intended(route('faculty.dashboard', absolute: false));
+        $portalService = app(PortalContextService::class);
+        $available = $portalService->getUserAvailableAssignments($user);
+
+        // If user has an explicit default portal set, activate it and open directly
+        if ($user->default_role_assignment_id) {
+            $default = $available->firstWhere('id', $user->default_role_assignment_id);
+            if ($default) {
+                $portalService->switchContext($user, $default['id'], $request);
+
+                return redirect()->intended($default['landing_url']);
+            }
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // If user has multiple roles and no designated default, direct to Choose Workspace
+        if ($available->count() > 1 && ! $user->default_role_assignment_id) {
+            return redirect()->route('context.choose-workspace');
+        }
+
+        $active = $portalService->getActiveAssignment($user, $request);
+
+        return redirect()->intended($active['landing_url']);
     }
 
     /**

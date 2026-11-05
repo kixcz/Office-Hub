@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { usePage } from '@inertiajs/react';
+import { SharedData } from '@/types';
 import {
     Dialog,
     DialogContent,
@@ -56,6 +58,12 @@ export default function LabInventoryReportModal({
     rooms = [],
     categories = [],
 }: LabInventoryReportModalProps) {
+    const { active_branding } = usePage<SharedData>().props;
+    const collegeName = active_branding?.scope_name || 'College of Information and Digital Sciences';
+    const institutionName = active_branding?.institution_name || 'DAVAO DEL SUR STATE COLLEGE';
+    const collegeLogoUrl = active_branding?.logo_url || '/CIDS_Logo.jpg';
+    const institutionLogoUrl = active_branding?.institution_logo_url || '/DSSC.jpg';
+
     // 1. Report Filters & Scope
     const [selectedFacility, setSelectedFacility] = useState<string>('all');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -429,74 +437,85 @@ export default function LabInventoryReportModal({
             const margin = 12.0;
             let currentY = margin;
 
-            // Load CIDS Logo as Data URL
-            let logoDataUrl: string | null = null;
-            try {
-                const img = new Image();
-                img.crossOrigin = 'Anonymous';
-                img.src = '/CIDS_Logo.jpg';
-                await new Promise((resolve) => {
-                    img.onload = () => resolve(true);
-                    img.onerror = () => resolve(false);
-                });
-                if (img.width && img.height) {
-                    const tempCanvas = document.createElement('canvas');
-                    const size = Math.min(img.width, img.height);
-                    tempCanvas.width = size;
-                    tempCanvas.height = size;
-                    const ctx = tempCanvas.getContext('2d');
-                    if (ctx) {
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, size, size);
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, true);
-                        ctx.closePath();
-                        ctx.clip();
-                        const offsetX = (img.width - size) / 2;
-                        const offsetY = (img.height - size) / 2;
-                        ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, size, size);
-                        ctx.restore();
-                        logoDataUrl = tempCanvas.toDataURL('image/png');
+            // Helper to load and round an image as Data URL
+            const loadCircularLogoDataUrl = async (srcUrl: string): Promise<string | null> => {
+                try {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.src = srcUrl;
+                    await new Promise((resolve) => {
+                        img.onload = () => resolve(true);
+                        img.onerror = () => resolve(false);
+                    });
+                    if (img.width && img.height) {
+                        const tempCanvas = document.createElement('canvas');
+                        const size = Math.min(img.width, img.height);
+                        tempCanvas.width = size;
+                        tempCanvas.height = size;
+                        const ctx = tempCanvas.getContext('2d');
+                        if (ctx) {
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, size, size);
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, true);
+                            ctx.closePath();
+                            ctx.clip();
+                            const offsetX = (img.width - size) / 2;
+                            const offsetY = (img.height - size) / 2;
+                            ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, size, size);
+                            ctx.restore();
+                            return tempCanvas.toDataURL('image/png');
+                        }
                     }
+                } catch (err) {
+                    console.warn('Could not load logo for PDF header:', err);
                 }
-            } catch (err) {
-                console.warn('Could not load logo for PDF header:', err);
-            }
+                return null;
+            };
 
-            // Render Official DSSC Header
+            const [institutionLogoData, collegeLogoData] = await Promise.all([
+                loadCircularLogoDataUrl(institutionLogoUrl),
+                loadCircularLogoDataUrl(collegeLogoUrl),
+            ]);
+
+            // Render Official DSSC Header with dual logos
             const renderDocHeader = (yPos: number) => {
                 let y = yPos;
-                if (logoDataUrl) {
-                    const logoSize = 18;
-                    const logoX = (pageWidth - logoSize) / 2;
-                    doc.addImage(logoDataUrl, 'PNG', logoX, y, logoSize, logoSize);
-                    y += logoSize + 2;
+                const headerLogoSize = 17;
+
+                // Left logo: Institution
+                if (institutionLogoData) {
+                    doc.addImage(institutionLogoData, 'PNG', margin + 4, y, headerLogoSize, headerLogoSize);
                 }
-
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8.5);
-                doc.setTextColor(80, 80, 80);
-                doc.text('REPUBLIC OF THE PHILIPPINES', pageWidth / 2, y, { align: 'center' });
-                y += 4;
-
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(13);
-                doc.setTextColor(15, 23, 42);
-                doc.text('DAVAO DEL SUR STATE COLLEGE', pageWidth / 2, y, { align: 'center' });
-                y += 5;
-
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(10);
-                doc.setTextColor(30, 41, 59);
-                doc.text('COLLEGE OF INFORMATION AND COMPUTING STUDIES', pageWidth / 2, y, { align: 'center' });
-                y += 4;
+                // Right logo: College
+                if (collegeLogoData) {
+                    doc.addImage(collegeLogoData, 'PNG', pageWidth - margin - headerLogoSize - 4, y, headerLogoSize, headerLogoSize);
+                }
 
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(8);
-                doc.setTextColor(100, 116, 139);
-                doc.text('Brgy. Matti, Digos City, Davao del Sur', pageWidth / 2, y, { align: 'center' });
+                doc.setTextColor(80, 80, 80);
+                doc.text('REPUBLIC OF THE PHILIPPINES', pageWidth / 2, y + 2, { align: 'center' });
                 y += 6;
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.setTextColor(15, 23, 42);
+                doc.text(institutionName.toUpperCase(), pageWidth / 2, y + 1, { align: 'center' });
+                y += 5;
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9.5);
+                doc.setTextColor(30, 41, 59);
+                doc.text(collegeName.toUpperCase(), pageWidth / 2, y + 1, { align: 'center' });
+                y += 4;
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(100, 116, 139);
+                doc.text('Brgy. Matti, Digos City, Davao del Sur', pageWidth / 2, y + 1, { align: 'center' });
+                y += 8;
 
                 // Official Report Title Banner Box
                 doc.setDrawColor(203, 213, 225);
@@ -830,13 +849,13 @@ export default function LabInventoryReportModal({
                 {/* MODAL HEADER */}
                 <div className="p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-xs ring-2 ring-amber-400/30">
+                        <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black shadow-xs ring-2 ring-primary/30">
                             <FileSpreadsheet className="w-5 h-5 stroke-[2.4]" />
                         </div>
                         <div>
                             <DialogTitle className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
                                 <span>Generate Laboratory Inventory Report</span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
                                     Official Matrix
                                 </span>
                             </DialogTitle>
@@ -876,7 +895,7 @@ export default function LabInventoryReportModal({
                         {/* STEP 1: REPORT SCOPE & FILTERS */}
                         <div className="space-y-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                             <div className="flex items-center gap-2">
-                                <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px] flex items-center justify-center shadow-xs">
+                                <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground font-black text-[11px] flex items-center justify-center shadow-xs">
                                     1
                                 </span>
                                 <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -979,7 +998,7 @@ export default function LabInventoryReportModal({
                         {/* STEP 2: SUMMARY METRICS PREVIEW TABLE */}
                         <div className="space-y-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                             <div className="flex items-center gap-2">
-                                <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px] flex items-center justify-center shadow-xs">
+                                <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground font-black text-[11px] flex items-center justify-center shadow-xs">
                                     2
                                 </span>
                                 <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -1029,7 +1048,7 @@ export default function LabInventoryReportModal({
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px] flex items-center justify-center shadow-xs">
+                                    <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground font-black text-[11px] flex items-center justify-center shadow-xs">
                                         3
                                     </span>
                                     <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -1050,7 +1069,7 @@ export default function LabInventoryReportModal({
                                     <button
                                         type="button"
                                         onClick={handleAddSignatory}
-                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 flex items-center gap-1 cursor-pointer shadow-xs"
+                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-1 cursor-pointer shadow-xs"
                                     >
                                         <Plus className="w-3 h-3 stroke-[2.5]" />
                                         <span>Add</span>
@@ -1119,7 +1138,7 @@ export default function LabInventoryReportModal({
                                                     onChange={(e) => handleUpdateSignatory(sig.id, 'showSignatureLine', e.target.checked)}
                                                     className="sr-only peer"
                                                 />
-                                                <div className="w-6 h-3.5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-400 dark:peer-checked:bg-amber-400"></div>
+                                                <div className="w-6 h-3.5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary dark:peer-checked:bg-primary"></div>
                                             </label>
                                         </div>
                                     </div>
@@ -1134,7 +1153,7 @@ export default function LabInventoryReportModal({
                                     type="button"
                                     variant="outline"
                                     onClick={handlePrintPreview}
-                                    className="flex-1 h-9 text-xs font-bold rounded-xl border-amber-400/50 bg-amber-400/10 hover:bg-amber-400/20 text-slate-900 dark:text-slate-100 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                                    className="flex-1 h-9 text-xs font-bold rounded-xl border-primary/50 bg-primary/10 hover:bg-primary/20 text-foreground flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                                 >
                                     <Printer className="w-3.5 h-3.5" />
                                     <span>Print Preview</span>
@@ -1143,7 +1162,7 @@ export default function LabInventoryReportModal({
                                     type="button"
                                     onClick={handleGeneratePdf}
                                     disabled={isGeneratingPdf}
-                                    className="flex-1 h-9 text-xs font-black rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-70"
+                                    className="flex-1 h-9 text-xs font-black rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-70"
                                 >
                                     <Download className={cn("w-3.5 h-3.5 stroke-[2.5]", isGeneratingPdf && "animate-bounce")} />
                                     <span>{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</span>
@@ -1220,26 +1239,41 @@ export default function LabInventoryReportModal({
                                 style={{ transform: `scale(${zoomLevel / 100})` }}
                             >
                                 <div className="space-y-4">
-                                    {/* 1. OFFICIAL DSSC LETTERHEAD */}
-                                    <div className="flex flex-col items-center justify-center text-center pb-2 space-y-2">
-                                        <img
-                                            src="/CIDS_Logo.jpg"
-                                            alt="CIDS Logo"
-                                            className="w-16 h-16 object-contain rounded-full bg-white p-0.5 shadow-2xs"
-                                        />
-                                        <div className="space-y-0.5">
+                                    {/* 1. OFFICIAL DSSC LETTERHEAD (Dual Logos) */}
+                                    <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                                        <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+                                            <img
+                                                src={institutionLogoUrl}
+                                                alt={institutionName}
+                                                className="w-14 h-14 object-contain rounded-full bg-white p-0.5 shadow-2xs"
+                                                onError={(e: any) => {
+                                                    e.currentTarget.src = '/DSSC.jpg';
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="flex-1 text-center px-4 space-y-0.5">
                                             <p className="text-[10px] tracking-wider text-slate-600 uppercase font-semibold">
                                                 REPUBLIC OF THE PHILIPPINES
                                             </p>
                                             <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">
-                                                DAVAO DEL SUR STATE COLLEGE
+                                                {institutionName}
                                             </h2>
-                                            <p className="text-[10.5px] font-bold text-slate-700">
-                                                College of Information and Computing Studies
+                                            <p className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">
+                                                {collegeName}
                                             </p>
                                             <p className="text-[9.5px] text-slate-500 font-medium">
                                                 Brgy. Matti, Digos City, Davao del Sur
                                             </p>
+                                        </div>
+                                        <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+                                            <img
+                                                src={collegeLogoUrl}
+                                                alt={collegeName}
+                                                className="w-14 h-14 object-contain rounded-full bg-white p-0.5 shadow-2xs"
+                                                onError={(e: any) => {
+                                                    e.currentTarget.src = '/CIDS_Logo.jpg';
+                                                }}
+                                            />
                                         </div>
                                     </div>
 

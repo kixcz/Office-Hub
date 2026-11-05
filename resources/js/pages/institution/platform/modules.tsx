@@ -78,7 +78,7 @@ export default function PlatformModules({
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/20">
                                 Global, Per-Entity & Per-College Rollout
                             </span>
                         </div>
@@ -97,7 +97,7 @@ export default function PlatformModules({
                                 onClick={() => setActiveTab('modules')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === 'modules'
-                                        ? 'bg-amber-500 text-slate-950'
+                                        ? 'bg-[#5B21B6] text-white'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -108,7 +108,7 @@ export default function PlatformModules({
                                 onClick={() => setActiveTab('flags')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === 'flags'
-                                        ? 'bg-amber-500 text-slate-950'
+                                        ? 'bg-[#5B21B6] text-white'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -117,7 +117,7 @@ export default function PlatformModules({
                         </div>
                         <Link
                             href="/institution/colleges/setup"
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-colors shadow-xs shrink-0"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-[#5B21B6] text-white hover:bg-[#4C1D95] transition-colors shadow-xs shrink-0"
                         >
                             <Sliders className="w-4 h-4" />
                             Guided Unit Onboarding
@@ -189,7 +189,7 @@ export default function PlatformModules({
                                                 <span
                                                     className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
                                                         col.type === 'Entity'
-                                                            ? 'bg-amber-500/15 text-amber-500'
+                                                            ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
                                                             : 'bg-blue-500/15 text-blue-500'
                                                     }`}
                                                 >
@@ -207,7 +207,7 @@ export default function PlatformModules({
                                                 <td
                                                     key={m.id}
                                                     onClick={() => toggleCollegeModule(col.id, m.id)}
-                                                    className="px-2.5 py-3 text-center cursor-pointer hover:bg-amber-500/10 transition-colors"
+                                                    className="px-2.5 py-3 text-center cursor-pointer hover:bg-[#7C3AED]/10 transition-colors"
                                                     title={`Toggle ${m.name} for ${col.code}`}
                                                 >
                                                     {isEnabled ? (
@@ -229,7 +229,7 @@ export default function PlatformModules({
                     /* Feature Flags Section */
                     <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-4">
                         <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-amber-500" />
+                            <Sparkles className="w-4 h-4 text-[#7C3AED]" />
                             <div>
                                 <h3 className="text-base font-extrabold">Controlled Feature Flags Rollout</h3>
                                 <p className="text-xs text-muted-foreground">

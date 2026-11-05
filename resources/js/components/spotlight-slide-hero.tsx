@@ -267,13 +267,13 @@ export function SpotlightSlideHero({ slide, isDark = false, isPreview = false }:
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 shrink-0">
                         <img
-                            src="/DSSC.jpg"
-                            alt="DSSC Emblem"
-                            className="w-9 h-9 md:w-11 md:h-11 rounded-full object-cover border border-white/20 shadow-sm bg-white"
+                            src="/velora_logo-removebg-preview.png"
+                            alt="Velora Logo"
+                            className="w-9 h-9 md:w-11 md:h-11 rounded-xl object-contain p-1 border border-white/20 shadow-sm bg-white"
                         />
                         <img
-                            src="/CIDS_Logo.jpg"
-                            alt="CIDS Logo"
+                            src="/DSSC.jpg"
+                            alt="DSSC Emblem"
                             className="w-9 h-9 md:w-11 md:h-11 rounded-full object-cover border border-white/20 shadow-sm bg-white"
                         />
                     </div>

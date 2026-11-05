@@ -24,9 +24,12 @@ interface Assignment {
     status: string;
     effective_from: string | null;
     effective_until: string | null;
+    appointment_reference?: string | null;
+    assignment_reason?: string | null;
     notes: string | null;
+    assigned_by?: { id: number; name: string; email: string } | null;
     user: { id: number; name: string; email: string; institutional_id?: string };
-    role: { id: number; name: string };
+    role: { id: number; name: string; portal_type?: string };
     entity?: { id: number; code: string; name: string } | null;
     college?: { id: number; code: string; name: string } | null;
     program?: { id: number; code: string; name: string } | null;
@@ -120,6 +123,8 @@ export default function ScopedRolesIndex({
         replacing_user_id: '',
         effective_from: '2026-08-01',
         effective_until: '',
+        appointment_reference: '',
+        assignment_reason: '',
         notes: '',
     });
 
@@ -189,7 +194,7 @@ export default function ScopedRolesIndex({
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/20">
                                 Identity + Role + Scope + Effective Period
                             </span>
                         </div>
@@ -197,7 +202,7 @@ export default function ScopedRolesIndex({
                             Scoped Role Assignments & Delegation
                         </h1>
                         <p className="text-xs md:text-sm text-muted-foreground">
-                            Bind <code className="font-mono text-amber-500">User + Role + Scope (Institution / Entity / College / Program / Facility) + Effective Period</code>. Supports Primary, Secondary, Acting, Replacement during leave, and Scheduled future assignments with automatic expiration.
+                            Bind <code className="font-mono text-[#7C3AED]">User + Role + Scope (Institution / Entity / College / Program / Facility) + Effective Period</code>. Supports Primary, Secondary, Acting, Replacement during leave, and Scheduled future assignments with automatic expiration.
                         </p>
                     </div>
 
@@ -208,7 +213,7 @@ export default function ScopedRolesIndex({
                                 onClick={() => setActiveTab('assignments')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === 'assignments'
-                                        ? 'bg-amber-500 text-slate-950'
+                                        ? 'bg-[#5B21B6] text-white'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -219,7 +224,7 @@ export default function ScopedRolesIndex({
                                 onClick={() => setActiveTab('leadership')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === 'leadership'
-                                        ? 'bg-amber-500 text-slate-950'
+                                        ? 'bg-[#5B21B6] text-white'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -230,7 +235,7 @@ export default function ScopedRolesIndex({
                                 onClick={() => setActiveTab('requests')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                                     activeTab === 'requests'
-                                        ? 'bg-amber-500 text-slate-950'
+                                        ? 'bg-[#5B21B6] text-white'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -253,7 +258,7 @@ export default function ScopedRolesIndex({
                         </Button>
                         <Button
                             onClick={() => setIsGrantOpen(true)}
-                            className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs rounded-xl shadow-xs"
+                            className="bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs rounded-xl shadow-xs"
                         >
                             <Plus className="w-4 h-4 mr-1.5" />
                             Bind Scoped Role
@@ -264,11 +269,11 @@ export default function ScopedRolesIndex({
                 {activeTab === 'assignments' || activeTab === 'leadership' ? (
                     <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
                         {activeTab === 'leadership' && (
-                            <div className="border-b border-border/60 bg-amber-500/5 px-4 py-3 text-xs text-muted-foreground flex items-center justify-between">
+                            <div className="border-b border-border/60 bg-[#7C3AED]/5 px-4 py-3 text-xs text-muted-foreground flex items-center justify-between">
                                 <span>
                                     <strong className="text-foreground">Leadership & Administrator Positions View:</strong> Showing Entity Admins, College Admins, Deans, Program Heads, Head Lab In-Charge, and TV Managers, including Acting appointments and expiration dates.
                                 </span>
-                                <span className="font-mono font-bold text-amber-500">
+                                <span className="font-mono font-bold text-[#7C3AED]">
                                     {displayedAssignments.length} Active Leadership Posts
                                 </span>
                             </div>
@@ -282,7 +287,7 @@ export default function ScopedRolesIndex({
                                         <th className="px-4 py-3.5">Scope Boundary</th>
                                         <th className="px-4 py-3.5">Effective Period</th>
                                         <th className="px-4 py-3.5">Status</th>
-                                        <th className="px-4 py-3.5">Appointment Notes</th>
+                                        <th className="px-4 py-3.5">Appointment & Authority</th>
                                         <th className="px-4 py-3.5 text-right">Lifecycle</th>
                                     </tr>
                                 </thead>
@@ -301,10 +306,10 @@ export default function ScopedRolesIndex({
                                             <td className="px-4 py-3.5">
                                                 <div className="flex flex-wrap items-center gap-1.5">
                                                     <span className="px-2.5 py-0.5 rounded-md bg-muted font-bold text-foreground inline-flex items-center gap-1">
-                                                        <Key className="w-3 h-3 text-amber-500" />
+                                                        <Key className="w-3 h-3 text-[#7C3AED]" />
                                                         {asgn.role?.name}
                                                     </span>
-                                                    <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 font-bold text-[10px] border border-amber-500/20">
+                                                    <span className="px-2 py-0.5 rounded bg-[#7C3AED]/10 text-[#7C3AED] font-bold text-[10px] border border-[#7C3AED]/20">
                                                         {asgn.designation_type || 'Primary'}
                                                     </span>
                                                 </div>
@@ -321,7 +326,7 @@ export default function ScopedRolesIndex({
                                                         {asgn.scope_level || 'College'}
                                                     </span>
                                                     {asgn.entity && (
-                                                        <span className="font-bold text-amber-500 block">
+                                                        <span className="font-bold text-[#7C3AED] block">
                                                             Entity: {asgn.entity.code}
                                                         </span>
                                                     )}
@@ -372,8 +377,30 @@ export default function ScopedRolesIndex({
                                                 </span>
                                             </td>
 
-                                            <td className="px-4 py-3.5 text-muted-foreground text-[11px] max-w-xs truncate">
-                                                {asgn.notes || '—'}
+                                            <td className="px-4 py-3.5 text-[11px] max-w-xs space-y-1">
+                                                {asgn.appointment_reference && (
+                                                    <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/20">
+                                                        {asgn.appointment_reference}
+                                                    </span>
+                                                )}
+                                                {asgn.assignment_reason && (
+                                                    <div className="font-semibold text-foreground text-[11px] leading-tight">
+                                                        {asgn.assignment_reason}
+                                                    </div>
+                                                )}
+                                                {asgn.notes && asgn.notes !== asgn.appointment_reference && (
+                                                    <div className="text-muted-foreground text-[10px] truncate">
+                                                        {asgn.notes}
+                                                    </div>
+                                                )}
+                                                {asgn.assigned_by && (
+                                                    <div className="text-[10px] text-muted-foreground">
+                                                        Assigned by: <span className="font-medium text-foreground">{asgn.assigned_by.name}</span>
+                                                    </div>
+                                                )}
+                                                {!asgn.appointment_reference && !asgn.assignment_reason && !asgn.notes && (
+                                                    <span className="text-muted-foreground">—</span>
+                                                )}
                                             </td>
 
                                             <td className="px-4 py-3.5 text-right">
@@ -437,7 +464,7 @@ export default function ScopedRolesIndex({
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3.5">
-                                                <span className="font-bold text-amber-500 block">
+                                                <span className="font-bold text-[#7C3AED] block">
                                                     {req.requested_role?.name}
                                                 </span>
                                                 <span className="text-[10px] text-muted-foreground">
@@ -462,7 +489,7 @@ export default function ScopedRolesIndex({
                                                         req.status === 'Approved'
                                                             ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                                                             : req.status === 'Pending'
-                                                            ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                                            ? 'bg-[#7C3AED]/10 text-[#7C3AED] border-[#7C3AED]/20'
                                                             : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
                                                     }`}
                                                 >
@@ -678,13 +705,36 @@ export default function ScopedRolesIndex({
                                     </div>
                                 </div>
 
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold">Appointment Reference / BOR / SO</label>
+                                        <input
+                                            type="text"
+                                            value={data.appointment_reference}
+                                            onChange={(e) => setData('appointment_reference', e.target.value)}
+                                            placeholder="e.g. BOR Res. No. 2026-44 · SO No. 081"
+                                            className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold">Assignment Reason / Purpose</label>
+                                        <input
+                                            type="text"
+                                            value={data.assignment_reason}
+                                            onChange={(e) => setData('assignment_reason', e.target.value)}
+                                            placeholder="e.g. Designated as VPAF / Program Chair"
+                                            className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold">Special Order / Appointment Reference</label>
+                                    <label className="text-xs font-bold">Administrative Notes (Optional)</label>
                                     <input
                                         type="text"
                                         value={data.notes}
                                         onChange={(e) => setData('notes', e.target.value)}
-                                        placeholder="e.g. Special Order No. 2026-081 · Acting BSIT Program Head"
+                                        placeholder="Additional delegation remarks or audit trail metadata"
                                         className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs"
                                     />
                                 </div>
@@ -696,7 +746,7 @@ export default function ScopedRolesIndex({
                                     <Button
                                         type="submit"
                                         disabled={processing}
-                                        className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs"
+                                        className="bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs"
                                     >
                                         Bind Scoped Role
                                     </Button>
@@ -811,7 +861,7 @@ export default function ScopedRolesIndex({
                                     <Button
                                         type="submit"
                                         disabled={reqForm.processing}
-                                        className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs"
+                                        className="bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs"
                                     >
                                         Submit Request
                                     </Button>

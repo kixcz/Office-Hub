@@ -515,16 +515,16 @@ export default function AcademicPeriodsIndex({
                 {/* 1. TOP HEADER BAR: Icon + Title + Create Academic Period Button */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-[#f59e0b] text-slate-950 flex items-center justify-center shrink-0 shadow-xs">
-                            <CalendarDays className="w-6 h-6 text-slate-950 stroke-[2.2]" />
+                        <div className="w-12 h-12 rounded-2xl bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA] border border-[#A78BFA]/40 flex items-center justify-center shrink-0 shadow-xs">
+                            <CalendarDays className="w-6 h-6 text-[#5B21B6] dark:text-[#A78BFA] stroke-[2.2]" />
                         </div>
                         <div>
                             <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
                                 <span>Administration</span>
                                 <span>&gt;</span>
-                                <span className="text-slate-700 font-semibold">Academic Periods</span>
+                                <span className="text-[#5B21B6] dark:text-[#A78BFA] font-semibold">Academic Periods</span>
                             </div>
-                            <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                            <h1 className="text-2xl font-black text-[#17152E] dark:text-white tracking-tight mt-0.5">
                                 Academic Periods
                             </h1>
                             <p className="text-xs text-slate-500 mt-0.5">
@@ -535,7 +535,7 @@ export default function AcademicPeriodsIndex({
 
                     <Button
                         onClick={handleOpenCreate}
-                        className="h-10 px-4 bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+                        className="h-10 px-4 bg-[#5B21B6] hover:bg-[#4C1D95] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
                     >
                         <Plus className="w-4 h-4 stroke-[3]" />
                         <span>Create Academic Period</span>
@@ -546,8 +546,8 @@ export default function AcademicPeriodsIndex({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Card 1: Total Periods */}
                     <div className="bg-white rounded-2xl p-4.5 border border-slate-200/90 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 border border-amber-200/60 flex items-center justify-center shrink-0">
-                            <Layers className="w-5 h-5 text-amber-500" />
+                        <div className="w-11 h-11 rounded-xl bg-[#EDE9FE] text-[#5B21B6] border border-[#A78BFA]/40 flex items-center justify-center shrink-0">
+                            <Layers className="w-5 h-5 text-[#5B21B6]" />
                         </div>
                         <div>
                             <span className="text-[11px] font-bold text-slate-700 block">Total Periods</span>
@@ -609,7 +609,7 @@ export default function AcademicPeriodsIndex({
                         className={cn(
                             'pb-3 pt-1 border-b-2 transition-all cursor-pointer whitespace-nowrap',
                             activeTab === 'all'
-                                ? 'border-[#f59e0b] text-slate-950 font-bold'
+                                ? 'border-[#5B21B6] text-[#5B21B6] font-bold'
                                 : 'border-transparent text-slate-500 hover:text-slate-900'
                         )}
                     >
@@ -621,7 +621,7 @@ export default function AcademicPeriodsIndex({
                         className={cn(
                             'pb-3 pt-1 border-b-2 transition-all cursor-pointer whitespace-nowrap',
                             activeTab === 'Active'
-                                ? 'border-[#f59e0b] text-slate-950 font-bold'
+                                ? 'border-[#5B21B6] text-[#5B21B6] font-bold'
                                 : 'border-transparent text-slate-500 hover:text-slate-900'
                         )}
                     >
@@ -633,7 +633,7 @@ export default function AcademicPeriodsIndex({
                         className={cn(
                             'pb-3 pt-1 border-b-2 transition-all cursor-pointer whitespace-nowrap',
                             activeTab === 'Draft'
-                                ? 'border-[#f59e0b] text-slate-950 font-bold'
+                                ? 'border-[#5B21B6] text-[#5B21B6] font-bold'
                                 : 'border-transparent text-slate-500 hover:text-slate-900'
                         )}
                     >
@@ -645,7 +645,7 @@ export default function AcademicPeriodsIndex({
                         className={cn(
                             'pb-3 pt-1 border-b-2 transition-all cursor-pointer whitespace-nowrap',
                             activeTab === 'Closed'
-                                ? 'border-[#f59e0b] text-slate-950 font-bold'
+                                ? 'border-[#5B21B6] text-[#5B21B6] font-bold'
                                 : 'border-transparent text-slate-500 hover:text-slate-900'
                         )}
                     >
@@ -657,7 +657,7 @@ export default function AcademicPeriodsIndex({
                         className={cn(
                             'pb-3 pt-1 border-b-2 transition-all cursor-pointer whitespace-nowrap',
                             activeTab === 'Archived'
-                                ? 'border-[#f59e0b] text-slate-950 font-bold'
+                                ? 'border-[#5B21B6] text-[#5B21B6] font-bold'
                                 : 'border-transparent text-slate-500 hover:text-slate-900'
                         )}
                     >
@@ -678,7 +678,7 @@ export default function AcademicPeriodsIndex({
                                     setCurrentPage(1);
                                 }}
                                 placeholder="Search academic periods..."
-                                className="pl-9 h-10 text-xs rounded-xl border-slate-200/90 bg-white placeholder:text-slate-400 shadow-xs focus-visible:ring-[#f59e0b]"
+                                className="pl-9 h-10 text-xs rounded-xl border-slate-200/90 bg-white placeholder:text-slate-400 shadow-xs focus-visible:ring-[#7C3AED]"
                             />
                         </div>
 
@@ -698,7 +698,7 @@ export default function AcademicPeriodsIndex({
                                     <DropdownMenuItem
                                         key={st}
                                         onClick={() => { setStatusFilter(st); setCurrentPage(1); }}
-                                        className={cn("text-xs cursor-pointer", statusFilter === st && "font-bold text-amber-600")}
+                                        className={cn("text-xs cursor-pointer", statusFilter === st && "font-bold text-[#5B21B6]")}
                                     >
                                         {st === 'all' ? 'All Statuses' : st}
                                     </DropdownMenuItem>
@@ -720,7 +720,7 @@ export default function AcademicPeriodsIndex({
                             <DropdownMenuContent align="start" className="w-48 rounded-xl max-h-56 overflow-y-auto">
                                 <DropdownMenuItem
                                     onClick={() => { setYearFilter('all'); setCurrentPage(1); }}
-                                    className={cn("text-xs cursor-pointer", yearFilter === 'all' && "font-bold text-amber-600")}
+                                    className={cn("text-xs cursor-pointer", yearFilter === 'all' && "font-bold text-[#5B21B6]")}
                                 >
                                     All Academic Years
                                 </DropdownMenuItem>
@@ -728,7 +728,7 @@ export default function AcademicPeriodsIndex({
                                     <DropdownMenuItem
                                         key={yr}
                                         onClick={() => { setYearFilter(yr); setCurrentPage(1); }}
-                                        className={cn("text-xs cursor-pointer", yearFilter === yr && "font-bold text-amber-600")}
+                                        className={cn("text-xs cursor-pointer", yearFilter === yr && "font-bold text-[#5B21B6]")}
                                     >
                                         {yr}
                                     </DropdownMenuItem>
@@ -814,8 +814,8 @@ export default function AcademicPeriodsIndex({
                                                 {/* Current Star Badge */}
                                                 <td className="py-4 px-4 text-center whitespace-nowrap">
                                                     {period.is_current ? (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#fffbeb] text-amber-900 border border-amber-300 shadow-2xs">
-                                                            <Star className="w-3 h-3 fill-[#f59e0b] text-[#f59e0b]" />
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#EDE9FE] text-[#5B21B6] border border-[#A78BFA]/60 shadow-2xs">
+                                                            <Star className="w-3 h-3 fill-[#7C3AED] text-[#7C3AED]" />
                                                             Yes
                                                         </span>
                                                     ) : (
@@ -870,7 +870,7 @@ export default function AcademicPeriodsIndex({
                                                                 }}
                                                                 className="text-xs cursor-pointer flex items-center gap-2"
                                                             >
-                                                                <Copy className="w-3.5 h-3.5 text-amber-500" />
+                                                                <Copy className="w-3.5 h-3.5 text-[#7C3AED]" />
                                                                 <span>Copy Setup</span>
                                                             </DropdownMenuItem>
 
@@ -967,7 +967,7 @@ export default function AcademicPeriodsIndex({
                                 className={cn(
                                     "h-8 w-8 p-0 rounded-lg text-xs font-semibold border-slate-200",
                                     currentPage === page
-                                        ? "bg-[#f59e0b] text-slate-950 border-[#f59e0b] font-bold hover:bg-[#d97706]"
+                                        ? "bg-[#5B21B6] text-white border-[#5B21B6] font-bold hover:bg-[#4C1D95]"
                                         : "text-slate-600 hover:bg-slate-50 bg-white"
                                 )}
                             >
@@ -1004,7 +1004,7 @@ export default function AcademicPeriodsIndex({
                                 {/* Drawer Header */}
                                 <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
                                     <div className="flex items-center gap-2.5">
-                                        <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center">
+                                        <div className="w-8 h-8 rounded-lg bg-[#EDE9FE] text-[#5B21B6] border border-[#A78BFA]/40 flex items-center justify-center">
                                             <CalendarDays className="w-4.5 h-4.5" />
                                         </div>
                                         <div>
@@ -1035,7 +1035,7 @@ export default function AcademicPeriodsIndex({
                                             className="w-full px-5 py-3.5 flex items-center justify-between text-left font-bold text-xs text-slate-900 hover:bg-slate-50 transition-colors border-b border-slate-100"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <Layers className="w-4 h-4 text-amber-500" />
+                                                <Layers className="w-4 h-4 text-[#7C3AED]" />
                                                 <span>1. Basic Information</span>
                                             </div>
                                             {openSections.basic ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -1060,7 +1060,7 @@ export default function AcademicPeriodsIndex({
                                                         <select
                                                             value={data.semester}
                                                             onChange={(e) => setData('semester', e.target.value)}
-                                                            className="w-full h-9.5 rounded-xl border border-slate-200 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#f59e0b]"
+                                                            className="w-full h-9.5 rounded-xl border border-slate-200 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
                                                             required
                                                         >
                                                             <option value="1st Semester">1st Semester</option>
@@ -1125,7 +1125,7 @@ export default function AcademicPeriodsIndex({
                                                         <select
                                                             value={data.status}
                                                             onChange={(e) => setData('status', e.target.value as any)}
-                                                            className="w-full h-9.5 rounded-xl border border-slate-200 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#f59e0b]"
+                                                            className="w-full h-9.5 rounded-xl border border-slate-200 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
                                                         >
                                                             <option value="Draft">Draft (Recommended for upcoming)</option>
                                                             <option value="Active">Active (Current semester)</option>
@@ -1139,7 +1139,7 @@ export default function AcademicPeriodsIndex({
                                                             <Checkbox
                                                                 checked={data.is_current}
                                                                 onCheckedChange={(checked) => setData('is_current', Boolean(checked))}
-                                                                className="rounded border-slate-300 data-[state=checked]:bg-[#f59e0b] data-[state=checked]:border-[#f59e0b] data-[state=checked]:text-slate-950"
+                                                                className="rounded border-slate-300 data-[state=checked]:bg-[#5B21B6] data-[state=checked]:border-[#5B21B6] data-[state=checked]:text-white"
                                                             />
                                                             <span className="text-xs font-semibold text-slate-800">Set as Current Period</span>
                                                         </label>
@@ -1169,7 +1169,7 @@ export default function AcademicPeriodsIndex({
                                             className="w-full px-5 py-3.5 flex items-center justify-between text-left font-bold text-xs text-slate-900 hover:bg-slate-50 transition-colors border-b border-slate-100"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <CalendarDays className="w-4 h-4 text-amber-500" />
+                                                <CalendarDays className="w-4 h-4 text-[#7C3AED]" />
                                                 <span>2. Academic Milestones (Optional)</span>
                                             </div>
                                             {openSections.milestones ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -1245,7 +1245,7 @@ export default function AcademicPeriodsIndex({
                                             className="w-full px-5 py-3.5 flex items-center justify-between text-left font-bold text-xs text-slate-900 hover:bg-slate-50 transition-colors border-b border-slate-100"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <SlidersHorizontal className="w-4 h-4 text-amber-500" />
+                                                <SlidersHorizontal className="w-4 h-4 text-[#7C3AED]" />
                                                 <span>3. Schedule Planning Parameters</span>
                                             </div>
                                             {openSections.planning ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -1271,7 +1271,7 @@ export default function AcademicPeriodsIndex({
                                                                                 active_weekdays: next,
                                                                             });
                                                                         }}
-                                                                        className="rounded border-slate-300 data-[state=checked]:bg-[#f59e0b] data-[state=checked]:border-[#f59e0b] data-[state=checked]:text-slate-950"
+                                                                        className="rounded border-slate-300 data-[state=checked]:bg-[#5B21B6] data-[state=checked]:border-[#5B21B6] data-[state=checked]:text-white"
                                                                     />
                                                                     <span>{day}</span>
                                                                 </label>
@@ -1326,7 +1326,7 @@ export default function AcademicPeriodsIndex({
                                                                 allow_saturday: Boolean(c),
                                                             });
                                                         }}
-                                                        className="rounded border-slate-300 data-[state=checked]:bg-[#f59e0b] data-[state=checked]:border-[#f59e0b] data-[state=checked]:text-slate-950"
+                                                        className="rounded border-slate-300 data-[state=checked]:bg-[#5B21B6] data-[state=checked]:border-[#5B21B6] data-[state=checked]:text-white"
                                                     />
                                                 </div>
 
@@ -1357,7 +1357,7 @@ export default function AcademicPeriodsIndex({
                                                                 room_availability_ruleset: e.target.value,
                                                             });
                                                         }}
-                                                        className="w-full h-9.5 rounded-xl border border-slate-200 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#f59e0b]"
+                                                        className="w-full h-9.5 rounded-xl border border-slate-200 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
                                                     >
                                                         <option value="Standard College Matrix (Building A & C)">Standard College Matrix (Building A & C)</option>
                                                         <option value="Restricted Laboratory Priority Matrix">Restricted Laboratory Priority Matrix</option>
@@ -1376,7 +1376,7 @@ export default function AcademicPeriodsIndex({
                                             className="w-full px-5 py-3.5 flex items-center justify-between text-left font-bold text-xs text-slate-900 hover:bg-slate-50 transition-colors border-b border-slate-100"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <Copy className="w-4 h-4 text-amber-500" />
+                                                <Copy className="w-4 h-4 text-[#7C3AED]" />
                                                 <span>4. Copy Previous Setup (Optional)</span>
                                             </div>
                                             {openSections.copySetup ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -1397,7 +1397,7 @@ export default function AcademicPeriodsIndex({
                                                                 enabled: Boolean(c),
                                                             });
                                                         }}
-                                                        className="rounded border-slate-300 data-[state=checked]:bg-[#f59e0b] data-[state=checked]:border-[#f59e0b] data-[state=checked]:text-slate-950"
+                                                        className="rounded border-slate-300 data-[state=checked]:bg-[#5B21B6] data-[state=checked]:border-[#5B21B6] data-[state=checked]:text-white"
                                                     />
                                                 </div>
 
@@ -1413,7 +1413,7 @@ export default function AcademicPeriodsIndex({
                                                                         source_period_id: Number(e.target.value),
                                                                     });
                                                                 }}
-                                                                className="w-full h-9.5 rounded-xl border border-slate-200 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#f59e0b]"
+                                                                className="w-full h-9.5 rounded-xl border border-slate-200 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
                                                             >
                                                                 {periods.map((p) => (
                                                                     <option key={p.id} value={p.id}>
@@ -1489,7 +1489,7 @@ export default function AcademicPeriodsIndex({
                                             type="button"
                                             onClick={handleCreateAndActivate}
                                             disabled={processing}
-                                            className="h-10 px-4 bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+                                            className="h-10 px-4 bg-[#5B21B6] hover:bg-[#4C1D95] text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
                                         >
                                             Create &amp; Activate
                                         </Button>
@@ -1507,16 +1507,16 @@ export default function AcademicPeriodsIndex({
                     <DialogContent className="sm:max-w-[500px] rounded-2xl p-6">
                         <DialogHeader>
                             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <ShieldAlert className="w-5 h-5 text-amber-500" />
+                                <ShieldAlert className="w-5 h-5 text-[#7C3AED]" />
                                 Confirm Academic Period Activation
                             </DialogTitle>
                         </DialogHeader>
 
                         {activatingPeriod && (
                             <div className="space-y-4 text-xs mt-2">
-                                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                                <div className="p-4 rounded-xl bg-[#EDE9FE]/70 border border-[#A78BFA]/50">
                                     <p className="font-semibold text-slate-800 text-xs leading-relaxed">
-                                        You are about to activate <span className="font-bold text-slate-950">{activatingPeriod.academic_year} — {activatingPeriod.semester}</span> as the central current academic period.
+                                        You are about to activate <span className="font-bold text-[#4C1D95]">{activatingPeriod.academic_year} — {activatingPeriod.semester}</span> as the central current academic period.
                                     </p>
                                     <p className="text-[11px] text-slate-600 mt-2">
                                         This enforces the single-current-period rule. All dependent modules (Requirements, Submissions, Faculty Load, Compliance, Schedules, TV Displays, Reports) will automatically switch to this new period context.
@@ -1556,7 +1556,7 @@ export default function AcademicPeriodsIndex({
                                     </Button>
                                     <Button
                                         onClick={confirmActivationAndSubmit}
-                                        className="bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold text-xs rounded-xl cursor-pointer"
+                                        className="bg-[#5B21B6] hover:bg-[#4C1D95] text-white font-bold text-xs rounded-xl cursor-pointer"
                                     >
                                         Confirm &amp; Activate
                                     </Button>
@@ -1573,16 +1573,16 @@ export default function AcademicPeriodsIndex({
                     <DialogContent className="sm:max-w-[550px] rounded-2xl p-6">
                         <DialogHeader>
                             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <CalendarDays className="w-5 h-5 text-amber-500" />
+                                <CalendarDays className="w-5 h-5 text-[#7C3AED]" />
                                 Academic Period Details
                             </DialogTitle>
                         </DialogHeader>
 
                         {viewingPeriod && (
                             <div className="space-y-4 text-xs mt-2">
-                                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between">
+                                <div className="p-4 rounded-xl bg-[#EDE9FE]/70 border border-[#A78BFA]/50 flex items-center justify-between">
                                     <div>
-                                        <span className="text-[10px] text-amber-800 font-bold uppercase tracking-wider block">
+                                        <span className="text-[10px] text-[#5B21B6] font-bold uppercase tracking-wider block">
                                             Academic Period
                                         </span>
                                         <h3 className="text-lg font-black text-slate-900 mt-0.5">
@@ -1595,7 +1595,7 @@ export default function AcademicPeriodsIndex({
                                     <div className="text-right">
                                         {renderStatusBadge(viewingPeriod.status)}
                                         {viewingPeriod.is_current && (
-                                            <span className="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900">
+                                            <span className="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold bg-[#5B21B6] text-white">
                                                 Active Current
                                             </span>
                                         )}
@@ -1644,7 +1644,7 @@ export default function AcademicPeriodsIndex({
                                     </Button>
                                     <Button
                                         onClick={() => setViewingPeriod(null)}
-                                        className="bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold text-xs rounded-xl"
+                                        className="bg-[#5B21B6] hover:bg-[#4C1D95] text-white font-bold text-xs rounded-xl"
                                     >
                                         Close
                                     </Button>
@@ -1661,7 +1661,7 @@ export default function AcademicPeriodsIndex({
                     <DialogContent className="sm:max-w-[480px] rounded-2xl p-6">
                         <DialogHeader>
                             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <Copy className="w-5 h-5 text-amber-500" />
+                                <Copy className="w-5 h-5 text-[#7C3AED]" />
                                 Copy Previous Period Setup
                             </DialogTitle>
                         </DialogHeader>
@@ -1672,7 +1672,7 @@ export default function AcademicPeriodsIndex({
                                 <select
                                     value={duplicateForm.data.source_id}
                                     onChange={(e) => duplicateForm.setData('source_id', Number(e.target.value))}
-                                    className="w-full h-9.5 rounded-xl border border-slate-200 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#f59e0b]"
+                                    className="w-full h-9.5 rounded-xl border border-slate-200 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
                                 >
                                     {periods.map((p) => (
                                         <option key={p.id} value={p.id}>
@@ -1721,7 +1721,7 @@ export default function AcademicPeriodsIndex({
                                 </Button>
                                 <Button
                                     type="submit"
-                                    className="bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold text-xs rounded-xl"
+                                    className="bg-[#5B21B6] hover:bg-[#4C1D95] text-white font-bold text-xs rounded-xl"
                                 >
                                     Duplicate Setup
                                 </Button>

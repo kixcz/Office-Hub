@@ -78,7 +78,7 @@ export default function PolicyTemplatesIndex({ policies = [] }: Props) {
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/20">
                                 Precedence: Institution Default → Entity Override (if allowed) → College Override (if allowed)
                             </span>
                         </div>
@@ -92,7 +92,7 @@ export default function PolicyTemplatesIndex({ policies = [] }: Props) {
 
                     <Button
                         onClick={() => setIsCreateOpen(true)}
-                        className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs rounded-xl shrink-0"
+                        className="bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs rounded-xl shrink-0"
                     >
                         <Plus className="w-4 h-4 mr-1.5" />
                         Create Policy Template
@@ -112,7 +112,7 @@ export default function PolicyTemplatesIndex({ policies = [] }: Props) {
                                     <div className="flex items-start justify-between gap-2">
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                                <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/20">
                                                     {pol.code}
                                                 </span>
                                                 <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-muted text-foreground">
@@ -301,7 +301,7 @@ export default function PolicyTemplatesIndex({ policies = [] }: Props) {
                                     <Button
                                         type="submit"
                                         disabled={processing}
-                                        className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs"
+                                        className="bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs"
                                     >
                                         Publish Policy Template
                                     </Button>

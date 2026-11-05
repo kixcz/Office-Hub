@@ -1,8 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     Award,
+    AlertTriangle,
     BookOpen,
     Building2,
     Calendar,
@@ -263,6 +264,12 @@ export default function FacultyProfileShow({
     locator_slips = [],
     user_permissions,
 }: Props) {
+    const { active_branding } = usePage<SharedData>().props;
+    const collegeName = active_branding?.scope_name || 'COLLEGE OF INFORMATION AND DIGITAL SCIENCES';
+    const institutionName = active_branding?.institution_name || 'DAVAO DEL SUR STATE COLLEGE';
+    const collegeLogoUrl = active_branding?.logo_url || '/CIDS_Logo.jpg';
+    const institutionLogoUrl = active_branding?.institution_logo_url || '/DSSC.jpg';
+
     const [activeTab, setActiveTab] = useState<TabType>('overview');
 
     // Report Generator Modal State
@@ -527,7 +534,7 @@ export default function FacultyProfileShow({
 
                             <Button
                                 onClick={() => setIsPrintModalOpen(true)}
-                                className="gap-1.5 h-9 text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs cursor-pointer"
+                                className="gap-1.5 h-9 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs cursor-pointer"
                             >
                                 <Printer className="w-3.5 h-3.5" />
                                 <span>Print / Export PDF</span>
@@ -1766,28 +1773,42 @@ export default function FacultyProfileShow({
             {/* 5. PRINTABLE REPORT VIEW (Visible only during window.print())             */}
             {/* ========================================================================= */}
             <div className="print-only p-8 text-black bg-white max-w-4xl mx-auto">
-                {/* Official Institutional Letterhead */}
+                {/* Official Institutional Letterhead with Dual Logos */}
                 <div className="flex items-center justify-between pb-4 border-b-2 border-black">
                     <div className="flex items-center gap-4">
                         <img
-                            src="/CIDS_Logo.jpg"
-                            alt="CIDS Logo"
-                            className="w-16 h-16 object-contain"
+                            src={institutionLogoUrl}
+                            alt={institutionName}
+                            className="w-14 h-14 object-contain rounded-full"
+                            onError={(e: any) => {
+                                e.currentTarget.src = '/DSSC.jpg';
+                            }}
                         />
                         <div>
                             <p className="text-[11px] font-bold tracking-wider uppercase text-slate-700">Republic of the Philippines</p>
-                            <h1 className="text-lg font-black tracking-tight text-black leading-tight">
-                                COLLEGE OF INFORMATION AND DIGITAL SCIENCES
+                            <h2 className="text-xs font-black uppercase text-slate-900">{institutionName}</h2>
+                            <h1 className="text-base font-black tracking-tight text-black leading-tight">
+                                {collegeName}
                             </h1>
-                            <p className="text-xs font-semibold text-slate-800">
-                                Office of the Dean · CIDS OfficeHub Academic Operations
+                            <p className="text-[11px] font-semibold text-slate-800">
+                                Office of the Dean · Academic Operations
                             </p>
                         </div>
                     </div>
-                    <div className="text-right text-[10px] font-mono">
-                        <p className="font-bold">CONTROL REF: CIDS-ISO-2026-FPR-0824</p>
-                        <p>ACADEMIC PERIOD: {current_period.label}</p>
-                        <p>GENERATED: {new Date().toLocaleString()}</p>
+                    <div className="flex items-center gap-4">
+                        <div className="text-right text-[10px] font-mono">
+                            <p className="font-bold">CONTROL REF: ISO-{faculty.faculty_id || 'FPR'}-{new Date().getFullYear()}</p>
+                            <p>ACADEMIC PERIOD: {current_period.label}</p>
+                            <p>GENERATED: {new Date().toLocaleString()}</p>
+                        </div>
+                        <img
+                            src={collegeLogoUrl}
+                            alt={collegeName}
+                            className="w-14 h-14 object-contain rounded-full"
+                            onError={(e: any) => {
+                                e.currentTarget.src = '/CIDS_Logo.jpg';
+                            }}
+                        />
                     </div>
                 </div>
 

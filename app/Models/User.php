@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -25,6 +26,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'account_status',
+        'default_role_assignment_id',
         'mfa_required',
         'force_password_reset',
         'last_login_at',
@@ -68,6 +70,11 @@ class User extends Authenticatable
         return $this->hasMany(ScopedRoleAssignment::class);
     }
 
+    public function defaultRoleAssignment(): BelongsTo
+    {
+        return $this->belongsTo(ScopedRoleAssignment::class, 'default_role_assignment_id');
+    }
+
     /**
      * The roles that belong to the user.
      */
@@ -86,7 +93,18 @@ class User extends Authenticatable
             $this->load('roles');
         }
 
-        return $this->roles->contains('name', $role);
+        if ($this->roles->contains('name', $role)) {
+            return true;
+        }
+
+        if (session('active_role_name') === $role) {
+            return true;
+        }
+
+        return $this->scopedRoleAssignments()
+            ->where('status', 'Active')
+            ->whereHas('role', fn ($q) => $q->where('name', $role))
+            ->exists();
     }
 
     /**
@@ -100,7 +118,19 @@ class User extends Authenticatable
             $this->load('roles');
         }
 
-        return $this->roles->whereIn('name', $roles)->isNotEmpty();
+        if ($this->roles->whereIn('name', $roles)->isNotEmpty()) {
+            return true;
+        }
+
+        $activeRoleName = session('active_role_name');
+        if ($activeRoleName && in_array($activeRoleName, $roles, true)) {
+            return true;
+        }
+
+        return $this->scopedRoleAssignments()
+            ->where('status', 'Active')
+            ->whereHas('role', fn ($q) => $q->whereIn('name', $roles))
+            ->exists();
     }
 
     /**
@@ -194,5 +224,55 @@ class User extends Authenticatable
             'Institution TV / Communications Manager',
             'Dean',
         ]);
+    }
+
+    /**
+     * Resolve the active College associated with this user (for faculty, deans, program heads, or college admins).
+     */
+    public function resolveActiveCollege(): ?College
+    {
+        if ($this->isInstitutionSuperAdmin()) {
+            return null;
+        }
+
+        // 1. Check Faculty -> Program -> College
+        if ($this->relationLoaded('faculty') && $this->faculty?->program?->college) {
+            return $this->faculty->program->college;
+        }
+
+        $faculty = $this->faculty()->with('program.college')->first();
+        if ($faculty?->program?->college) {
+            return $faculty->program->college;
+        }
+
+        // 2. Check active ScopedRoleAssignment with college_id or program_id
+        $scopedAssignment = $this->scopedRoleAssignments()
+            ->with(['college', 'program.college'])
+            ->where('status', 'Active')
+            ->where(function ($q) {
+                $q->whereNotNull('college_id')->orWhereNotNull('program_id');
+            })
+            ->latest('id')
+            ->first();
+
+        if ($scopedAssignment?->college) {
+            return $scopedAssignment->college;
+        }
+
+        if ($scopedAssignment?->program?->college) {
+            return $scopedAssignment->program->college;
+        }
+
+        // 3. Fallback by email hint (e.g., dean.cas@dssc.edu.ph, dean.cids@dssc.edu.ph)
+        if ($this->email) {
+            $byEmail = College::where('contact_email', $this->email)->first();
+            if ($byEmail && $byEmail->type !== 'Entity') {
+                return $byEmail;
+            }
+        }
+
+        // 4. Default to CIDS for general operational/faculty accounts if not Institution Super Admin
+        return College::where('code', 'CIDS')->first()
+            ?? College::where('type', '!=', 'Entity')->first();
     }
 }

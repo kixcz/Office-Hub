@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { BreadcrumbItem, SharedData } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -69,6 +69,12 @@ export default function GenerateFacultyPerformanceReport({
     academic_year = '2026 - 2027',
     semester = '1st Semester',
 }: Props) {
+    const { active_branding } = usePage<SharedData>().props;
+    const collegeName = active_branding?.scope_name || 'COLLEGE OF INFORMATION AND DIGITAL SCIENCES';
+    const institutionName = active_branding?.institution_name || 'DAVAO DEL SUR STATE COLLEGE';
+    const collegeLogoUrl = active_branding?.logo_url || '/CIDS_Logo.jpg';
+    const institutionLogoUrl = active_branding?.institution_logo_url || '/DSSC.jpg';
+
     // 1. Report Type: 'individual' | 'program' | 'consolidated' | 'top'
     const [reportType, setReportType] = useState<'individual' | 'program' | 'consolidated' | 'top'>('consolidated');
 
@@ -228,7 +234,7 @@ export default function GenerateFacultyPerformanceReport({
                         {/* STEP 1: REPORT TYPE */}
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
-                                <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center">
+                                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground font-black text-xs flex items-center justify-center">
                                     1
                                 </span>
                                 <h3 className="font-bold text-sm text-foreground">
@@ -247,21 +253,21 @@ export default function GenerateFacultyPerformanceReport({
                                     className={cn(
                                         "p-4 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col gap-2",
                                         reportType === 'individual'
-                                            ? "border-amber-400 bg-amber-500/5 ring-1 ring-amber-400"
-                                            : "border-border bg-card hover:border-amber-400/50"
+                                            ? "border-primary bg-primary/10 ring-1 ring-primary"
+                                            : "border-border bg-card hover:border-primary/50"
                                     )}
                                 >
                                     <div className="flex items-center justify-between w-full">
-                                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                                        <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                                             <User className="w-4 h-4" />
                                         </div>
                                         <div className={cn(
                                             "w-4 h-4 rounded-full border flex items-center justify-center",
                                             reportType === 'individual'
-                                                ? "border-amber-500 bg-amber-500"
+                                                ? "border-primary bg-primary"
                                                 : "border-muted-foreground/30"
                                         )}>
-                                            {reportType === 'individual' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                            {reportType === 'individual' && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                                         </div>
                                     </div>
                                     <div>
@@ -281,8 +287,8 @@ export default function GenerateFacultyPerformanceReport({
                                     className={cn(
                                         "p-4 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col gap-2",
                                         reportType === 'program'
-                                            ? "border-amber-400 bg-amber-500/5 ring-1 ring-amber-400"
-                                            : "border-border bg-card hover:border-amber-400/50"
+                                            ? "border-primary bg-primary/10 ring-1 ring-primary"
+                                            : "border-border bg-card hover:border-primary/50"
                                     )}
                                 >
                                     <div className="flex items-center justify-between w-full">
@@ -292,10 +298,10 @@ export default function GenerateFacultyPerformanceReport({
                                         <div className={cn(
                                             "w-4 h-4 rounded-full border flex items-center justify-center",
                                             reportType === 'program'
-                                                ? "border-amber-500 bg-amber-500"
+                                                ? "border-primary bg-primary"
                                                 : "border-muted-foreground/30"
                                         )}>
-                                            {reportType === 'program' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                            {reportType === 'program' && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                                         </div>
                                     </div>
                                     <div>
@@ -315,8 +321,8 @@ export default function GenerateFacultyPerformanceReport({
                                     className={cn(
                                         "p-4 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col gap-2",
                                         reportType === 'consolidated'
-                                            ? "border-amber-400 bg-amber-500/5 ring-1 ring-amber-400"
-                                            : "border-border bg-card hover:border-amber-400/50"
+                                            ? "border-primary bg-primary/10 ring-1 ring-primary"
+                                            : "border-border bg-card hover:border-primary/50"
                                     )}
                                 >
                                     <div className="flex items-center justify-between w-full">
@@ -326,10 +332,10 @@ export default function GenerateFacultyPerformanceReport({
                                         <div className={cn(
                                             "w-4 h-4 rounded-full border flex items-center justify-center",
                                             reportType === 'consolidated'
-                                                ? "border-amber-500 bg-amber-500"
+                                                ? "border-primary bg-primary"
                                                 : "border-muted-foreground/30"
                                         )}>
-                                            {reportType === 'consolidated' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                            {reportType === 'consolidated' && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                                         </div>
                                     </div>
                                     <div>
@@ -349,8 +355,8 @@ export default function GenerateFacultyPerformanceReport({
                                     className={cn(
                                         "p-4 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col gap-2",
                                         reportType === 'top'
-                                            ? "border-amber-400 bg-amber-500/5 ring-1 ring-amber-400"
-                                            : "border-border bg-card hover:border-amber-400/50"
+                                            ? "border-primary bg-primary/10 ring-1 ring-primary"
+                                            : "border-border bg-card hover:border-primary/50"
                                     )}
                                 >
                                     <div className="flex items-center justify-between w-full">
@@ -360,10 +366,10 @@ export default function GenerateFacultyPerformanceReport({
                                         <div className={cn(
                                             "w-4 h-4 rounded-full border flex items-center justify-center",
                                             reportType === 'top'
-                                                ? "border-amber-500 bg-amber-500"
+                                                ? "border-primary bg-primary"
                                                 : "border-muted-foreground/30"
                                         )}>
-                                            {reportType === 'top' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                            {reportType === 'top' && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                                         </div>
                                     </div>
                                     <div>
@@ -381,7 +387,7 @@ export default function GenerateFacultyPerformanceReport({
                         {/* STEP 2: REPORTING PERIOD */}
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
-                                <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center">
+                                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground font-black text-xs flex items-center justify-center">
                                     2
                                 </span>
                                 <h3 className="font-bold text-sm text-foreground">
@@ -441,7 +447,7 @@ export default function GenerateFacultyPerformanceReport({
                         {/* STEP 3: FILTERS */}
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
-                                <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center">
+                                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground font-black text-xs flex items-center justify-center">
                                     3
                                 </span>
                                 <h3 className="font-bold text-sm text-foreground">
@@ -508,7 +514,7 @@ export default function GenerateFacultyPerformanceReport({
                         {/* STEP 4: SIGNATORIES */}
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
-                                <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center">
+                                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground font-black text-xs flex items-center justify-center">
                                     4
                                 </span>
                                 <h3 className="font-bold text-sm text-foreground">
@@ -598,7 +604,7 @@ export default function GenerateFacultyPerformanceReport({
                         {/* STEP 5: ADDITIONAL OPTIONS */}
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
-                                <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center">
+                                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground font-black text-xs flex items-center justify-center">
                                     5
                                 </span>
                                 <h3 className="font-bold text-sm text-foreground">
@@ -614,7 +620,7 @@ export default function GenerateFacultyPerformanceReport({
                                     <Checkbox
                                         checked={options.includeRankings}
                                         onCheckedChange={(checked) => setOptions({ ...options, includeRankings: Boolean(checked) })}
-                                        className="border-muted-foreground data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                                        className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                     />
                                     <span className="text-xs font-medium text-foreground">
                                         Include rankings (for Top Performers report)
@@ -625,7 +631,7 @@ export default function GenerateFacultyPerformanceReport({
                                     <Checkbox
                                         checked={options.includeCharts}
                                         onCheckedChange={(checked) => setOptions({ ...options, includeCharts: Boolean(checked) })}
-                                        className="border-muted-foreground data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                                        className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                     />
                                     <span className="text-xs font-medium text-foreground">
                                         Include charts and visualizations
@@ -636,7 +642,7 @@ export default function GenerateFacultyPerformanceReport({
                                     <Checkbox
                                         checked={options.includeRemarks}
                                         onCheckedChange={(checked) => setOptions({ ...options, includeRemarks: Boolean(checked) })}
-                                        className="border-muted-foreground data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                                        className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                     />
                                     <span className="text-xs font-medium text-foreground">
                                         Include remarks
@@ -647,7 +653,7 @@ export default function GenerateFacultyPerformanceReport({
                                     <Checkbox
                                         checked={options.includeDetailedRecords}
                                         onCheckedChange={(checked) => setOptions({ ...options, includeDetailedRecords: Boolean(checked) })}
-                                        className="border-muted-foreground data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                                        className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                     />
                                     <span className="text-xs font-medium text-foreground">
                                         Include detailed faculty records (per requirement)
@@ -669,9 +675,9 @@ export default function GenerateFacultyPerformanceReport({
 
                             <Button
                                 onClick={handlePrint}
-                                className="flex-1 h-11 text-xs font-bold rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 flex items-center justify-center gap-2 cursor-pointer shadow-xs font-black"
+                                className="flex-1 h-11 text-xs font-bold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2 cursor-pointer shadow-xs font-black"
                             >
-                                <Printer className="w-4 h-4 text-slate-950" />
+                                <Printer className="w-4 h-4" />
                                 <span>Generate & Print Report</span>
                             </Button>
                         </div>
@@ -741,33 +747,42 @@ export default function GenerateFacultyPerformanceReport({
                             >
                                 {/* DOCUMENT CONTENT */}
                                 <div className="space-y-6">
-                                    {/* 1. OFFICIAL DSSC HEADER */}
-                                    <div className="flex flex-col items-center text-center space-y-1">
-                                        {/* DSSC Logo */}
-                                        <div className="w-16 h-16 rounded-full flex items-center justify-center p-1 mb-1">
+                                    {/* 1. OFFICIAL DSSC HEADER WITH DUAL LOGOS */}
+                                    <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                                        <div className="w-16 h-16 shrink-0 flex items-center justify-center">
                                             <img
-                                                src="/dssc-logo.png"
-                                                alt="DSSC Logo"
-                                                className="w-full h-full object-contain"
+                                                src={institutionLogoUrl}
+                                                alt={institutionName}
+                                                className="w-14 h-14 object-contain rounded-full bg-white p-0.5 shadow-2xs"
                                                 onError={(e: any) => {
-                                                    // Fallback image if logo is unavailable
-                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.src = '/DSSC.jpg';
                                                 }}
                                             />
                                         </div>
-
-                                        <p className="text-[11px] uppercase tracking-wider text-slate-600 font-medium">
-                                            Republic of the Philippines
-                                        </p>
-                                        <h2 className="text-base font-black tracking-tight text-slate-900 uppercase">
-                                            DAVAO DEL SUR STATE COLLEGE
-                                        </h2>
-                                        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                                            COLLEGE OF INFORMATION AND DIGITAL SCIENCES
-                                        </h3>
-                                        <p className="text-[10px] text-slate-500">
-                                            Brgy. Matti, Digos City, Davao del Sur 8002
-                                        </p>
+                                        <div className="flex-1 text-center px-4 space-y-0.5">
+                                            <p className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold">
+                                                Republic of the Philippines
+                                            </p>
+                                            <h2 className="text-sm font-black tracking-tight text-slate-900 uppercase">
+                                                {institutionName}
+                                            </h2>
+                                            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                                                {collegeName}
+                                            </h3>
+                                            <p className="text-[9.5px] text-slate-500 font-medium">
+                                                Brgy. Matti, Digos City, Davao del Sur 8002
+                                            </p>
+                                        </div>
+                                        <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+                                            <img
+                                                src={collegeLogoUrl}
+                                                alt={collegeName}
+                                                className="w-14 h-14 object-contain rounded-full bg-white p-0.5 shadow-2xs"
+                                                onError={(e: any) => {
+                                                    e.currentTarget.src = '/CIDS_Logo.jpg';
+                                                }}
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* 2. REPORT TITLE & BANNER */}
@@ -810,7 +825,7 @@ export default function GenerateFacultyPerformanceReport({
                                     <div className="border border-slate-300 rounded overflow-hidden">
                                         <table className="w-full text-[10px] text-slate-800 border-collapse">
                                             <thead>
-                                                <tr className="bg-amber-100/70 border-b border-slate-300 font-bold text-slate-900">
+                                                <tr className="bg-slate-100/80 border-b border-slate-300 font-bold text-slate-900">
                                                     <th className="py-1.5 px-2 text-left border-r border-slate-300 w-8">No.</th>
                                                     <th className="py-1.5 px-3 text-left border-r border-slate-300">Faculty Name</th>
                                                     <th className="py-1.5 px-2 text-center border-r border-slate-300">Program</th>
@@ -864,7 +879,7 @@ export default function GenerateFacultyPerformanceReport({
 
                                     {/* 5. SUMMARY ROW CARD (Matches Mockup) */}
                                     <div className="border border-slate-300 rounded overflow-hidden">
-                                        <div className="bg-amber-100/70 border-b border-slate-300 py-1 px-3 text-center font-bold text-[10px] text-slate-900">
+                                        <div className="bg-slate-100/80 border-b border-slate-300 py-1 px-3 text-center font-bold text-[10px] text-slate-900">
                                             Summary
                                         </div>
                                         <div className="grid grid-cols-8 divide-x divide-slate-200 text-center text-[10px]">

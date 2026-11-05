@@ -216,7 +216,7 @@ export default function InstitutionAcademicGovernance({
                                                             {activeCurr.version_name} ({activeCurr.effective_year})
                                                         </span>
                                                     ) : (
-                                                        <span className="text-amber-600">No Active Curriculum</span>
+                                                        <span className="text-[#5B21B6]">No Active Curriculum</span>
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3 font-semibold">{prog.courses_count}</td>
@@ -398,7 +398,7 @@ export default function InstitutionAcademicGovernance({
                                                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                                                     : hasConflict
                                                       ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-[#A78BFA]'
                                             }`}
                                         >
                                             {isPublished ? (

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { BreadcrumbItem, SharedData } from '@/types';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -315,6 +315,12 @@ export default function GenerateReportPage({
     semester = '1st Semester',
     academic_period = null,
 }: Props) {
+    const { active_branding } = usePage<SharedData>().props;
+    const collegeName = active_branding?.scope_name || 'College of Information and Digital Sciences';
+    const institutionName = active_branding?.institution_name || 'DAVAO DEL SUR STATE COLLEGE';
+    const collegeLogoUrl = active_branding?.logo_url || '/CIDS_Logo.jpg';
+    const institutionLogoUrl = active_branding?.institution_logo_url || '/DSSC.jpg';
+
     // 1. Report Format
     const [reportFormat, setReportFormat] = useState<'weekly' | 'monthly' | 'individual' | 'consolidated'>('weekly');
 
@@ -1430,81 +1436,85 @@ export default function GenerateReportPage({
             const margin = 12.0; // 12mm consistent margin
             let currentY = margin;
 
-            // Load CIDS Logo as Data URL
-            let logoDataUrl: string | null = null;
-            try {
-                const img = new Image();
-                img.crossOrigin = 'Anonymous';
-                img.src = '/CIDS_Logo.jpg';
-                await new Promise((resolve) => {
-                    img.onload = () => resolve(true);
-                    img.onerror = () => resolve(false);
-                });
-                if (img.width && img.height) {
-                    const tempCanvas = document.createElement('canvas');
-                    const size = Math.min(img.width, img.height);
-                    tempCanvas.width = size;
-                    tempCanvas.height = size;
-                    const ctx = tempCanvas.getContext('2d');
-                    if (ctx) {
-                        // Fill white background first
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, size, size);
-
-                        // Clip circular emblem
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, true);
-                        ctx.closePath();
-                        ctx.clip();
-
-                        // Draw source image centered
-                        const offsetX = (img.width - size) / 2;
-                        const offsetY = (img.height - size) / 2;
-                        ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, size, size);
-                        ctx.restore();
-
-                        // Export as PNG so white/circular background is cleanly maintained
-                        logoDataUrl = tempCanvas.toDataURL('image/png');
+            // Helper to load and round an image as Data URL
+            const loadCircularLogoDataUrl = async (srcUrl: string): Promise<string | null> => {
+                try {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.src = srcUrl;
+                    await new Promise((resolve) => {
+                        img.onload = () => resolve(true);
+                        img.onerror = () => resolve(false);
+                    });
+                    if (img.width && img.height) {
+                        const tempCanvas = document.createElement('canvas');
+                        const size = Math.min(img.width, img.height);
+                        tempCanvas.width = size;
+                        tempCanvas.height = size;
+                        const ctx = tempCanvas.getContext('2d');
+                        if (ctx) {
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, size, size);
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, true);
+                            ctx.closePath();
+                            ctx.clip();
+                            const offsetX = (img.width - size) / 2;
+                            const offsetY = (img.height - size) / 2;
+                            ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, size, size);
+                            ctx.restore();
+                            return tempCanvas.toDataURL('image/png');
+                        }
                     }
+                } catch (err) {
+                    console.warn('Could not load logo for PDF header:', err);
                 }
-            } catch (err) {
-                console.warn('Could not load logo for PDF header:', err);
-            }
+                return null;
+            };
 
-            // Function to render official DSSC header
+            const [institutionLogoData, collegeLogoData] = await Promise.all([
+                loadCircularLogoDataUrl(institutionLogoUrl),
+                loadCircularLogoDataUrl(collegeLogoUrl),
+            ]);
+
+            // Function to render official DSSC header with dual logos (Institution + College)
             const renderDocHeader = (yPos: number) => {
                 let y = yPos;
-                if (logoDataUrl) {
-                    const logoSize = 18;
-                    const logoX = (pageWidth - logoSize) / 2;
-                    doc.addImage(logoDataUrl, 'PNG', logoX, y, logoSize, logoSize);
-                    y += logoSize + 2;
+                const headerLogoSize = 17;
+
+                // Institution logo on left
+                if (institutionLogoData) {
+                    doc.addImage(institutionLogoData, 'PNG', margin + 4, y, headerLogoSize, headerLogoSize);
                 }
-
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8.5);
-                doc.setTextColor(80, 80, 80);
-                doc.text('REPUBLIC OF THE PHILIPPINES', pageWidth / 2, y, { align: 'center' });
-                y += 4;
-
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(13);
-                doc.setTextColor(15, 23, 42);
-                doc.text('DAVAO DEL SUR STATE COLLEGE', pageWidth / 2, y, { align: 'center' });
-                y += 5;
-
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(10);
-                doc.setTextColor(30, 41, 59);
-                doc.text('COLLEGE OF INFORMATION AND DIGITAL SCIENCES', pageWidth / 2, y, { align: 'center' });
-                y += 4;
+                // College logo on right
+                if (collegeLogoData) {
+                    doc.addImage(collegeLogoData, 'PNG', pageWidth - margin - headerLogoSize - 4, y, headerLogoSize, headerLogoSize);
+                }
 
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(8);
-                doc.setTextColor(100, 116, 139);
-                doc.text('Brgy. Matti, Digos City, Davao del Sur', pageWidth / 2, y, { align: 'center' });
+                doc.setTextColor(80, 80, 80);
+                doc.text('REPUBLIC OF THE PHILIPPINES', pageWidth / 2, y + 2, { align: 'center' });
                 y += 6;
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.setTextColor(15, 23, 42);
+                doc.text(institutionName.toUpperCase(), pageWidth / 2, y + 1, { align: 'center' });
+                y += 5;
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9.5);
+                doc.setTextColor(30, 41, 59);
+                doc.text(collegeName.toUpperCase(), pageWidth / 2, y + 1, { align: 'center' });
+                y += 4;
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(100, 116, 139);
+                doc.text('Brgy. Matti, Digos City, Davao del Sur', pageWidth / 2, y + 1, { align: 'center' });
+                y += 8;
 
                 // Report Title Box
                 doc.setDrawColor(203, 213, 225);
@@ -1976,7 +1986,7 @@ export default function GenerateReportPage({
                 {/* 1. TOP HEADER */}
                 <div className="no-print flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-sm ring-2 ring-amber-400/30">
+                        <div className="w-11 h-11 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-black shadow-sm ring-2 ring-primary/30">
                             <FileText className="w-5 h-5 stroke-[2.5]" />
                         </div>
                         <div>
@@ -1994,7 +2004,7 @@ export default function GenerateReportPage({
                             <Button
                                 size="sm"
                                 onClick={handleToggleMaximize}
-                                className="h-8 px-3 text-xs font-bold rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 flex items-center gap-1.5 shadow-xs cursor-pointer"
+                                className="h-8 px-3 text-xs font-bold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-1.5 shadow-xs cursor-pointer"
                             >
                                 <Minimize2 className="w-3.5 h-3.5 stroke-[2.5]" />
                                 <span>Exit Fullscreen</span>
@@ -2002,7 +2012,7 @@ export default function GenerateReportPage({
                         )}
                         <Link
                             href="/faculty-attendance"
-                            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 transition-colors cursor-pointer shadow-xs"
+                            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-colors cursor-pointer shadow-xs"
                         >
                             <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
                             <span>Back to Attendance</span>
@@ -2021,7 +2031,7 @@ export default function GenerateReportPage({
                             {/* STEP 1: REPORT FORMAT */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px] flex items-center justify-center shadow-xs">
+                                    <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground font-black text-[11px] flex items-center justify-center shadow-xs">
                                         1
                                     </span>
                                     <h3 className="text-xs font-bold text-foreground">
@@ -2040,24 +2050,24 @@ export default function GenerateReportPage({
                                          className={cn(
                                              "p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between min-h-[78px]",
                                              reportFormat === 'weekly'
-                                                 ? "border-amber-400 bg-amber-400/10 ring-2 ring-amber-400/40"
-                                                 : "border-border bg-card hover:border-amber-400/50"
+                                                 ? "border-primary bg-primary/10 ring-2 ring-primary/40"
+                                                 : "border-border bg-card hover:border-primary/50"
                                          )}
                                      >
                                          <div className="flex items-start justify-between w-full">
                                              <div className={cn(
                                                  "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                                                 reportFormat === 'weekly' ? "bg-amber-400 text-slate-950 font-bold" : "bg-muted text-foreground"
+                                                 reportFormat === 'weekly' ? "bg-primary text-primary-foreground font-bold" : "bg-muted text-foreground"
                                              )}>
                                                  <CalendarDays className="w-4 h-4" />
                                              </div>
                                              <div className={cn(
                                                  "w-4 h-4 rounded-full border flex items-center justify-center mt-0.5",
                                                  reportFormat === 'weekly'
-                                                     ? "border-amber-500 bg-amber-400"
+                                                     ? "border-primary bg-primary"
                                                      : "border-muted-foreground/30"
                                              )}>
-                                                 {reportFormat === 'weekly' && <div className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                                                 {reportFormat === 'weekly' && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                                              </div>
                                          </div>
                                          <div className="mt-2">
@@ -2077,24 +2087,24 @@ export default function GenerateReportPage({
                                          className={cn(
                                              "p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between min-h-[78px]",
                                              reportFormat === 'monthly'
-                                                 ? "border-amber-400 bg-amber-400/10 ring-2 ring-amber-400/40"
-                                                 : "border-border bg-card hover:border-amber-400/50"
+                                                 ? "border-primary bg-primary/10 ring-2 ring-primary/40"
+                                                 : "border-border bg-card hover:border-primary/50"
                                          )}
                                      >
                                          <div className="flex items-start justify-between w-full">
                                              <div className={cn(
                                                  "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                                                 reportFormat === 'monthly' ? "bg-amber-400 text-slate-950 font-bold" : "bg-muted text-foreground"
+                                                 reportFormat === 'monthly' ? "bg-primary text-primary-foreground font-bold" : "bg-muted text-foreground"
                                              )}>
                                                  <Calendar className="w-4 h-4" />
                                              </div>
                                              <div className={cn(
                                                  "w-4 h-4 rounded-full border flex items-center justify-center mt-0.5",
                                                  reportFormat === 'monthly'
-                                                     ? "border-amber-500 bg-amber-400"
+                                                     ? "border-primary bg-primary"
                                                      : "border-muted-foreground/30"
                                              )}>
-                                                 {reportFormat === 'monthly' && <div className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                                                 {reportFormat === 'monthly' && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                                              </div>
                                          </div>
                                          <div className="mt-2">
@@ -2114,24 +2124,24 @@ export default function GenerateReportPage({
                                          className={cn(
                                              "p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between min-h-[78px]",
                                              reportFormat === 'individual'
-                                                 ? "border-amber-400 bg-amber-400/10 ring-2 ring-amber-400/40"
-                                                 : "border-border bg-card hover:border-amber-400/50"
+                                                 ? "border-primary bg-primary/10 ring-2 ring-primary/40"
+                                                 : "border-border bg-card hover:border-primary/50"
                                          )}
                                      >
                                          <div className="flex items-start justify-between w-full">
                                              <div className={cn(
                                                  "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                                                 reportFormat === 'individual' ? "bg-amber-400 text-slate-950 font-bold" : "bg-muted text-foreground"
+                                                 reportFormat === 'individual' ? "bg-primary text-primary-foreground font-bold" : "bg-muted text-foreground"
                                              )}>
                                                  <User className="w-4 h-4" />
                                              </div>
                                              <div className={cn(
                                                  "w-4 h-4 rounded-full border flex items-center justify-center mt-0.5",
                                                  reportFormat === 'individual'
-                                                     ? "border-amber-500 bg-amber-400"
+                                                     ? "border-primary bg-primary"
                                                      : "border-muted-foreground/30"
                                              )}>
-                                                 {reportFormat === 'individual' && <div className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                                                 {reportFormat === 'individual' && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                                              </div>
                                          </div>
                                          <div className="mt-2">
@@ -2151,24 +2161,24 @@ export default function GenerateReportPage({
                                          className={cn(
                                              "p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between min-h-[78px]",
                                              reportFormat === 'consolidated'
-                                                 ? "border-amber-400 bg-amber-400/10 ring-2 ring-amber-400/40"
-                                                 : "border-border bg-card hover:border-amber-400/50"
+                                                 ? "border-primary bg-primary/10 ring-2 ring-primary/40"
+                                                 : "border-border bg-card hover:border-primary/50"
                                          )}
                                      >
                                          <div className="flex items-start justify-between w-full">
                                              <div className={cn(
                                                  "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                                                 reportFormat === 'consolidated' ? "bg-amber-400 text-slate-950 font-bold" : "bg-muted text-foreground"
+                                                 reportFormat === 'consolidated' ? "bg-primary text-primary-foreground font-bold" : "bg-muted text-foreground"
                                              )}>
                                                  <Building2 className="w-4 h-4" />
                                              </div>
                                              <div className={cn(
                                                  "w-4 h-4 rounded-full border flex items-center justify-center mt-0.5",
                                                  reportFormat === 'consolidated'
-                                                     ? "border-amber-500 bg-amber-400"
+                                                     ? "border-primary bg-primary"
                                                      : "border-muted-foreground/30"
                                              )}>
-                                                 {reportFormat === 'consolidated' && <div className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                                                 {reportFormat === 'consolidated' && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                                              </div>
                                          </div>
                                          <div className="mt-2">
@@ -2186,7 +2196,7 @@ export default function GenerateReportPage({
                             {/* STEP 2: REPORTING PERIOD */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px] flex items-center justify-center shadow-xs">
+                                    <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground font-black text-[11px] flex items-center justify-center shadow-xs">
                                         2
                                     </span>
                                     <h3 className="text-xs font-bold text-foreground">
@@ -2206,7 +2216,7 @@ export default function GenerateReportPage({
                                             className={cn(
                                                 "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer text-center",
                                                 periodTab === 'week'
-                                                    ? "bg-amber-400 text-slate-950 shadow-xs"
+                                                    ? "bg-primary text-primary-foreground shadow-xs"
                                                     : "text-muted-foreground hover:text-foreground"
                                             )}
                                         >
@@ -2218,7 +2228,7 @@ export default function GenerateReportPage({
                                             className={cn(
                                                 "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer text-center",
                                                 periodTab === 'month'
-                                                    ? "bg-amber-400 text-slate-950 shadow-xs"
+                                                    ? "bg-primary text-primary-foreground shadow-xs"
                                                     : "text-muted-foreground hover:text-foreground"
                                             )}
                                         >
@@ -2230,7 +2240,7 @@ export default function GenerateReportPage({
                                             className={cn(
                                                 "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer text-center",
                                                 periodTab === 'custom'
-                                                    ? "bg-amber-400 text-slate-950 shadow-xs"
+                                                    ? "bg-primary text-primary-foreground shadow-xs"
                                                     : "text-muted-foreground hover:text-foreground"
                                             )}
                                         >
@@ -2239,8 +2249,8 @@ export default function GenerateReportPage({
                                     </div>
 
                                     {/* Selected Period Badge box on Right */}
-                                    <div className="sm:col-span-4 p-2.5 rounded-xl border border-amber-400/40 bg-amber-400/5 flex items-center gap-2.5">
-                                        <div className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center shrink-0">
+                                    <div className="sm:col-span-4 p-2.5 rounded-xl border border-primary/40 bg-primary/5 flex items-center gap-2.5">
+                                        <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                                             <Calendar className="w-4 h-4" />
                                         </div>
                                         <div className="overflow-hidden">
@@ -2261,7 +2271,7 @@ export default function GenerateReportPage({
                                 <div className="flex items-center gap-2 pt-1">
                                     <Button
                                         size="sm"
-                                        className="h-10 w-10 p-0 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 cursor-pointer shadow-xs"
+                                        className="h-10 w-10 p-0 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-xs"
                                         onClick={() => {
                                             const list = periodTab === 'week' ? weekly_periods : monthly_periods;
                                             const currentIndex = list.indexOf(selectedPeriod);
@@ -2275,7 +2285,7 @@ export default function GenerateReportPage({
                                         <select
                                             value={selectedPeriod}
                                             onChange={(e) => setSelectedPeriod(e.target.value)}
-                                            className="w-full h-10 px-3.5 pr-8 rounded-xl border border-border bg-card text-xs font-semibold text-foreground focus-visible:outline-none appearance-none cursor-pointer shadow-2xs hover:border-amber-400 transition-colors"
+                                            className="w-full h-10 px-3.5 pr-8 rounded-xl border border-border bg-card text-xs font-semibold text-foreground focus-visible:outline-none appearance-none cursor-pointer shadow-2xs hover:border-primary transition-colors"
                                         >
                                             {(periodTab === 'week' ? weekly_periods : monthly_periods).map(p => (
                                                 <option key={p} value={p}>{formatPeriodWithDateRange(p, periodTab)}</option>
@@ -2286,7 +2296,7 @@ export default function GenerateReportPage({
 
                                     <Button
                                         size="sm"
-                                        className="h-10 w-10 p-0 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 cursor-pointer shadow-xs"
+                                        className="h-10 w-10 p-0 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-xs"
                                         onClick={() => {
                                             const list = periodTab === 'week' ? weekly_periods : monthly_periods;
                                             const currentIndex = list.indexOf(selectedPeriod);
@@ -2301,7 +2311,7 @@ export default function GenerateReportPage({
                             {/* STEP 3: FILTERS (Minimal Input Styles) */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px] flex items-center justify-center shadow-xs">
+                                    <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground font-black text-[11px] flex items-center justify-center shadow-xs">
                                         3
                                     </span>
                                     <h3 className="text-xs font-bold text-foreground">
@@ -2435,7 +2445,7 @@ export default function GenerateReportPage({
                             {/* STEP 4: KEY SUMMARIES (Organized into Clean Professional Table View) */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px] flex items-center justify-center shadow-xs">
+                                    <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground font-black text-[11px] flex items-center justify-center shadow-xs">
                                         4
                                     </span>
                                     <h3 className="text-xs font-bold text-foreground">
@@ -2453,7 +2463,7 @@ export default function GenerateReportPage({
                                             <Checkbox
                                                 checked={keySummaries.executiveSummary}
                                                 onCheckedChange={(c) => setKeySummaries({ ...keySummaries, executiveSummary: Boolean(c) })}
-                                                className="data-[state=checked]:bg-amber-400 data-[state=checked]:border-amber-400 data-[state=checked]:text-slate-950"
+                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground"
                                             />
                                             <span className="text-xs text-foreground font-medium">Include Executive Summary</span>
                                         </label>
@@ -2462,7 +2472,7 @@ export default function GenerateReportPage({
                                             <Checkbox
                                                 checked={keySummaries.attendanceTotals}
                                                 onCheckedChange={(c) => setKeySummaries({ ...keySummaries, attendanceTotals: Boolean(c) })}
-                                                className="data-[state=checked]:bg-amber-400 data-[state=checked]:border-amber-400 data-[state=checked]:text-slate-950"
+                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground"
                                             />
                                             <span className="text-xs text-foreground font-medium">Include Attendance Totals</span>
                                         </label>
@@ -2471,7 +2481,7 @@ export default function GenerateReportPage({
                                             <Checkbox
                                                 checked={keySummaries.lateMinutes}
                                                 onCheckedChange={(c) => setKeySummaries({ ...keySummaries, lateMinutes: Boolean(c) })}
-                                                className="data-[state=checked]:bg-amber-400 data-[state=checked]:border-amber-400 data-[state=checked]:text-slate-950"
+                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground"
                                             />
                                             <span className="text-xs text-foreground font-medium">Include Late Minutes</span>
                                         </label>
@@ -2480,7 +2490,7 @@ export default function GenerateReportPage({
                                             <Checkbox
                                                 checked={keySummaries.absenceBreakdown}
                                                 onCheckedChange={(c) => setKeySummaries({ ...keySummaries, absenceBreakdown: Boolean(c) })}
-                                                className="data-[state=checked]:bg-amber-400 data-[state=checked]:border-amber-400 data-[state=checked]:text-slate-950"
+                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground"
                                             />
                                             <span className="text-xs text-foreground font-medium">Include Absence Breakdown</span>
                                         </label>
@@ -2489,7 +2499,7 @@ export default function GenerateReportPage({
                                             <Checkbox
                                                 checked={keySummaries.attendanceRateAnalysis}
                                                 onCheckedChange={(c) => setKeySummaries({ ...keySummaries, attendanceRateAnalysis: Boolean(c) })}
-                                                className="data-[state=checked]:bg-amber-400 data-[state=checked]:border-amber-400 data-[state=checked]:text-slate-950"
+                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground"
                                             />
                                             <span className="text-xs text-foreground font-medium">Include Attendance Rate</span>
                                         </label>
@@ -2498,7 +2508,7 @@ export default function GenerateReportPage({
                                             <Checkbox
                                                 checked={keySummaries.programSummary}
                                                 onCheckedChange={(c) => setKeySummaries({ ...keySummaries, programSummary: Boolean(c) })}
-                                                className="data-[state=checked]:bg-amber-400 data-[state=checked]:border-amber-400 data-[state=checked]:text-slate-950"
+                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground"
                                             />
                                             <span className="text-xs text-foreground font-medium">Include Program Summary</span>
                                         </label>
@@ -2562,7 +2572,7 @@ export default function GenerateReportPage({
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px] flex items-center justify-center shadow-xs">
+                                        <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground font-black text-[11px] flex items-center justify-center shadow-xs">
                                             5
                                         </span>
                                         <h3 className="text-xs font-bold text-foreground">
@@ -2587,7 +2597,7 @@ export default function GenerateReportPage({
                                         <Button
                                             type="button"
                                             onClick={handleAddSignatory}
-                                            className="h-8 px-3 text-[11px] font-bold rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                            className="h-8 px-3 text-[11px] font-bold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-1.5 cursor-pointer shadow-xs"
                                         >
                                             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                                             <span>Add Signatory</span>
@@ -2600,7 +2610,7 @@ export default function GenerateReportPage({
                                     {signatoriesList.map((sig, index) => (
                                         <div
                                             key={sig.id}
-                                            className="p-3.5 rounded-xl border border-border bg-card space-y-3 relative group hover:border-amber-400/40 transition-colors"
+                                            className="p-3.5 rounded-xl border border-border bg-card space-y-3 relative group hover:border-primary/40 transition-colors"
                                         >
                                             <div className="flex items-center justify-between border-b border-border/50 pb-2">
                                                 <div className="flex items-center gap-2">
@@ -2609,7 +2619,7 @@ export default function GenerateReportPage({
                                                         type="text"
                                                         value={sig.label}
                                                         onChange={(e) => handleUpdateSignatory(sig.id, 'label', e.target.value)}
-                                                        className="text-xs font-bold text-foreground bg-transparent border-b border-dashed border-border/80 px-1 py-0.5 focus:outline-none w-36 focus:border-amber-500"
+                                                        className="text-xs font-bold text-foreground bg-transparent border-b border-dashed border-border/80 px-1 py-0.5 focus:outline-none w-36 focus:border-primary"
                                                     />
                                                 </div>
                                                 {signatoriesList.length > 1 && (
@@ -2631,7 +2641,7 @@ export default function GenerateReportPage({
                                                         type="text"
                                                         value={sig.name}
                                                         onChange={(e) => handleUpdateSignatory(sig.id, 'name', e.target.value)}
-                                                        className="w-full h-8 px-2.5 rounded-lg border border-border bg-muted/20 text-xs font-semibold text-foreground focus:outline-none focus:border-amber-400"
+                                                        className="w-full h-8 px-2.5 rounded-lg border border-border bg-muted/20 text-xs font-semibold text-foreground focus:outline-none focus:border-primary"
                                                     />
                                                 </div>
 
@@ -2641,7 +2651,7 @@ export default function GenerateReportPage({
                                                         type="text"
                                                         value={sig.designation}
                                                         onChange={(e) => handleUpdateSignatory(sig.id, 'designation', e.target.value)}
-                                                        className="w-full h-8 px-2.5 rounded-lg border border-border bg-muted/20 text-xs text-foreground focus:outline-none focus:border-amber-400"
+                                                        className="w-full h-8 px-2.5 rounded-lg border border-border bg-muted/20 text-xs text-foreground focus:outline-none focus:border-primary"
                                                     />
                                                 </div>
 
@@ -2651,7 +2661,7 @@ export default function GenerateReportPage({
                                                         type="text"
                                                         value={sig.department}
                                                         onChange={(e) => handleUpdateSignatory(sig.id, 'department', e.target.value)}
-                                                        className="w-full h-8 px-2.5 rounded-lg border border-border bg-muted/20 text-xs text-foreground focus:outline-none focus:border-amber-400"
+                                                        className="w-full h-8 px-2.5 rounded-lg border border-border bg-muted/20 text-xs text-foreground focus:outline-none focus:border-primary"
                                                     />
                                                 </div>
                                             </div>
@@ -2665,7 +2675,7 @@ export default function GenerateReportPage({
                                                         onChange={(e) => handleUpdateSignatory(sig.id, 'showSignatureLine', e.target.checked)}
                                                         className="sr-only peer"
                                                     />
-                                                    <div className="w-7 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-400 dark:peer-checked:bg-amber-400"></div>
+                                                    <div className="w-7 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary dark:peer-checked:bg-primary"></div>
                                                 </label>
                                             </div>
                                         </div>
@@ -2680,7 +2690,7 @@ export default function GenerateReportPage({
                                         type="button"
                                         variant="outline"
                                         onClick={handleSaveTemplate}
-                                        className="h-9 px-3 text-xs font-semibold rounded-xl border-border bg-card flex items-center gap-1.5 hover:border-amber-400/60 cursor-pointer"
+                                        className="h-9 px-3 text-xs font-semibold rounded-xl border-border bg-card flex items-center gap-1.5 hover:border-primary/60 cursor-pointer"
                                     >
                                         <BookmarkCheck className="w-3.5 h-3.5 text-muted-foreground" />
                                         <span>Save Template</span>
@@ -2695,7 +2705,7 @@ export default function GenerateReportPage({
                                             setExcludedFacultyKeys([]);
                                             showToast('Form filters and exclusions reset to defaults.');
                                         }}
-                                        className="h-9 px-3 text-xs font-semibold rounded-xl border-border bg-card flex items-center gap-1.5 hover:border-amber-400/60 cursor-pointer"
+                                        className="h-9 px-3 text-xs font-semibold rounded-xl border-border bg-card flex items-center gap-1.5 hover:border-primary/60 cursor-pointer"
                                     >
                                         <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
                                         <span>Reset</span>
@@ -2707,7 +2717,7 @@ export default function GenerateReportPage({
                                         type="button"
                                         variant="outline"
                                         onClick={handlePrintPreview}
-                                        className="h-9 px-3.5 text-xs font-bold rounded-xl border-amber-400/50 bg-amber-400/10 hover:bg-amber-400/20 text-slate-900 dark:text-slate-100 flex items-center gap-2 cursor-pointer shadow-2xs"
+                                        className="h-9 px-3.5 text-xs font-bold rounded-xl border-primary/50 bg-primary/10 hover:bg-primary/20 text-foreground flex items-center gap-2 cursor-pointer shadow-2xs"
                                     >
                                         <Printer className="w-3.5 h-3.5" />
                                         <span>Print Preview</span>
@@ -2716,7 +2726,7 @@ export default function GenerateReportPage({
                                         type="button"
                                         onClick={handleGeneratePdf}
                                         disabled={isGeneratingPdf}
-                                        className="h-9 px-4 text-xs font-black rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 flex items-center gap-2 cursor-pointer shadow-sm ring-1 ring-amber-400/60 disabled:opacity-70"
+                                        className="h-9 px-4 text-xs font-black rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2 cursor-pointer shadow-sm ring-1 ring-primary/60 disabled:opacity-70"
                                     >
                                         <Download className={cn("w-3.5 h-3.5 stroke-[2.5]", isGeneratingPdf && "animate-bounce")} />
                                         <span>{isGeneratingPdf ? 'Downloading PDF...' : 'Generate PDF'}</span>
@@ -2818,26 +2828,41 @@ export default function GenerateReportPage({
                                 style={{ transform: `scale(${zoomLevel / 100})` }}
                             >
                                 <div className="space-y-4">
-                                    {/* 1. OFFICIAL DSSC LETTERHEAD (Centered layout with CIDS_Logo.jpg, no bottom border line) */}
-                                    <div className="flex flex-col items-center justify-center text-center pb-2 space-y-2">
-                                        <img
-                                            src="/CIDS_Logo.jpg"
-                                            alt="CIDS Logo"
-                                            className="w-16 h-16 object-contain rounded-full bg-white p-0.5 shadow-2xs"
-                                        />
-                                        <div className="space-y-0.5">
+                                    {/* 1. OFFICIAL DSSC LETTERHEAD (Dual Logos: Institution on left, College on right) */}
+                                    <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                                        <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+                                            <img
+                                                src={institutionLogoUrl}
+                                                alt={institutionName}
+                                                className="w-14 h-14 object-contain rounded-full bg-white p-0.5 shadow-2xs"
+                                                onError={(e: any) => {
+                                                    e.currentTarget.src = '/DSSC.jpg';
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="flex-1 text-center px-4 space-y-0.5">
                                             <p className="text-[10px] tracking-wider text-slate-600 uppercase font-semibold">
                                                 REPUBLIC OF THE PHILIPPINES
                                             </p>
                                             <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">
-                                                DAVAO DEL SUR STATE COLLEGE
+                                                {institutionName}
                                             </h2>
-                                            <p className="text-[10.5px] font-bold text-slate-700">
-                                                College of Information and Digital Sciences
+                                            <p className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">
+                                                {collegeName}
                                             </p>
                                             <p className="text-[9.5px] text-slate-500 font-medium">
                                                 Brgy. Matti, Digos City, Davao del Sur
                                             </p>
+                                        </div>
+                                        <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+                                            <img
+                                                src={collegeLogoUrl}
+                                                alt={collegeName}
+                                                className="w-14 h-14 object-contain rounded-full bg-white p-0.5 shadow-2xs"
+                                                onError={(e: any) => {
+                                                    e.currentTarget.src = '/CIDS_Logo.jpg';
+                                                }}
+                                            />
                                         </div>
                                     </div>
 
@@ -3339,7 +3364,7 @@ export default function GenerateReportPage({
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground">
-                            <span className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center">
+                            <span className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
                                 <Pencil className="w-4 h-4" />
                             </span>
                             Edit Faculty Name in Report
@@ -3380,7 +3405,7 @@ export default function GenerateReportPage({
                                         }
                                     }}
                                     placeholder="e.g. Dr. Juan Dela Cruz"
-                                    className="w-full h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground focus:outline-none focus:border-amber-400 shadow-2xs"
+                                    className="w-full h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground focus:outline-none focus:border-primary shadow-2xs"
                                 />
                                 <span className="text-[10px] text-muted-foreground mt-1 block">
                                     Press Enter or click "Save & Apply" to update the live preview and database records.
@@ -3403,7 +3428,7 @@ export default function GenerateReportPage({
                             type="button"
                             disabled={isSavingName || !editingFaculty?.currentName?.trim()}
                             onClick={handleSaveFacultyName}
-                            className="h-9 px-4 text-xs font-bold rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+                            className="h-9 px-4 text-xs font-bold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
                         >
                             {isSavingName ? (
                                 <span>Saving...</span>
@@ -3424,7 +3449,7 @@ export default function GenerateReportPage({
                     <DialogHeader>
                         <DialogTitle className="flex items-center justify-between text-base font-bold text-foreground pr-6">
                             <div className="flex items-center gap-2">
-                                <span className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-black">
+                                <span className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-black">
                                     {selectedAuditFaculty?.instructor_name?.charAt(0) || 'F'}
                                 </span>
                                 <div>

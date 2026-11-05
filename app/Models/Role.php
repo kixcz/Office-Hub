@@ -11,15 +11,26 @@ class Role extends Model
     protected $fillable = [
         'name',
         'tier',
+        'portal_type',
         'risk_level',
         'is_system_role',
+        'status',
         'description',
+        'allowed_scopes',
+        'assignable_by',
+        'requires_mfa',
+        'requires_approval',
+        'icon_key',
     ];
 
     protected function casts(): array
     {
         return [
             'is_system_role' => 'boolean',
+            'allowed_scopes' => 'array',
+            'assignable_by' => 'array',
+            'requires_mfa' => 'boolean',
+            'requires_approval' => 'boolean',
         ];
     }
 

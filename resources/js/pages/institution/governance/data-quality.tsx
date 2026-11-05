@@ -204,7 +204,7 @@ export default function InstitutionDataQuality({
                                                 className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
                                                     issue.severity === 'critical'
                                                         ? 'bg-rose-600 text-white'
-                                                        : 'bg-amber-500 text-white'
+                                                        : 'bg-[#7C3AED] text-white'
                                                 }`}
                                             >
                                                 {issue.severity}
@@ -289,7 +289,7 @@ export default function InstitutionDataQuality({
                                                             Registered
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 font-bold text-amber-600">
+                                                        <span className="inline-flex items-center gap-1 font-bold text-[#5B21B6]">
                                                             <AlertTriangle className="h-3.5 w-3.5" /> Pending
                                                         </span>
                                                     )}
@@ -302,7 +302,7 @@ export default function InstitutionDataQuality({
                                                         <CheckCircle2 className="h-3.5 w-3.5" /> Configured
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 font-bold text-amber-600">
+                                                    <span className="inline-flex items-center gap-1 font-bold text-[#5B21B6]">
                                                         <AlertTriangle className="h-3.5 w-3.5" /> Not configured
                                                     </span>
                                                 )}

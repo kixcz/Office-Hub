@@ -45,12 +45,12 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                                         const isSubActive = subItem.url === page.url;
                                                         return (
                                                             <SidebarMenuSubItem key={subItem.title}>
-                                                                 <SidebarMenuSubButton asChild isActive={isSubActive} className={`text-[13px] py-1.5 px-2 rounded-lg transition-colors ${isSubActive ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}>
+                                                                 <SidebarMenuSubButton asChild isActive={isSubActive} className={`text-[13px] py-1.5 px-2 rounded-lg transition-colors ${isSubActive ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold' : 'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent'}`}>
                                                                     <Link href={subItem.url} prefetch className="flex items-center gap-2.5 w-full">
-                                                                        <span className={`size-1.5 rounded-full shrink-0 ${isSubActive ? 'bg-blue-600' : 'bg-gray-300'}`} />
+                                                                        <span className={`size-1.5 rounded-full shrink-0 ${isSubActive ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`} />
                                                                         <span className="truncate">{subItem.title}</span>
                                                                         {subItem.badge !== undefined && (
-                                                                            <span className="ml-auto inline-flex items-center justify-center bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                                            <span className="ml-auto inline-flex items-center justify-center bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
                                                                                 {subItem.badge}
                                                                             </span>
                                                                         )}
@@ -75,7 +75,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                                 <span className="truncate group-data-[collapsible=icon]:hidden">{item.title}</span>
                                             </div>
                                             {item.badge !== undefined && (
-                                                <span className="ml-auto inline-flex items-center justify-center bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full group-data-[collapsible=icon]:hidden">
+                                                <span className="ml-auto inline-flex items-center justify-center bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full group-data-[collapsible=icon]:hidden">
                                                     {item.badge}
                                                 </span>
                                             )}

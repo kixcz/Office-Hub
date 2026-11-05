@@ -18,6 +18,7 @@ use App\Models\ScheduleReviewFlag;
 use App\Models\Submission;
 use App\Models\Task;
 use App\Services\ComplianceService;
+use App\Services\PortalContextService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,13 +32,27 @@ class DashboardController extends Controller
         ComplianceService::syncPendingSubmissions();
 
         $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
 
-        if ($user && $user->isInstitutionSuperAdmin()) {
+        $portalService = app(PortalContextService::class);
+        $active = $portalService->getActiveAssignment($user, $request);
+
+        if ($active['portal_type'] === 'institution_super_admin') {
             return redirect()->route('institution.dashboard');
         }
 
-        $isProgramHead = $user && ($user->hasRole('Program Head') || $user->hasRole('Program Chair'));
-        $isDean = $user && $user->hasRole('Dean');
+        if ($active['portal_type'] === 'vpaf') {
+            return redirect()->route('vpaf.dashboard');
+        }
+
+        if ($active['portal_type'] === 'faculty') {
+            return redirect()->route('faculty.dashboard');
+        }
+
+        $isProgramHead = $active['portal_type'] === 'program_head';
+        $isDean = $active['portal_type'] === 'dean';
 
         // If user is Program Head, identify their assigned program
         $phProgram = null;

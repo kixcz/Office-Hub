@@ -3,7 +3,9 @@
 use App\Http\Controllers\AccomplishmentController;
 use App\Http\Controllers\Administration\AcademicPeriodController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\Auth\PortalContextController;
 use App\Http\Controllers\ClassroomMonitoringController;
+use App\Http\Controllers\College\CollegeBrandSettingController;
 use App\Http\Controllers\Compliance\ComplianceTrackerController;
 use App\Http\Controllers\Compliance\PendingOutputController;
 use App\Http\Controllers\Compliance\RequirementController;
@@ -48,6 +50,7 @@ use App\Http\Controllers\Tv\SpotlightController;
 use App\Http\Controllers\Tv\TvCleaningScheduleController;
 use App\Http\Controllers\Tv\TvStudioController;
 use App\Http\Controllers\TvDisplayController;
+use App\Http\Controllers\Vpaf\VpafExecutiveController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -142,6 +145,16 @@ Route::get('/storage/{path}', function ($path) {
 })->where('path', '.*');
 
 Route::middleware(['auth'])->group(function () {
+    // Multi-Role & Workspace Context Switcher
+    Route::post('context/switch', [PortalContextController::class, 'switch'])->name('context.switch');
+    Route::post('context/default', [PortalContextController::class, 'setDefault'])->name('context.default');
+    Route::get('context/choose-workspace', [PortalContextController::class, 'chooseWorkspace'])->name('context.choose-workspace');
+
+    // Multi-Role & Workspace Context Switcher
+    Route::post('context/switch', [PortalContextController::class, 'switch'])->name('context.switch');
+    Route::post('context/default', [PortalContextController::class, 'setDefault'])->name('context.default');
+    Route::get('context/choose-workspace', [PortalContextController::class, 'chooseWorkspace'])->name('context.choose-workspace');
+
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::resource('requests', OfficeRequestController::class)->only(['index', 'store', 'update']);
@@ -318,6 +331,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('preview', [TvStudioController::class, 'preview'])->name('preview.index');
         Route::get('history', [TvStudioController::class, 'history'])->name('history.index');
         Route::post('history/{id}/rollback', [TvStudioController::class, 'rollback'])->name('history.rollback');
+    });
+
+    // College Brand & Theme Settings (Scope-Aware Branding for College Admins & Deans)
+    Route::prefix('college/settings')->name('college.settings.')->group(function () {
+        Route::get('branding', [CollegeBrandSettingController::class, 'index'])->name('branding');
+        Route::post('branding', [CollegeBrandSettingController::class, 'update'])->name('branding.update');
+        Route::post('branding/reset', [CollegeBrandSettingController::class, 'reset'])->name('branding.reset');
     });
 
     // Classroom Monitoring
@@ -541,7 +561,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/colleges/{college}', [InstitutionGovernanceController::class, 'updateCollege'])->name('colleges.update');
         Route::post('/colleges/{college}/reorganize', [InstitutionGovernanceController::class, 'reorganizeCollege'])->name('colleges.reorganize');
         Route::get('/colleges/setup/{college?}', [InstitutionGovernanceController::class, 'collegeSetup'])->name('colleges.setup');
-        Route::put('/colleges/{college}/setup', [InstitutionGovernanceController::class, 'updateCollegeSetup'])->name('colleges.setup.update');
+        Route::match(['post', 'put'], '/colleges/{college}/setup', [InstitutionGovernanceController::class, 'updateCollegeSetup'])->name('colleges.setup.update');
 
         // 2. Users, Canonical Identity, Role Management, Permission Matrix, Scoped Assignments & Access Requests
         Route::get('/users', [InstitutionGovernanceController::class, 'users'])->name('users');
@@ -551,7 +571,12 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/roles', [InstitutionGovernanceController::class, 'roles'])->name('roles');
         Route::post('/roles', [InstitutionGovernanceController::class, 'storeRole'])->name('roles.store');
+        Route::put('/roles/{role}', [InstitutionGovernanceController::class, 'updateRole'])->name('roles.update');
+        Route::post('/roles/{role}/duplicate', [InstitutionGovernanceController::class, 'duplicateRole'])->name('roles.duplicate');
+        Route::post('/roles/{role}/status', [InstitutionGovernanceController::class, 'updateRoleStatus'])->name('roles.status');
+        Route::delete('/roles/{role}', [InstitutionGovernanceController::class, 'destroyRole'])->name('roles.destroy');
         Route::post('/roles/{role}/permissions/toggle', [InstitutionGovernanceController::class, 'toggleRolePermission'])->name('roles.permissions.toggle');
+        Route::post('/roles/{role}/permissions/bulk', [InstitutionGovernanceController::class, 'syncRolePermissions'])->name('roles.permissions.bulk');
 
         Route::get('/scoped-roles', [InstitutionGovernanceController::class, 'scopedRoles'])->name('scoped-roles');
         Route::post('/scoped-roles', [InstitutionGovernanceController::class, 'storeScopedRole'])->name('scoped-roles.store');
@@ -590,6 +615,20 @@ Route::middleware(['auth'])->group(function () {
         Route::match(['post', 'put'], '/security', [InstitutionGovernanceController::class, 'updateSecuritySettings'])->name('security.update');
         Route::match(['post', 'put'], '/audit/security', [InstitutionGovernanceController::class, 'updateSecuritySettings'])->name('audit.security.update');
         Route::get('/reports', [InstitutionGovernanceController::class, 'reports'])->name('reports');
+    });
+
+    // VPAF / Executive Workspace (Vice President for Academic Affairs & Platform Oversight)
+    Route::prefix('vpaf')->name('vpaf.')->group(function () {
+        Route::get('/dashboard', [VpafExecutiveController::class, 'dashboard'])->name('dashboard');
+        Route::get('/analytics', [VpafExecutiveController::class, 'analytics'])->name('analytics');
+        Route::get('/academic-operations', [VpafExecutiveController::class, 'academicOperations'])->name('academic-operations');
+        Route::get('/compliance-quality', [VpafExecutiveController::class, 'complianceQuality'])->name('compliance-quality');
+        Route::get('/facilities-resources', [VpafExecutiveController::class, 'facilitiesResources'])->name('facilities-resources');
+        Route::get('/research-extension', [VpafExecutiveController::class, 'researchExtension'])->name('research-extension');
+        Route::get('/projects-initiatives', [VpafExecutiveController::class, 'projectsInitiatives'])->name('projects-initiatives');
+        Route::get('/reports', [VpafExecutiveController::class, 'reports'])->name('reports');
+        Route::get('/tv-communications', [VpafExecutiveController::class, 'tvCommunications'])->name('tv-communications');
+        Route::post('/tv-communications/takeover', [VpafExecutiveController::class, 'triggerBroadcastTakeover'])->name('tv-communications.takeover');
     });
 });
 

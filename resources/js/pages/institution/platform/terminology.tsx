@@ -100,7 +100,7 @@ export default function TerminologyConfiguration({ terminology = {} }: Props) {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/20">
                                 Institution Default → Entity Override → College Override
                             </span>
                         </div>
@@ -115,7 +115,7 @@ export default function TerminologyConfiguration({ terminology = {} }: Props) {
                     <Button
                         onClick={handleSubmit}
                         disabled={processing}
-                        className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs rounded-xl shadow-xs shrink-0"
+                        className="bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs rounded-xl shadow-xs shrink-0"
                     >
                         <Save className="w-3.5 h-3.5 mr-1.5" />
                         {processing ? 'Saving...' : 'Save All Terminology Mappings'}
@@ -129,7 +129,7 @@ export default function TerminologyConfiguration({ terminology = {} }: Props) {
                             className="rounded-2xl border border-border bg-card p-5 shadow-xs space-y-4"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+                                <div className="p-2 rounded-xl bg-[#7C3AED]/10 text-[#7C3AED]">
                                     <LucideMessageSquareText className="w-4 h-4" />
                                 </div>
                                 <div>
@@ -152,14 +152,14 @@ export default function TerminologyConfiguration({ terminology = {} }: Props) {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-amber-500">
+                                    <label className="text-[11px] font-bold text-[#7C3AED]">
                                         CIDS Override
                                     </label>
                                     <input
                                         type="text"
                                         value={data.terminology[item.key]?.cids || data.terminology[item.key]?.default || item.fallback}
                                         onChange={(e) => handleUpdate(item.key, 'cids', e.target.value)}
-                                        className="w-full rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs font-semibold"
+                                        className="w-full rounded-xl border border-[#7C3AED]/30 bg-[#7C3AED]/5 px-3 py-2 text-xs font-semibold"
                                     />
                                 </div>
 

@@ -1,5 +1,6 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ConsolidatedCalendarModal } from '@/components/consolidated-calendar-modal';
+import { PortalSwitcher } from '@/components/portal-switcher';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserMenuContent } from '@/components/user-menu-content';
@@ -12,10 +13,21 @@ import React, { useEffect, useState } from 'react';
 import { useAppearance } from '@/hooks/use-appearance';
 
 export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItemType[] }) {
-    const { auth } = usePage<SharedData>().props;
+    const { auth, portal_context, active_branding } = usePage<SharedData>().props;
     const user = auth.user;
     const getInitials = useInitials();
     const { appearance, updateAppearance } = useAppearance();
+
+    // Scope branding resolution
+    const activeAssignment = portal_context?.active_assignment;
+    const isInstitutionScope = activeAssignment?.portal_type === 'institution_super_admin' || activeAssignment?.portal_type === 'vpaf';
+    
+    // Resolve dynamic header visual identity
+    const brandPrimary = active_branding?.primary_color || (isInstitutionScope ? '#5B21B6' : '#7C3AED');
+    const brandLogo = active_branding?.logo_url || (isInstitutionScope ? '/velora_logo-removebg-preview.png' : '/velora_logo-removebg-preview.png');
+    const brandSubtitle = active_branding?.short_name || (isInstitutionScope ? (activeAssignment?.portal_type === 'vpaf' ? 'Executive' : 'Governance') : 'CIDS');
+    const brandFullName = active_branding?.scope_name || (isInstitutionScope ? 'DAVAO DEL SUR STATE COLLEGE · CENTRAL PLATFORM AUTHORITY' : 'COLLEGE OF INFORMATION AND DIGITAL SCIENCES');
+    const brandTagline = active_branding?.tagline || '';
 
     // Live clock state
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -56,25 +68,35 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                     <SidebarTrigger className="h-8 w-8 text-foreground hover:bg-muted" />
 
                     <Link
-                        href={user?.roles?.includes('Institution Super Admin') ? '/institution/dashboard' : '/dashboard'}
+                        href={activeAssignment?.landing_url || (user?.roles?.includes('Institution Super Admin') ? '/institution/dashboard' : '/dashboard')}
                         className="flex items-center gap-2.5 hover:opacity-90 transition-opacity shrink-0"
                     >
-                        <img
-                            src={user?.roles?.includes('Institution Super Admin') ? '/DSSC.jpg' : '/CIDS_Logo.jpg'}
-                            alt="Velora Logo"
-                            className="h-9 w-9 rounded-full object-contain shrink-0 border border-amber-500/20 shadow-2xs"
-                        />
+                        <div
+                            className="h-9 w-9 rounded-xl bg-[#F7F7FB] dark:bg-[#1E1B38] p-1 flex items-center justify-center shrink-0 border shadow-2xs transition-colors duration-200"
+                            style={{
+                                borderColor: `${brandPrimary}66`,
+                            }}
+                        >
+                            <img
+                                src={brandLogo}
+                                alt={`${brandSubtitle} Logo`}
+                                className="h-full w-full object-contain"
+                            />
+                        </div>
                         <div className="hidden sm:flex flex-col text-left">
                             <div className="flex items-center gap-1 leading-none">
-                                <span className="text-base font-black tracking-tight text-foreground">Velora</span>
-                                <span className="text-base font-black tracking-tight text-amber-500">
-                                    {user?.roles?.includes('Institution Super Admin') ? 'Governance' : 'CIDS'}
+                                <span className="text-base font-black tracking-tight text-[#17152E] dark:text-white">Velora</span>
+                                <span
+                                    className="text-base font-black tracking-tight transition-colors duration-200"
+                                    style={{
+                                        color: brandPrimary,
+                                    }}
+                                >
+                                    {brandSubtitle}
                                 </span>
                             </div>
-                            <span className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase leading-none mt-1">
-                                {user?.roles?.includes('Institution Super Admin')
-                                    ? 'DAVAO DEL SUR STATE COLLEGE · CENTRAL PLATFORM AUTHORITY'
-                                    : 'COLLEGE OF INFORMATION AND DIGITAL SCIENCES'}
+                            <span className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase leading-none mt-1 truncate max-w-[260px]">
+                                {brandFullName.toUpperCase()}
                             </span>
                         </div>
                     </Link>
@@ -121,12 +143,12 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                     <button
                         type="button"
                         onClick={() => setIsCalendarOpen(true)}
-                        className="relative flex items-center justify-center p-2 rounded-xl border border-border bg-background hover:bg-muted/70 transition-colors shadow-2xs group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                        className="relative flex items-center justify-center p-2 rounded-xl border border-border bg-card hover:bg-muted/70 transition-colors shadow-2xs group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         title="View Calendar"
                     >
-                        <CalendarIcon className="h-4 w-4 text-foreground group-hover:text-amber-500 transition-colors" />
+                        <CalendarIcon className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
                         {/* Indicator badge for upcoming events */}
-                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-2xs">
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-2xs">
                             1
                         </span>
                     </button>
@@ -135,34 +157,34 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                     <button
                         type="button"
                         onClick={() => updateAppearance(appearance === 'dark' ? 'light' : 'dark')}
-                        className="flex items-center justify-center p-2 rounded-xl border border-border bg-background hover:bg-muted/70 transition-colors shadow-2xs group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                        className="flex items-center justify-center p-2 rounded-xl border border-border bg-card hover:bg-muted/70 transition-colors shadow-2xs group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         title={appearance === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                         aria-label="Toggle theme mode"
                     >
                         {appearance === 'dark' ? (
-                            <Sun className="h-4 w-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
+                            <Sun className="h-4 w-4 text-primary group-hover:rotate-45 transition-transform duration-300" />
                         ) : (
-                            <Moon className="h-4 w-4 text-slate-700 dark:text-foreground group-hover:-rotate-12 transition-transform duration-300" />
+                            <Moon className="h-4 w-4 text-primary group-hover:-rotate-12 transition-transform duration-300" />
                         )}
                     </button>
 
                     {/* Notification Bell */}
                     <Link
                         href="/faculty/notifications"
-                        className="relative hidden sm:flex items-center justify-center p-2 rounded-xl border border-border bg-background hover:bg-muted/70 transition-colors shadow-2xs group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                        className="relative hidden sm:flex items-center justify-center p-2 rounded-xl border border-border bg-card hover:bg-muted/70 transition-colors shadow-2xs group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         title="Notifications"
                     >
-                        <Bell className="h-4 w-4 text-foreground group-hover:text-amber-500 transition-colors" />
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
+                        <Bell className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary" />
                     </Link>
 
                     {/* TV Display Button */}
                     <Link
                         href="/tv-display"
-                        className="hidden md:flex items-center gap-2 rounded-xl border border-border px-3 py-1.5 bg-background hover:bg-muted/60 transition-colors shadow-2xs group"
+                        className="hidden md:flex items-center gap-2 rounded-xl border border-border px-3 py-1.5 bg-card hover:bg-muted/60 transition-colors shadow-2xs group"
                         title="Open TV Display Screen"
                     >
-                        <Monitor className="h-4 w-4 text-foreground group-hover:text-amber-500 transition-colors" />
+                        <Monitor className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
                         <div className="flex flex-col text-left leading-none">
                             <span className="text-xs font-bold text-foreground">TV Display</span>
                             <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
@@ -172,32 +194,38 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                         </div>
                     </Link>
 
+                    {/* Persistent Multi-Role Portal Switcher */}
+                    <PortalSwitcher />
+
                     {/* User / Faculty Profile Dropdown Pill */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button
                                 type="button"
-                                className="flex items-center gap-2 rounded-xl border border-border px-2.5 py-1.5 bg-background hover:bg-muted/60 transition-colors shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                className="flex items-center gap-2 rounded-2xl border border-border px-3 py-1.5 bg-card hover:bg-muted/60 transition-colors shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group"
                             >
-                                <div className="w-7 h-7 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-500/20">
-                                    {(user as any)?.faculty?.photo_url ? (
-                                        <img src={(user as any).faculty.photo_url} alt={user.name} className="w-full h-full rounded-full object-cover" />
-                                    ) : (
-                                        user ? getInitials(user.name) : 'CA'
-                                    )}
+                                <div className="relative shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center overflow-hidden border border-primary/20 shadow-2xs">
+                                        {(user as any)?.faculty?.photo_url ? (
+                                            <img src={(user as any).faculty.photo_url} alt={user.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            user ? getInitials(user.name) : 'CA'
+                                        )}
+                                    </div>
+                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#17152E]" />
                                 </div>
                                 <div className="hidden sm:flex flex-col text-left leading-none max-w-[140px]">
                                     <span className="text-xs font-bold text-foreground truncate">
                                         {(user as any)?.faculty?.full_name || user?.name || 'College Admin'}
                                     </span>
                                     <span className="text-[10px] text-muted-foreground font-medium truncate mt-0.5">
-                                        {(user as any)?.faculty?.academic_rank || (user as any)?.roles?.[0] || 'College Secretary'}
+                                        {(user as any)?.faculty?.academic_rank || (user as any)?.roles?.[0] || 'Faculty Member'}
                                     </span>
                                 </div>
-                                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-1" />
+                                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-0.5 group-hover:text-primary transition-colors" />
                             </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 rounded-xl">
+                        <DropdownMenuContent align="end" className="w-auto p-0 rounded-2xl shadow-xl border border-border bg-card overflow-hidden" sideOffset={8}>
                             {user && <UserMenuContent user={user} />}
                         </DropdownMenuContent>
                     </DropdownMenu>

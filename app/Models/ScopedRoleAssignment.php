@@ -17,6 +17,8 @@ class ScopedRoleAssignment extends Model
         'program_id',
         'facility_id',
         'designation_type',
+        'appointment_reference',
+        'assignment_reason',
         'replacing_user_id',
         'effective_from',
         'effective_until',

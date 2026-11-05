@@ -14,6 +14,14 @@
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
 
+    --color-brand-primary: var(--brand-primary, #4C1D95);
+    --color-brand-primary-vivid: var(--brand-primary-vivid, #5B21B6);
+    --color-brand-secondary: var(--brand-secondary, #7C3AED);
+    --color-brand-accent: var(--brand-accent, #A78BFA);
+    --color-brand-dark: var(--brand-dark, #17152E);
+    --color-brand-soft: var(--brand-soft, #F7F7FB);
+    --color-brand-surface: var(--brand-surface, #FFFFFF);
+
     --color-background: var(--background);
     --color-foreground: var(--foreground);
 
@@ -77,74 +85,90 @@
 }
 
 :root {
-    --background: hsl(0, 0%, 100%);
-    --foreground: hsl(0, 0%, 3.9%);
-    --card: hsl(0, 0%, 100%);
-    --card-foreground: hsl(0, 0%, 3.9%);
-    --popover: hsl(0, 0%, 100%);
-    --popover-foreground: hsl(0, 0%, 3.9%);
-    --primary: hsl(0, 0%, 9%);
-    --primary-foreground: hsl(0, 0%, 98%);
-    --secondary: hsl(0, 0%, 96.1%);
-    --secondary-foreground: hsl(0, 0%, 9%);
-    --muted: hsl(0, 0%, 96.1%);
-    --muted-foreground: hsl(0, 0%, 45.1%);
-    --accent: hsl(0, 0%, 96.1%);
-    --accent-foreground: hsl(0, 0%, 9%);
+    /* Velora Core Brand Palette:
+       Primary: #4C1D95 or #5B21B6
+       Secondary violet: #7C3AED
+       Accent lavender: #A78BFA
+       Dark text: #17152E
+       Soft background: #F7F7FB
+       Surface: #FFFFFF
+    */
+    --brand-primary: #4C1D95;
+    --brand-primary-vivid: #5B21B6;
+    --brand-secondary: #7C3AED;
+    --brand-accent: #A78BFA;
+    --brand-dark: #17152E;
+    --brand-soft: #F7F7FB;
+    --brand-surface: #FFFFFF;
+
+    --background: #F7F7FB;
+    --foreground: #17152E;
+    --card: #FFFFFF;
+    --card-foreground: #17152E;
+    --popover: #FFFFFF;
+    --popover-foreground: #17152E;
+    --primary: #5B21B6;
+    --primary-foreground: #FFFFFF;
+    --secondary: #EDE9FE;
+    --secondary-foreground: #4C1D95;
+    --muted: #F0EFF8;
+    --muted-foreground: #5B5876;
+    --accent: #A78BFA;
+    --accent-foreground: #17152E;
     --destructive: hsl(0, 84.2%, 60.2%);
     --destructive-foreground: hsl(0, 0%, 98%);
-    --border: hsl(0, 0%, 92.8%);
-    --input: hsl(0, 0%, 89.8%);
-    --ring: hsl(0, 0%, 3.9%);
-    --chart-1: hsl(12, 76%, 61%);
-    --chart-2: hsl(173, 58%, 39%);
-    --chart-3: hsl(197, 37%, 24%);
-    --chart-4: hsl(43, 74%, 66%);
-    --chart-5: hsl(27, 87%, 67%);
+    --border: #E5E4F0;
+    --input: #DDDCEB;
+    --ring: #7C3AED;
+    --chart-1: #5B21B6;
+    --chart-2: #7C3AED;
+    --chart-3: #4C1D95;
+    --chart-4: #A78BFA;
+    --chart-5: #C4B5FD;
     --radius: 0.5rem;
-    --sidebar-background: hsl(0, 0%, 98%);
-    --sidebar-foreground: hsl(240, 5.3%, 30%);
-    --sidebar-primary: hsl(0, 0%, 10%);
-    --sidebar-primary-foreground: hsl(0, 0%, 98%);
-    --sidebar-accent: hsl(0, 0%, 94%);
-    --sidebar-accent-foreground: hsl(0, 0%, 30%);
-    --sidebar-border: hsl(0, 0%, 91%);
-    --sidebar-ring: hsl(217.2, 91.2%, 59.8%);
+    --sidebar-background: #FFFFFF;
+    --sidebar-foreground: #17152E;
+    --sidebar-primary: #5B21B6;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #F3E8FF;
+    --sidebar-accent-foreground: #4C1D95;
+    --sidebar-border: #E5E4F0;
+    --sidebar-ring: #7C3AED;
 }
 
 .dark {
-    --background: hsl(0, 0%, 3.9%);
-    --foreground: hsl(0, 0%, 98%);
-    --card: hsl(0, 0%, 3.9%);
-    --card-foreground: hsl(0, 0%, 98%);
-    --popover: hsl(0, 0%, 3.9%);
-    --popover-foreground: hsl(0, 0%, 98%);
-    --primary: hsl(0, 0%, 98%);
-    --primary-foreground: hsl(0, 0%, 9%);
-    --secondary: hsl(0, 0%, 14.9%);
-    --secondary-foreground: hsl(0, 0%, 98%);
-    --muted: hsl(0, 0%, 6.9%);
-    --muted-foreground: hsl(0, 0%, 63.9%);
-    --accent: hsl(0, 0%, 14.9%);
-    --accent-foreground: hsl(0, 0%, 98%);
+    --background: #0F0D1D;
+    --foreground: #F7F7FB;
+    --card: #17152E;
+    --card-foreground: #F7F7FB;
+    --popover: #17152E;
+    --popover-foreground: #F7F7FB;
+    --primary: #7C3AED;
+    --primary-foreground: #FFFFFF;
+    --secondary: #262246;
+    --secondary-foreground: #EDE9FE;
+    --muted: #1E1B38;
+    --muted-foreground: #A7A4C5;
+    --accent: #A78BFA;
+    --accent-foreground: #17152E;
     --destructive: hsl(0, 84%, 60%);
     --destructive-foreground: hsl(0, 0%, 98%);
-    --border: hsl(0, 0%, 14.9%);
-    --input: hsl(0, 0%, 14.9%);
-    --ring: hsl(0, 0%, 83.1%);
-    --chart-1: hsl(220, 70%, 50%);
-    --chart-2: hsl(160, 60%, 45%);
-    --chart-3: hsl(30, 80%, 55%);
-    --chart-4: hsl(280, 65%, 60%);
-    --chart-5: hsl(340, 75%, 55%);
-    --sidebar-background: hsl(0, 0%, 7%);
-    --sidebar-foreground: hsl(0, 0%, 80%);
-    --sidebar-primary: hsl(360, 100%, 100%);
-    --sidebar-primary-foreground: hsl(0, 0%, 100%);
-    --sidebar-accent: hsl(0, 0%, 15.9%);
-    --sidebar-accent-foreground: hsl(240, 4.8%, 95.9%);
-    --sidebar-border: hsl(0, 0%, 15.9%);
-    --sidebar-ring: hsl(217.2, 91.2%, 59.8%);
+    --border: #2B274F;
+    --input: #2B274F;
+    --ring: #A78BFA;
+    --chart-1: #7C3AED;
+    --chart-2: #A78BFA;
+    --chart-3: #5B21B6;
+    --chart-4: #C4B5FD;
+    --chart-5: #8B5CF6;
+    --sidebar-background: #131126;
+    --sidebar-foreground: #EDE9FE;
+    --sidebar-primary: #7C3AED;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #251F47;
+    --sidebar-accent-foreground: #A78BFA;
+    --sidebar-border: #262246;
+    --sidebar-ring: #A78BFA;
 }
 
 @layer base {
@@ -166,17 +190,17 @@
     background: transparent;
 }
 .tv-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.25);
+    background: rgba(124, 58, 237, 0.25);
     border-radius: 9999px;
 }
 .tv-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(245, 158, 11, 0.6);
+    background: rgba(124, 58, 237, 0.65);
 }
 .dark .tv-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(167, 139, 250, 0.2);
 }
 .dark .tv-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(245, 158, 11, 0.7);
+    background: rgba(167, 139, 250, 0.7);
 }
 
 /* Hide scrollbar utility */

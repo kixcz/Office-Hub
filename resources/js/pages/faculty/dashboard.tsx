@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { BreadcrumbItem, SharedData } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
     CheckCircle2,
     Clock,
@@ -141,16 +141,42 @@ export default function FacultyDashboard({
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good morning,' : hour < 18 ? 'Good afternoon,' : 'Good evening,';
 
+    const { auth } = usePage<SharedData>().props;
+    const activeCollege = auth?.user?.active_college;
+    const collegeBranding = activeCollege?.branding;
+    const collegeName = activeCollege?.name || 'College of Information and Digital Sciences';
+    const collegeCode = activeCollege?.code || 'CIDS';
+    const collegeSlogan = collegeBranding?.slogan || 'Educating today, innovating tomorrow.';
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Faculty Dashboard - CIDS OfficeHub" />
+            <Head title={`Faculty Dashboard - ${collegeCode} OfficeHub`} />
 
             <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto font-sans">
-                {/* 1. Header Hero Banner matching screenshot */}
-                <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-linear-to-r from-slate-100 via-sky-50/50 to-blue-50/40 dark:from-slate-900/90 dark:via-slate-900/60 dark:to-slate-950 p-6 md:p-8 shadow-xs">
+                {/* 1. Header Hero Banner themed by College Branding */}
+                <div
+                    className="relative overflow-hidden rounded-2xl border border-border/80 bg-linear-to-r from-slate-100 via-sky-50/50 to-blue-50/40 dark:from-slate-900/90 dark:via-slate-900/60 dark:to-slate-950 p-6 md:p-8 shadow-xs"
+                    style={
+                        collegeBranding
+                            ? {
+                                  background: `linear-gradient(135deg, ${collegeBranding.surface_color || '#FFFFFF'} 35%, ${collegeBranding.accent_color || '#EDE9FE'} 100%)`,
+                                  borderColor: `${collegeBranding.primary_color}45`,
+                              }
+                            : undefined
+                    }
+                >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                         <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 rounded-2xl bg-slate-200 dark:bg-slate-800 border-2 border-white dark:border-slate-700 shadow-sm flex items-center justify-center text-xl font-black text-slate-700 dark:text-slate-200 overflow-hidden shrink-0">
+                            <div
+                                className="w-16 h-16 rounded-2xl bg-slate-200 dark:bg-slate-800 border-2 border-white dark:border-slate-700 shadow-sm flex items-center justify-center text-xl font-black text-slate-700 dark:text-slate-200 overflow-hidden shrink-0"
+                                style={
+                                    collegeBranding
+                                        ? {
+                                              borderColor: collegeBranding.primary_color,
+                                          }
+                                        : undefined
+                                }
+                            >
                                 {faculty?.photo_url ? (
                                     <img src={faculty.photo_url} alt={faculty.full_name} className="w-full h-full object-cover" />
                                 ) : (
@@ -165,26 +191,46 @@ export default function FacultyDashboard({
                                     <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
                                         {faculty?.title_name || 'Instr. Jerick Erie Vicente'}
                                     </h1>
-                                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300/40">
+                                    <span
+                                        className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300/40"
+                                        style={
+                                            collegeBranding
+                                                ? {
+                                                      backgroundColor: collegeBranding.accent_color,
+                                                      color: collegeBranding.secondary_color,
+                                                      borderColor: `${collegeBranding.primary_color}55`,
+                                                  }
+                                                : undefined
+                                        }
+                                    >
                                         {faculty?.academic_rank || 'Instructor I'}
                                     </span>
                                 </div>
                                 <div className="text-xs font-medium text-muted-foreground mt-1 flex items-center gap-2">
                                     <span>{faculty?.program?.name || 'BSIT'}</span>
                                     <span>•</span>
-                                    <span>College of Information and Digital Sciences</span>
+                                    <span>
+                                        {collegeName} ({collegeCode})
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Right side banner quote / photo background */}
                         <div className="hidden lg:flex items-center gap-4 bg-background/80 dark:bg-background/40 backdrop-blur-md px-5 py-3 rounded-xl border border-border/60 text-right">
+                            {activeCollege?.logo_url && (
+                                <img
+                                    src={activeCollege.logo_url}
+                                    alt={collegeCode}
+                                    className="w-9 h-9 object-contain shrink-0"
+                                />
+                            )}
                             <div className="flex flex-col">
                                 <span className="text-xs font-bold italic text-foreground tracking-wide">
-                                    "Educating today, innovating tomorrow."
+                                    &ldquo;{collegeSlogan}&rdquo;
                                 </span>
                                 <span className="text-[10px] text-muted-foreground font-semibold mt-0.5">
-                                    CIDS Academic Excellence 2026–2027
+                                    {collegeCode} Academic Excellence 2026–2027
                                 </span>
                             </div>
                         </div>
@@ -244,7 +290,7 @@ export default function FacultyDashboard({
                     {/* Tasks Completion */}
                     <div className="bg-card rounded-2xl border border-border p-4.5 shadow-2xs hover:shadow-xs transition-shadow relative overflow-hidden">
                         <div className="flex items-center justify-between">
-                            <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                                 <CheckSquare className="w-5 h-5" />
                             </div>
                             <span className="text-xs text-muted-foreground">
@@ -259,7 +305,7 @@ export default function FacultyDashboard({
                             <div className="text-[11px] text-muted-foreground font-medium mt-1">
                                 {kpis.tasks_fraction}
                             </div>
-                            <div className="text-[11px] font-bold text-purple-600 dark:text-purple-400 mt-0.5">
+                            <div className="text-[11px] font-bold text-primary mt-0.5">
                                 {kpis.tasks_trend}
                             </div>
                         </div>

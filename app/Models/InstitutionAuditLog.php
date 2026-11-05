@@ -17,6 +17,8 @@ class InstitutionAuditLog extends Model
         'target_name',
         'entity_scope',
         'college_scope',
+        'scope_type',
+        'scope_name',
         'severity',
         'previous_value',
         'new_value',
@@ -49,17 +51,26 @@ class InstitutionAuditLog extends Model
         ?string $entityScope = null,
         ?string $collegeScope = null,
         ?string $targetType = null,
+        ?string $scopeType = null,
+        ?string $scopeName = null,
+        ?string $actingRole = null,
     ): self {
+        $activeRole = $actingRole ?? session('active_role_name') ?? $actor?->roles?->first()?->name ?? 'Institution Super Admin';
+        $resolvedScopeType = $scopeType ?? session('active_scope_type') ?? ($collegeScope ? 'College' : ($entityScope ? 'Entity' : 'Institution'));
+        $resolvedScopeName = $scopeName ?? session('active_scope_name') ?? $collegeScope ?? $entityScope ?? 'Institution';
+
         return static::create([
             'actor_user_id' => $actor?->id,
             'actor_name' => $actor?->name ?? 'Institution Super Admin',
-            'actor_role' => $actor?->roles?->first()?->name ?? 'Institution Super Admin',
+            'actor_role' => $activeRole,
             'module' => $module,
             'action' => $action,
             'target_type' => $targetType,
             'target_name' => $targetName,
-            'entity_scope' => $entityScope,
-            'college_scope' => $collegeScope,
+            'entity_scope' => $entityScope ?? ($resolvedScopeType === 'Entity' ? $resolvedScopeName : null),
+            'college_scope' => $collegeScope ?? ($resolvedScopeType === 'College' ? $resolvedScopeName : null),
+            'scope_type' => $resolvedScopeType,
+            'scope_name' => $resolvedScopeName,
             'severity' => $severity,
             'previous_value' => $previousValue,
             'new_value' => $newValue,

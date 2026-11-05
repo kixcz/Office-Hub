@@ -241,7 +241,7 @@ export default function InstitutionWorkflows({ workflows = [], roles = [] }: Pro
                     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-medium text-slate-500">Acting / Delegation Ready</span>
-                            <UserCheck className="h-4 w-4 text-amber-600" />
+                            <UserCheck className="h-4 w-4 text-[#5B21B6]" />
                         </div>
                         <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
                             {workflows.filter((w) => w.allow_delegation).length} Pipelines
@@ -325,7 +325,7 @@ export default function InstitutionWorkflows({ workflows = [], roles = [] }: Pro
                                                 <Lock className="h-3 w-3" /> SoD Enforced
                                             </span>
                                         )}
-                                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-amber-700 dark:bg-amber-950/50 dark:text-[#A78BFA]">
                                             <RotateCcw className="h-3 w-3" /> {wf.return_behavior}
                                         </span>
                                     </div>
@@ -438,7 +438,7 @@ export default function InstitutionWorkflows({ workflows = [], roles = [] }: Pro
 
                                                     <div className="flex items-center gap-3 text-xs">
                                                         <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                                            <Clock className="h-3.5 w-3.5 text-amber-500" />
+                                                            <Clock className="h-3.5 w-3.5 text-[#7C3AED]" />
                                                             SLA: {step.escalation_hours}h
                                                         </span>
                                                     </div>

@@ -20,6 +20,7 @@ use App\Models\Role;
 use App\Models\Room;
 use App\Models\ScopedRoleAssignment;
 use App\Models\User;
+use App\Services\PortalContextService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -490,11 +491,12 @@ class InstitutionGovernanceController extends Controller
             'colleges' => $allColleges,
             'currentCollege' => $targetCollege,
             'modulesCatalog' => $this->getModulesCatalog(),
+            'initialStage' => $request->query('stage'),
         ]);
     }
 
     /**
-     * Update Setup Stage / Progress for a College
+     * Update Setup Stage / Progress & Branding / Identity for a College
      */
     public function updateCollegeSetup(Request $request, College $college): RedirectResponse
     {
@@ -505,25 +507,129 @@ class InstitutionGovernanceController extends Controller
             'enabled_modules' => 'nullable|array',
             'allow_local_overrides' => 'nullable|boolean',
             'entity_tv_enabled' => 'nullable|boolean',
+            // Identity & Branding fields
+            'name' => 'nullable|string|max:255',
+            'code' => 'nullable|string|max:30|unique:colleges,code,'.$college->id,
+            'acronym' => 'nullable|string|max:30',
+            'dean_name' => 'nullable|string|max:255',
+            'contact_email' => 'nullable|email|max:255',
+            'contact_phone' => 'nullable|string|max:100',
+            'address' => 'nullable|string|max:500',
+            'color_theme' => 'nullable|string|max:50',
+            'primary_color' => 'nullable|string|max:30',
+            'secondary_color' => 'nullable|string|max:30',
+            'accent_color' => 'nullable|string|max:30',
+            'surface_color' => 'nullable|string|max:30',
+            'preset_key' => 'nullable|string|max:30',
+            'slogan' => 'nullable|string|max:255',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:4096',
+            'remove_logo' => 'nullable|boolean',
         ]);
 
-        $prev = $college->only(['setup_stage', 'setup_progress', 'status', 'enabled_modules']);
-        $college->update($validated);
+        $prev = $college->only([
+            'name',
+            'code',
+            'acronym',
+            'dean_name',
+            'contact_email',
+            'setup_stage',
+            'setup_progress',
+            'status',
+            'enabled_modules',
+            'color_theme',
+            'logo_url',
+            'report_defaults',
+        ]);
+
+        $updatePayload = [
+            'setup_stage' => $validated['setup_stage'],
+            'setup_progress' => $validated['setup_progress'],
+            'status' => $validated['status'],
+        ];
+
+        if (array_key_exists('enabled_modules', $validated) && is_array($validated['enabled_modules'])) {
+            $updatePayload['enabled_modules'] = $validated['enabled_modules'];
+        }
+        if (array_key_exists('allow_local_overrides', $validated) && $validated['allow_local_overrides'] !== null) {
+            $updatePayload['allow_local_overrides'] = (bool) $validated['allow_local_overrides'];
+        }
+        if (array_key_exists('entity_tv_enabled', $validated) && $validated['entity_tv_enabled'] !== null) {
+            $updatePayload['entity_tv_enabled'] = (bool) $validated['entity_tv_enabled'];
+        }
+        if (! empty($validated['name'])) {
+            $updatePayload['name'] = $validated['name'];
+        }
+        if (! empty($validated['code'])) {
+            $updatePayload['code'] = strtoupper($validated['code']);
+        }
+        if (! empty($validated['acronym'])) {
+            $updatePayload['acronym'] = strtoupper($validated['acronym']);
+        } elseif (! empty($validated['code'])) {
+            $updatePayload['acronym'] = strtoupper($validated['code']);
+        }
+        if (array_key_exists('dean_name', $validated)) {
+            $updatePayload['dean_name'] = $validated['dean_name'];
+        }
+        if (array_key_exists('contact_email', $validated)) {
+            $updatePayload['contact_email'] = $validated['contact_email'];
+        }
+        if (array_key_exists('contact_phone', $validated)) {
+            $updatePayload['contact_phone'] = $validated['contact_phone'];
+        }
+        if (array_key_exists('address', $validated)) {
+            $updatePayload['address'] = $validated['address'];
+        }
+        if (! empty($validated['color_theme'])) {
+            $updatePayload['color_theme'] = $validated['color_theme'];
+        }
+
+        // Handle College Logo Upload or Removal
+        if ($request->boolean('remove_logo')) {
+            $updatePayload['logo_url'] = null;
+        } elseif ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $safeCode = strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '', $updatePayload['code'] ?? $college->code));
+            $filename = "college_{$safeCode}_".time().'.'.$file->getClientOriginalExtension();
+            $uploadDir = public_path('uploads/colleges');
+            if (! is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0755, true);
+            }
+            $file->move($uploadDir, $filename);
+            $updatePayload['logo_url'] = '/uploads/colleges/'.$filename;
+        }
+
+        // Persist Branding & Theme Colors inside report_defaults.branding
+        $reportDefaults = is_array($college->report_defaults) ? $college->report_defaults : [];
+        $currentBranding = $college->branding;
+
+        $reportDefaults['branding'] = [
+            'primary_color' => $validated['primary_color'] ?? $currentBranding['primary_color'],
+            'secondary_color' => $validated['secondary_color'] ?? $currentBranding['secondary_color'],
+            'accent_color' => $validated['accent_color'] ?? $currentBranding['accent_color'],
+            'surface_color' => $validated['surface_color'] ?? $currentBranding['surface_color'],
+            'preset_key' => $validated['preset_key'] ?? ($validated['color_theme'] ?? $currentBranding['preset_key']),
+            'slogan' => array_key_exists('slogan', $validated) && $validated['slogan'] !== null
+                ? $validated['slogan']
+                : $currentBranding['slogan'],
+        ];
+        $updatePayload['report_defaults'] = $reportDefaults;
+
+        $college->update($updatePayload);
 
         InstitutionAuditLog::record(
             module: 'Organization',
-            action: 'Updated Guided College Onboarding',
+            action: 'Updated College Branding & Guided Onboarding',
             targetName: "{$college->code} ({$validated['setup_stage']} · {$validated['setup_progress']}%)",
             actor: $request->user(),
             previousValue: $prev,
-            newValue: $validated,
-            reason: "Guided onboarding progressed to {$validated['setup_stage']}.",
+            newValue: collect($updatePayload)->except('logo')->toArray(),
+            reason: "College configuration and branding updated at stage {$validated['setup_stage']}.",
             severity: 'info',
             collegeScope: $college->code,
             targetType: 'College',
         );
 
-        return back()->with('success', "Setup updated for {$college->code}.");
+        return back()->with('success', "Branding and setup configuration saved for {$college->code}.");
     }
 
     /**
@@ -548,16 +654,25 @@ class InstitutionGovernanceController extends Controller
             ],
         ]);
 
+        $latestSetting = InstitutionSetting::where('group', 'profile')->latest('updated_at')->first();
+        $lastUpdated = $latestSetting?->updated_at
+            ? $latestSetting->updated_at->format('M j, Y, g:i A')
+            : now()->format('M j, Y, g:i A');
+
+        $defaultHeader = ($reportConfig['header_line_1'] ?? 'Republic of the Philippines').' · '.($reportConfig['header_line_2'] ?? 'DAVAO DEL SUR STATE COLLEGE');
+        $defaultFooter = $reportConfig['footer_notice'] ?? 'ISO 9001:2015 Certified · Generated via Velora / COMPASS Institutional Governance Platform';
+
         $profile = [
             'name' => InstitutionSetting::getVal('institution_name', 'Davao Del Sur State College'),
             'acronym' => InstitutionSetting::getVal('institution_acronym', 'DSSC'),
             'address' => InstitutionSetting::getVal('institution_address', 'Brgy. Matti, Digos City, Davao del Sur, Philippines 8002'),
             'timezone' => InstitutionSetting::getVal('institution_timezone', 'Asia/Manila (UTC+08:00)'),
-            'email' => 'president@dssc.edu.ph',
-            'website' => 'https://www.dssc.edu.ph',
-            'logo_url' => '/DSSC.jpg',
-            'report_header' => $reportConfig['header_line_1'].' · '.$reportConfig['header_line_2'],
-            'report_footer' => $reportConfig['footer_notice'],
+            'email' => InstitutionSetting::getVal('institution_email', 'president@dssc.edu.ph'),
+            'website' => InstitutionSetting::getVal('institution_website', 'https://www.dssc.edu.ph'),
+            'logo_url' => InstitutionSetting::getVal('institution_logo_url', '/velora_logo-removebg-preview.png'),
+            'report_header' => InstitutionSetting::getVal('institution_report_header', $defaultHeader),
+            'report_footer' => InstitutionSetting::getVal('institution_report_footer', $defaultFooter),
+            'last_updated' => $lastUpdated,
             'report_config' => $reportConfig,
         ];
 
@@ -567,7 +682,7 @@ class InstitutionGovernanceController extends Controller
     }
 
     /**
-     * Save Institution Profile & Global Report Configuration
+     * Save Institution Profile, Official Logo & Global Report Configuration
      */
     public function updateProfile(Request $request): RedirectResponse
     {
@@ -576,6 +691,11 @@ class InstitutionGovernanceController extends Controller
             'acronym' => 'required|string|max:50',
             'address' => 'required|string|max:500',
             'timezone' => 'required|string|max:100',
+            'email' => 'nullable|email|max:255',
+            'website' => 'nullable|string|max:255',
+            'report_header' => 'nullable|string|max:500',
+            'report_footer' => 'nullable|string|max:500',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:4096',
             'report_config' => 'nullable|array',
         ]);
 
@@ -584,21 +704,51 @@ class InstitutionGovernanceController extends Controller
         InstitutionSetting::setVal('institution_address', $validated['address'], 'profile', 'Official Campus Address');
         InstitutionSetting::setVal('institution_timezone', $validated['timezone'], 'profile', 'System Timezone');
 
-        if (! empty($validated['report_config'])) {
-            InstitutionSetting::setVal('global_report_config', $validated['report_config'], 'profile', 'Global Report Templates & Signatory Standards');
+        if (! empty($validated['email'])) {
+            InstitutionSetting::setVal('institution_email', $validated['email'], 'profile', 'Institutional Email');
         }
+        if (! empty($validated['website'])) {
+            InstitutionSetting::setVal('institution_website', $validated['website'], 'profile', 'Institution Website');
+        }
+        if (! empty($validated['report_header'])) {
+            InstitutionSetting::setVal('institution_report_header', $validated['report_header'], 'profile', 'Report Header Letterhead');
+        }
+        if (! empty($validated['report_footer'])) {
+            InstitutionSetting::setVal('institution_report_footer', $validated['report_footer'], 'profile', 'Accreditation Footer Notice');
+        }
+
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $filename = 'institution_logo_'.time().'.'.$file->getClientOriginalExtension();
+            $uploadDir = public_path('uploads/institution');
+            if (! is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0755, true);
+            }
+            $file->move($uploadDir, $filename);
+            $logoUrl = '/uploads/institution/'.$filename;
+            InstitutionSetting::setVal('institution_logo_url', $logoUrl, 'profile', 'Institution Official Logo URL');
+        }
+
+        $reportConfig = InstitutionSetting::getVal('global_report_config', []);
+        if (! empty($validated['report_footer'])) {
+            $reportConfig['footer_notice'] = $validated['report_footer'];
+        }
+        if (! empty($validated['report_config'])) {
+            $reportConfig = array_merge($reportConfig, $validated['report_config']);
+        }
+        InstitutionSetting::setVal('global_report_config', $reportConfig, 'profile', 'Global Report Templates & Signatory Standards');
 
         InstitutionAuditLog::record(
             module: 'Organization',
-            action: 'Updated Institution Profile & Report Standards',
+            action: 'Updated Institution Profile & Brand Identity',
             targetName: $validated['name'].' ('.$validated['acronym'].')',
             actor: $request->user(),
             previousValue: null,
-            newValue: $validated,
-            reason: 'Updated global institutional identity and report header/signatory defaults.',
+            newValue: collect($validated)->except('logo')->toArray(),
+            reason: 'Updated global institutional identity, logo, and report header/signatory defaults.',
         );
 
-        return back()->with('success', 'Institution profile and global report standards saved successfully.');
+        return back()->with('success', 'Institution profile, logo, and global report standards saved successfully.');
     }
 
     /**
@@ -748,6 +898,75 @@ class InstitutionGovernanceController extends Controller
             $u->setAttribute('resolved_programs', $userPrograms->unique('code')->values()->all());
             $u->setAttribute('activity_logs', array_slice(array_merge($userAuditEvents, $facultyActivities, $sessionEvents), 0, 12));
 
+            // Compute profile completion percentage & primary designation label
+            $score = 45; // Base canonical identity (name + email + account status)
+            $missingFields = [];
+            if (! empty($u->institutional_id)) {
+                $score += 10;
+            } else {
+                $missingFields[] = 'Institutional ID';
+            }
+            if (! empty($u->phone) || ! empty($u->faculty?->phone)) {
+                $score += 10;
+            } else {
+                $missingFields[] = 'Contact Phone';
+            }
+            if ($u->scopedRoleAssignments->isNotEmpty() || $u->roles->isNotEmpty()) {
+                $score += 10;
+            } else {
+                $missingFields[] = 'Scoped Role Binding';
+            }
+            if ($u->faculty) {
+                if (! empty($u->faculty->academic_rank)) {
+                    $score += 7;
+                } else {
+                    $missingFields[] = 'Academic Rank';
+                }
+                if (! empty($u->faculty->highest_qualification)) {
+                    $score += 6;
+                } else {
+                    $missingFields[] = 'Highest Qualification';
+                }
+                if (! empty($u->faculty->specialization)) {
+                    $score += 6;
+                } else {
+                    $missingFields[] = 'Specialization';
+                }
+                if (! empty($u->faculty->office_room) || ! empty($u->faculty->photo_url)) {
+                    $score += 6;
+                } else {
+                    $missingFields[] = 'Office Room / Photo';
+                }
+            } else {
+                if (! empty($u->effective_from)) {
+                    $score += 10;
+                }
+                if ($u->mfa_required) {
+                    $score += 8;
+                }
+                if ($userColleges->isNotEmpty() || $userEntities->isNotEmpty()) {
+                    $score += 7;
+                }
+            }
+            $u->setAttribute('profile_completion', min(100, max(60, $score)));
+            $u->setAttribute('missing_profile_fields', $missingFields);
+
+            $primaryRoleName = $u->scopedRoleAssignments->first()?->role?->name
+                ?? $u->roles->first()?->name
+                ?? ($u->faculty?->academic_rank ?: 'Institutional Staff');
+            $firstCollege = $userColleges->first();
+            $designationLabel = $u->faculty?->academic_rank ?: $primaryRoleName;
+            if (str_contains(strtolower($primaryRoleName), 'dean') && $firstCollege) {
+                $designationLabel = "Dean, {$firstCollege['name']}";
+            } elseif (str_contains(strtolower($primaryRoleName), 'college admin')) {
+                $designationLabel = 'College Secretary / College Admin';
+            } elseif (str_contains(strtolower($primaryRoleName), 'program')) {
+                $designationLabel = $u->faculty?->academic_rank
+                    ? "{$primaryRoleName} · {$u->faculty->academic_rank}"
+                    : $primaryRoleName;
+            }
+            $u->setAttribute('designation_label', $designationLabel);
+
             return $u;
         });
 
@@ -756,6 +975,79 @@ class InstitutionGovernanceController extends Controller
         $colleges = College::where('type', '!=', 'Entity')->orderBy('code')->get();
         $programs = Program::orderBy('code')->get();
 
+        // Build full Faculty Matrix dataset across all Entities, Campuses, Colleges & Programs for Download Reports
+        $facultyMatrix = Faculty::with(['program.college.parent', 'user.roles', 'user.scopedRoleAssignments.role'])
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get()
+            ->map(function (Faculty $f) {
+                $prog = $f->program;
+                $col = $prog?->college;
+                $ent = $col?->parent;
+                $u = $f->user;
+
+                $completedChecks = 3; // name, email, status
+                $totalChecks = 8;
+                if (! empty($f->faculty_id) || ! empty($u?->institutional_id)) {
+                    $completedChecks++;
+                }
+                if (! empty($f->academic_rank)) {
+                    $completedChecks++;
+                }
+                if (! empty($f->highest_qualification)) {
+                    $completedChecks++;
+                }
+                if (! empty($f->specialization)) {
+                    $completedChecks++;
+                }
+                if (! empty($f->phone) || ! empty($u?->phone)) {
+                    $completedChecks++;
+                }
+                $completionPct = (int) round(($completedChecks / $totalChecks) * 100);
+
+                $roleNames = collect();
+                if ($u) {
+                    foreach ($u->scopedRoleAssignments as $sra) {
+                        if ($sra->role) {
+                            $roleNames->push($sra->role->name);
+                        }
+                    }
+                    foreach ($u->roles as $r) {
+                        $roleNames->push($r->name);
+                    }
+                }
+                if ($roleNames->isEmpty()) {
+                    $roleNames->push('Faculty Member');
+                }
+
+                return [
+                    'id' => $f->id,
+                    'institutional_id' => $u?->institutional_id ?: ($f->faculty_id ?: 'DSSC-FAC-'.str_pad((string) $f->id, 3, '0', STR_PAD_LEFT)),
+                    'employee_id' => $f->employee_id,
+                    'full_name' => $f->full_name,
+                    'title_name' => $f->title_name,
+                    'email' => $f->email ?: ($u?->email ?? ''),
+                    'phone' => $f->phone ?: ($u?->phone ?? '—'),
+                    'entity_code' => $ent?->code ?: 'DSSC-MAIN',
+                    'entity_name' => $ent?->name ?: 'DSSC Main Campus (Matti, Digos City)',
+                    'college_code' => $col?->code ?: 'CIDS',
+                    'college_name' => $col?->name ?: 'College of Information and Digital Sciences',
+                    'program_code' => $prog?->code ?: 'BSIS',
+                    'program_name' => $prog?->name ?: 'Bachelor of Science in Information Systems',
+                    'academic_rank' => $f->academic_rank ?: 'Instructor I',
+                    'employment_type' => $f->employment_type ?: 'Full-Time / Regular',
+                    'appointment_status' => $f->appointment_status ?: 'Permanent',
+                    'highest_qualification' => $f->highest_qualification ?: 'Master\'s Degree',
+                    'specialization' => $f->specialization ?: 'Information Systems & Computing',
+                    'office_room' => $f->office_room ?: 'Faculty Center',
+                    'roles' => $roleNames->unique()->values()->implode(', '),
+                    'status' => $f->status ?: 'Active',
+                    'profile_completion' => $completionPct,
+                ];
+            })
+            ->values()
+            ->all();
+
         $summaryStats = [
             'total_users' => User::count(),
             'active_users' => User::where('account_status', 'Active')->count(),
@@ -763,11 +1055,13 @@ class InstitutionGovernanceController extends Controller
             'multi_role_users' => User::has('scopedRoleAssignments', '>=', 2)->count(),
             'entities_covered' => $entities->count(),
             'colleges_covered' => $colleges->count(),
+            'total_faculty_matrix' => count($facultyMatrix),
         ];
 
         return Inertia::render('institution/users/index', [
             'usersPaginator' => $paginator,
             'users' => $paginator->items(),
+            'facultyMatrix' => $facultyMatrix,
             'summaryStats' => $summaryStats,
             'filters' => [
                 'search' => $search,
@@ -944,16 +1238,249 @@ class InstitutionGovernanceController extends Controller
     }
 
     /**
+     * Ensure comprehensive module permissions exist across all 12 Velora modules
+     */
+    protected function ensurePermissionCatalogSynced(): void
+    {
+        $catalog = [
+            // 1. Institution Governance
+            ['name' => 'institution.governance.view', 'module' => 'Institution Governance', 'capability' => 'View', 'description' => 'Access and view institutional profile, command center, and global standards.'],
+            ['name' => 'institution.governance.create', 'module' => 'Institution Governance', 'capability' => 'Create', 'description' => 'Add new institutional governance policies, standards, and workflows.'],
+            ['name' => 'institution.governance.edit', 'module' => 'Institution Governance', 'capability' => 'Edit', 'description' => 'Modify existing institutional profile, branding, and report letterheads.'],
+            ['name' => 'institution.governance.delete', 'module' => 'Institution Governance', 'capability' => 'Delete', 'description' => 'Remove obsolete governance drafts or configuration records (with confirmation).'],
+            ['name' => 'institution.governance.configure', 'module' => 'Institution Governance', 'capability' => 'Configure', 'description' => 'Configure feature flags, module availability, and terminology overrides.'],
+            ['name' => 'institution.governance.assign', 'module' => 'Institution Governance', 'capability' => 'Assign', 'description' => 'Assign roles and configure scoped permissions for institutional administrators.'],
+
+            // 2. Organization Management
+            ['name' => 'organization.entity.view', 'module' => 'Organization Management', 'capability' => 'View', 'description' => 'View the organizational structure tree, entities, campuses, and colleges.'],
+            ['name' => 'organization.entity.create', 'module' => 'Organization Management', 'capability' => 'Create', 'description' => 'Create, archive, or reorganize campus entities.'],
+            ['name' => 'organization.college.create', 'module' => 'Organization Management', 'capability' => 'Create', 'description' => 'Create, move, or archive colleges under entities.'],
+            ['name' => 'organization.college.configure', 'module' => 'Organization Management', 'capability' => 'Configure', 'description' => 'Configure college onboarding, branding, and module inheritance.'],
+            ['name' => 'organization.program.manage', 'module' => 'Organization Management', 'capability' => 'Edit', 'description' => 'Create and manage degree programs and curricula.'],
+            ['name' => 'organization.unit.delete', 'module' => 'Organization Management', 'capability' => 'Delete', 'description' => 'Archive or retire unreferenced organizational units.'],
+
+            // 3. Users & Identity
+            ['name' => 'users.view', 'module' => 'Users & Identity', 'capability' => 'View', 'description' => 'Browse canonical user accounts, profiles, and organizational affiliations.'],
+            ['name' => 'users.create', 'module' => 'Users & Identity', 'capability' => 'Create', 'description' => 'Provision or invite new canonical user identities.'],
+            ['name' => 'users.manage', 'module' => 'Users & Identity', 'capability' => 'Edit', 'description' => 'Update, suspend, lock, and manage canonical user accounts and MFA settings.'],
+            ['name' => 'users.delete', 'module' => 'Users & Identity', 'capability' => 'Delete', 'description' => 'Archive or retire inactive user accounts with audit preservation.'],
+            ['name' => 'users.export', 'module' => 'Users & Identity', 'capability' => 'Export', 'description' => 'Export the institutional faculty matrix and canonical identity directory.'],
+
+            // 4. Roles & Permissions
+            ['name' => 'roles.view', 'module' => 'Roles & Permissions', 'capability' => 'View', 'description' => 'View role definitions, permission matrix, and assigned users.'],
+            ['name' => 'roles.create', 'module' => 'Roles & Permissions', 'capability' => 'Create', 'description' => 'Create or duplicate reusable custom roles.'],
+            ['name' => 'roles.manage', 'module' => 'Roles & Permissions', 'capability' => 'Configure', 'description' => 'Modify role definitions, scope restrictions, and the granular permission matrix.'],
+            ['name' => 'roles.delete', 'module' => 'Roles & Permissions', 'capability' => 'Delete', 'description' => 'Deactivate, retire, or delete eligible custom roles.'],
+
+            // 5. Scoped Assignments
+            ['name' => 'roles.assign.view', 'module' => 'Scoped Assignments', 'capability' => 'View', 'description' => 'Inspect active scoped role assignments and pending access requests.'],
+            ['name' => 'roles.assign', 'module' => 'Scoped Assignments', 'capability' => 'Assign', 'description' => 'Bind User + Role + Scope + Effective Period across entities and colleges.'],
+            ['name' => 'access_requests.review', 'module' => 'Scoped Assignments', 'capability' => 'Review', 'description' => 'Review incoming cross-entity or elevated role delegation requests.'],
+            ['name' => 'access_requests.approve', 'module' => 'Scoped Assignments', 'capability' => 'Approve', 'description' => 'Approve or deny cross-entity or elevated access requests.'],
+
+            // 6. Academic Governance
+            ['name' => 'academic_period.view', 'module' => 'Academic Governance', 'capability' => 'View', 'description' => 'View active and historical academic periods, programs, and curricula.'],
+            ['name' => 'academic_period.create', 'module' => 'Academic Governance', 'capability' => 'Create', 'description' => 'Create new academic periods, curriculum versions, and course catalog items.'],
+            ['name' => 'academic_period.edit', 'module' => 'Academic Governance', 'capability' => 'Edit', 'description' => 'Modify academic period dates, curriculum mappings, and course offerings.'],
+            ['name' => 'academic_period.configure', 'module' => 'Academic Governance', 'capability' => 'Configure', 'description' => 'Define institution-wide academic years, terms, and planning rules.'],
+            ['name' => 'academic_period.approve', 'module' => 'Academic Governance', 'capability' => 'Approve', 'description' => 'Activate or close official academic periods and curriculum revisions.'],
+
+            // 7. Semester Scheduling
+            ['name' => 'schedule.view', 'module' => 'Semester Scheduling', 'capability' => 'View', 'description' => 'View master timetables, faculty loading, and room schedules.'],
+            ['name' => 'schedule.generate', 'module' => 'Semester Scheduling', 'capability' => 'Create', 'description' => 'Run OR-Tools solver and generate schedule drafts.'],
+            ['name' => 'schedule.edit', 'module' => 'Semester Scheduling', 'capability' => 'Edit', 'description' => 'Modify section assignments, faculty loads, and room allocations.'],
+            ['name' => 'schedule.review', 'module' => 'Semester Scheduling', 'capability' => 'Review', 'description' => 'Review schedule candidates and flag conflicts.'],
+            ['name' => 'schedule.approve', 'module' => 'Semester Scheduling', 'capability' => 'Approve', 'description' => 'Executive approval of college master timetable.'],
+            ['name' => 'schedule.publish', 'module' => 'Semester Scheduling', 'capability' => 'Publish', 'description' => 'Publish official semester schedule version.'],
+
+            // 8. Faculty Attendance
+            ['name' => 'attendance.view', 'module' => 'Faculty Attendance', 'capability' => 'View', 'description' => 'View faculty attendance logs, locator slips, and reconciliation status.'],
+            ['name' => 'attendance.edit', 'module' => 'Faculty Attendance', 'capability' => 'Edit', 'description' => 'Record or adjust faculty attendance, make-up classes, and travel orders.'],
+            ['name' => 'attendance.verify', 'module' => 'Faculty Attendance', 'capability' => 'Verify', 'description' => 'Verify attendance correction requests and supporting documents.'],
+            ['name' => 'attendance.export', 'module' => 'Faculty Attendance', 'capability' => 'Export', 'description' => 'Export verified faculty attendance and DTR reconciliation reports.'],
+
+            // 9. Facility Monitoring
+            ['name' => 'monitoring.view', 'module' => 'Facility Monitoring', 'capability' => 'View', 'description' => 'View daily room and laboratory session monitoring logs.'],
+            ['name' => 'attendance.observe', 'module' => 'Facility Monitoring', 'capability' => 'Create', 'description' => 'Capture room/laboratory observation and evidence.'],
+            ['name' => 'monitoring.verify', 'module' => 'Facility Monitoring', 'capability' => 'Verify', 'description' => 'Verify daily monitoring observations and discrepancies.'],
+            ['name' => 'attendance.finalize', 'module' => 'Facility Monitoring', 'capability' => 'Approve', 'description' => 'Finalize end-of-day monitoring reports.'],
+            ['name' => 'attendance.reopen', 'module' => 'Facility Monitoring', 'capability' => 'Configure', 'description' => 'Reopen locked monitoring sessions with audit reason.'],
+
+            // 10. Inventory & Facilities
+            ['name' => 'inventory.view', 'module' => 'Inventory & Facilities', 'capability' => 'View', 'description' => 'Inspect room and laboratory equipment registry.'],
+            ['name' => 'inventory.create', 'module' => 'Inventory & Facilities', 'capability' => 'Create', 'description' => 'Register new rooms, laboratories, and equipment assets.'],
+            ['name' => 'inventory.adjust', 'module' => 'Inventory & Facilities', 'capability' => 'Edit', 'description' => 'Submit inventory count or condition adjustment requests.'],
+            ['name' => 'inventory.verify', 'module' => 'Inventory & Facilities', 'capability' => 'Verify', 'description' => 'Authorize and reconcile laboratory inventory adjustments.'],
+            ['name' => 'inventory.assign', 'module' => 'Inventory & Facilities', 'capability' => 'Assign', 'description' => 'Assign Lab In-Charge custodians and temporary coverage.'],
+
+            // 11. Compliance & Research
+            ['name' => 'compliance.view', 'module' => 'Compliance & Research', 'capability' => 'View', 'description' => 'View compliance trackers, deliverables, and research portfolios.'],
+            ['name' => 'compliance.submit', 'module' => 'Compliance & Research', 'capability' => 'Create', 'description' => 'Upload syllabus and faculty deliverable submissions.'],
+            ['name' => 'compliance.review', 'module' => 'Compliance & Research', 'capability' => 'Review', 'description' => 'Review submitted syllabi, exams, and research outputs.'],
+            ['name' => 'compliance.verify', 'module' => 'Compliance & Research', 'capability' => 'Verify', 'description' => 'Verify or return faculty compliance submissions.'],
+            ['name' => 'research.verify', 'module' => 'Compliance & Research', 'capability' => 'Approve', 'description' => 'Approve faculty research, extension, and accomplishment portfolios.'],
+
+            // 12. Reports, TV & Platform Governance
+            ['name' => 'reports.view', 'module' => 'Reports & Analytics', 'capability' => 'View', 'description' => 'View institutional, college, and program performance dashboards.'],
+            ['name' => 'reports.generate', 'module' => 'Reports & Analytics', 'capability' => 'Export', 'description' => 'Generate and export verified operational or executive reports.'],
+            ['name' => 'tv.publish', 'module' => 'TV Studio & Signage', 'capability' => 'Publish', 'description' => 'Publish playlists, custom slides, and spotlights to TV displays.'],
+            ['name' => 'platform.policies.configure', 'module' => 'Platform Governance', 'capability' => 'Configure', 'description' => 'Manage institution policy templates, workflows, and terminology.'],
+            ['name' => 'platform.integrations.configure', 'module' => 'Platform Governance', 'capability' => 'Configure', 'description' => 'Configure Google Workspace, Sheets, EHRIS, and Gemini AI integrations.'],
+            ['name' => 'platform.security.audit', 'module' => 'Platform Governance', 'capability' => 'Review', 'description' => 'Inspect immutable audit logs, security policies, and data quality health.'],
+        ];
+
+        $allPermIds = [];
+        foreach ($catalog as $item) {
+            $perm = Permission::updateOrCreate(
+                ['name' => $item['name']],
+                [
+                    'module' => $item['module'],
+                    'capability' => $item['capability'],
+                    'description' => $item['description'],
+                ],
+            );
+            $allPermIds[] = $perm->id;
+        }
+
+        // Ensure Institution Super Admin has all permissions if it currently has fewer than 20
+        $superAdminRole = Role::where('name', 'Institution Super Admin')->first();
+        if ($superAdminRole && $superAdminRole->permissions()->count() < 20) {
+            $superAdminRole->permissions()->syncWithoutDetaching($allPermIds);
+        }
+    }
+
+    /**
      * 5. Role Management & Granular Permission Matrix UI
      */
     public function roles(): Response
     {
-        $roles = Role::with('permissions:id,name,module,capability')->withCount(['users', 'scopedAssignments'])->orderBy('id')->get();
-        $permissions = Permission::orderBy('module')->orderBy('name')->get();
+        $this->ensurePermissionCatalogSynced();
+
+        $roles = Role::with([
+            'permissions:id,name,module,capability,description',
+            'users:id,name,email,institutional_id,account_status',
+            'scopedAssignments.user:id,name,email,institutional_id,account_status',
+            'scopedAssignments.entity:id,code,name',
+            'scopedAssignments.college:id,code,name',
+            'scopedAssignments.program:id,code,name',
+        ])->withCount(['users', 'scopedAssignments'])->orderBy('id')->get();
+
+        $permissions = Permission::orderBy('module')->orderBy('id')->get();
+
+        $auditLogs = InstitutionAuditLog::whereIn('module', ['Roles & Permissions', 'Scoped Assignments', 'Users & Identity'])
+            ->latest()
+            ->limit(120)
+            ->get();
+
+        $defaultScopesByTier = [
+            'Institution' => ['Institution', 'Entity', 'College', 'Program'],
+            'Entity' => ['Entity', 'College'],
+            'College' => ['College', 'Program'],
+            'Program' => ['Program'],
+            'Academic' => ['College', 'Program'],
+            'Operational' => ['Entity', 'College', 'Operational'],
+        ];
+
+        $roles->transform(function (Role $role) use ($auditLogs, $defaultScopesByTier) {
+            // Merge direct role users and scoped assignment users into a deduplicated list
+            $assignedUsers = collect();
+
+            foreach ($role->scopedAssignments as $sra) {
+                if ($sra->user) {
+                    $scopeCode = $sra->program?->code
+                        ?: ($sra->college?->code ?: ($sra->entity?->code ?: $sra->scope_level));
+                    $assignedUsers->push([
+                        'id' => $sra->user->id,
+                        'name' => $sra->user->name,
+                        'email' => $sra->user->email,
+                        'institutional_id' => $sra->user->institutional_id ?: sprintf('DSSC-USR-%03d', $sra->user->id),
+                        'scope_level' => $sra->scope_level,
+                        'scope_code' => $scopeCode,
+                        'designation_type' => $sra->designation_type ?: 'Primary',
+                        'status' => $sra->status ?: 'Active',
+                    ]);
+                }
+            }
+
+            foreach ($role->users as $u) {
+                if (! $assignedUsers->contains('id', $u->id)) {
+                    $assignedUsers->push([
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'email' => $u->email,
+                        'institutional_id' => $u->institutional_id ?: sprintf('DSSC-USR-%03d', $u->id),
+                        'scope_level' => $role->tier ?: 'College',
+                        'scope_code' => strtoupper(substr($role->tier ?: 'COL', 0, 4)),
+                        'designation_type' => 'Primary',
+                        'status' => $u->account_status ?: 'Active',
+                    ]);
+                }
+            }
+
+            $roleLogs = $auditLogs->filter(function (InstitutionAuditLog $log) use ($role) {
+                return str_contains(strtolower($log->target_name ?? ''), strtolower($role->name));
+            })->take(15)->map(fn (InstitutionAuditLog $log) => [
+                'id' => $log->id,
+                'action' => $log->action,
+                'target_name' => $log->target_name,
+                'actor_name' => $log->actor_name ?: 'Dr. Arthur Pendelton',
+                'actor_role' => $log->actor_role ?: 'Institution Super Admin',
+                'reason' => $log->reason,
+                'severity' => $log->severity ?: 'info',
+                'previous_value' => $log->previous_value,
+                'new_value' => $log->new_value,
+                'timestamp' => $log->created_at?->format('M d, Y · h:i A') ?? 'Recently',
+            ])->values()->all();
+
+            $uniqueUserCount = $assignedUsers->unique('id')->count();
+            $scopedCount = $role->scoped_assignments_count ?? 0;
+            $isSystem = (bool) $role->is_system_role;
+
+            $canDelete = ! $isSystem && $uniqueUserCount === 0 && $scopedCount === 0;
+            $deleteBlockReason = null;
+            if ($isSystem) {
+                $deleteBlockReason = 'Protected core system role. System roles cannot be permanently deleted; use Deactivate / Retire Role if needed.';
+            } elseif ($uniqueUserCount > 0 || $scopedCount > 0) {
+                $deleteBlockReason = "Assigned to {$uniqueUserCount} user(s) across {$scopedCount} scoped binding(s). Deactivate / Retire Role instead to preserve historical assignments and audit integrity.";
+            }
+
+            $role->setAttribute('status', $role->status ?: 'Active');
+            $role->setAttribute(
+                'allowed_scopes',
+                ! empty($role->allowed_scopes)
+                    ? $role->allowed_scopes
+                    : ($defaultScopesByTier[$role->tier ?? 'College'] ?? ['College', 'Program']),
+            );
+            $role->setAttribute('requires_mfa', (bool) ($role->requires_mfa || in_array($role->risk_level, ['Critical', 'High'])));
+            $role->setAttribute('requires_approval', (bool) ($role->requires_approval || in_array($role->risk_level, ['Critical', 'High', 'Elevated'])));
+            $role->setAttribute('assigned_users', $assignedUsers->unique('id')->values()->all());
+            $role->setAttribute('users_count', $uniqueUserCount);
+            $role->setAttribute('role_audit_logs', $roleLogs);
+            $role->setAttribute('can_delete', $canDelete);
+            $role->setAttribute('delete_block_reason', $deleteBlockReason);
+            $role->setAttribute('updated_at_formatted', $role->updated_at?->format('M d, Y · h:i A') ?? 'Nov 05, 2026');
+
+            return $role;
+        });
+
+        $formattedAuditHistory = $auditLogs->map(fn (InstitutionAuditLog $log) => [
+            'id' => $log->id,
+            'module' => $log->module,
+            'action' => $log->action,
+            'target_name' => $log->target_name,
+            'actor_name' => $log->actor_name ?: 'Dr. Arthur Pendelton',
+            'actor_role' => $log->actor_role ?: 'Institution Super Admin',
+            'reason' => $log->reason,
+            'severity' => $log->severity ?: 'info',
+            'previous_value' => $log->previous_value,
+            'new_value' => $log->new_value,
+            'timestamp' => $log->created_at?->format('M d, Y · h:i A') ?? 'Recently',
+        ])->values()->all();
 
         return Inertia::render('institution/users/roles-permissions', [
             'roles' => $roles,
             'permissions' => $permissions,
+            'auditHistory' => $formattedAuditHistory,
         ]);
     }
 
@@ -965,21 +1492,48 @@ class InstitutionGovernanceController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:100|unique:roles,name',
             'tier' => 'required|string|in:Institution,Entity,College,Program,Operational,Academic',
+            'portal_type' => 'nullable|string|max:50',
             'risk_level' => 'required|string|in:Critical,High,Elevated,Standard,Restricted',
+            'status' => 'nullable|string|in:Active,Inactive,Retired',
             'description' => 'nullable|string|max:500',
+            'allowed_scopes' => 'nullable|array',
+            'assignable_by' => 'nullable|array',
+            'requires_mfa' => 'nullable|boolean',
+            'requires_approval' => 'nullable|boolean',
+            'icon_key' => 'nullable|string|max:50',
             'permission_ids' => 'nullable|array',
         ]);
+
+        $actor = $request->user();
+        if ($actor && ! $actor->isInstitutionSuperAdmin()) {
+            if ($actor->hasRole('Dean') && ! in_array($validated['tier'], ['Program', 'Academic'])) {
+                return back()->with('error', 'Deans may only create roles within Program or Academic tiers.');
+            }
+            if ($actor->isCollegeAdmin() && ! in_array($validated['tier'], ['College', 'Operational', 'Academic'])) {
+                return back()->with('error', 'College Admins may only create roles within College, Operational, or Academic tiers.');
+            }
+        }
+
+        $meta = PortalContextService::resolveRolePortalMeta($validated['name']);
 
         $role = Role::create([
             'name' => $validated['name'],
             'tier' => $validated['tier'],
+            'portal_type' => $validated['portal_type'] ?? $meta['portal_type'],
             'risk_level' => $validated['risk_level'],
             'is_system_role' => false,
+            'status' => $validated['status'] ?? 'Active',
             'description' => $validated['description'] ?? null,
+            'allowed_scopes' => $validated['allowed_scopes'] ?? [$validated['tier']],
+            'assignable_by' => $validated['assignable_by'] ?? ['Institution Super Admin', 'College Admin', 'Dean'],
+            'requires_mfa' => $validated['requires_mfa'] ?? in_array($validated['risk_level'], ['Critical', 'High']),
+            'requires_approval' => $validated['requires_approval'] ?? true,
+            'icon_key' => $validated['icon_key'] ?? 'shield',
         ]);
 
-        if (! empty($validated['permission_ids'])) {
-            $role->permissions()->sync($validated['permission_ids']);
+        $permIds = $validated['permission_ids'] ?? [];
+        if (! empty($permIds)) {
+            $role->permissions()->sync($permIds);
         }
 
         InstitutionAuditLog::record(
@@ -988,12 +1542,231 @@ class InstitutionGovernanceController extends Controller
             targetName: "{$role->name} ({$role->tier} · {$role->risk_level} Risk)",
             actor: $request->user(),
             previousValue: null,
-            newValue: $validated,
-            reason: 'Custom role added to Velora Role Catalog.',
+            newValue: [
+                'name' => $role->name,
+                'tier' => $role->tier,
+                'risk_level' => $role->risk_level,
+                'status' => $role->status,
+                'allowed_scopes' => $role->allowed_scopes,
+                'permissions_count' => count($permIds),
+            ],
+            reason: 'Custom reusable role created via Velora Role Editor.',
             severity: 'success',
         );
 
-        return back()->with('success', "Role '{$role->name}' created successfully.");
+        return back()->with('success', "Role '{$role->name}' created with ".count($permIds).' permissions.');
+    }
+
+    /**
+     * Update an existing Role (Basic Info, Module Access, Action Permissions, Scope Restrictions)
+     */
+    public function updateRole(Request $request, Role $role): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:roles,name,'.$role->id,
+            'tier' => 'required|string|in:Institution,Entity,College,Program,Operational,Academic',
+            'risk_level' => 'required|string|in:Critical,High,Elevated,Standard,Restricted',
+            'status' => 'nullable|string|in:Active,Inactive,Retired',
+            'description' => 'nullable|string|max:500',
+            'allowed_scopes' => 'nullable|array',
+            'requires_mfa' => 'nullable|boolean',
+            'requires_approval' => 'nullable|boolean',
+            'icon_key' => 'nullable|string|max:50',
+            'permission_ids' => 'nullable|array',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        // Prevent deactivating/retiring the Institution Super Admin role
+        if ($role->name === 'Institution Super Admin' && isset($validated['status']) && $validated['status'] !== 'Active') {
+            return back()->withErrors([
+                'status' => 'The Institution Super Admin role is the central governance authority and must remain Active.',
+            ]);
+        }
+
+        $previousPerms = $role->permissions()->pluck('name', 'permissions.id')->toArray();
+        $prevSnapshot = [
+            'name' => $role->name,
+            'tier' => $role->tier,
+            'risk_level' => $role->risk_level,
+            'status' => $role->status ?: 'Active',
+            'allowed_scopes' => $role->allowed_scopes,
+            'permissions_count' => count($previousPerms),
+        ];
+
+        $role->update([
+            'name' => $role->is_system_role && $role->name === 'Institution Super Admin' ? $role->name : $validated['name'],
+            'tier' => $validated['tier'],
+            'risk_level' => $validated['risk_level'],
+            'status' => $validated['status'] ?? ($role->status ?: 'Active'),
+            'description' => $validated['description'] ?? $role->description,
+            'allowed_scopes' => $validated['allowed_scopes'] ?? $role->allowed_scopes,
+            'requires_mfa' => $validated['requires_mfa'] ?? $role->requires_mfa,
+            'requires_approval' => $validated['requires_approval'] ?? $role->requires_approval,
+            'icon_key' => $validated['icon_key'] ?? $role->icon_key,
+        ]);
+
+        $addedNames = [];
+        $removedNames = [];
+
+        if (array_key_exists('permission_ids', $validated)) {
+            $newIds = array_map('intval', $validated['permission_ids'] ?? []);
+            $oldIds = array_map('intval', array_keys($previousPerms));
+
+            $addedIds = array_diff($newIds, $oldIds);
+            $removedIds = array_diff($oldIds, $newIds);
+
+            if (! empty($addedIds)) {
+                $addedNames = Permission::whereIn('id', $addedIds)->pluck('name')->all();
+            }
+            if (! empty($removedIds)) {
+                $removedNames = Permission::whereIn('id', $removedIds)->pluck('name')->all();
+            }
+
+            $role->permissions()->sync($newIds);
+        }
+
+        InstitutionAuditLog::record(
+            module: 'Roles & Permissions',
+            action: 'Updated Role & Permission Bundle',
+            targetName: "{$role->name} ({$role->tier})",
+            actor: $request->user(),
+            previousValue: $prevSnapshot,
+            newValue: [
+                'name' => $role->name,
+                'tier' => $role->tier,
+                'risk_level' => $role->risk_level,
+                'status' => $role->status,
+                'allowed_scopes' => $role->allowed_scopes,
+                'added_permissions' => array_slice($addedNames, 0, 12),
+                'removed_permissions' => array_slice($removedNames, 0, 12),
+                'permissions_count' => $role->permissions()->count(),
+            ],
+            reason: $validated['reason'] ?? sprintf(
+                'Modified role configuration (+%d granted, -%d revoked).',
+                count($addedNames),
+                count($removedNames),
+            ),
+            severity: in_array($role->risk_level, ['Critical', 'High']) ? 'warning' : 'info',
+        );
+
+        return back()->with('success', "Role '{$role->name}' updated successfully.");
+    }
+
+    /**
+     * Duplicate an existing Role into a new Custom Role
+     */
+    public function duplicateRole(Request $request, Role $role): RedirectResponse
+    {
+        $baseName = trim((string) $request->input('name', "{$role->name} (Copy)"));
+        $candidateName = $baseName;
+        $counter = 2;
+        while (Role::where('name', $candidateName)->exists()) {
+            $candidateName = "{$baseName} {$counter}";
+            $counter++;
+        }
+
+        $copy = Role::create([
+            'name' => $candidateName,
+            'tier' => $role->tier ?: 'College',
+            'risk_level' => $role->risk_level ?: 'Standard',
+            'is_system_role' => false,
+            'status' => 'Active',
+            'description' => $role->description ? "Cloned from {$role->name}: {$role->description}" : "Custom role duplicated from {$role->name}.",
+            'allowed_scopes' => $role->allowed_scopes ?: [$role->tier ?: 'College'],
+            'requires_mfa' => (bool) $role->requires_mfa,
+            'requires_approval' => (bool) $role->requires_approval,
+            'icon_key' => $role->icon_key ?: 'shield',
+        ]);
+
+        $permIds = $role->permissions()->pluck('permissions.id')->all();
+        $copy->permissions()->sync($permIds);
+
+        InstitutionAuditLog::record(
+            module: 'Roles & Permissions',
+            action: 'Duplicated Role Definition',
+            targetName: "{$copy->name} (from {$role->name})",
+            actor: $request->user(),
+            previousValue: ['source_role' => $role->name, 'permissions_count' => count($permIds)],
+            newValue: ['new_role' => $copy->name, 'tier' => $copy->tier, 'permissions_count' => count($permIds)],
+            reason: "Duplicated role '{$role->name}' as a customizable role template.",
+            severity: 'success',
+        );
+
+        return back()->with('success', "Duplicated '{$role->name}' as '{$copy->name}'.");
+    }
+
+    /**
+     * Activate, Deactivate, or Retire a Role while preserving historical assignments & audit trail
+     */
+    public function updateRoleStatus(Request $request, Role $role): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => 'required|string|in:Active,Inactive,Retired',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        if ($role->name === 'Institution Super Admin' && $validated['status'] !== 'Active') {
+            return back()->with('error', 'Protection Policy: The Institution Super Admin role cannot be deactivated or retired.');
+        }
+
+        $prevStatus = $role->status ?: 'Active';
+        $role->update(['status' => $validated['status']]);
+
+        InstitutionAuditLog::record(
+            module: 'Roles & Permissions',
+            action: $validated['status'] === 'Active' ? 'Activated Role' : "Marked Role as {$validated['status']}",
+            targetName: "{$role->name} ({$role->tier})",
+            actor: $request->user(),
+            previousValue: ['status' => $prevStatus],
+            newValue: ['status' => $validated['status']],
+            reason: $validated['reason'] ?? "Role lifecycle status changed from {$prevStatus} to {$validated['status']} while preserving historical assignments.",
+            severity: $validated['status'] === 'Active' ? 'success' : 'warning',
+        );
+
+        return back()->with('success', "Role '{$role->name}' status updated to {$validated['status']}.");
+    }
+
+    /**
+     * Delete an eligible Custom Role (Blocks system roles and roles with assignments)
+     */
+    public function destroyRole(Request $request, Role $role): RedirectResponse
+    {
+        if ($role->is_system_role || $role->name === 'Institution Super Admin') {
+            return back()->with(
+                'error',
+                "Protection Policy: '{$role->name}' is a protected core system role and cannot be permanently deleted. Use Deactivate / Retire Role instead.",
+            );
+        }
+
+        $usersCount = $role->users()->count();
+        $scopedCount = $role->scopedAssignments()->count();
+
+        if ($usersCount > 0 || $scopedCount > 0) {
+            return back()->with(
+                'error',
+                "Cannot permanently delete '{$role->name}' because it has {$usersCount} user(s) and {$scopedCount} scoped assignment(s). Deactivate / Retire Role to preserve historical audit records.",
+            );
+        }
+
+        $roleName = $role->name;
+        $roleTier = $role->tier;
+        $permCount = $role->permissions()->count();
+
+        $role->permissions()->detach();
+        $role->delete();
+
+        InstitutionAuditLog::record(
+            module: 'Roles & Permissions',
+            action: 'Permanently Deleted Custom Role',
+            targetName: "{$roleName} ({$roleTier})",
+            actor: $request->user(),
+            previousValue: ['name' => $roleName, 'tier' => $roleTier, 'permissions_count' => $permCount],
+            newValue: null,
+            reason: 'Deleted unassigned custom role with zero active or historical dependencies.',
+            severity: 'warning',
+        );
+
+        return back()->with('success', "Custom role '{$roleName}' permanently deleted.");
     }
 
     /**
@@ -1021,9 +1794,9 @@ class InstitutionGovernanceController extends Controller
             action: $action,
             targetName: "{$role->name} ↔ {$permission->name}",
             actor: $request->user(),
-            previousValue: ['granted' => $attached],
-            newValue: ['granted' => ! $attached],
-            reason: "Permission matrix updated for role '{$role->name}'.",
+            previousValue: ['permission' => $permission->name, 'module' => $permission->module, 'granted' => $attached],
+            newValue: ['permission' => $permission->name, 'module' => $permission->module, 'granted' => ! $attached],
+            reason: "Permission matrix updated for role '{$role->name}' ({$permission->module} · {$permission->capability}).",
             severity: 'info',
         );
 
@@ -1031,11 +1804,46 @@ class InstitutionGovernanceController extends Controller
     }
 
     /**
+     * Bulk sync module or role permissions
+     */
+    public function syncRolePermissions(Request $request, Role $role): RedirectResponse
+    {
+        $validated = $request->validate([
+            'permission_ids' => 'present|array',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $oldIds = $role->permissions()->pluck('permissions.id')->map(fn ($id) => (int) $id)->all();
+        $newIds = array_map('intval', $validated['permission_ids']);
+
+        $addedIds = array_diff($newIds, $oldIds);
+        $removedIds = array_diff($oldIds, $newIds);
+
+        $addedNames = ! empty($addedIds) ? Permission::whereIn('id', $addedIds)->pluck('name')->all() : [];
+        $removedNames = ! empty($removedIds) ? Permission::whereIn('id', $removedIds)->pluck('name')->all() : [];
+
+        $role->permissions()->sync($newIds);
+
+        InstitutionAuditLog::record(
+            module: 'Roles & Permissions',
+            action: 'Updated Role Permission Matrix',
+            targetName: "{$role->name} ({$role->tier})",
+            actor: $request->user(),
+            previousValue: ['permissions_count' => count($oldIds), 'revoked' => array_slice($removedNames, 0, 10)],
+            newValue: ['permissions_count' => count($newIds), 'granted' => array_slice($addedNames, 0, 10)],
+            reason: $validated['reason'] ?? sprintf('Synced permissions (+%d added, -%d removed).', count($addedNames), count($removedNames)),
+            severity: 'info',
+        );
+
+        return back()->with('success', "Saved permission changes for '{$role->name}'.");
+    }
+
+    /**
      * 6. Scoped Role Assignments & Access Requests / Delegation Workspace
      */
     public function scopedRoles(Request $request): Response
     {
-        $assignments = ScopedRoleAssignment::with(['user', 'role', 'entity', 'college', 'program', 'facility', 'replacingUser'])->latest()->get();
+        $assignments = ScopedRoleAssignment::with(['user', 'role', 'entity', 'college', 'program', 'facility', 'replacingUser', 'assignedBy'])->latest()->get();
         $accessRequests = InstitutionAccessRequest::with(['requester', 'targetUser', 'requestedRole', 'entity', 'college', 'program', 'reviewer'])->latest()->get();
         $users = User::select('id', 'name', 'email', 'institutional_id')->orderBy('name')->get();
         $roles = Role::orderBy('name')->get();
@@ -1070,7 +1878,9 @@ class InstitutionGovernanceController extends Controller
             'college_id' => 'nullable|exists:colleges,id',
             'program_id' => 'nullable|exists:programs,id',
             'facility_id' => 'nullable|exists:rooms,id',
-            'designation_type' => 'nullable|string|in:Primary,Secondary,Acting,Replacement,Scheduled',
+            'designation_type' => 'nullable|string|in:Primary,Secondary,Acting,Replacement,Scheduled,Concurrent,Special Assignment',
+            'appointment_reference' => 'nullable|string|max:255',
+            'assignment_reason' => 'nullable|string|max:500',
             'replacing_user_id' => 'nullable|exists:users,id',
             'effective_from' => 'nullable|date',
             'effective_until' => 'nullable|date|after_or_equal:effective_from',
@@ -1080,6 +1890,15 @@ class InstitutionGovernanceController extends Controller
         $scopeLevel = $validated['scope_level']
             ?? (! empty($validated['program_id']) ? 'Program' : (! empty($validated['college_id']) ? 'College' : (! empty($validated['entity_id']) ? 'Entity' : 'Institution')));
 
+        $user = User::find($validated['user_id']);
+        $role = Role::find($validated['role_id']);
+        $actor = $request->user();
+
+        // Enforce Assignable Roles Matrix
+        if ($actor && ! app(PortalContextService::class)->canAssignRole($actor, $role, $scopeLevel, $validated['college_id'] ?? null)) {
+            return back()->with('error', "Authority policy violation: You are not authorized to assign the role '{$role->name}' within this scope.");
+        }
+
         $isFuture = ! empty($validated['effective_from']) && $validated['effective_from'] > now()->toDateString();
 
         $assignment = ScopedRoleAssignment::create([
@@ -1088,7 +1907,7 @@ class InstitutionGovernanceController extends Controller
             'scope_level' => $scopeLevel,
             'designation_type' => $validated['designation_type'] ?? ($isFuture ? 'Scheduled' : 'Primary'),
             'status' => $isFuture ? 'Scheduled' : 'Active',
-            'assigned_by_user_id' => $request->user()?->id,
+            'assigned_by_user_id' => $actor?->id,
         ]);
 
         // Also attach role to user_role pivot so role checks recognize the capability

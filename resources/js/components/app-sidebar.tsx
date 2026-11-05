@@ -43,6 +43,7 @@ import {
     ShieldAlert,
     Send,
     Award,
+    Palette,
     History,
     ShieldCheck,
     CheckCheckIcon,
@@ -150,6 +151,12 @@ const adminNavGroups: NavGroup[] = [
         ],
     },
     {
+        title: 'COLLEGE SETTINGS & BRAND',
+        items: [
+            { title: 'Brand & Visual Theme', url: '/college/settings/branding', icon: Palette },
+        ],
+    },
+    {
         title: 'TV DISPLAY STUDIO',
         items: [
             { title: 'TV Workspace', url: '/tv-config/dashboard', icon: Tv },
@@ -242,6 +249,91 @@ const institutionSuperAdminNavGroups: NavGroup[] = [
             { title: 'Privacy & Security', url: '/institution/audit?tab=security', icon: Shield },
             { title: 'Data Retention', url: '/institution/audit?tab=retention', icon: Clock },
             { title: 'System Settings', url: '/institution/audit?tab=system', icon: Settings },
+        ],
+    },
+];
+
+// VPAF / Executive Workspace Navigation Groups (Executive, Comparative, and Decision-Oriented)
+const vpafNavGroups: NavGroup[] = [
+    {
+        title: 'VPAF / EXECUTIVE WORKSPACE',
+        items: [
+            { title: 'Dashboard', url: '/vpaf/dashboard', icon: LayoutGrid },
+        ],
+    },
+    {
+        title: 'EXECUTIVE ANALYTICS',
+        items: [
+            { title: 'College & Campus Overview', url: '/vpaf/analytics?tab=overview', icon: Building2 },
+            { title: 'Performance Comparison', url: '/vpaf/analytics?tab=comparison', icon: BarChart3 },
+            { title: 'Risk & Attention Center', url: '/vpaf/analytics?tab=risks', icon: AlertTriangle },
+            { title: 'Decision Support', url: '/vpaf/analytics?tab=decision-support', icon: Sparkles },
+        ],
+    },
+    {
+        title: 'ACADEMIC OPERATIONS',
+        items: [
+            { title: 'Faculty Workload', url: '/vpaf/academic-operations?tab=workload', icon: Briefcase },
+            { title: 'Faculty Attendance', url: '/vpaf/academic-operations?tab=attendance', icon: ClipboardCheck },
+            { title: 'Instructional Completion', url: '/vpaf/academic-operations?tab=completion', icon: Clock },
+            { title: 'Scheduling Readiness', url: '/vpaf/academic-operations?tab=scheduling', icon: CalendarDays },
+            { title: 'Exam & Make-Up Overview', url: '/vpaf/academic-operations?tab=exams-makeups', icon: RefreshCw },
+        ],
+    },
+    {
+        title: 'COMPLIANCE & QUALITY',
+        items: [
+            { title: 'Compliance Overview', url: '/vpaf/compliance-quality?tab=overview', icon: CheckSquare },
+            { title: 'Requirement Performance', url: '/vpaf/compliance-quality?tab=requirements', icon: LibraryBig },
+            { title: 'Accreditation / Evidence Status', url: '/vpaf/compliance-quality?tab=accreditation', icon: Award },
+            { title: 'Quality Indicators', url: '/vpaf/compliance-quality?tab=quality-indicators', icon: ShieldCheck },
+        ],
+    },
+    {
+        title: 'FACILITIES & RESOURCES',
+        items: [
+            { title: 'Facility Utilization', url: '/vpaf/facilities-resources?tab=utilization', icon: Building2 },
+            { title: 'Laboratory Status', url: '/vpaf/facilities-resources?tab=laboratories', icon: Monitor },
+            { title: 'Inventory & Equipment', url: '/vpaf/facilities-resources?tab=inventory', icon: Layers },
+            { title: 'Maintenance & Incidents', url: '/vpaf/facilities-resources?tab=maintenance', icon: AlertTriangle },
+            { title: 'Resource Needs', url: '/vpaf/facilities-resources?tab=resource-needs', icon: ArrowLeftRight },
+        ],
+    },
+    {
+        title: 'RESEARCH & EXTENSION',
+        items: [
+            { title: 'Research Portfolio', url: '/vpaf/research-extension?tab=research', icon: BookOpen },
+            { title: 'Extension Portfolio', url: '/vpaf/research-extension?tab=extension', icon: FolderKanban },
+            { title: 'Publications & Outputs', url: '/vpaf/research-extension?tab=publications', icon: Trophy },
+            { title: 'Partnerships', url: '/vpaf/research-extension?tab=partnerships', icon: Globe },
+        ],
+    },
+    {
+        title: 'PROJECTS & INITIATIVES',
+        items: [
+            { title: 'Institutional Projects', url: '/vpaf/projects-initiatives?tab=institutional', icon: Star },
+            { title: 'Cross-College Projects', url: '/vpaf/projects-initiatives?tab=cross-college', icon: Network },
+            { title: 'Project Performance', url: '/vpaf/projects-initiatives?tab=performance', icon: Activity },
+        ],
+    },
+    {
+        title: 'REPORTS',
+        items: [
+            { title: 'Executive Reports', url: '/vpaf/reports?tab=executive', icon: FileText },
+            { title: 'College Comparison Reports', url: '/vpaf/reports?tab=comparison', icon: BarChart3 },
+            { title: 'Academic Operations Reports', url: '/vpaf/reports?tab=academic-operations', icon: Briefcase },
+            { title: 'Compliance Reports', url: '/vpaf/reports?tab=compliance', icon: CheckSquare },
+            { title: 'Resource Reports', url: '/vpaf/reports?tab=resources', icon: Building2 },
+            { title: 'Consolidated Institution Report', url: '/vpaf/reports?tab=consolidated', icon: FileCheck2 },
+        ],
+    },
+    {
+        title: 'TV & COMMUNICATIONS',
+        items: [
+            { title: 'Executive TV', url: '/vpaf/tv-communications?tab=executive-tv', icon: Tv },
+            { title: 'Channel Switcher', url: '/vpaf/tv-communications?tab=switcher', icon: Projector },
+            { title: 'College TV Channels', url: '/vpaf/tv-communications?tab=college-channels', icon: Monitor },
+            { title: 'Institution Highlights', url: '/vpaf/tv-communications?tab=highlights', icon: Sparkles },
         ],
     },
 ];
@@ -478,13 +570,29 @@ export function AppSidebar() {
         };
     }, []);
 
-    // Resolve active navigation group
+    const activePortalType = props.portal_context?.active_assignment?.portal_type;
+
+    // Resolve active navigation group based on the active portal context
     let groups: NavGroup[] = adminNavGroups;
 
-    if (canSwitchWorkspace && workspaceMode === 'faculty') {
+    if (activePortalType === 'faculty') {
         groups = facultyNavGroups;
+    } else if (activePortalType === 'vpaf') {
+        groups = vpafNavGroups;
+    } else if (activePortalType === 'institution_super_admin') {
+        groups = institutionSuperAdminNavGroups;
+    } else if (activePortalType === 'program_head') {
+        groups = programHeadNavGroups;
+    } else if (activePortalType === 'dean') {
+        groups = deanNavGroups;
+    } else if (activePortalType === 'lab_in_charge') {
+        groups = labInChargeNavGroups;
+    } else if (activePortalType === 'college_admin') {
+        groups = adminNavGroups;
     } else if (isInstitutionAdmin) {
         groups = institutionSuperAdminNavGroups;
+    } else if (isVpaf) {
+        groups = vpafNavGroups;
     } else if (isProgramHead) {
         groups = programHeadNavGroups;
     } else if (isDean) {
@@ -529,53 +637,6 @@ export function AppSidebar() {
 
     return (
         <Sidebar collapsible="icon" variant="sidebar" className="top-16 h-[calc(100svh-4rem)] border-r border-border/80 bg-sidebar">
-            {/* Seamless Dual-Role Workspace Switcher for Program Heads, Deans, and College Admins */}
-            {canSwitchWorkspace && (
-                <div scroll-region="true" className="p-3 border-b border-border/60 group-data-[collapsible=icon]:p-1 shrink-0 bg-muted/30">
-                    <div className="flex flex-col gap-1.5 group-data-[collapsible=icon]:items-center">
-                        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-data-[collapsible=icon]:hidden">
-                            <span>Workspace View</span>
-                            <span className="text-amber-500 font-extrabold">
-                                {workspaceMode === 'faculty' ? 'Faculty Portal' : managementLabel}
-                            </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-background border border-border group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col">
-                            <button
-                                type="button"
-                                onClick={() => toggleWorkspace('management')}
-                                className={`text-[11px] font-bold py-1 px-2 rounded-md transition-all text-center truncate ${
-                                    workspaceMode === 'management'
-                                        ? 'bg-amber-500 text-slate-950 shadow-2xs font-black'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                                title={managementTitle}
-                            >
-                                <span className="group-data-[collapsible=icon]:hidden">
-                                    {managementLabel}
-                                </span>
-                                <span className="hidden group-data-[collapsible=icon]:inline text-xs font-bold">
-                                    {managementShort}
-                                </span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => toggleWorkspace('faculty')}
-                                className={`text-[11px] font-bold py-1 px-2 rounded-md transition-all text-center truncate ${
-                                    workspaceMode === 'faculty'
-                                        ? 'bg-amber-500 text-slate-950 shadow-2xs font-black'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                                title="Faculty Self-Service Portal"
-
-                            >
-                                <span className="group-data-[collapsible=icon]:hidden">Faculty Portal</span>
-                                <span className="hidden group-data-[collapsible=icon]:inline text-xs font-bold">FAC</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             <SidebarContent ref={contentRef} className="pt-2 scrollbar-none">
                 <NavMain groups={groups} />
             </SidebarContent>
