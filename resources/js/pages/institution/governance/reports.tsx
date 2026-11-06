@@ -108,7 +108,7 @@ export default function InstitutionReports({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Institution Reports & Report Templates — Velora" />
+            <Head title="Institution Reports & Report Templates — Ascend" />
 
             <div className="mx-auto max-w-[1600px] space-y-6 p-4 md:p-6">
                 {/* Header */}
@@ -249,7 +249,7 @@ export default function InstitutionReports({
 
                             <p className="mt-5 text-center text-[11px] text-slate-500">
                                 {reportConfig?.footer_notice ||
-                                    'ISO 9001:2015 Certified · Generated via Velora Institutional Governance Platform'}
+                                    'ISO 9001:2015 Certified · Generated via Ascend Institutional Governance Platform'}
                             </p>
                         </div>
                     </div>
@@ -386,7 +386,7 @@ export default function InstitutionReports({
                         {activeReport === 'modules' && (
                             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
                                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                                    Velora Module Adoption Report
+                                    Ascend Module Adoption Report
                                 </h2>
                                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                     {modulesCatalog.map((mod) => {

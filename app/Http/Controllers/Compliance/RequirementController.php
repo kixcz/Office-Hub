@@ -10,6 +10,7 @@ use App\Models\Submission;
 use App\Models\SubmissionAuditLog;
 use App\Models\User;
 use App\Services\ComplianceService;
+use App\Services\PortalContextService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,23 @@ class RequirementController extends Controller
     {
         ComplianceService::syncPendingSubmissions();
 
+        $user = $request->user();
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        $scopeCollegeId = null;
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            $scopeCollegeId = $activeScopeId;
+        } elseif ($activeScopeType === 'program' && $activeScopeId) {
+            $scopeCollegeId = Program::find($activeScopeId)?->college_id;
+        } elseif (! $isInstitutionSuperAdmin) {
+            $scopeCollegeId = $user?->resolveActiveCollege()?->id;
+        }
+
         $selectedPeriod = $request->input('period', 'AY 2026–2027 • 1st Semester');
         $selectedProgram = $request->input('program', 'all');
         $selectedFaculty = $request->input('faculty', 'all');
@@ -32,10 +50,29 @@ class RequirementController extends Controller
         if ($selectedCategory !== 'all') {
             $requirementsQuery->where('category', $selectedCategory);
         }
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $requirementsQuery->where(fn ($q) => $q->whereNull('program_id')->orWhere('program_id', $activeScopeId));
+            } elseif ($scopeCollegeId) {
+                $requirementsQuery->where(fn ($q) => $q->whereNull('program_id')->orWhereHas('program', fn ($pq) => $pq->where('college_id', $scopeCollegeId)));
+            }
+        }
         $requirements = $requirementsQuery->get();
 
-        $programs = Program::orderBy('code')->get();
+        $programsQuery = Program::orderBy('code');
+        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+            $programsQuery->where('college_id', $scopeCollegeId);
+        }
+        $programs = $programsQuery->get();
+
         $facultyQuery = Faculty::with(['program', 'user'])->where('status', 'Active');
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $facultyQuery->where('program_id', $activeScopeId);
+            } elseif ($scopeCollegeId) {
+                $facultyQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+            }
+        }
         if ($selectedProgram !== 'all') {
             $facultyQuery->whereHas('program', fn ($q) => $q->where('code', $selectedProgram)->orWhere('id', $selectedProgram));
         }

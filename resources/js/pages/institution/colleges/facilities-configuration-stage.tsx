@@ -746,7 +746,7 @@ export default function FacilitiesConfigurationStage({
             {/* Header Stage Card */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-white dark:bg-[#1E1B38] border border-border/80 shadow-xs">
                 <div className="flex items-start gap-3.5">
-                    <div className="p-3 rounded-2xl bg-[#EDE9FE] dark:bg-[#262246] text-[#7C3AED] dark:text-[#A78BFA] shrink-0 shadow-xs">
+                    <div className="p-3 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] shrink-0 shadow-xs">
                         <Building2 className="w-6 h-6" />
                     </div>
                     <div>
@@ -754,7 +754,7 @@ export default function FacilitiesConfigurationStage({
                             <h2 className="text-lg font-extrabold text-[#17152E] dark:text-white">
                                 Stage 6: Facilities Configuration
                             </h2>
-                            <span className="text-[11px] font-bold text-[#7C3AED] dark:text-[#A78BFA] bg-[#EDE9FE] dark:bg-[#262246] px-2.5 py-0.5 rounded-full border border-[#A78BFA]/30">
+                            <span className="text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] bg-[#F1F5F9] dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-[#8B1E3F]/30">
                                 Physical Baseline
                             </span>
                         </div>
@@ -776,7 +776,7 @@ export default function FacilitiesConfigurationStage({
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
                 {/* Total Facilities */}
                 <div className="p-4 rounded-2xl bg-white dark:bg-[#1E1B38] border border-border/70 shadow-xs flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-[#EDE9FE] dark:bg-[#2A244D] text-[#7C3AED] flex items-center justify-center shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center shrink-0">
                         <Building2 className="w-5 h-5" />
                     </div>
                     <div>
@@ -858,7 +858,7 @@ export default function FacilitiesConfigurationStage({
                         onClick={() => setActiveTab('registry')}
                         className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             activeTab === 'registry'
-                                ? 'bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] text-white shadow-2xs'
+                                ? 'bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] text-white shadow-2xs'
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
@@ -874,7 +874,7 @@ export default function FacilitiesConfigurationStage({
                         }}
                         className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             activeTab === 'import'
-                                ? 'bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] text-white shadow-2xs'
+                                ? 'bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] text-white shadow-2xs'
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
@@ -890,7 +890,7 @@ export default function FacilitiesConfigurationStage({
                         }}
                         className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             activeTab === 'templates'
-                                ? 'bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] text-white shadow-2xs'
+                                ? 'bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] text-white shadow-2xs'
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
@@ -903,7 +903,7 @@ export default function FacilitiesConfigurationStage({
                         onClick={() => setActiveTab('standards')}
                         className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             activeTab === 'standards'
-                                ? 'bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] text-white shadow-2xs'
+                                ? 'bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] text-white shadow-2xs'
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
@@ -924,7 +924,7 @@ export default function FacilitiesConfigurationStage({
                     <Button
                         type="button"
                         onClick={handleOpenAddModal}
-                        className="bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] hover:from-[#4C1D95] hover:to-[#5B21B6] text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs"
+                        className="bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] hover:from-[#082847] hover:to-[#0B3A67] text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs"
                     >
                         <Plus className="w-3.5 h-3.5 mr-1.5" />
                         + Add Facility
@@ -938,14 +938,14 @@ export default function FacilitiesConfigurationStage({
                     <div className="flex items-center justify-between border-b border-border/60 pb-3">
                         <div>
                             <h3 className="text-sm font-extrabold text-[#17152E] dark:text-white flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-[#7C3AED]" />
+                                <Sparkles className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Inherited Institution Facility Types & Standards
                             </h3>
                             <p className="text-xs text-muted-foreground mt-0.5">
                                 Established by Institution Super Admin. The College Admin can later extend these facility types if allowed in delegation settings.
                             </p>
                         </div>
-                        <span className="text-[11px] font-bold text-[#5B21B6] dark:text-[#A78BFA] bg-[#EDE9FE] dark:bg-[#262246] px-3 py-1 rounded-full border border-[#A78BFA]/30">
+                        <span className="text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] bg-[#F1F5F9] dark:bg-slate-800 px-3 py-1 rounded-full border border-[#8B1E3F]/30">
                             Institutional Policy Enforced
                         </span>
                     </div>
@@ -954,7 +954,7 @@ export default function FacilitiesConfigurationStage({
                         {INSTITUTION_STANDARDS.map((std, idx) => (
                             <div
                                 key={idx}
-                                className="p-3.5 rounded-xl bg-[#F7F7FB] dark:bg-[#262246]/40 border border-border/60 space-y-1.5"
+                                className="p-3.5 rounded-xl bg-[#F7F7FB] dark:bg-slate-800 border border-border/60 space-y-1.5"
                             >
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-extrabold text-[#17152E] dark:text-white">
@@ -965,7 +965,7 @@ export default function FacilitiesConfigurationStage({
                                     </span>
                                 </div>
                                 <p className="text-[11px] text-muted-foreground">{std.specs}</p>
-                                <div className="text-[10px] text-[#7C3AED] dark:text-[#A78BFA] font-medium pt-1">
+                                <div className="text-[10px] text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] font-medium pt-1">
                                     Source: {std.inheritedFrom}
                                 </div>
                             </div>
@@ -983,7 +983,7 @@ export default function FacilitiesConfigurationStage({
                         placeholder="Search facility (name, code, or type)"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full h-9 pl-9 pr-3 rounded-xl border border-border bg-background text-xs font-medium focus:ring-1 focus:ring-[#7C3AED] focus:outline-hidden"
+                        className="w-full h-9 pl-9 pr-3 rounded-xl border border-border bg-background text-xs font-medium focus:ring-1 focus:ring-[#0B3A67] focus:outline-hidden"
                     />
                 </div>
 
@@ -1065,7 +1065,7 @@ export default function FacilitiesConfigurationStage({
                                                 setSelectedFacilityIds(selectedFacilityIds.filter((id) => !ids.has(id)));
                                             }
                                         }}
-                                        className="rounded border-border text-[#7C3AED] focus:ring-[#7C3AED]"
+                                        className="rounded border-border text-[#0B3A67] dark:text-[#93C5FD] focus:ring-[#0B3A67]"
                                     />
                                 </th>
                                 <th className="p-3.5 font-bold">Facility Code ⇅</th>
@@ -1139,19 +1139,19 @@ export default function FacilitiesConfigurationStage({
                                                             setSelectedFacilityIds(selectedFacilityIds.filter((id) => id !== f.id));
                                                         }
                                                     }}
-                                                    className="rounded border-border text-[#7C3AED] focus:ring-[#7C3AED]"
+                                                    className="rounded border-border text-[#0B3A67] dark:text-[#93C5FD] focus:ring-[#0B3A67]"
                                                 />
                                             </td>
 
                                             {/* Code */}
-                                            <td className="p-3.5 font-bold font-mono text-[11px] text-[#5B21B6] dark:text-[#A78BFA]">
+                                            <td className="p-3.5 font-bold font-mono text-[11px] text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                 {f.facility_code}
                                             </td>
 
                                             {/* Name */}
                                             <td className="p-3.5 font-semibold text-[#17152E] dark:text-white">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="p-1.5 rounded-lg bg-muted/60 text-[#7C3AED] dark:text-[#A78BFA]">
+                                                    <span className="p-1.5 rounded-lg bg-muted/60 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                         {f.facility_type === 'Computer Lab' ? (
                                                             <Monitor className="w-3.5 h-3.5" />
                                                         ) : f.facility_type === 'Laboratory' ? (
@@ -1236,7 +1236,7 @@ export default function FacilitiesConfigurationStage({
                                                         type="button"
                                                         onClick={() => handleOpenEditModal(f)}
                                                         title="Edit Facility"
-                                                        className="p-1.5 rounded-lg text-muted-foreground hover:text-[#7C3AED] hover:bg-[#EDE9FE] dark:hover:bg-[#262246] transition-colors cursor-pointer"
+                                                        className="p-1.5 rounded-lg text-muted-foreground hover:text-[#0B3A67] dark:text-[#93C5FD] hover:bg-[#F1F5F9] dark:hover:bg-[#262246] transition-colors cursor-pointer"
                                                     >
                                                         <Edit2 className="w-3.5 h-3.5" />
                                                     </button>
@@ -1287,7 +1287,7 @@ export default function FacilitiesConfigurationStage({
                                 onClick={() => setCurrentPage(idx + 1)}
                                 className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                     currentPage === idx + 1
-                                        ? 'bg-[#7C3AED] text-white shadow-2xs'
+                                        ? 'bg-[#0B3A67] text-white shadow-2xs'
                                         : 'text-foreground hover:bg-muted border border-transparent'
                                 }`}
                             >
@@ -1312,7 +1312,7 @@ export default function FacilitiesConfigurationStage({
                 {/* Bulk Import Programs / Facilities (CSV) */}
                 <div className="p-5 rounded-2xl bg-white dark:bg-[#1E1B38] border border-border/80 shadow-xs flex flex-col justify-between space-y-4">
                     <div className="flex items-start gap-3">
-                        <div className="p-2.5 rounded-xl bg-[#EDE9FE] dark:bg-[#262246] text-[#7C3AED] dark:text-[#A78BFA] shrink-0">
+                        <div className="p-2.5 rounded-xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] shrink-0">
                             <Upload className="w-5 h-5" />
                         </div>
                         <div>
@@ -1339,7 +1339,7 @@ export default function FacilitiesConfigurationStage({
                         <Button
                             type="button"
                             onClick={() => document.getElementById('facility-csv-upload-trigger')?.click()}
-                            className="bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] hover:from-[#4C1D95] hover:to-[#5B21B6] text-white text-xs font-bold rounded-xl cursor-pointer"
+                            className="bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] hover:from-[#082847] hover:to-[#0B3A67] text-white text-xs font-bold rounded-xl cursor-pointer"
                         >
                             <Upload className="w-3.5 h-3.5 mr-1.5" />
                             Import CSV
@@ -1368,10 +1368,10 @@ export default function FacilitiesConfigurationStage({
                         <li className="flex items-start gap-2">
                             <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                             <span>
-                                <strong>Automated validation:</strong> Velora validates duplicate codes, invalid capacities, unrecognized facility types, and malformed operating hours before importing.
+                                <strong>Automated validation:</strong> Ascend validates duplicate codes, invalid capacities, unrecognized facility types, and malformed operating hours before importing.
                             </span>
                         </li>
-                        <li className="flex items-start gap-2 text-[11px] text-[#5B21B6] dark:text-[#A78BFA] bg-[#EDE9FE]/50 dark:bg-[#262246]/50 p-2 rounded-xl border border-[#A78BFA]/20">
+                        <li className="flex items-start gap-2 text-[11px] text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] bg-[#F1F5F9] dark:bg-slate-800 p-2 rounded-xl border border-[#8B1E3F]/30">
                             <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                             <span>
                                 Detailed inventory items, maintenance ticketing, live occupancy, and utilization analytics are managed inside the College Admin’s Rooms & Laboratories module after onboarding.
@@ -1385,7 +1385,7 @@ export default function FacilitiesConfigurationStage({
             <div className="p-5 rounded-2xl bg-white dark:bg-[#1E1B38] border border-border/80 shadow-xs space-y-4">
                 <div className="flex items-center justify-between border-b border-border/60 pb-3">
                     <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 rounded-lg bg-[#EDE9FE] dark:bg-[#262246] text-[#7C3AED]">
+                        <div className="p-1.5 rounded-lg bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD]">
                             <Sliders className="w-4 h-4" />
                         </div>
                         <div>
@@ -1402,7 +1402,7 @@ export default function FacilitiesConfigurationStage({
                         type="button"
                         onClick={handleSaveSettings}
                         disabled={isSavingSettings}
-                        className="bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] hover:from-[#4C1D95] hover:to-[#5B21B6] text-white text-xs font-bold rounded-xl cursor-pointer"
+                        className="bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] hover:from-[#082847] hover:to-[#0B3A67] text-white text-xs font-bold rounded-xl cursor-pointer"
                     >
                         {isSavingSettings ? 'Saving...' : 'Save Facility Settings'}
                     </Button>
@@ -1410,7 +1410,7 @@ export default function FacilitiesConfigurationStage({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     {/* Toggle 1 */}
-                    <div className="flex items-start justify-between p-3 rounded-xl bg-[#F7F7FB] dark:bg-[#262246]/30 border border-border/60">
+                    <div className="flex items-start justify-between p-3 rounded-xl bg-[#F7F7FB] dark:bg-slate-800 border border-border/60">
                         <div className="space-y-0.5 pr-4">
                             <div className="font-bold text-[#17152E] dark:text-white">
                                 Allow College Admin to modify facilities after activation
@@ -1423,12 +1423,12 @@ export default function FacilitiesConfigurationStage({
                             type="checkbox"
                             checked={allowAdminModifyFacilities}
                             onChange={(e) => setAllowAdminModifyFacilities(e.target.checked)}
-                            className="rounded border-border text-[#7C3AED] focus:ring-[#7C3AED] mt-1 cursor-pointer"
+                            className="rounded border-border text-[#0B3A67] dark:text-[#93C5FD] focus:ring-[#0B3A67] mt-1 cursor-pointer"
                         />
                     </div>
 
                     {/* Toggle 2 */}
-                    <div className="flex items-start justify-between p-3 rounded-xl bg-[#F7F7FB] dark:bg-[#262246]/30 border border-border/60">
+                    <div className="flex items-start justify-between p-3 rounded-xl bg-[#F7F7FB] dark:bg-slate-800 border border-border/60">
                         <div className="space-y-0.5 pr-4">
                             <div className="font-bold text-[#17152E] dark:text-white">
                                 Require capacity before scheduling
@@ -1441,12 +1441,12 @@ export default function FacilitiesConfigurationStage({
                             type="checkbox"
                             checked={requireCapacityBeforeScheduling}
                             onChange={(e) => setRequireCapacityBeforeScheduling(e.target.checked)}
-                            className="rounded border-border text-[#7C3AED] focus:ring-[#7C3AED] mt-1 cursor-pointer"
+                            className="rounded border-border text-[#0B3A67] dark:text-[#93C5FD] focus:ring-[#0B3A67] mt-1 cursor-pointer"
                         />
                     </div>
 
                     {/* Toggle 3 */}
-                    <div className="flex items-start justify-between p-3 rounded-xl bg-[#F7F7FB] dark:bg-[#262246]/30 border border-border/60">
+                    <div className="flex items-start justify-between p-3 rounded-xl bg-[#F7F7FB] dark:bg-slate-800 border border-border/60">
                         <div className="space-y-0.5 pr-4">
                             <div className="font-bold text-[#17152E] dark:text-white">
                                 Require room type for scheduling
@@ -1459,12 +1459,12 @@ export default function FacilitiesConfigurationStage({
                             type="checkbox"
                             checked={requireRoomTypeForScheduling}
                             onChange={(e) => setRequireRoomTypeForScheduling(e.target.checked)}
-                            className="rounded border-border text-[#7C3AED] focus:ring-[#7C3AED] mt-1 cursor-pointer"
+                            className="rounded border-border text-[#0B3A67] dark:text-[#93C5FD] focus:ring-[#0B3A67] mt-1 cursor-pointer"
                         />
                     </div>
 
                     {/* Toggle 4 */}
-                    <div className="flex items-start justify-between p-3 rounded-xl bg-[#F7F7FB] dark:bg-[#262246]/30 border border-border/60">
+                    <div className="flex items-start justify-between p-3 rounded-xl bg-[#F7F7FB] dark:bg-slate-800 border border-border/60">
                         <div className="space-y-0.5 pr-4">
                             <div className="font-bold text-[#17152E] dark:text-white">
                                 Allow shared facilities across colleges
@@ -1477,7 +1477,7 @@ export default function FacilitiesConfigurationStage({
                             type="checkbox"
                             checked={allowSharedFacilitiesAcrossColleges}
                             onChange={(e) => setAllowSharedFacilitiesAcrossColleges(e.target.checked)}
-                            className="rounded border-border text-[#7C3AED] focus:ring-[#7C3AED] mt-1 cursor-pointer"
+                            className="rounded border-border text-[#0B3A67] dark:text-[#93C5FD] focus:ring-[#0B3A67] mt-1 cursor-pointer"
                         />
                     </div>
                 </div>
@@ -1488,7 +1488,7 @@ export default function FacilitiesConfigurationStage({
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-base font-extrabold text-[#17152E] dark:text-white flex items-center gap-2">
-                            <Building2 className="w-5 h-5 text-[#7C3AED]" />
+                            <Building2 className="w-5 h-5 text-[#0B3A67] dark:text-[#93C5FD]" />
                             {editingFacility ? 'Edit Facility Baseline' : '+ Add Academic Facility'}
                         </DialogTitle>
                         <DialogDescription className="text-xs text-muted-foreground">
@@ -1515,7 +1515,7 @@ export default function FacilitiesConfigurationStage({
                                     placeholder="e.g. CIDS-CL01 or COM-1"
                                     value={facilityForm.facility_code}
                                     onChange={(e) => setFacilityForm({ ...facilityForm, facility_code: e.target.value.toUpperCase() })}
-                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-mono font-bold focus:ring-1 focus:ring-[#7C3AED]"
+                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-mono font-bold focus:ring-1 focus:ring-[#0B3A67]"
                                     required
                                 />
                             </div>
@@ -1530,7 +1530,7 @@ export default function FacilitiesConfigurationStage({
                                     placeholder="e.g. Classroom 101 or Computer Lab 1"
                                     value={facilityForm.facility_name}
                                     onChange={(e) => setFacilityForm({ ...facilityForm, facility_name: e.target.value })}
-                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-semibold focus:ring-1 focus:ring-[#7C3AED]"
+                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-semibold focus:ring-1 focus:ring-[#0B3A67]"
                                     required
                                 />
                             </div>
@@ -1541,7 +1541,7 @@ export default function FacilitiesConfigurationStage({
                                 <select
                                     value={facilityForm.facility_type}
                                     onChange={(e) => setFacilityForm({ ...facilityForm, facility_type: e.target.value })}
-                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-semibold focus:ring-1 focus:ring-[#7C3AED]"
+                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-semibold focus:ring-1 focus:ring-[#0B3A67]"
                                 >
                                     {STANDARD_FACILITY_TYPES.map((t) => (
                                         <option key={t} value={t}>
@@ -1561,7 +1561,7 @@ export default function FacilitiesConfigurationStage({
                                     placeholder="e.g. Cisco Networking Lab, Mock Court"
                                     value={facilityForm.custom_type}
                                     onChange={(e) => setFacilityForm({ ...facilityForm, custom_type: e.target.value })}
-                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 focus:ring-1 focus:ring-[#7C3AED]"
+                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 focus:ring-1 focus:ring-[#0B3A67]"
                                 />
                             </div>
 
@@ -1573,7 +1573,7 @@ export default function FacilitiesConfigurationStage({
                                     placeholder="e.g. CIDS Building A"
                                     value={facilityForm.building}
                                     onChange={(e) => setFacilityForm({ ...facilityForm, building: e.target.value })}
-                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 focus:ring-1 focus:ring-[#7C3AED]"
+                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 focus:ring-1 focus:ring-[#0B3A67]"
                                 />
                             </div>
 
@@ -1585,7 +1585,7 @@ export default function FacilitiesConfigurationStage({
                                     placeholder="e.g. 1st Floor, 2nd Floor"
                                     value={facilityForm.floor}
                                     onChange={(e) => setFacilityForm({ ...facilityForm, floor: e.target.value })}
-                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 focus:ring-1 focus:ring-[#7C3AED]"
+                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 focus:ring-1 focus:ring-[#0B3A67]"
                                 />
                             </div>
 
@@ -1600,7 +1600,7 @@ export default function FacilitiesConfigurationStage({
                                     max={1000}
                                     value={facilityForm.capacity}
                                     onChange={(e) => setFacilityForm({ ...facilityForm, capacity: parseInt(e.target.value) || 0 })}
-                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-bold focus:ring-1 focus:ring-[#7C3AED]"
+                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-bold focus:ring-1 focus:ring-[#0B3A67]"
                                     required
                                 />
                             </div>
@@ -1613,7 +1613,7 @@ export default function FacilitiesConfigurationStage({
                                     placeholder="e.g. 7:00 AM - 7:00 PM"
                                     value={facilityForm.operating_hours}
                                     onChange={(e) => setFacilityForm({ ...facilityForm, operating_hours: e.target.value })}
-                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 focus:ring-1 focus:ring-[#7C3AED]"
+                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 focus:ring-1 focus:ring-[#0B3A67]"
                                 />
                             </div>
 
@@ -1623,7 +1623,7 @@ export default function FacilitiesConfigurationStage({
                                 <select
                                     value={facilityForm.condition}
                                     onChange={(e) => setFacilityForm({ ...facilityForm, condition: e.target.value })}
-                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-semibold focus:ring-1 focus:ring-[#7C3AED]"
+                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-semibold focus:ring-1 focus:ring-[#0B3A67]"
                                 >
                                     <option value="Good">Good (Operational standard)</option>
                                     <option value="Fair">Fair (Minor wear, usable)</option>
@@ -1638,7 +1638,7 @@ export default function FacilitiesConfigurationStage({
                                 <select
                                     value={facilityForm.status}
                                     onChange={(e) => setFacilityForm({ ...facilityForm, status: e.target.value })}
-                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-semibold focus:ring-1 focus:ring-[#7C3AED]"
+                                    className="w-full h-9 rounded-xl border border-border bg-background px-3 font-semibold focus:ring-1 focus:ring-[#0B3A67]"
                                 >
                                     <option value="Available">Available (Open for booking)</option>
                                     <option value="In Use">In Use</option>
@@ -1652,7 +1652,7 @@ export default function FacilitiesConfigurationStage({
                         {/* Capabilities & Equipment Toggles */}
                         <div className="p-3.5 rounded-xl bg-muted/40 border border-border/80 space-y-2.5">
                             <div className="font-extrabold text-[#17152E] dark:text-white flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5 text-[#7C3AED]" />
+                                <Sparkles className="w-3.5 h-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Facility Equipment & Capability Highlights
                             </div>
 
@@ -1662,7 +1662,7 @@ export default function FacilitiesConfigurationStage({
                                         type="checkbox"
                                         checked={facilityForm.has_projector}
                                         onChange={(e) => setFacilityForm({ ...facilityForm, has_projector: e.target.checked })}
-                                        className="rounded border-border text-[#7C3AED]"
+                                        className="rounded border-border text-[#0B3A67] dark:text-[#93C5FD]"
                                     />
                                     <span className="font-semibold text-[11px]">Ceiling Projector</span>
                                 </label>
@@ -1672,7 +1672,7 @@ export default function FacilitiesConfigurationStage({
                                         type="checkbox"
                                         checked={facilityForm.has_aircon}
                                         onChange={(e) => setFacilityForm({ ...facilityForm, has_aircon: e.target.checked })}
-                                        className="rounded border-border text-[#7C3AED]"
+                                        className="rounded border-border text-[#0B3A67] dark:text-[#93C5FD]"
                                     />
                                     <span className="font-semibold text-[11px]">Air Conditioned</span>
                                 </label>
@@ -1682,7 +1682,7 @@ export default function FacilitiesConfigurationStage({
                                         type="checkbox"
                                         checked={facilityForm.is_accessible}
                                         onChange={(e) => setFacilityForm({ ...facilityForm, is_accessible: e.target.checked })}
-                                        className="rounded border-border text-[#7C3AED]"
+                                        className="rounded border-border text-[#0B3A67] dark:text-[#93C5FD]"
                                     />
                                     <span className="font-semibold text-[11px]">PWD Accessible</span>
                                 </label>
@@ -1692,7 +1692,7 @@ export default function FacilitiesConfigurationStage({
                                         type="checkbox"
                                         checked={facilityForm.is_shared}
                                         onChange={(e) => setFacilityForm({ ...facilityForm, is_shared: e.target.checked })}
-                                        className="rounded border-border text-[#7C3AED]"
+                                        className="rounded border-border text-[#0B3A67] dark:text-[#93C5FD]"
                                     />
                                     <span className="font-semibold text-[11px]">Shared across Units</span>
                                 </label>
@@ -1732,7 +1732,7 @@ export default function FacilitiesConfigurationStage({
                                 placeholder="Add specific scheduling notes, maintenance reservations, or facility instructions..."
                                 value={facilityForm.notes}
                                 onChange={(e) => setFacilityForm({ ...facilityForm, notes: e.target.value })}
-                                className="w-full rounded-xl border border-border bg-background p-2.5 text-xs focus:ring-1 focus:ring-[#7C3AED]"
+                                className="w-full rounded-xl border border-border bg-background p-2.5 text-xs focus:ring-1 focus:ring-[#0B3A67]"
                             />
                         </div>
 
@@ -1748,7 +1748,7 @@ export default function FacilitiesConfigurationStage({
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] hover:from-[#4C1D95] hover:to-[#5B21B6] text-white text-xs font-bold rounded-xl cursor-pointer"
+                                className="bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] hover:from-[#082847] hover:to-[#0B3A67] text-white text-xs font-bold rounded-xl cursor-pointer"
                             >
                                 {isSubmitting ? 'Saving...' : editingFacility ? 'Update Facility' : 'Save Facility'}
                             </Button>
@@ -1762,7 +1762,7 @@ export default function FacilitiesConfigurationStage({
                 <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto rounded-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-base font-extrabold text-[#17152E] dark:text-white flex items-center gap-2">
-                            <FileSpreadsheet className="w-5 h-5 text-[#7C3AED]" />
+                            <FileSpreadsheet className="w-5 h-5 text-[#0B3A67] dark:text-[#93C5FD]" />
                             Review & Validate Facilities CSV Import
                         </DialogTitle>
                         <DialogDescription className="text-xs text-muted-foreground">
@@ -1893,7 +1893,7 @@ export default function FacilitiesConfigurationStage({
                             type="button"
                             disabled={isImporting || csvRows.length === 0}
                             onClick={handleConfirmImport}
-                            className="bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] hover:from-[#4C1D95] hover:to-[#5B21B6] text-white text-xs font-bold rounded-xl cursor-pointer"
+                            className="bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] hover:from-[#082847] hover:to-[#0B3A67] text-white text-xs font-bold rounded-xl cursor-pointer"
                         >
                             {isImporting ? 'Importing Facilities...' : `Confirm Import (${csvRows.length} facilities)`}
                         </Button>
@@ -1906,7 +1906,7 @@ export default function FacilitiesConfigurationStage({
                 <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-base font-extrabold text-[#17152E] dark:text-white flex items-center gap-2">
-                            <Copy className="w-5 h-5 text-[#7C3AED]" />
+                            <Copy className="w-5 h-5 text-[#0B3A67] dark:text-[#93C5FD]" />
                             Copy Facility Blueprints from Existing Colleges
                         </DialogTitle>
                         <DialogDescription className="text-xs text-muted-foreground">
@@ -1928,7 +1928,7 @@ export default function FacilitiesConfigurationStage({
                                             key={src.id}
                                             className={`flex items-center justify-between p-2.5 rounded-lg border text-xs cursor-pointer transition-colors ${
                                                 isChecked
-                                                    ? 'bg-[#EDE9FE]/50 border-[#7C3AED]/40'
+                                                    ? 'bg-[#F1F5F9] border-[#0B3A67]/20'
                                                     : 'bg-background border-border hover:bg-muted/40'
                                             }`}
                                         >
@@ -1943,7 +1943,7 @@ export default function FacilitiesConfigurationStage({
                                                             setSelectedTemplateIds(selectedTemplateIds.filter((id) => id !== src.id));
                                                         }
                                                     }}
-                                                    className="rounded border-border text-[#7C3AED]"
+                                                    className="rounded border-border text-[#0B3A67] dark:text-[#93C5FD]"
                                                 />
                                                 <div>
                                                     <div className="font-extrabold text-[#17152E] dark:text-white">
@@ -1955,7 +1955,7 @@ export default function FacilitiesConfigurationStage({
                                                 </div>
                                             </div>
 
-                                            <span className="text-[10px] font-bold text-[#7C3AED] bg-[#EDE9FE] dark:bg-[#262246] px-2 py-0.5 rounded-full">
+                                            <span className="text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] bg-[#F1F5F9] dark:bg-slate-800 px-2 py-0.5 rounded-full">
                                                 {src.facility_type}
                                             </span>
                                         </label>
@@ -1978,7 +1978,7 @@ export default function FacilitiesConfigurationStage({
                             type="button"
                             disabled={isCopyingTemplates || selectedTemplateIds.length === 0}
                             onClick={handleConfirmCopyTemplates}
-                            className="bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] hover:from-[#4C1D95] hover:to-[#5B21B6] text-white text-xs font-bold rounded-xl cursor-pointer"
+                            className="bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] hover:from-[#082847] hover:to-[#0B3A67] text-white text-xs font-bold rounded-xl cursor-pointer"
                         >
                             {isCopyingTemplates ? 'Copying...' : `Copy Selected (${selectedTemplateIds.length})`}
                         </Button>

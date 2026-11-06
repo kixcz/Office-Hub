@@ -112,7 +112,7 @@ export default function InstitutionAcademicGovernance({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Academic Governance Oversight — Velora" />
+            <Head title="Academic Governance Oversight — Ascend" />
 
             <div className="mx-auto max-w-[1600px] space-y-6 p-4 md:p-6">
                 {/* Header */}
@@ -124,7 +124,7 @@ export default function InstitutionAcademicGovernance({
                                 Cross-College Structural & Academic Oversight
                             </div>
                             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                                Velora Academic Governance
+                                Ascend Academic Governance
                             </h1>
                             <p className="mt-1.5 max-w-3xl text-sm text-slate-300">
                                 Institution-wide oversight of the Program Portfolio, Curriculum Versions, Canonical
@@ -216,7 +216,7 @@ export default function InstitutionAcademicGovernance({
                                                             {activeCurr.version_name} ({activeCurr.effective_year})
                                                         </span>
                                                     ) : (
-                                                        <span className="text-[#5B21B6]">No Active Curriculum</span>
+                                                        <span className="text-[#0B3A67] dark:text-[#93C5FD]">No Active Curriculum</span>
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3 font-semibold">{prog.courses_count}</td>
@@ -398,7 +398,7 @@ export default function InstitutionAcademicGovernance({
                                                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                                                     : hasConflict
                                                       ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-[#A78BFA]'
+                                                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-[#93C5FD]'
                                             }`}
                                         >
                                             {isPublished ? (

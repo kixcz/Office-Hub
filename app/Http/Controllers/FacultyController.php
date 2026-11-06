@@ -14,6 +14,7 @@ use App\Models\RoomSchedule;
 use App\Models\Submission;
 use App\Models\TravelOrder;
 use App\Services\ComplianceService;
+use App\Services\PortalContextService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,20 +29,55 @@ class FacultyController extends Controller
         ComplianceService::syncPendingSubmissions();
 
         $user = $request->user();
-        $isSuperAdmin = $user?->hasRole('System Administrator') ?? false;
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+        $isSuperAdmin = ($user?->hasRole('System Administrator') || $isInstitutionSuperAdmin) ?? false;
         $isDean = $user?->hasRole('Dean') ?? false;
         $isProgramHead = $user?->hasRole('Program Head') || ($user?->hasRole('Program Chair') ?? false);
         $userProgramId = $user?->faculty?->program_id;
 
-        $facultyQuery = Faculty::with(['program', 'submissions', 'user.roles'])->latest();
-        if ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId) {
-            $facultyQuery->where('program_id', $userProgramId);
+        // Resolve active scope
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        // If scope is college, resolve college ID
+        $scopeCollegeId = null;
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            $scopeCollegeId = $activeScopeId;
+        } elseif ($activeScopeType === 'program' && $activeScopeId) {
+            $scopeCollegeId = Program::find($activeScopeId)?->college_id;
+        } elseif (! $isInstitutionSuperAdmin) {
+            $scopeCollegeId = $user?->resolveActiveCollege()?->id;
         }
+
+        $facultyQuery = Faculty::with(['program.college', 'submissions', 'user.roles'])->latest();
+
+        // Scope filter: if user is not Institution Super Admin, isolate data to college or program
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $facultyQuery->where('program_id', $activeScopeId);
+            } elseif ($isProgramHead && ! $isDean && ! $isSuperAdmin && $userProgramId) {
+                $facultyQuery->where('program_id', $userProgramId);
+            } elseif ($scopeCollegeId) {
+                $facultyQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+            }
+        }
+
         $faculties = $facultyQuery->get();
 
-        $programs = ($isProgramHead && ! $isSuperAdmin && ! $isDean && $userProgramId)
-            ? Program::where('id', $userProgramId)->get()
-            : Program::all();
+        // Scope programs dropdown to active college or program
+        if ($isInstitutionSuperAdmin) {
+            $programs = Program::all();
+        } elseif ($activeScopeType === 'program' && $activeScopeId) {
+            $programs = Program::where('id', $activeScopeId)->get();
+        } elseif ($isProgramHead && ! $isDean && ! $isSuperAdmin && $userProgramId) {
+            $programs = Program::where('id', $userProgramId)->get();
+        } elseif ($scopeCollegeId) {
+            $programs = Program::where('college_id', $scopeCollegeId)->get();
+        } else {
+            $programs = Program::all();
+        }
 
         $totalRequirements = Requirement::count();
         $now = Carbon::now();
@@ -135,9 +171,16 @@ class FacultyController extends Controller
             ? round(($completeProfilesCount / $totalCount) * 100)
             : 0;
 
-        // 4. Real Recent Updates from DB (faculty records updated or created)
-        $recentUpdates = Faculty::with('program')
-            ->orderBy('updated_at', 'desc')
+        // 4. Real Recent Updates from DB (faculty records updated or created) scoped to view
+        $recentUpdatesQuery = Faculty::with('program')->orderBy('updated_at', 'desc');
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $recentUpdatesQuery->where('program_id', $activeScopeId);
+            } elseif ($scopeCollegeId) {
+                $recentUpdatesQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+            }
+        }
+        $recentUpdates = $recentUpdatesQuery
             ->take(6)
             ->get()
             ->map(function ($f) {
@@ -205,12 +248,27 @@ class FacultyController extends Controller
     {
         ComplianceService::syncPendingSubmissions();
 
-        $faculty->load('program');
+        $faculty->load(['program.college', 'user.roles']);
 
-        // User role checks for Dean vs Super Admin vs Reviewer
         $user = $request->user();
-        $isSuperAdmin = $user?->hasRole('System Administrator') ?? false;
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+        $isSuperAdmin = ($user?->hasRole('System Administrator') || $isInstitutionSuperAdmin) ?? false;
         $isDean = $user?->hasRole('Dean') ?? false;
+
+        // Scope verification: protect faculty dossier from unauthorized cross-college access
+        if (! $isInstitutionSuperAdmin && $faculty->program) {
+            $portalService = app(PortalContextService::class);
+            $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+            $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+            $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+            if ($activeScopeType === 'college' && $activeScopeId && (int) $faculty->program->college_id !== (int) $activeScopeId) {
+                abort(403, "Access restricted. This faculty member belongs to {$faculty->program->college->name}, outside your active college workspace.");
+            } elseif ($activeScopeType === 'program' && $activeScopeId && (int) $faculty->program_id !== (int) $activeScopeId) {
+                abort(403, 'Access restricted. This faculty member belongs to another academic program outside your active workspace.');
+            }
+        }
+
         $canEdit = $isSuperAdmin || $isDean;
         $canVerify = $isSuperAdmin || $isDean || ($user?->hasRole('Program Chair') ?? false);
 

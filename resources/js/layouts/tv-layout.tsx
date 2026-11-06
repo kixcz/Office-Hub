@@ -110,8 +110,8 @@ export default function TvLayout({
                     <div className="flex items-center gap-3.5">
                         <div className="flex items-center gap-2 shrink-0">
                             <img
-                                src="/velora_logo-removebg-preview.png"
-                                alt="Velora Logo"
+                                src="/Ascend.png"
+                                alt="Ascend Logo"
                                 className="h-10 w-10 rounded-xl object-contain p-1 shadow-xs border border-[#A78BFA]/40 bg-white dark:bg-[#17152E]"
                             />
                             <img
@@ -123,7 +123,7 @@ export default function TvLayout({
                         <div className="flex flex-col">
                             <div className="flex items-center gap-2.5">
                                 <span className={`text-xs font-black tracking-wider uppercase ${isDark ? 'text-[#A78BFA]' : 'text-[#5B21B6]'}`}>
-                                    DAVAO DEL SUR STATE COLLEGE · VELORA
+                                    DAVAO DEL SUR STATE COLLEGE · ASCEND
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/40 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
                                     <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />

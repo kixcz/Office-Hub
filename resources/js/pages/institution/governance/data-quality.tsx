@@ -87,7 +87,7 @@ export default function InstitutionDataQuality({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Data Quality & Configuration Health — Velora Governance" />
+            <Head title="Data Quality & Configuration Health — Ascend Governance" />
 
             <div className="mx-auto max-w-[1600px] space-y-6 p-4 md:p-6">
                 {/* Header */}
@@ -103,7 +103,7 @@ export default function InstitutionDataQuality({
                             </h1>
                             <p className="mt-1.5 max-w-3xl text-sm text-slate-300">
                                 Detect unresolved mappings, orphan records, missing relationships, and inspect unit-by-unit
-                                operational readiness across Velora.
+                                operational readiness across Ascend.
                             </p>
                         </div>
 
@@ -204,7 +204,7 @@ export default function InstitutionDataQuality({
                                                 className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
                                                     issue.severity === 'critical'
                                                         ? 'bg-rose-600 text-white'
-                                                        : 'bg-[#7C3AED] text-white'
+                                                        : 'bg-[#0B3A67] text-white'
                                                 }`}
                                             >
                                                 {issue.severity}
@@ -289,7 +289,7 @@ export default function InstitutionDataQuality({
                                                             Registered
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 font-bold text-[#5B21B6]">
+                                                        <span className="inline-flex items-center gap-1 font-bold text-[#0B3A67] dark:text-[#93C5FD]">
                                                             <AlertTriangle className="h-3.5 w-3.5" /> Pending
                                                         </span>
                                                     )}
@@ -302,7 +302,7 @@ export default function InstitutionDataQuality({
                                                         <CheckCircle2 className="h-3.5 w-3.5" /> Configured
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 font-bold text-[#5B21B6]">
+                                                    <span className="inline-flex items-center gap-1 font-bold text-[#0B3A67] dark:text-[#93C5FD]">
                                                         <AlertTriangle className="h-3.5 w-3.5" /> Not configured
                                                     </span>
                                                 )}

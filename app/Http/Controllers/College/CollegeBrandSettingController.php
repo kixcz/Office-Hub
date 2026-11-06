@@ -142,7 +142,7 @@ class CollegeBrandSettingController extends Controller
             'header_style' => $validated['header_style'] ?? 'light',
             'sidebar_style' => $validated['sidebar_style'] ?? 'colored_active',
             'report_header' => $validated['report_header'] ?? "{$college->name} ({$college->code})",
-            'report_footer' => $validated['report_footer'] ?? 'ISO 9001:2015 Certified · Generated via Velora Platform',
+            'report_footer' => $validated['report_footer'] ?? 'ISO 9001:2015 Certified · Generated via Ascend Platform',
             'tv_theme' => $validated['tv_theme'] ?? 'college_glass',
             'logo_url' => $logoUrl,
             'favicon_url' => $faviconUrl,

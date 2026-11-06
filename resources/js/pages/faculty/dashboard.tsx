@@ -155,11 +155,10 @@ export default function FacultyDashboard({
             <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto font-sans">
                 {/* 1. Header Hero Banner themed by College Branding */}
                 <div
-                    className="relative overflow-hidden rounded-2xl border border-border/80 bg-linear-to-r from-slate-100 via-sky-50/50 to-blue-50/40 dark:from-slate-900/90 dark:via-slate-900/60 dark:to-slate-950 p-6 md:p-8 shadow-xs"
+                    className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-r from-card via-muted/40 to-card p-6 md:p-8 shadow-xs"
                     style={
-                        collegeBranding
+                        collegeBranding?.primary_color
                             ? {
-                                  background: `linear-gradient(135deg, ${collegeBranding.surface_color || '#FFFFFF'} 35%, ${collegeBranding.accent_color || '#EDE9FE'} 100%)`,
                                   borderColor: `${collegeBranding.primary_color}45`,
                               }
                             : undefined
@@ -168,9 +167,9 @@ export default function FacultyDashboard({
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                         <div className="flex items-center gap-4">
                             <div
-                                className="w-16 h-16 rounded-2xl bg-slate-200 dark:bg-slate-800 border-2 border-white dark:border-slate-700 shadow-sm flex items-center justify-center text-xl font-black text-slate-700 dark:text-slate-200 overflow-hidden shrink-0"
+                                className="w-16 h-16 rounded-2xl bg-card border-2 border-border shadow-sm flex items-center justify-center text-xl font-black text-foreground overflow-hidden shrink-0"
                                 style={
-                                    collegeBranding
+                                    collegeBranding?.primary_color
                                         ? {
                                               borderColor: collegeBranding.primary_color,
                                           }
@@ -178,9 +177,9 @@ export default function FacultyDashboard({
                                 }
                             >
                                 {faculty?.photo_url ? (
-                                    <img src={faculty.photo_url} alt={faculty.full_name} className="w-full h-full object-cover" />
+                                    <img src={faculty.photo_url} alt={faculty.full_name || auth.user.name} className="w-full h-full object-cover" />
                                 ) : (
-                                    faculty ? `${faculty.first_name[0]}${faculty.last_name[0]}` : 'JV'
+                                    faculty ? `${faculty.first_name[0]}${faculty.last_name[0]}` : (auth.user?.name ? auth.user.name.slice(0, 2).toUpperCase() : 'FA')
                                 )}
                             </div>
                             <div>
@@ -189,21 +188,12 @@ export default function FacultyDashboard({
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 mt-0.5">
                                     <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
-                                        {faculty?.title_name || 'Instr. Jerick Erie Vicente'}
+                                        {faculty?.title_name || (faculty ? `${faculty.academic_rank?.includes('Prof') ? 'Prof.' : 'Instr.'} ${faculty.first_name} ${faculty.last_name}` : auth.user.name)}
                                     </h1>
                                     <span
-                                        className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300/40"
-                                        style={
-                                            collegeBranding
-                                                ? {
-                                                      backgroundColor: collegeBranding.accent_color,
-                                                      color: collegeBranding.secondary_color,
-                                                      borderColor: `${collegeBranding.primary_color}55`,
-                                                  }
-                                                : undefined
-                                        }
+                                        className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20"
                                     >
-                                        {faculty?.academic_rank || 'Instructor I'}
+                                        {faculty?.academic_rank || 'Faculty Member'}
                                     </span>
                                 </div>
                                 <div className="text-xs font-medium text-muted-foreground mt-1 flex items-center gap-2">
@@ -217,7 +207,7 @@ export default function FacultyDashboard({
                         </div>
 
                         {/* Right side banner quote / photo background */}
-                        <div className="hidden lg:flex items-center gap-4 bg-background/80 dark:bg-background/40 backdrop-blur-md px-5 py-3 rounded-xl border border-border/60 text-right">
+                        <div className="hidden lg:flex items-center gap-4 bg-card/80 backdrop-blur-md px-5 py-3 rounded-xl border border-border text-right">
                             {activeCollege?.logo_url && (
                                 <img
                                     src={activeCollege.logo_url}

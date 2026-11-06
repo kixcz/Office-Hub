@@ -8,6 +8,7 @@ use App\Models\LabInventoryItem;
 use App\Models\Room;
 use App\Models\RoomComplaint;
 use App\Models\RoomSchedule;
+use App\Services\PortalContextService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,6 +22,21 @@ class RoomInventoryController extends Controller
     public function index(Request $request): Response
     {
         $currentPeriod = AcademicPeriod::current();
+
+        $user = $request->user();
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        $scopeCollegeId = null;
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            $scopeCollegeId = $activeScopeId;
+        } elseif (! $isInstitutionSuperAdmin) {
+            $scopeCollegeId = $user?->resolveActiveCollege()?->id;
+        }
 
         $query = Room::withCount([
             'complaints as active_complaints_count' => function ($q) {
@@ -37,6 +53,10 @@ class RoomInventoryController extends Controller
                 $q->whereIn('repair_status', ['Reported', 'Triaged', 'In Progress', 'Awaiting Parts']);
             },
         ]);
+
+        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+            $query->where('college_id', $scopeCollegeId);
+        }
 
         if ($request->filled('type') && $request->type !== 'all') {
             $query->where(function ($q) use ($request) {
@@ -66,9 +86,20 @@ class RoomInventoryController extends Controller
             });
         }
 
-        $allRooms = Room::all();
-        $buildings = Room::select('building')->whereNotNull('building')->distinct()->pluck('building')->toArray();
-        $configuredTypes = Room::select('custom_type')->whereNotNull('custom_type')->distinct()->pluck('custom_type')->toArray();
+        $allRoomsQuery = Room::query();
+        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+            $allRoomsQuery->where('college_id', $scopeCollegeId);
+        }
+        $allRooms = $allRoomsQuery->get();
+
+        $buildingsQuery = Room::select('building')->whereNotNull('building');
+        $typesQuery = Room::select('custom_type')->whereNotNull('custom_type');
+        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+            $buildingsQuery->where('college_id', $scopeCollegeId);
+            $typesQuery->where('college_id', $scopeCollegeId);
+        }
+        $buildings = $buildingsQuery->distinct()->pluck('building')->toArray();
+        $configuredTypes = $typesQuery->distinct()->pluck('custom_type')->toArray();
 
         // Calculate System Summary KPIs
         $totalFacilities = $allRooms->count();

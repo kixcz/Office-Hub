@@ -102,7 +102,7 @@ export default function InstitutionIntegrations({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Data & Integrations — Velora Governance" />
+            <Head title="Data & Integrations — Ascend Governance" />
 
             <div className="mx-auto max-w-[1600px] space-y-6 p-4 md:p-6">
                 {/* Header */}
@@ -114,7 +114,7 @@ export default function InstitutionIntegrations({
                                 Data & Integrations Governance
                             </div>
                             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                                Velora Data Sources, External Systems & AI Governance
+                                Ascend Data Sources, External Systems & AI Governance
                             </h1>
                             <p className="mt-1.5 max-w-3xl text-sm text-slate-300">
                                 Centrally manage the external data registry, Google Workspace OAuth & Shared Drives,
@@ -160,7 +160,7 @@ export default function InstitutionIntegrations({
                             Institutional Data Sources Registry
                         </h2>
                         <p className="text-xs text-slate-500">
-                            Canonical inventory of external datasets feeding Velora, owning scope, sync frequency, and
+                            Canonical inventory of external datasets feeding Ascend, owning scope, sync frequency, and
                             reconciliation requirement.
                         </p>
 
@@ -185,7 +185,7 @@ export default function InstitutionIntegrations({
                                             </td>
                                             <td className="px-4 py-3">{item.provider}</td>
                                             <td className="px-4 py-3">{item.owner}</td>
-                                            <td className="px-4 py-3 font-mono text-[11px] text-[#5B21B6]">
+                                            <td className="px-4 py-3 font-mono text-[11px] text-[#0B3A67] dark:text-[#93C5FD]">
                                                 {item.masked_credential || 'VAULT-SEALED'}
                                             </td>
                                             <td className="px-4 py-3 font-mono">{item.last_sync}</td>
@@ -227,7 +227,7 @@ export default function InstitutionIntegrations({
                                     </div>
                                     <p className="mt-1 text-xs text-slate-500">
                                         Domain: <strong>dssc.edu.ph</strong> · Folder Convention:{' '}
-                                        <code className="font-mono">/Velora/{'{Entity}'}/{'{College}'}/{'{AY_Sem}'}</code>
+                                        <code className="font-mono">/Ascend/{'{Entity}'}/{'{College}'}/{'{AY_Sem}'}</code>
                                     </p>
                                     <div className="mt-4 rounded-xl bg-slate-50 p-4 text-xs dark:bg-slate-800/40">
                                         <p>

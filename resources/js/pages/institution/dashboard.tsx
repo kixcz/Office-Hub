@@ -126,7 +126,7 @@ export default function InstitutionDashboard({
             case 'Ready':
                 return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
             case 'In Setup':
-                return 'bg-[#7C3AED]/10 text-[#5B21B6] dark:text-[#A78BFA] border-[#7C3AED]/20';
+                return 'bg-[#0B3A67]/10 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] border-[#0B3A67]/20';
             case 'Suspended':
             case 'Archived':
                 return 'bg-slate-500/10 text-slate-500 border-slate-500/20';
@@ -146,12 +146,12 @@ export default function InstitutionDashboard({
 
             <div className="flex flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
                 {/* Hero Governor Banner */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#17152E] via-[#4C1D95] to-[#5B21B6] p-6 md:p-8 text-white border border-[#A78BFA]/30 shadow-xl">
-                    <div className="absolute right-0 top-0 -mr-16 -mt-16 w-72 h-72 rounded-full bg-[#A78BFA]/20 blur-3xl pointer-events-none" />
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] p-6 md:p-8 text-white border border-[#8B1E3F]/30 shadow-xl">
+                    <div className="absolute right-0 top-0 -mr-16 -mt-16 w-72 h-72 rounded-full bg-[#8B1E3F]/20 blur-3xl pointer-events-none" />
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
                         <div className="space-y-2.5">
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#A78BFA]/20 text-[#A78BFA] border border-[#A78BFA]/40">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#8B1E3F]/20 text-[#93C5FD] border border-[#8B1E3F]/30">
                                     <ShieldCheck className="w-3.5 h-3.5" />
                                     Platform Governor & Organizational Architect
                                 </span>
@@ -163,14 +163,14 @@ export default function InstitutionDashboard({
                                 Institution Super Admin Console
                             </h1>
                             <p className="text-xs md:text-sm text-slate-200 max-w-3xl leading-relaxed">
-                                Central authority for <strong className="text-[#A78BFA]">Entities & Colleges hierarchy</strong>, canonical user identities, granular permission matrices, time-bounded scoped role assignments, module rollouts, policy inheritance, reusable workflows, external integrations, and immutable audit trails—while daily academic operations cascade cleanly to Entity Admins, College Admins, Deans, Program Heads, Lab In-Charge, and Faculty.
+                                Central authority for <strong className="text-[#93C5FD]">Entities & Colleges hierarchy</strong>, canonical user identities, granular permission matrices, time-bounded scoped role assignments, module rollouts, policy inheritance, reusable workflows, external integrations, and immutable audit trails—while daily academic operations cascade cleanly to Entity Admins, College Admins, Deans, Program Heads, Lab In-Charge, and Faculty.
                             </p>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
                             <Link
                                 href="/institution/colleges"
-                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#7C3AED] text-white hover:bg-[#5B21B6] transition-colors shadow-md border border-[#A78BFA]/40"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#0B3A67] text-white hover:bg-[#1F5D9B] transition-colors shadow-md border border-[#8B1E3F]/30"
                             >
                                 <Building2 className="w-4 h-4" />
                                 Organization Tree
@@ -197,11 +197,11 @@ export default function InstitutionDashboard({
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
                     <Link
                         href="/institution/colleges"
-                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#7C3AED]/40 transition-all flex flex-col justify-between"
+                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#0B3A67]/20 transition-all flex flex-col justify-between"
                     >
                         <div className="flex items-center justify-between text-muted-foreground mb-2">
                             <span className="text-[10px] font-bold uppercase tracking-wider">Entities / Campuses</span>
-                            <Building2 className="w-4 h-4 text-[#7C3AED]" />
+                            <Building2 className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
                         <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl font-black">{stats.total_entities ?? entities.length}</span>
@@ -215,11 +215,11 @@ export default function InstitutionDashboard({
 
                     <Link
                         href="/institution/colleges/setup"
-                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#7C3AED]/40 transition-all flex flex-col justify-between"
+                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#0B3A67]/20 transition-all flex flex-col justify-between"
                     >
                         <div className="flex items-center justify-between text-muted-foreground mb-2">
                             <span className="text-[10px] font-bold uppercase tracking-wider">College Units</span>
-                            <School className="w-4 h-4 text-[#5B21B6]" />
+                            <School className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
                         <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl font-black">{stats.total_colleges}</span>
@@ -233,11 +233,11 @@ export default function InstitutionDashboard({
 
                     <Link
                         href="/institution/users"
-                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#7C3AED]/40 transition-all flex flex-col justify-between"
+                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#0B3A67]/20 transition-all flex flex-col justify-between"
                     >
                         <div className="flex items-center justify-between text-muted-foreground mb-2">
                             <span className="text-[10px] font-bold uppercase tracking-wider">Canonical Identities</span>
-                            <Users className="w-4 h-4 text-[#7C3AED]" />
+                            <Users className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
                         <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl font-black">{stats.total_users}</span>
@@ -245,21 +245,21 @@ export default function InstitutionDashboard({
                         </div>
                         <div className="mt-2 pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex justify-between">
                             <span>Roles: {stats.total_roles}</span>
-                            <span className="text-[#7C3AED] font-bold">{stats.scoped_assignments} Scoped</span>
+                            <span className="text-[#0B3A67] dark:text-[#93C5FD] font-bold">{stats.scoped_assignments} Scoped</span>
                         </div>
                     </Link>
 
                     <Link
                         href="/institution/scoped-roles?tab=requests"
-                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#7C3AED]/40 transition-all flex flex-col justify-between"
+                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#0B3A67]/20 transition-all flex flex-col justify-between"
                     >
                         <div className="flex items-center justify-between text-muted-foreground mb-2">
                             <span className="text-[10px] font-bold uppercase tracking-wider">Access Requests</span>
-                            <Inbox className="w-4 h-4 text-[#7C3AED]" />
+                            <Inbox className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
                         <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl font-black">{stats.pending_access_requests ?? 0}</span>
-                            <span className="text-[11px] font-bold text-[#7C3AED]">Pending</span>
+                            <span className="text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD]">Pending</span>
                         </div>
                         <div className="mt-2 pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex justify-between">
                             <span>Delegation Queue</span>
@@ -269,7 +269,7 @@ export default function InstitutionDashboard({
 
                     <Link
                         href="/institution/modules"
-                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#7C3AED]/40 transition-all flex flex-col justify-between"
+                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#0B3A67]/20 transition-all flex flex-col justify-between"
                     >
                         <div className="flex items-center justify-between text-muted-foreground mb-2">
                             <span className="text-[10px] font-bold uppercase tracking-wider">Enabled Modules</span>
@@ -289,18 +289,18 @@ export default function InstitutionDashboard({
 
                     <Link
                         href="/institution/data-quality"
-                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#7C3AED]/40 transition-all flex flex-col justify-between"
+                        className="rounded-2xl bg-card p-4 border border-border shadow-xs hover:border-[#0B3A67]/20 transition-all flex flex-col justify-between"
                     >
                         <div className="flex items-center justify-between text-muted-foreground mb-2">
                             <span className="text-[10px] font-bold uppercase tracking-wider">Config & Health</span>
-                            <Activity className="w-4 h-4 text-[#7C3AED]" />
+                            <Activity className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
                         <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl font-black">{platform_health.data_quality_score}%</span>
                             <span className="text-[11px] font-bold text-emerald-500">Score</span>
                         </div>
                         <div className="mt-2 pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex justify-between">
-                            <span className="text-[#7C3AED] font-bold">{stats.health_issues_count ?? health_issues.length} Issues</span>
+                            <span className="text-[#0B3A67] dark:text-[#93C5FD] font-bold">{stats.health_issues_count ?? health_issues.length} Issues</span>
                             <span>SLA {platform_health.uptime}</span>
                         </div>
                     </Link>
@@ -310,7 +310,7 @@ export default function InstitutionDashboard({
                 <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                            <Shield className="w-3.5 h-3.5 text-[#7C3AED]" />
+                            <Shield className="w-3.5 h-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                             Velora Governance & Operational Delegation Cascade
                         </span>
                         <span className="text-[11px] text-muted-foreground">
@@ -332,11 +332,11 @@ export default function InstitutionDashboard({
                                 key={tier.role}
                                 className={`p-2.5 rounded-xl border ${
                                     tier.active
-                                        ? 'border-[#7C3AED]/50 bg-[#7C3AED]/10 text-foreground'
+                                        ? 'border-[#0B3A67]/20 bg-[#0B3A67]/10 text-foreground'
                                         : 'border-border/60 bg-muted/20 text-muted-foreground'
                                 }`}
                             >
-                                <span className={`font-extrabold block ${tier.active ? 'text-[#5B21B6] dark:text-[#A78BFA]' : 'text-foreground'}`}>
+                                <span className={`font-extrabold block ${tier.active ? 'text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]' : 'text-foreground'}`}>
                                     {tier.role}
                                 </span>
                                 <span className="text-[10px] leading-tight block mt-0.5">{tier.desc}</span>
@@ -358,7 +358,7 @@ export default function InstitutionDashboard({
                             </div>
                             <Link
                                 href="/institution/colleges"
-                                className="text-xs font-bold text-[#7C3AED] hover:text-[#5B21B6] inline-flex items-center gap-1"
+                                className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:text-[#0B3A67] dark:text-[#93C5FD] inline-flex items-center gap-1"
                             >
                                 Manage Structure Tree <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
@@ -374,10 +374,10 @@ export default function InstitutionDashboard({
                                     {entities.map((ent) => (
                                         <div
                                             key={ent.id}
-                                            className="p-3.5 rounded-xl border border-[#7C3AED]/30 bg-[#7C3AED]/5 space-y-1.5"
+                                            className="p-3.5 rounded-xl border border-[#0B3A67]/20 bg-[#0B3A67]/5 space-y-1.5"
                                         >
                                             <div className="flex items-center justify-between">
-                                                <span className="font-extrabold text-xs text-[#5B21B6] dark:text-[#A78BFA]">{ent.code}</span>
+                                                <span className="font-extrabold text-xs text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">{ent.code}</span>
                                                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-background border border-border">
                                                     {ent.entity_type || 'Campus Entity'}
                                                 </span>
@@ -426,7 +426,7 @@ export default function InstitutionDashboard({
                                             </div>
                                             <Link
                                                 href={`/institution/colleges/setup?college=${col.id}`}
-                                                className="text-[11px] font-bold text-[#7C3AED] hover:underline shrink-0"
+                                                className="text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline shrink-0"
                                             >
                                                 Configure
                                             </Link>
@@ -445,7 +445,7 @@ export default function InstitutionDashboard({
                                                         col.setup_progress === 100
                                                             ? 'bg-emerald-500'
                                                             : col.setup_progress > 50
-                                                            ? 'bg-[#7C3AED]'
+                                                            ? 'bg-[#0B3A67]'
                                                             : 'bg-rose-500'
                                                     }`}
                                                     style={{ width: `${col.setup_progress}%` }}
@@ -475,7 +475,7 @@ export default function InstitutionDashboard({
                                 </div>
                                 <Link
                                     href="/institution/data-quality"
-                                    className="text-xs font-bold text-[#7C3AED] hover:underline"
+                                    className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline"
                                 >
                                     All ({health_issues.length})
                                 </Link>
@@ -497,7 +497,7 @@ export default function InstitutionDashboard({
                                             className={`p-3 rounded-xl border space-y-1.5 ${
                                                 issue.severity === 'critical'
                                                     ? 'border-rose-500/30 bg-rose-500/5'
-                                                    : 'border-[#7C3AED]/30 bg-[#7C3AED]/5'
+                                                    : 'border-[#0B3A67]/20 bg-[#0B3A67]/5'
                                             }`}
                                         >
                                             <div className="flex items-center justify-between gap-2">
@@ -505,7 +505,7 @@ export default function InstitutionDashboard({
                                                     className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
                                                         issue.severity === 'critical'
                                                             ? 'bg-rose-500/20 text-rose-500'
-                                                            : 'bg-[#7C3AED]/20 text-[#5B21B6] dark:text-[#A78BFA]'
+                                                            : 'bg-[#0B3A67]/15 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]'
                                                     }`}
                                                 >
                                                     {issue.category}
@@ -521,7 +521,7 @@ export default function InstitutionDashboard({
                                             <div className="pt-1">
                                                 <Link
                                                     href={issue.action_url}
-                                                    className="text-[11px] font-bold text-[#7C3AED] hover:underline inline-flex items-center gap-1"
+                                                    className="text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline inline-flex items-center gap-1"
                                                 >
                                                     {issue.action_label} →
                                                 </Link>
@@ -534,7 +534,7 @@ export default function InstitutionDashboard({
 
                         <div className="pt-3 border-t border-border/60 flex items-center justify-between text-xs">
                             <span className="text-muted-foreground">Data Governance Integrity:</span>
-                            <Link href="/institution/data-quality" className="font-bold text-[#7C3AED] hover:underline">
+                            <Link href="/institution/data-quality" className="font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline">
                                 Open Full Health Inspector →
                             </Link>
                         </div>
@@ -550,7 +550,7 @@ export default function InstitutionDashboard({
                                 <h3 className="text-base font-bold">Platform Feature Flags</h3>
                                 <p className="text-xs text-muted-foreground">Click any switch to toggle global rollout</p>
                             </div>
-                            <Link href="/institution/modules" className="text-xs font-bold text-[#7C3AED] hover:underline">
+                            <Link href="/institution/modules" className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline">
                                 Module Matrix →
                             </Link>
                         </div>
@@ -591,7 +591,7 @@ export default function InstitutionDashboard({
                             </div>
                             <Link
                                 href="/institution/audit"
-                                className="text-xs font-bold text-[#7C3AED] hover:underline inline-flex items-center gap-1"
+                                className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline inline-flex items-center gap-1"
                             >
                                 Full Audit Trail <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
@@ -603,7 +603,7 @@ export default function InstitutionDashboard({
                                     <div className="space-y-1">
                                         <div className="flex flex-wrap items-center gap-2">
                                             {item.module && (
-                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#7C3AED]/10 text-[#5B21B6] dark:text-[#A78BFA] border border-[#7C3AED]/20">
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#0B3A67]/10 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] border border-[#0B3A67]/20">
                                                     {item.module}
                                                 </span>
                                             )}

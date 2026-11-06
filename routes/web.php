@@ -17,6 +17,7 @@ use App\Http\Controllers\DocumentRouteController;
 use App\Http\Controllers\Faculty\FacultyPortalController;
 use App\Http\Controllers\FacultyAttendanceController;
 use App\Http\Controllers\FacultyController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Institution\InstitutionGovernanceController;
 use App\Http\Controllers\LabInChargeMonitoringController;
 use App\Http\Controllers\LabInventoryManagementController;
@@ -53,11 +54,8 @@ use App\Http\Controllers\TvDisplayController;
 use App\Http\Controllers\Vpaf\VpafExecutiveController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('auth/login');
-})->name('home');
+Route::get('/', HomeController::class)->name('home');
 
 // TV Access by Code (Guest or Auth allowed)
 Route::post('/tv-display/verify-code', [SettingController::class, 'verifyCode'])->name('tv-display.verify-code');
@@ -562,6 +560,17 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/colleges/{college}/reorganize', [InstitutionGovernanceController::class, 'reorganizeCollege'])->name('colleges.reorganize');
         Route::get('/colleges/setup/{college?}', [InstitutionGovernanceController::class, 'collegeSetup'])->name('colleges.setup');
         Route::match(['post', 'put'], '/colleges/{college}/setup', [InstitutionGovernanceController::class, 'updateCollegeSetup'])->name('colleges.setup.update');
+
+        // Stage 3: Modules Configuration endpoints
+        Route::post('/colleges/{college}/modules/update', [InstitutionGovernanceController::class, 'updateCollegeModules'])->name('colleges.modules.update');
+        Route::post('/colleges/{college}/modules/apply-template', [InstitutionGovernanceController::class, 'applyModuleTemplate'])->name('colleges.modules.apply-template');
+
+        // Stage 4: Leadership & Access endpoints
+        Route::post('/colleges/{college}/leadership/assign', [InstitutionGovernanceController::class, 'assignCollegeLeadershipRole'])->name('colleges.leadership.assign');
+        Route::delete('/colleges/{college}/leadership/{assignment}', [InstitutionGovernanceController::class, 'removeCollegeLeadershipRole'])->name('colleges.leadership.remove');
+        Route::post('/colleges/{college}/leadership/invite', [InstitutionGovernanceController::class, 'inviteCollegeLeadershipUser'])->name('colleges.leadership.invite');
+
+        // Stage 5: Programs Configuration endpoints
         Route::post('/colleges/{college}/programs', [InstitutionGovernanceController::class, 'storeCollegeProgram'])->name('colleges.programs.store');
         Route::put('/colleges/{college}/programs/{program}', [InstitutionGovernanceController::class, 'updateCollegeProgram'])->name('colleges.programs.update');
         Route::delete('/colleges/{college}/programs/{program}', [InstitutionGovernanceController::class, 'destroyCollegeProgram'])->name('colleges.programs.destroy');

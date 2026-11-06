@@ -33,7 +33,14 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                     <Collapsible key={item.title} asChild defaultOpen={isChildActive || page.url.startsWith('/schedule/')} className="group/collapsible">
                                         <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                                             <CollapsibleTrigger asChild>
-                                                <SidebarMenuButton tooltip={item.title} className="text-[14px]">
+                                                <SidebarMenuButton 
+                                                    tooltip={{
+                                                        title: item.title,
+                                                        description: item.description,
+                                                        icon: item.icon,
+                                                    }} 
+                                                    className="text-[14px]"
+                                                >
                                                     {item.icon && <item.icon className="size-4 shrink-0" />}
                                                     <span className="truncate group-data-[collapsible=icon]:hidden">{item.title}</span>
                                                     <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden shrink-0" />
@@ -45,9 +52,9 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                                         const isSubActive = subItem.url === page.url;
                                                         return (
                                                             <SidebarMenuSubItem key={subItem.title}>
-                                                                 <SidebarMenuSubButton asChild isActive={isSubActive} className={`text-[13px] py-1.5 px-2 rounded-lg transition-colors ${isSubActive ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold' : 'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent'}`}>
+                                                                 <SidebarMenuSubButton asChild isActive={isSubActive} className={`text-[13px] py-1.5 px-2 rounded-lg transition-colors duration-160 ${isSubActive ? 'bg-sidebar-active text-sidebar-active-fg font-bold' : 'text-muted-foreground hover:text-sidebar-hover-fg hover:bg-sidebar-hover'}`}>
                                                                     <Link href={subItem.url} prefetch className="flex items-center gap-2.5 w-full">
-                                                                        <span className={`size-1.5 rounded-full shrink-0 ${isSubActive ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                                                                        <span className={`size-1.5 rounded-full shrink-0 ${isSubActive ? 'bg-current' : 'bg-gray-300 dark:bg-gray-600'}`} />
                                                                         <span className="truncate">{subItem.title}</span>
                                                                         {subItem.badge !== undefined && (
                                                                             <span className="ml-auto inline-flex items-center justify-center bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -68,7 +75,16 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
 
                             return (
                                 <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                                    <SidebarMenuButton asChild isActive={item.url === page.url} tooltip={item.title} className="text-[14px]">
+                                    <SidebarMenuButton 
+                                        asChild 
+                                        isActive={item.url === page.url} 
+                                        tooltip={{
+                                            title: item.title,
+                                            description: item.description,
+                                            icon: item.icon,
+                                        }} 
+                                        className="text-[14px]"
+                                    >
                                         <Link href={item.url} prefetch preserveScroll className="flex items-center justify-between w-full">
                                             <div className="flex items-center gap-2 min-w-0">
                                                 {item.icon && <item.icon className="size-4 shrink-0" />}

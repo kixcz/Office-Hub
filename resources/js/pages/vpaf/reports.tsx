@@ -115,8 +115,8 @@ export default function VpafReports({
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-[#5B21B6] border border-violet-200">
-                                <FileSpreadsheet className="w-3.5 h-3.5 text-[#7C3AED]" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-[#0B3A67] dark:text-[#93C5FD] border border-violet-200">
+                                <FileSpreadsheet className="w-3.5 h-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Executive Reporting Engine
                             </span>
                             <span className="text-xs text-slate-500 font-medium">Official Institutional Disclosures</span>
@@ -159,10 +159,10 @@ export default function VpafReports({
                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
                                     isActive
                                         ? 'bg-[#5B21B6] text-white shadow-sm'
-                                        : 'bg-white text-slate-600 hover:text-[#5B21B6] hover:bg-violet-50 border border-indigo-50'
+                                        : 'bg-white text-slate-600 hover:text-[#0B3A67] dark:text-[#93C5FD] hover:bg-violet-50 border border-indigo-50'
                                 }`}
                             >
-                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#7C3AED]'}`} />
+                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#0B3A67] dark:text-[#93C5FD]'}`} />
                                 {tab.label}
                             </button>
                         );
@@ -185,7 +185,7 @@ export default function VpafReports({
                             <Button
                                 variant="outline"
                                 onClick={() => handleExportCsv(activeTab)}
-                                className="border-indigo-200 text-[#5B21B6] hover:bg-violet-50 font-medium text-xs"
+                                className="border-indigo-200 text-[#0B3A67] dark:text-[#93C5FD] hover:bg-violet-50 font-medium text-xs"
                             >
                                 <Download className="w-3.5 h-3.5 mr-2" />
                                 Export CSV
@@ -221,7 +221,7 @@ export default function VpafReports({
                                 {collegesList.map((col) => (
                                     <tr key={col.code} className="hover:bg-violet-50/40">
                                         <td className="py-3.5 px-4 font-bold text-[#17152E]">
-                                            <span className="px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-[#5B21B6] font-mono mr-2">
+                                            <span className="px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-[#0B3A67] dark:text-[#93C5FD] font-mono mr-2">
                                                 {col.code}
                                             </span>
                                             {col.name}
@@ -229,7 +229,7 @@ export default function VpafReports({
                                         <td className="py-3.5 px-4 text-xs text-slate-600">{col.parent_entity}</td>
                                         <td className="py-3.5 px-4 text-center font-medium">{col.faculty_count}</td>
                                         <td className="py-3.5 px-4 text-center font-semibold text-emerald-700">{col.attendance_rate}%</td>
-                                        <td className="py-3.5 px-4 text-center font-semibold text-[#5B21B6]">{col.completion_rate}%</td>
+                                        <td className="py-3.5 px-4 text-center font-semibold text-[#0B3A67] dark:text-[#93C5FD]">{col.completion_rate}%</td>
                                         <td className="py-3.5 px-4 text-center font-semibold text-slate-700">{col.compliance_rate}%</td>
                                         <td className="py-3.5 px-4 text-center text-xs font-mono">{col.room_utilization}%</td>
                                         <td className="py-3.5 px-4 text-center">
@@ -310,17 +310,17 @@ export default function VpafReports({
                                 <ol className="list-decimal pl-5 space-y-2 text-xs text-slate-600">
                                     <li><strong>COE Lab Overhaul:</strong> Authorize immediate procurement for air conditioning overhaul in Eng-104 CAD Lab and calibration of 3 oscilloscopes to resolve 5 blocking timetable conflicts.</li>
                                     <li><strong>CTED Teaching Balance:</strong> Sanction 2 contractual adjunct instructors in CED to absorb 6 faculty overload cases before the 2nd semester enrolment surge.</li>
-                                    <li><strong>Smart TV Synchronization:</strong> Affirm 100% broadcast compliance across 6 lobby screens via the Velora Digital Signage network.</li>
+                                    <li><strong>Smart TV Synchronization:</strong> Affirm 100% broadcast compliance across 6 lobby screens via the Ascend Digital Signage network.</li>
                                 </ol>
                             </div>
 
                             <div className="pt-4 border-t border-indigo-100 flex items-center justify-between">
-                                <span className="text-xs text-slate-400">Generated on November 5, 2026 via Velora Governance Platform</span>
+                                <span className="text-xs text-slate-400">Generated on November 5, 2026 via Ascend Governance Platform</span>
                                 <div className="flex gap-2">
                                     <Button
                                         variant="outline"
                                         onClick={() => window.print()}
-                                        className="text-xs border-indigo-200 text-[#5B21B6]"
+                                        className="text-xs border-indigo-200 text-[#0B3A67] dark:text-[#93C5FD]"
                                     >
                                         <Printer className="w-3.5 h-3.5 mr-1.5" /> Print Official PDF
                                     </Button>

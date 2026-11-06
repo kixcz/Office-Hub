@@ -8,6 +8,7 @@ use App\Models\AcademicPeriod;
 use App\Models\Accomplishment;
 use App\Models\Activity;
 use App\Models\Announcement;
+use App\Models\College;
 use App\Models\ExamSchedule;
 use App\Models\ExtensionEngagement;
 use App\Models\Faculty;
@@ -17,6 +18,7 @@ use App\Models\FacultyAvailability;
 use App\Models\FacultyCorrection;
 use App\Models\MakeUpClassRequest;
 use App\Models\Meeting;
+use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\ResearchEngagement;
 use App\Models\RoomSchedule;
@@ -56,16 +58,41 @@ class FacultyPortalController extends Controller
             }
         }
 
-        // 3. Fallback match by name
+        // 3. Fallback match by exact full name or parts
         if (! $faculty && $user->name) {
             $parts = explode(' ', trim($user->name));
+            $first = $parts[0] ?? '';
             $last = end($parts);
-            $faculty = Faculty::where('last_name', 'like', "%{$last}%")->first();
+            $faculty = Faculty::where('last_name', $last)
+                ->when($first, fn ($q) => $q->where('first_name', 'like', "%{$first}%"))
+                ->first()
+                ?? Faculty::where('last_name', 'like', "%{$last}%")->first();
         }
 
-        // 4. Fallback default to first active faculty if in demo/admin mode
-        if (! $faculty) {
-            $faculty = Faculty::where('last_name', 'Vicente')->first() ?? Faculty::first();
+        // 4. Auto-provision or return user-scoped faculty profile if authenticated user has faculty role
+        if (! $faculty && $user->id) {
+            $parts = explode(' ', trim($user->name ?: 'Faculty Member'));
+            $first = $parts[0] ?? 'Faculty';
+            $last = count($parts) > 1 ? end($parts) : 'Member';
+
+            $cids = College::where('code', 'CIDS')->first();
+            $bsit = Program::where('code', 'BSIT')->first() ?? Program::first();
+
+            $faculty = Faculty::create([
+                'user_id' => $user->id,
+                'first_name' => $first,
+                'last_name' => $last,
+                'spreadsheet_name' => strtoupper($last).', '.substr($first, 0, 1).'.',
+                'faculty_id' => 'FAC-'.date('Y').'-'.str_pad((string) $user->id, 3, '0', STR_PAD_LEFT),
+                'academic_rank' => 'Instructor I',
+                'employment_type' => 'Full-time',
+                'status' => 'Active',
+                'appointment_status' => 'Regular Permanent',
+                'highest_qualification' => 'Master of Information Technology',
+                'specialization' => 'Information Technology & Systems',
+                'email' => $user->email,
+                'program_id' => $bsit?->id,
+            ]);
         }
 
         return $faculty;
@@ -80,7 +107,7 @@ class FacultyPortalController extends Controller
 
         $faculty = $this->resolveFaculty($request);
         if ($faculty) {
-            $faculty->load('program');
+            $faculty->load(['program.college']);
         }
 
         $now = Carbon::now();
@@ -145,8 +172,8 @@ class FacultyPortalController extends Controller
         ];
 
         // 5. Today's Class Schedule
-        $fullName = $faculty ? "{$faculty->first_name} {$faculty->last_name}" : 'Jerick Erie Vicente';
-        $lastName = $faculty ? $faculty->last_name : 'Vicente';
+        $fullName = $faculty ? "{$faculty->first_name} {$faculty->last_name}" : ($request->user()?->name ?? 'Faculty Member');
+        $lastName = $faculty ? $faculty->last_name : (explode(' ', trim($fullName))[1] ?? 'Faculty');
         $currentDay = $now->format('l');
 
         $todayClasses = RoomSchedule::query()
@@ -2086,7 +2113,7 @@ class FacultyPortalController extends Controller
     {
         $faculty = $this->resolveFaculty($request);
         if ($faculty) {
-            $faculty->load('program');
+            $faculty->load(['program.college']);
         }
 
         // Submissions & compliance

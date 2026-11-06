@@ -78,7 +78,7 @@ export default function PlatformModules({
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/20">
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#0B3A67]/10 text-[#0B3A67] dark:text-[#93C5FD] border border-[#0B3A67]/20">
                                 Global, Per-Entity & Per-College Rollout
                             </span>
                         </div>
@@ -86,7 +86,7 @@ export default function PlatformModules({
                             Module Management & Feature Flags
                         </h1>
                         <p className="text-xs md:text-sm text-muted-foreground">
-                            Register and control Velora’s 12 core functional modules globally, per Campus Entity, or per College, and manage experimental feature flags.
+                            Register and control Ascend’s 12 core functional modules globally, per Campus Entity, or per College, and manage experimental feature flags.
                         </p>
                     </div>
 
@@ -97,7 +97,7 @@ export default function PlatformModules({
                                 onClick={() => setActiveTab('modules')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === 'modules'
-                                        ? 'bg-[#5B21B6] text-white'
+                                        ? 'bg-[#0B3A67] text-white'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -108,7 +108,7 @@ export default function PlatformModules({
                                 onClick={() => setActiveTab('flags')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === 'flags'
-                                        ? 'bg-[#5B21B6] text-white'
+                                        ? 'bg-[#0B3A67] text-white'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -117,7 +117,7 @@ export default function PlatformModules({
                         </div>
                         <Link
                             href="/institution/colleges/setup"
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-[#5B21B6] text-white hover:bg-[#4C1D95] transition-colors shadow-xs shrink-0"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B3A67] text-white hover:bg-[#082847] transition-colors shadow-xs shrink-0"
                         >
                             <Sliders className="w-4 h-4" />
                             Guided Unit Onboarding
@@ -163,7 +163,7 @@ export default function PlatformModules({
                             Interactive Entity & College × Module Availability Matrix
                         </h3>
                         <p className="text-xs text-muted-foreground">
-                            Click any cell to enable or disable a Velora module for that specific Entity or College. Downstream role sidebars adapt to enabled modules.
+                            Click any cell to enable or disable a Ascend module for that specific Entity or College. Downstream role sidebars adapt to enabled modules.
                         </p>
                     </div>
 
@@ -189,7 +189,7 @@ export default function PlatformModules({
                                                 <span
                                                     className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
                                                         col.type === 'Entity'
-                                                            ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
+                                                            ? 'bg-[#0B3A67]/15 text-[#0B3A67] dark:text-[#93C5FD]'
                                                             : 'bg-blue-500/15 text-blue-500'
                                                     }`}
                                                 >
@@ -207,7 +207,7 @@ export default function PlatformModules({
                                                 <td
                                                     key={m.id}
                                                     onClick={() => toggleCollegeModule(col.id, m.id)}
-                                                    className="px-2.5 py-3 text-center cursor-pointer hover:bg-[#7C3AED]/10 transition-colors"
+                                                    className="px-2.5 py-3 text-center cursor-pointer hover:bg-[#0B3A67]/10 transition-colors"
                                                     title={`Toggle ${m.name} for ${col.code}`}
                                                 >
                                                     {isEnabled ? (
@@ -229,7 +229,7 @@ export default function PlatformModules({
                     /* Feature Flags Section */
                     <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-4">
                         <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-[#7C3AED]" />
+                            <Sparkles className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                             <div>
                                 <h3 className="text-base font-extrabold">Controlled Feature Flags Rollout</h3>
                                 <p className="text-xs text-muted-foreground">

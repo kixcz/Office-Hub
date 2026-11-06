@@ -23,8 +23,8 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
     const isInstitutionScope = activeAssignment?.portal_type === 'institution_super_admin' || activeAssignment?.portal_type === 'vpaf';
     
     // Resolve dynamic header visual identity
-    const brandPrimary = active_branding?.primary_color || (isInstitutionScope ? '#5B21B6' : '#7C3AED');
-    const brandLogo = active_branding?.logo_url || (isInstitutionScope ? '/velora_logo-removebg-preview.png' : '/velora_logo-removebg-preview.png');
+    const brandPrimary = active_branding?.primary_color || (isInstitutionScope ? '#0B3A67' : '#1F5D9B');
+    const brandLogo = active_branding?.logo_url || '/Ascend.png';
     const brandSubtitle = active_branding?.short_name || (isInstitutionScope ? (activeAssignment?.portal_type === 'vpaf' ? 'Executive' : 'Governance') : 'CIDS');
     const brandFullName = active_branding?.scope_name || (isInstitutionScope ? 'DAVAO DEL SUR STATE COLLEGE · CENTRAL PLATFORM AUTHORITY' : 'COLLEGE OF INFORMATION AND DIGITAL SCIENCES');
     const brandTagline = active_branding?.tagline || '';
@@ -85,7 +85,7 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                         </div>
                         <div className="hidden sm:flex flex-col text-left">
                             <div className="flex items-center gap-1 leading-none">
-                                <span className="text-base font-black tracking-tight text-[#17152E] dark:text-white">Velora</span>
+                                <span className="text-base font-black tracking-tight text-[#111827] dark:text-white">Ascend</span>
                                 <span
                                     className="text-base font-black tracking-tight transition-colors duration-200"
                                     style={{

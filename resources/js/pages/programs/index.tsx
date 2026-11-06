@@ -1,7 +1,7 @@
 import React, { useState, useMemo, FormEventHandler } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, useForm, router } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 import DeleteConfirmDialog from '@/components/delete-confirm-dialog';
 import {
     GraduationCap,
@@ -123,6 +123,8 @@ export default function ProgramsCurriculumIndex({
     stats,
     filters = {},
 }: Props) {
+    const { active_branding } = usePage<SharedData>().props;
+    const defaultDepartmentName = active_branding?.scope_name || 'Academic Department';
     // Left pane selection
     const [selectedProgramId, setSelectedProgramId] = useState<number>(programs[0]?.id || 1);
     const selectedProgram = useMemo(
@@ -185,7 +187,7 @@ export default function ProgramsCurriculumIndex({
         code: '',
         name: '',
         degree_level: "Bachelor's Degree",
-        department: 'College of Information and Digital Sciences',
+        department: defaultDepartmentName,
         duration_years: 4,
         status: 'Active',
         description: '',
@@ -197,7 +199,7 @@ export default function ProgramsCurriculumIndex({
         code: '',
         name: '',
         degree_level: "Bachelor's Degree",
-        department: 'College of Information and Digital Sciences',
+        department: defaultDepartmentName,
         duration_years: 4,
         status: 'Active',
         description: '',

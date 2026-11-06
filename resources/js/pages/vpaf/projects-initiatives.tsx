@@ -85,8 +85,8 @@ export default function VpafProjectsInitiatives({
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-[#5B21B6] border border-violet-200">
-                                <FolderKanban className="w-3.5 h-3.5 text-[#7C3AED]" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-[#0B3A67] dark:text-[#93C5FD] border border-violet-200">
+                                <FolderKanban className="w-3.5 h-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Strategic Projects Oversight
                             </span>
                             <span className="text-xs text-slate-500 font-medium">Institutional Strategic Plan 2026–2030</span>
@@ -113,7 +113,7 @@ export default function VpafProjectsInitiatives({
                     <div className="bg-white p-5 rounded-xl border border-indigo-50 shadow-sm">
                         <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
                             <span>Total Strategic Projects</span>
-                            <FolderKanban className="w-4 h-4 text-[#7C3AED]" />
+                            <FolderKanban className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
                         <div className="text-2xl font-bold text-[#17152E]">{projects.length} Active</div>
                         <div className="text-xs text-slate-400 mt-1">Cross-Campus Priority Roadmap</div>
@@ -131,9 +131,9 @@ export default function VpafProjectsInitiatives({
                     <div className="bg-white p-5 rounded-xl border border-indigo-50 shadow-sm">
                         <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
                             <span>Projects On Track</span>
-                            <CheckCircle2 className="w-4 h-4 text-[#5B21B6]" />
+                            <CheckCircle2 className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
-                        <div className="text-2xl font-bold text-[#5B21B6]">2 of 3</div>
+                        <div className="text-2xl font-bold text-[#0B3A67] dark:text-[#93C5FD]">2 of 3</div>
                         <div className="text-xs text-slate-400 mt-1">Milestones fully met</div>
                     </div>
 
@@ -163,10 +163,10 @@ export default function VpafProjectsInitiatives({
                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
                                     isActive
                                         ? 'bg-[#5B21B6] text-white shadow-sm'
-                                        : 'bg-white text-slate-600 hover:text-[#5B21B6] hover:bg-violet-50 border border-indigo-50'
+                                        : 'bg-white text-slate-600 hover:text-[#0B3A67] dark:text-[#93C5FD] hover:bg-violet-50 border border-indigo-50'
                                 }`}
                             >
-                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#7C3AED]'}`} />
+                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#0B3A67] dark:text-[#93C5FD]'}`} />
                                 {tab.label}
                             </button>
                         );
@@ -184,7 +184,7 @@ export default function VpafProjectsInitiatives({
                                 {institutionalProjects.map((p) => (
                                     <div key={p.id} className="p-5 rounded-xl border border-indigo-50 bg-[#F7F7FB] space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-violet-100 text-[#5B21B6]">
+                                            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-violet-100 text-[#0B3A67] dark:text-[#93C5FD]">
                                                 {p.lead_unit}
                                             </span>
                                             <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
@@ -197,7 +197,7 @@ export default function VpafProjectsInitiatives({
                                         <div className="space-y-1 pt-2">
                                             <div className="flex justify-between text-xs font-semibold">
                                                 <span className="text-slate-600">Completion</span>
-                                                <span className="text-[#5B21B6]">{p.progress}%</span>
+                                                <span className="text-[#0B3A67] dark:text-[#93C5FD]">{p.progress}%</span>
                                             </div>
                                             <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
                                                 <div
@@ -230,7 +230,7 @@ export default function VpafProjectsInitiatives({
                                     <div key={p.id} className="p-5 rounded-xl border border-indigo-50 bg-[#F7F7FB] flex flex-col justify-between">
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between">
-                                                <span className="px-2 py-0.5 rounded text-xs bg-indigo-100 text-[#5B21B6] font-mono font-bold">
+                                                <span className="px-2 py-0.5 rounded text-xs bg-indigo-100 text-[#0B3A67] dark:text-[#93C5FD] font-mono font-bold">
                                                     {p.lead_unit}
                                                 </span>
                                                 <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
@@ -246,7 +246,7 @@ export default function VpafProjectsInitiatives({
                                         <div className="mt-4 pt-3 border-t border-slate-200/60 space-y-2">
                                             <div className="flex justify-between text-xs font-semibold">
                                                 <span>Progress</span>
-                                                <span className="text-[#5B21B6]">{p.progress}%</span>
+                                                <span className="text-[#0B3A67] dark:text-[#93C5FD]">{p.progress}%</span>
                                             </div>
                                             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                                                 <div
@@ -275,7 +275,7 @@ export default function VpafProjectsInitiatives({
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="p-5 rounded-xl border border-indigo-50 bg-[#F7F7FB]">
                                     <span className="text-xs text-slate-500 block mb-1">Capital Budget Obligation</span>
-                                    <span className="text-2xl font-bold text-[#5B21B6]">₱14.8M / ₱18.0M</span>
+                                    <span className="text-2xl font-bold text-[#0B3A67] dark:text-[#93C5FD]">₱14.8M / ₱18.0M</span>
                                     <span className="text-xs text-emerald-600 block mt-1 font-medium">82.2% Obligated</span>
                                 </div>
                                 <div className="p-5 rounded-xl border border-indigo-50 bg-[#F7F7FB]">

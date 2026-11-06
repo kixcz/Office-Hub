@@ -11,6 +11,14 @@ import FacilitiesConfigurationStage, {
     SetupFacility,
     TemplateFacility,
 } from './facilities-configuration-stage';
+import ModulesConfigurationStage, {
+    CatalogModule,
+} from './modules-configuration-stage';
+import LeadershipAccessStage, {
+    LeadershipAssignment,
+    CollegeRole,
+    AvailableUser,
+} from './leadership-access-stage';
 import {
     Bell,
     BookOpen,
@@ -77,18 +85,22 @@ interface Props {
     colleges: College[];
     currentCollege: College;
     initialStage?: string | null;
+    modulesCatalog?: CatalogModule[];
     programs?: SetupProgram[];
     candidateProgramHeads?: CandidateUser[];
     otherCollegesPrograms?: TemplateProgram[];
     facilities?: SetupFacility[];
     otherCollegesFacilities?: TemplateFacility[];
+    leadershipAssignments?: LeadershipAssignment[];
+    collegeAssignableRoles?: CollegeRole[];
+    availableUsers?: AvailableUser[];
 }
 
 const STAGES = [
-    { id: 'Identity', num: 1, label: '1. Identity', desc: 'Name, code, dean, contacts' },
+    { id: 'Identity', num: 1, label: '1. Identity', desc: 'College information & details' },
     { id: 'Branding', num: 2, label: '2. Branding & Theming', desc: 'Logo, colors, slogan, visual identity' },
     { id: 'Modules', num: 3, label: '3. Modules', desc: 'Enable/disable platform tools' },
-    { id: 'Admins', num: 4, label: '4. Admins', desc: 'College admin designations' },
+    { id: 'Admins', num: 4, label: '4. Leadership & Access', desc: 'College leadership & administrators' },
     { id: 'Programs', num: 5, label: '5. Programs', desc: 'Academic departments & degrees' },
     { id: 'Facilities', num: 6, label: '6. Facilities', desc: 'Classrooms, labs, studios' },
     { id: 'Policies', num: 7, label: '7. Policies', desc: 'Inherited institutional rules' },
@@ -101,12 +113,12 @@ const STAGES = [
 const QUICK_THEME_PRESETS = [
     {
         key: 'amber',
-        name: 'Gold & Royal Purple',
+        name: 'Gold & Slate',
         primary_color: '#F9C400',
-        secondary_color: '#4B2E83',
-        accent_color: '#FFF3C4',
+        secondary_color: '#1E293B',
+        accent_color: '#FEF3C7',
         surface_color: '#FFFFFF',
-        gradient: 'linear-gradient(135deg, #F9C400 0%, #F59E0B 55%, #4B2E83 100%)',
+        gradient: 'linear-gradient(135deg, #F9C400 0%, #F59E0B 55%, #1E293B 100%)',
     },
     {
         key: 'blue',
@@ -146,7 +158,7 @@ const QUICK_THEME_PRESETS = [
     },
     {
         key: 'purple',
-        name: 'Velora Violet & Magenta',
+        name: 'Ascend Violet & Magenta',
         primary_color: '#7C3AED',
         secondary_color: '#4C1D95',
         accent_color: '#EDE9FE',
@@ -180,16 +192,20 @@ export default function CollegeSetup({
     colleges,
     currentCollege,
     initialStage,
+    modulesCatalog = [],
     programs = [],
     candidateProgramHeads = [],
     otherCollegesPrograms = [],
     facilities = [],
     otherCollegesFacilities = [],
+    leadershipAssignments = [],
+    collegeAssignableRoles = [],
+    availableUsers = [],
 }: Props) {
     const defaultBranding: CollegeBranding = currentCollege.branding || {
         primary_color: currentCollege.code === 'CAS' ? '#F9C400' : '#7C3AED',
-        secondary_color: currentCollege.code === 'CAS' ? '#4B2E83' : '#4C1D95',
-        accent_color: currentCollege.code === 'CAS' ? '#FFF3C4' : '#EDE9FE',
+        secondary_color: currentCollege.code === 'CAS' ? '#1E293B' : '#4C1D95',
+        accent_color: currentCollege.code === 'CAS' ? '#FEF3C7' : '#EDE9FE',
         surface_color: '#FFFFFF',
         preset_key: currentCollege.color_theme || (currentCollege.code === 'CAS' ? 'amber' : 'purple'),
         slogan:
@@ -245,8 +261,8 @@ export default function CollegeSetup({
     useEffect(() => {
         const b = currentCollege.branding || {
             primary_color: currentCollege.code === 'CAS' ? '#F9C400' : '#7C3AED',
-            secondary_color: currentCollege.code === 'CAS' ? '#4B2E83' : '#4C1D95',
-            accent_color: currentCollege.code === 'CAS' ? '#FFF3C4' : '#EDE9FE',
+            secondary_color: currentCollege.code === 'CAS' ? '#1E293B' : '#4C1D95',
+            accent_color: currentCollege.code === 'CAS' ? '#FEF3C7' : '#EDE9FE',
             surface_color: '#FFFFFF',
             preset_key: currentCollege.color_theme || (currentCollege.code === 'CAS' ? 'amber' : 'purple'),
             slogan:
@@ -404,7 +420,7 @@ export default function CollegeSetup({
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="space-y-1.5">
                         <div className="flex flex-wrap items-center gap-2.5">
-                            <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA] border border-[#A78BFA]/40">
+                            <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] border border-[#8B1E3F]/30">
                                 Guided Onboarding Workspace
                             </span>
                             <span className="text-xs font-medium text-muted-foreground">
@@ -415,7 +431,7 @@ export default function CollegeSetup({
                             <h1 className="text-2xl md:text-[28px] font-black tracking-tight text-[#17152E] dark:text-white leading-tight">
                                 {data.name || currentCollege.name} ({data.code || currentCollege.code})
                             </h1>
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA] border border-[#A78BFA]/40">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] border border-[#8B1E3F]/30">
                                 {data.code || currentCollege.code}
                             </span>
                         </div>
@@ -437,7 +453,7 @@ export default function CollegeSetup({
                                         `/institution/colleges/setup?college=${e.target.value}&stage=${activeStage}`,
                                     )
                                 }
-                                className="w-full h-10 pl-3.5 pr-9 rounded-xl border border-border/90 bg-card text-xs font-bold text-[#17152E] dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] shadow-2xs cursor-pointer"
+                                className="w-full h-10 pl-3.5 pr-9 rounded-xl border border-border/90 bg-card text-xs font-bold text-[#17152E] dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67] shadow-2xs cursor-pointer"
                             >
                                 {colleges.map((c) => (
                                     <option key={c.id} value={c.id}>
@@ -451,9 +467,9 @@ export default function CollegeSetup({
                 </div>
 
                 {/* 2. Setup Completion Status Horizontal Banner */}
-                <div className="rounded-2xl border border-[#A78BFA]/25 bg-card px-5 py-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="rounded-2xl border border-[#8B1E3F]/30 bg-card px-5 py-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5 shrink-0">
-                        <div className="w-10 h-10 rounded-xl bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA] flex items-center justify-center shrink-0 border border-[#A78BFA]/30">
+                        <div className="w-10 h-10 rounded-xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#8B1E3F]/30">
                             <Layers className="w-5 h-5" />
                         </div>
                         <div>
@@ -467,7 +483,7 @@ export default function CollegeSetup({
                     </div>
 
                     <div className="flex-1 max-w-2xl flex items-center gap-4">
-                        <div className="flex-1 h-2.5 rounded-full bg-[#EDE9FE] dark:bg-[#262246] overflow-hidden">
+                        <div className="flex-1 h-2.5 rounded-full bg-[#F1F5F9] dark:bg-slate-800 overflow-hidden">
                             <div
                                 className="h-full rounded-full transition-all duration-300"
                                 style={{
@@ -489,7 +505,7 @@ export default function CollegeSetup({
                 {/* 3. Main Guided Onboarding Grid: Left Timeline Stepper + Right Workspace */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     {/* Left Column (3 cols): Vertical Connected Onboarding Steps */}
-                    <div className="lg:col-span-3 rounded-2xl border border-[#A78BFA]/25 bg-card p-5 shadow-xs">
+                    <div className="lg:col-span-3 rounded-2xl border border-[#8B1E3F]/30 bg-card p-5 shadow-xs">
                         <h3 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground mb-4 px-1">
                             Onboarding Steps
                         </h3>
@@ -522,7 +538,7 @@ export default function CollegeSetup({
                                                     ? 'bg-emerald-500 text-white shadow-2xs'
                                                     : isCurrent
                                                       ? 'bg-[#4C1D95] text-white ring-4 ring-[#EDE9FE] dark:ring-[#262246]'
-                                                      : 'bg-card border-2 border-border text-muted-foreground hover:border-[#7C3AED]'
+                                                      : 'bg-card border-2 border-border text-muted-foreground hover:border-[#0B3A67]'
                                             }`}
                                         >
                                             {isCompleted ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : stage.num}
@@ -534,7 +550,7 @@ export default function CollegeSetup({
                                             onClick={() => handleStageClick(stage.id, idx)}
                                             className={`flex-1 text-left px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
                                                 isCurrent
-                                                    ? 'bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] text-white shadow-sm'
+                                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] text-white shadow-sm'
                                                     : 'hover:bg-[#F7F7FB] dark:hover:bg-[#1E1B38] text-[#17152E] dark:text-white'
                                             }`}
                                         >
@@ -563,7 +579,7 @@ export default function CollegeSetup({
                     </div>
 
                     {/* Right Column (9 cols): Active Stage Workspace */}
-                    <div className="lg:col-span-9 rounded-2xl border border-[#A78BFA]/25 bg-card p-6 shadow-xs">
+                    <div className="lg:col-span-9 rounded-2xl border border-[#8B1E3F]/30 bg-card p-6 shadow-xs">
                         <form onSubmit={handleSaveSetup} className="space-y-6">
                             {/* Stage 2: Branding & Theming (Matches Attached Reference Image) */}
                             {activeStage === 'Branding' && (
@@ -571,7 +587,7 @@ export default function CollegeSetup({
                                     {/* Top Header Row */}
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
                                         <div className="flex items-center gap-3.5">
-                                            <div className="w-11 h-11 rounded-2xl bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA] flex items-center justify-center shrink-0 border border-[#A78BFA]/30">
+                                            <div className="w-11 h-11 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#8B1E3F]/30">
                                                 <Paintbrush className="w-5 h-5" />
                                             </div>
                                             <div>
@@ -597,7 +613,7 @@ export default function CollegeSetup({
                                             <Button
                                                 type="submit"
                                                 disabled={processing}
-                                                className="h-10 px-5 rounded-xl bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] hover:from-[#4C1D95] hover:to-[#5B21B6] text-white text-xs font-extrabold shadow-sm cursor-pointer"
+                                                className="h-10 px-5 rounded-xl bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] hover:from-[#082847] hover:to-[#0B3A67] text-white text-xs font-extrabold shadow-sm cursor-pointer"
                                             >
                                                 <Save className="w-3.5 h-3.5 mr-1.5" />
                                                 {processing ? 'Saving...' : 'Save Changes'}
@@ -610,7 +626,7 @@ export default function CollegeSetup({
                                         {/* Left Sub-Card (5 Cols): College Identity (Logo, Name, Acronym, Slogan) */}
                                         <div className="xl:col-span-5 rounded-2xl border border-border/80 bg-[#F7F7FB]/50 dark:bg-[#1E1B38]/40 p-5 space-y-5">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-lg bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA] flex items-center justify-center">
+                                                <div className="w-7 h-7 rounded-lg bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center">
                                                     <Building2 className="w-4 h-4" />
                                                 </div>
                                                 <h3 className="text-sm font-extrabold text-[#17152E] dark:text-white">
@@ -628,7 +644,7 @@ export default function CollegeSetup({
                                                     {/* Logo Preview Box */}
                                                     <div
                                                         onClick={() => fileInputRef.current?.click()}
-                                                        className="w-28 h-28 rounded-2xl bg-card border-2 border-border/80 shadow-xs flex items-center justify-center p-2.5 shrink-0 cursor-pointer hover:border-[#7C3AED] transition-all overflow-hidden group relative"
+                                                        className="w-28 h-28 rounded-2xl bg-card border-2 border-border/80 shadow-xs flex items-center justify-center p-2.5 shrink-0 cursor-pointer hover:border-[#0B3A67] transition-all overflow-hidden group relative"
                                                         title="Click to upload college seal/logo"
                                                     >
                                                         {logoPreview ? (
@@ -642,7 +658,7 @@ export default function CollegeSetup({
                                                             <div
                                                                 className="w-20 h-20 rounded-full flex flex-col items-center justify-center text-center shadow-inner border-4 relative"
                                                                 style={{
-                                                                    backgroundColor: data.secondary_color || '#4B2E83',
+                                                                    backgroundColor: data.secondary_color || '#1E293B',
                                                                     borderColor: data.primary_color || '#F9C400',
                                                                 }}
                                                             >
@@ -664,7 +680,7 @@ export default function CollegeSetup({
                                                         <button
                                                             type="button"
                                                             onClick={() => fileInputRef.current?.click()}
-                                                            className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border border-[#A78BFA]/60 bg-[#EDE9FE]/70 hover:bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA] text-xs font-extrabold transition-colors cursor-pointer"
+                                                            className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border border-[#8B1E3F]/30 bg-[#F1F5F9] hover:bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] text-xs font-extrabold transition-colors cursor-pointer"
                                                         >
                                                             <Upload className="w-3.5 h-3.5" />
                                                             Upload New Logo
@@ -703,7 +719,7 @@ export default function CollegeSetup({
                                                             required
                                                             value={data.name}
                                                             onChange={(e) => setData('name', e.target.value)}
-                                                            className="w-full h-10 px-3 rounded-xl border border-border/90 bg-card text-xs font-semibold text-[#17152E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED]"
+                                                            className="w-full h-10 px-3 rounded-xl border border-border/90 bg-card text-xs font-semibold text-[#17152E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
                                                         />
                                                     </div>
                                                     <div className="space-y-1.5">
@@ -722,7 +738,7 @@ export default function CollegeSetup({
                                                                     acronym: up,
                                                                 }));
                                                             }}
-                                                            className="w-full h-10 px-3 rounded-xl border border-border/90 bg-card text-xs font-extrabold uppercase text-[#17152E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED]"
+                                                            className="w-full h-10 px-3 rounded-xl border border-border/90 bg-card text-xs font-extrabold uppercase text-[#17152E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
                                                         />
                                                     </div>
                                                 </div>
@@ -738,7 +754,7 @@ export default function CollegeSetup({
                                                         value={data.slogan}
                                                         onChange={(e) => setData('slogan', e.target.value)}
                                                         placeholder="e.g. Knowledge. Creativity. Service to Society."
-                                                        className="w-full h-10 px-3 rounded-xl border border-border/90 bg-card text-xs font-medium text-[#17152E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED]"
+                                                        className="w-full h-10 px-3 rounded-xl border border-border/90 bg-card text-xs font-medium text-[#17152E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
                                                     />
                                                     <div className="text-right text-[11px] font-medium text-muted-foreground">
                                                         {(data.slogan || '').length} / 100
@@ -750,7 +766,7 @@ export default function CollegeSetup({
                                         {/* Right Sub-Card (7 Cols): College Theme & Appearance + Quick Presets + Live Theme Preview */}
                                         <div className="xl:col-span-7 rounded-2xl border border-border/80 bg-[#F7F7FB]/50 dark:bg-[#1E1B38]/40 p-5 space-y-5">
                                             <div className="flex items-center gap-2.5">
-                                                <div className="w-8 h-8 rounded-xl bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA] flex items-center justify-center">
+                                                <div className="w-8 h-8 rounded-xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center">
                                                     <Palette className="w-4 h-4" />
                                                 </div>
                                                 <div>
@@ -770,7 +786,7 @@ export default function CollegeSetup({
                                                     <label className="text-[11px] font-bold text-[#17152E] dark:text-slate-200 block">
                                                         Primary Color <span className="text-rose-500">*</span>
                                                     </label>
-                                                    <label className="flex items-center justify-between gap-2 h-10 px-2.5 rounded-xl border border-border/90 bg-card cursor-pointer hover:border-[#7C3AED] transition-colors shadow-2xs">
+                                                    <label className="flex items-center justify-between gap-2 h-10 px-2.5 rounded-xl border border-border/90 bg-card cursor-pointer hover:border-[#0B3A67] transition-colors shadow-2xs">
                                                         <div className="flex items-center gap-2 min-w-0">
                                                             <input
                                                                 type="color"
@@ -802,7 +818,7 @@ export default function CollegeSetup({
                                                     <label className="text-[11px] font-bold text-[#17152E] dark:text-slate-200 block">
                                                         Secondary Color
                                                     </label>
-                                                    <label className="flex items-center justify-between gap-2 h-10 px-2.5 rounded-xl border border-border/90 bg-card cursor-pointer hover:border-[#7C3AED] transition-colors shadow-2xs">
+                                                    <label className="flex items-center justify-between gap-2 h-10 px-2.5 rounded-xl border border-border/90 bg-card cursor-pointer hover:border-[#0B3A67] transition-colors shadow-2xs">
                                                         <div className="flex items-center gap-2 min-w-0">
                                                             <input
                                                                 type="color"
@@ -834,7 +850,7 @@ export default function CollegeSetup({
                                                     <label className="text-[11px] font-bold text-[#17152E] dark:text-slate-200 block">
                                                         Accent Color
                                                     </label>
-                                                    <label className="flex items-center justify-between gap-2 h-10 px-2.5 rounded-xl border border-border/90 bg-card cursor-pointer hover:border-[#7C3AED] transition-colors shadow-2xs">
+                                                    <label className="flex items-center justify-between gap-2 h-10 px-2.5 rounded-xl border border-border/90 bg-card cursor-pointer hover:border-[#0B3A67] transition-colors shadow-2xs">
                                                         <div className="flex items-center gap-2 min-w-0">
                                                             <input
                                                                 type="color"
@@ -866,7 +882,7 @@ export default function CollegeSetup({
                                                     <label className="text-[11px] font-bold text-[#17152E] dark:text-slate-200 block">
                                                         Surface / Card
                                                     </label>
-                                                    <label className="flex items-center justify-between gap-2 h-10 px-2.5 rounded-xl border border-border/90 bg-card cursor-pointer hover:border-[#7C3AED] transition-colors shadow-2xs">
+                                                    <label className="flex items-center justify-between gap-2 h-10 px-2.5 rounded-xl border border-border/90 bg-card cursor-pointer hover:border-[#0B3A67] transition-colors shadow-2xs">
                                                         <div className="flex items-center gap-2 min-w-0">
                                                             <input
                                                                 type="color"
@@ -947,7 +963,7 @@ export default function CollegeSetup({
                                                     {/* Mini Sidebar Preview */}
                                                     <div
                                                         className="w-44 sm:w-48 p-3.5 flex flex-col justify-between shrink-0 text-white transition-colors duration-300"
-                                                        style={{ backgroundColor: data.secondary_color || '#4B2E83' }}
+                                                        style={{ backgroundColor: data.secondary_color || '#1E293B' }}
                                                     >
                                                         <div className="space-y-4">
                                                             {/* College Crest & Acronym */}
@@ -1016,7 +1032,7 @@ export default function CollegeSetup({
                                                             </div>
                                                             <div
                                                                 className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                                                                style={{ backgroundColor: data.secondary_color || '#4B2E83' }}
+                                                                style={{ backgroundColor: data.secondary_color || '#1E293B' }}
                                                             >
                                                                 <User className="w-3 h-3" />
                                                             </div>
@@ -1033,7 +1049,7 @@ export default function CollegeSetup({
                                                             {data.slogan && (
                                                                 <p
                                                                     className="text-[10px] italic font-semibold mt-1"
-                                                                    style={{ color: data.secondary_color || '#4B2E83' }}
+                                                                    style={{ color: data.secondary_color || '#1E293B' }}
                                                                 >
                                                                     &ldquo;{data.slogan}&rdquo;
                                                                 </p>
@@ -1056,12 +1072,12 @@ export default function CollegeSetup({
                                                                         className="w-6 h-6 rounded-lg flex items-center justify-center"
                                                                         style={{
                                                                             backgroundColor: data.accent_color || '#FFF3C4',
-                                                                            color: data.secondary_color || '#4B2E83',
+                                                                            color: data.secondary_color || '#1E293B',
                                                                         }}
                                                                     >
                                                                         <item.icon
                                                                             className="w-3.5 h-3.5"
-                                                                            style={{ color: data.primary_color === '#FFFFFF' ? '#4B2E83' : data.primary_color }}
+                                                                            style={{ color: data.primary_color === '#FFFFFF' ? '#1E293B' : data.primary_color }}
                                                                         />
                                                                     </div>
                                                                     <div className="space-y-1">
@@ -1094,7 +1110,7 @@ export default function CollegeSetup({
                                         <Button
                                             type="submit"
                                             disabled={processing}
-                                            className="bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] text-white hover:from-[#4C1D95] hover:to-[#5B21B6] font-bold text-xs rounded-xl cursor-pointer"
+                                            className="bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] text-white hover:from-[#082847] hover:to-[#0B3A67] font-bold text-xs rounded-xl cursor-pointer"
                                         >
                                             <Save className="w-3.5 h-3.5 mr-1.5" />
                                             {processing ? 'Saving...' : 'Save Changes'}
@@ -1134,98 +1150,57 @@ export default function CollegeSetup({
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold">College Dean / Unit Head</label>
-                                            <input
-                                                type="text"
-                                                value={data.dean_name}
-                                                onChange={(e) => setData('dean_name', e.target.value)}
-                                                placeholder="e.g. Dr. Rebecca Miranda"
-                                                className="w-full h-10 rounded-xl border border-border bg-background px-3 text-xs"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
                                             <label className="text-xs font-bold">Official Contact Email</label>
                                             <input
                                                 type="email"
                                                 value={data.contact_email}
                                                 onChange={(e) => setData('contact_email', e.target.value)}
-                                                placeholder="dean@dssc.edu.ph"
+                                                placeholder="cids@dssc.edu.ph"
+                                                className="w-full h-10 rounded-xl border border-border bg-background px-3 text-xs"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold">Official Contact Number</label>
+                                            <input
+                                                type="text"
+                                                value={data.contact_phone}
+                                                onChange={(e) => setData('contact_phone', e.target.value)}
+                                                placeholder="+63 (082) 553-2433"
                                                 className="w-full h-10 rounded-xl border border-border bg-background px-3 text-xs"
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold">Building / Campus Location</label>
-                                        <input
-                                            type="text"
-                                            value={data.address}
-                                            onChange={(e) => setData('address', e.target.value)}
-                                            placeholder="e.g. Academic Block A, DSSC Main Campus"
-                                            className="w-full h-10 rounded-xl border border-border bg-background px-3 text-xs"
-                                        />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold">Building / Campus Location</label>
+                                            <input
+                                                type="text"
+                                                value={data.address}
+                                                onChange={(e) => setData('address', e.target.value)}
+                                                placeholder="e.g. Academic Block A, DSSC Main Campus"
+                                                className="w-full h-10 rounded-xl border border-border bg-background px-3 text-xs"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold">Parent Entity / Campus</label>
+                                            <input
+                                                type="text"
+                                                readOnly
+                                                value={currentCollege.parent ? `${currentCollege.parent.name} (${currentCollege.parent.code})` : 'Main Campus (Institutional Unit)'}
+                                                className="w-full h-10 rounded-xl border border-border bg-muted px-3 text-xs font-medium text-muted-foreground"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Stage 3: Modules */}
+                            {/* Stage 3: Modules Configuration Workspace */}
                             {activeStage === 'Modules' && (
-                                <div className="space-y-5">
-                                    <div className="flex items-center justify-between border-b border-border/60 pb-4">
-                                        <div>
-                                            <h2 className="text-lg font-extrabold text-[#17152E] dark:text-white">
-                                                3. Enabled Velora Capability Modules
-                                            </h2>
-                                            <p className="text-xs text-muted-foreground">
-                                                Select which platform modules are enabled for {data.code}.
-                                            </p>
-                                        </div>
-                                        <Button
-                                            type="submit"
-                                            disabled={processing}
-                                            className="bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] text-white hover:from-[#4C1D95] hover:to-[#5B21B6] font-bold text-xs rounded-xl cursor-pointer"
-                                        >
-                                            <Save className="w-3.5 h-3.5 mr-1.5" />
-                                            {processing ? 'Saving...' : 'Save Changes'}
-                                        </Button>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {[
-                                            { key: 'scheduling', label: 'Semester Timetable & Generator', desc: 'Timetables, rooms, and AI loading' },
-                                            { key: 'compliance', label: 'Compliance & Submissions', desc: 'Faculty syllabus and report submissions' },
-                                            { key: 'faculty_attendance', label: 'Faculty Attendance Oversight', desc: 'Class check-ins & make-up classes' },
-                                            { key: 'lab_monitoring', label: 'Lab & Facility Monitoring', desc: 'Laboratory in-charge schedules & EOD' },
-                                            { key: 'tv_studio', label: 'Campus TV Studio Feed', desc: 'Digital signage highlights & playlists' },
-                                            { key: 'performance', label: 'Faculty Recognition & Portfolios', desc: 'Accomplishment records & analytics' },
-                                        ].map((mod) => (
-                                            <div
-                                                key={mod.key}
-                                                onClick={() => toggleModule(mod.key)}
-                                                className={`p-4 rounded-xl border cursor-pointer transition-all flex items-start justify-between ${
-                                                    data.enabled_modules[mod.key]
-                                                        ? 'border-[#7C3AED]/50 bg-[#EDE9FE]/50 dark:bg-[#262246]/50'
-                                                        : 'border-border/60 bg-muted/20 hover:bg-muted/40'
-                                                }`}
-                                            >
-                                                <div className="space-y-1">
-                                                    <span className="font-bold text-xs block text-[#17152E] dark:text-white">
-                                                        {mod.label}
-                                                    </span>
-                                                    <span className="text-[11px] text-muted-foreground block">
-                                                        {mod.desc}
-                                                    </span>
-                                                </div>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={!!data.enabled_modules[mod.key]}
-                                                    onChange={() => {}}
-                                                    className="rounded border-border text-[#7C3AED] focus:ring-[#7C3AED] shrink-0 mt-0.5"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                                <ModulesConfigurationStage
+                                    college={currentCollege}
+                                    modulesCatalog={modulesCatalog}
+                                />
                             )}
 
                             {/* Stage 11: Activation */}
@@ -1243,15 +1218,15 @@ export default function CollegeSetup({
                                         <Button
                                             type="submit"
                                             disabled={processing}
-                                            className="bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] text-white hover:from-[#4C1D95] hover:to-[#5B21B6] font-bold text-xs rounded-xl cursor-pointer"
+                                            className="bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] text-white hover:from-[#082847] hover:to-[#0B3A67] font-bold text-xs rounded-xl cursor-pointer"
                                         >
                                             <Save className="w-3.5 h-3.5 mr-1.5" />
                                             {processing ? 'Saving...' : 'Save Changes'}
                                         </Button>
                                     </div>
 
-                                    <div className="p-4 rounded-xl border border-[#7C3AED]/30 bg-[#EDE9FE]/50 dark:bg-[#262246]/40 space-y-1.5">
-                                        <h4 className="font-bold text-xs text-[#5B21B6] dark:text-[#A78BFA]">
+                                    <div className="p-4 rounded-xl border border-[#0B3A67]/20 bg-[#F1F5F9] dark:bg-slate-800 space-y-1.5">
+                                        <h4 className="font-bold text-xs text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                             Platform Readiness Check
                                         </h4>
                                         <p className="text-xs text-muted-foreground">
@@ -1265,12 +1240,12 @@ export default function CollegeSetup({
                                             <select
                                                 value={data.status}
                                                 onChange={(e) => setData('status', e.target.value as College['status'])}
-                                                className="w-full h-10 rounded-xl border border-border bg-background px-3 text-xs font-bold focus:ring-1 focus:ring-[#7C3AED]"
+                                                className="w-full h-10 rounded-xl border border-border bg-background px-3 text-xs font-bold focus:ring-1 focus:ring-[#0B3A67]"
                                             >
                                                 <option value="Not Configured">Not Configured</option>
                                                 <option value="In Setup">In Setup (Configuration ongoing)</option>
                                                 <option value="Ready">Ready (Pre-flight verified)</option>
-                                                <option value="Active">Active (Live in Velora)</option>
+                                                <option value="Active">Active (Live in Ascend)</option>
                                                 <option value="Suspended">Suspended (Temporarily restricted)</option>
                                                 <option value="Archived">Archived</option>
                                             </select>
@@ -1286,11 +1261,21 @@ export default function CollegeSetup({
                                                 onChange={(e) =>
                                                     setData('setup_progress', Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))
                                                 }
-                                                className="w-full h-10 rounded-xl border border-border bg-background px-3 text-xs font-bold focus:ring-1 focus:ring-[#7C3AED]"
+                                                className="w-full h-10 rounded-xl border border-border bg-background px-3 text-xs font-bold focus:ring-1 focus:ring-[#0B3A67]"
                                             />
                                         </div>
                                     </div>
                                 </div>
+                            )}
+
+                            {/* Stage 4: Leadership & Access */}
+                            {activeStage === 'Admins' && (
+                                <LeadershipAccessStage
+                                    college={currentCollege}
+                                    leadershipAssignments={leadershipAssignments}
+                                    collegeAssignableRoles={collegeAssignableRoles}
+                                    availableUsers={availableUsers}
+                                />
                             )}
 
                             {/* Stage 5: Programs Configuration */}
@@ -1312,10 +1297,11 @@ export default function CollegeSetup({
                                 />
                             )}
 
-                            {/* Other Stages (Admins, Policies, Workflows, Reports, TV) */}
+                            {/* Other Stages (Policies, Workflows, Reports, TV) */}
                             {activeStage !== 'Branding' &&
                                 activeStage !== 'Identity' &&
                                 activeStage !== 'Modules' &&
+                                activeStage !== 'Admins' &&
                                 activeStage !== 'Programs' &&
                                 activeStage !== 'Facilities' &&
                                 activeStage !== 'Activation' && (
@@ -1332,15 +1318,15 @@ export default function CollegeSetup({
                                             <Button
                                                 type="submit"
                                                 disabled={processing}
-                                                className="bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] text-white hover:from-[#4C1D95] hover:to-[#5B21B6] font-bold text-xs rounded-xl cursor-pointer"
+                                                className="bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] text-white hover:from-[#082847] hover:to-[#0B3A67] font-bold text-xs rounded-xl cursor-pointer"
                                             >
                                                 <Save className="w-3.5 h-3.5 mr-1.5" />
                                                 {processing ? 'Saving...' : 'Save Changes'}
                                             </Button>
                                         </div>
 
-                                        <div className="p-8 rounded-2xl border border-dashed border-[#A78BFA]/40 bg-[#F7F7FB]/60 dark:bg-[#1E1B38]/30 flex flex-col items-center justify-center text-center space-y-3">
-                                            <div className="p-3.5 rounded-2xl bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA]">
+                                        <div className="p-8 rounded-2xl border border-dashed border-[#8B1E3F]/30 bg-[#F7F7FB]/60 dark:bg-[#1E1B38]/30 flex flex-col items-center justify-center text-center space-y-3">
+                                            <div className="p-3.5 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                 <Sliders className="w-6 h-6" />
                                             </div>
                                             <div className="space-y-1">
@@ -1351,7 +1337,7 @@ export default function CollegeSetup({
                                                     Default institutional configuration rules for {activeStage} are inherited from Davao Del Sur State College global governance standards.
                                                 </p>
                                             </div>
-                                            <div className="text-[11px] font-bold text-[#5B21B6] dark:text-[#A78BFA] bg-[#EDE9FE] dark:bg-[#262246] px-3.5 py-1.5 rounded-full border border-[#A78BFA]/30">
+                                            <div className="text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] bg-[#F1F5F9] dark:bg-slate-800 px-3.5 py-1.5 rounded-full border border-[#8B1E3F]/30">
                                                 ✓ Inherited from Institution Super Admin Defaults
                                             </div>
                                         </div>

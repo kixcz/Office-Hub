@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, useForm, Link, router } from '@inertiajs/react';
+import { Head, useForm, Link, router, usePage } from '@inertiajs/react';
+import { SharedData } from '@/types';
 import {
     User,
     Briefcase,
@@ -64,6 +65,9 @@ export default function FacultyProfilePage({
     loading_courses = [],
     attendance_summary = null,
 }: Props) {
+    const { active_branding, auth } = usePage<SharedData>().props;
+    const activeCollege = auth?.user?.active_college;
+    const resolvedCollegeName = faculty?.program?.college?.name || activeCollege?.name || active_branding?.scope_name || 'College';
     const [activeTab, setActiveTab] = useState<
         | 'personal'
         | 'employment'
@@ -276,7 +280,7 @@ export default function FacultyProfilePage({
                             </div>
 
                             <p className="text-[11px] text-muted-foreground mt-1">
-                                College of Information and Digital Sciences · Faculty Dossier & Institutional Workspace
+                                {resolvedCollegeName} · Faculty Dossier & Institutional Workspace
                             </p>
 
                             {(faculty?.quote || data.quote) && (
@@ -869,7 +873,7 @@ export default function FacultyProfilePage({
                                         <div className="relative">
                                             <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 ring-4 ring-card" />
                                             <div className="font-bold text-foreground">Initial Appointment</div>
-                                            <div className="text-[11px] text-muted-foreground">College of Information and Digital Sciences</div>
+                                            <div className="text-[11px] text-muted-foreground">{resolvedCollegeName}</div>
                                         </div>
                                     </div>
                                 </div>

@@ -16,6 +16,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
@@ -34,6 +35,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Dynamic Role & Permission authorization gate
+        Gate::before(function ($user, string $ability) {
+            if (method_exists($user, 'isInstitutionSuperAdmin') && $user->isInstitutionSuperAdmin()) {
+                return true;
+            }
+
+            if (method_exists($user, 'hasPermissionTo') && $user->hasPermissionTo($ability)) {
+                return true;
+            }
+        });
+
         // Structured monitoring for slow SQL queries (> 500ms)
         DB::whenQueryingForLongerThan(500, function (Connection $connection, QueryExecuted $event) {
             Log::warning('Slow SQL query threshold exceeded on connection.', [

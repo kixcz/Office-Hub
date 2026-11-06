@@ -447,7 +447,7 @@ class PortalContextService
             actor: $user,
             previousValue: ['role' => $previousRole, 'scope' => $previousScope],
             newValue: ['role' => $target['role_name'], 'scope' => $target['scope_name'], 'portal' => $target['portal_type']],
-            reason: 'User switched portal workspace via Velora Header Portal Switcher.',
+            reason: 'User switched portal workspace via Ascend Header Portal Switcher.',
             severity: 'info',
             scopeType: $target['scope_type'],
             scopeName: $target['scope_name'],

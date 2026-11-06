@@ -107,8 +107,8 @@ export default function VpafTvCommunications({
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-[#5B21B6] border border-violet-200">
-                                <Tv className="w-3.5 h-3.5 text-[#7C3AED]" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-[#0B3A67] dark:text-[#93C5FD] border border-violet-200">
+                                <Tv className="w-3.5 h-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Campus Digital Signage & TV Broadcast Network
                             </span>
                             <span className="text-xs text-slate-500 font-medium">6 Screen Network Active</span>
@@ -149,10 +149,10 @@ export default function VpafTvCommunications({
                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
                                     isActive
                                         ? 'bg-[#5B21B6] text-white shadow-sm'
-                                        : 'bg-white text-slate-600 hover:text-[#5B21B6] hover:bg-violet-50 border border-indigo-50'
+                                        : 'bg-white text-slate-600 hover:text-[#0B3A67] dark:text-[#93C5FD] hover:bg-violet-50 border border-indigo-50'
                                 }`}
                             >
-                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#7C3AED]'}`} />
+                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#0B3A67] dark:text-[#93C5FD]'}`} />
                                 {tab.label}
                             </button>
                         );
@@ -221,7 +221,7 @@ export default function VpafTvCommunications({
                                         {activeChannel?.current_slide}
                                     </h3>
                                     <p className="text-sm text-white/70 max-w-md mx-auto">
-                                        Active Playlist: <span className="text-[#A78BFA]">{activeChannel?.active_playlist}</span>
+                                        Active Playlist: <span className="text-[#93C5FD]">{activeChannel?.active_playlist}</span>
                                     </p>
                                 </div>
 
@@ -234,7 +234,7 @@ export default function VpafTvCommunications({
                             {/* Feed Controls */}
                             <div className="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <Button variant="outline" size="sm" className="border-indigo-200 text-[#5B21B6] text-xs">
+                                    <Button variant="outline" size="sm" className="border-indigo-200 text-[#0B3A67] dark:text-[#93C5FD] text-xs">
                                         <Play className="w-3.5 h-3.5 mr-1.5" /> Skip Slide
                                     </Button>
                                     <Button variant="outline" size="sm" className="border-slate-200 text-slate-700 text-xs">
@@ -260,7 +260,7 @@ export default function VpafTvCommunications({
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="p-5 rounded-xl border border-indigo-50 bg-[#F7F7FB]">
                                     <div className="text-xs text-slate-500 font-semibold mb-1">Total Deployed Screens</div>
-                                    <div className="text-2xl font-bold text-[#5B21B6]">6 Screens</div>
+                                    <div className="text-2xl font-bold text-[#0B3A67] dark:text-[#93C5FD]">6 Screens</div>
                                     <div className="text-xs text-emerald-600 mt-1 font-medium">100% online telemetry</div>
                                 </div>
                                 <div className="p-5 rounded-xl border border-indigo-50 bg-[#F7F7FB]">
@@ -327,7 +327,7 @@ export default function VpafTvCommunications({
                                     <div key={h.id} className="p-5 rounded-xl border border-indigo-50 bg-[#F7F7FB] flex flex-col md:flex-row md:items-center justify-between gap-4">
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-violet-100 text-[#5B21B6]">
+                                                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-violet-100 text-[#0B3A67] dark:text-[#93C5FD]">
                                                     {h.category}
                                                 </span>
                                                 <span className="text-xs text-slate-400">{h.submitted_at}</span>

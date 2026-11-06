@@ -194,7 +194,7 @@ export default function ScopedRolesIndex({
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/20">
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#0B3A67]/10 text-[#0B3A67] dark:text-[#93C5FD] border border-[#0B3A67]/20">
                                 Identity + Role + Scope + Effective Period
                             </span>
                         </div>
@@ -202,7 +202,7 @@ export default function ScopedRolesIndex({
                             Scoped Role Assignments & Delegation
                         </h1>
                         <p className="text-xs md:text-sm text-muted-foreground">
-                            Bind <code className="font-mono text-[#7C3AED]">User + Role + Scope (Institution / Entity / College / Program / Facility) + Effective Period</code>. Supports Primary, Secondary, Acting, Replacement during leave, and Scheduled future assignments with automatic expiration.
+                            Bind <code className="font-mono text-[#0B3A67] dark:text-[#93C5FD]">User + Role + Scope (Institution / Entity / College / Program / Facility) + Effective Period</code>. Supports Primary, Secondary, Acting, Replacement during leave, and Scheduled future assignments with automatic expiration.
                         </p>
                     </div>
 
@@ -213,7 +213,7 @@ export default function ScopedRolesIndex({
                                 onClick={() => setActiveTab('assignments')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === 'assignments'
-                                        ? 'bg-[#5B21B6] text-white'
+                                        ? 'bg-[#0B3A67] text-white'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -224,7 +224,7 @@ export default function ScopedRolesIndex({
                                 onClick={() => setActiveTab('leadership')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === 'leadership'
-                                        ? 'bg-[#5B21B6] text-white'
+                                        ? 'bg-[#0B3A67] text-white'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -235,7 +235,7 @@ export default function ScopedRolesIndex({
                                 onClick={() => setActiveTab('requests')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                                     activeTab === 'requests'
-                                        ? 'bg-[#5B21B6] text-white'
+                                        ? 'bg-[#0B3A67] text-white'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -258,7 +258,7 @@ export default function ScopedRolesIndex({
                         </Button>
                         <Button
                             onClick={() => setIsGrantOpen(true)}
-                            className="bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs rounded-xl shadow-xs"
+                            className="bg-[#0B3A67] text-white hover:bg-[#082847] font-bold text-xs rounded-xl shadow-xs"
                         >
                             <Plus className="w-4 h-4 mr-1.5" />
                             Bind Scoped Role
@@ -269,11 +269,11 @@ export default function ScopedRolesIndex({
                 {activeTab === 'assignments' || activeTab === 'leadership' ? (
                     <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
                         {activeTab === 'leadership' && (
-                            <div className="border-b border-border/60 bg-[#7C3AED]/5 px-4 py-3 text-xs text-muted-foreground flex items-center justify-between">
+                            <div className="border-b border-border/60 bg-[#0B3A67]/5 px-4 py-3 text-xs text-muted-foreground flex items-center justify-between">
                                 <span>
                                     <strong className="text-foreground">Leadership & Administrator Positions View:</strong> Showing Entity Admins, College Admins, Deans, Program Heads, Head Lab In-Charge, and TV Managers, including Acting appointments and expiration dates.
                                 </span>
-                                <span className="font-mono font-bold text-[#7C3AED]">
+                                <span className="font-mono font-bold text-[#0B3A67] dark:text-[#93C5FD]">
                                     {displayedAssignments.length} Active Leadership Posts
                                 </span>
                             </div>
@@ -306,10 +306,10 @@ export default function ScopedRolesIndex({
                                             <td className="px-4 py-3.5">
                                                 <div className="flex flex-wrap items-center gap-1.5">
                                                     <span className="px-2.5 py-0.5 rounded-md bg-muted font-bold text-foreground inline-flex items-center gap-1">
-                                                        <Key className="w-3 h-3 text-[#7C3AED]" />
+                                                        <Key className="w-3 h-3 text-[#0B3A67] dark:text-[#93C5FD]" />
                                                         {asgn.role?.name}
                                                     </span>
-                                                    <span className="px-2 py-0.5 rounded bg-[#7C3AED]/10 text-[#7C3AED] font-bold text-[10px] border border-[#7C3AED]/20">
+                                                    <span className="px-2 py-0.5 rounded bg-[#0B3A67]/10 text-[#0B3A67] dark:text-[#93C5FD] font-bold text-[10px] border border-[#0B3A67]/20">
                                                         {asgn.designation_type || 'Primary'}
                                                     </span>
                                                 </div>
@@ -326,7 +326,7 @@ export default function ScopedRolesIndex({
                                                         {asgn.scope_level || 'College'}
                                                     </span>
                                                     {asgn.entity && (
-                                                        <span className="font-bold text-[#7C3AED] block">
+                                                        <span className="font-bold text-[#0B3A67] dark:text-[#93C5FD] block">
                                                             Entity: {asgn.entity.code}
                                                         </span>
                                                     )}
@@ -379,7 +379,7 @@ export default function ScopedRolesIndex({
 
                                             <td className="px-4 py-3.5 text-[11px] max-w-xs space-y-1">
                                                 {asgn.appointment_reference && (
-                                                    <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/20">
+                                                    <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-[#0B3A67]/10 text-[#0B3A67] dark:text-[#93C5FD] border border-[#0B3A67]/20">
                                                         {asgn.appointment_reference}
                                                     </span>
                                                 )}
@@ -464,7 +464,7 @@ export default function ScopedRolesIndex({
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3.5">
-                                                <span className="font-bold text-[#7C3AED] block">
+                                                <span className="font-bold text-[#0B3A67] dark:text-[#93C5FD] block">
                                                     {req.requested_role?.name}
                                                 </span>
                                                 <span className="text-[10px] text-muted-foreground">
@@ -489,7 +489,7 @@ export default function ScopedRolesIndex({
                                                         req.status === 'Approved'
                                                             ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                                                             : req.status === 'Pending'
-                                                            ? 'bg-[#7C3AED]/10 text-[#7C3AED] border-[#7C3AED]/20'
+                                                            ? 'bg-[#0B3A67]/10 text-[#0B3A67] dark:text-[#93C5FD] border-[#0B3A67]/20'
                                                             : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
                                                     }`}
                                                 >
@@ -746,7 +746,7 @@ export default function ScopedRolesIndex({
                                     <Button
                                         type="submit"
                                         disabled={processing}
-                                        className="bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs"
+                                        className="bg-[#0B3A67] text-white hover:bg-[#082847] font-bold text-xs"
                                     >
                                         Bind Scoped Role
                                     </Button>
@@ -861,7 +861,7 @@ export default function ScopedRolesIndex({
                                     <Button
                                         type="submit"
                                         disabled={reqForm.processing}
-                                        className="bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs"
+                                        className="bg-[#0B3A67] text-white hover:bg-[#082847] font-bold text-xs"
                                     >
                                         Submit Request
                                     </Button>

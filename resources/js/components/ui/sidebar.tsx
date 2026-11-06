@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { usePage } from '@inertiajs/react';
+import { SharedData } from '@/types';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar:state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -281,7 +283,7 @@ const SidebarInset = React.forwardRef<HTMLDivElement, React.ComponentProps<'main
         <main
             ref={ref}
             className={cn(
-                'relative flex min-h-svh flex-1 flex-col bg-background',
+                'relative flex min-h-svh flex-1 flex-col bg-background min-w-0 max-w-full',
                 'peer-data-[variant=inset]:min-h-[calc(100svh-(--spacing(4)))] md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm',
                 className,
             )}
@@ -395,16 +397,16 @@ const SidebarMenuItem = React.forwardRef<HTMLLIElement, React.ComponentProps<'li
 SidebarMenuItem.displayName = 'SidebarMenuItem';
 
 const sidebarMenuButtonVariants = cva(
-    'peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-[13px] outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-bold data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+    'peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-xl p-2 text-left text-[13px] outline-hidden ring-sidebar-ring transition-colors duration-160 ease-in-out hover:bg-sidebar-hover hover:text-sidebar-hover-fg focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-active data-[active=true]:font-bold data-[active=true]:text-sidebar-active-fg data-[active=true]:hover:bg-sidebar-active data-[active=true]:hover:text-sidebar-active-fg data-[active=true]:hover:brightness-95 data-[state=open]:hover:bg-sidebar-hover data-[state=open]:hover:text-sidebar-hover-fg group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 data-[active=true]:[&>svg]:text-inherit',
     {
         variants: {
             variant: {
-                default: 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                default: 'hover:bg-sidebar-hover hover:text-sidebar-hover-fg',
                 outline:
-                    'bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]',
+                    'bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-hover hover:text-sidebar-hover-fg hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]',
             },
             size: {
-                default: 'h-8 text-sm',
+                default: 'h-9 text-sm',
                 sm: 'h-7 text-xs',
                 lg: 'h-12 text-sm group-data-[collapsible=icon]:p-0!',
             },
@@ -421,11 +423,20 @@ const SidebarMenuButton = React.forwardRef<
     React.ComponentProps<'button'> & {
         asChild?: boolean;
         isActive?: boolean;
-        tooltip?: string | React.ComponentProps<typeof TooltipContent>;
+        tooltip?:
+            | string
+            | (React.ComponentProps<typeof TooltipContent> & {
+                  title?: string;
+                  description?: string;
+                  icon?: React.ComponentType<{ className?: string }>;
+              });
     } & VariantProps<typeof sidebarMenuButtonVariants>
 >(({ asChild = false, isActive = false, variant = 'default', size = 'default', tooltip, className, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button';
     const { isMobile, state } = useSidebar();
+    const pageProps = usePage<SharedData>().props;
+    const activeBranding = pageProps?.active_branding;
+    const portalContext = pageProps?.portal_context;
 
     const button = (
         <Comp
@@ -442,16 +453,71 @@ const SidebarMenuButton = React.forwardRef<
         return button;
     }
 
+    let tooltipContentProps: React.ComponentProps<typeof TooltipContent> = {};
+    let customTitle: string | undefined;
+    let customDescription: string | undefined;
+    let CustomIcon: React.ComponentType<{ className?: string }> | undefined;
+
     if (typeof tooltip === 'string') {
-        tooltip = {
-            children: tooltip,
-        };
+        customTitle = tooltip;
+        tooltipContentProps = {};
+    } else {
+        const { title, description, icon, ...rest } = tooltip as any;
+        customTitle = title;
+        customDescription = description;
+        CustomIcon = icon;
+        tooltipContentProps = rest;
     }
+
+    // Determine branding theme: college vs main institutional theme (deep indigo/purple)
+    const isCollegeScope = activeBranding?.scope_type === 'college' || portalContext?.active_assignment?.scope_type === 'College';
+    const brandPrimary = (isCollegeScope && activeBranding?.primary_color) ? activeBranding.primary_color : (activeBranding?.primary_color || '#4C1D95');
+    const isCustomCollegeTheme = !!brandPrimary;
 
     return (
         <Tooltip>
             <TooltipTrigger asChild>{button}</TooltipTrigger>
-            <TooltipContent side="right" align="center" hidden={state !== 'collapsed' || isMobile} {...tooltip} />
+            <TooltipContent
+                side="right"
+                align="center"
+                sideOffset={12}
+                hidden={state !== 'collapsed' || isMobile}
+                className="overflow-visible rounded-2xl border bg-popover/95 backdrop-blur-md p-3 text-popover-foreground shadow-2xl transition-all"
+                style={{
+                    borderColor: `${brandPrimary}40`,
+                    boxShadow: `0 14px 30px -6px ${brandPrimary}25, 0 4px 12px -2px rgba(0, 0, 0, 0.08)`,
+                } as React.CSSProperties}
+                {...tooltipContentProps}
+            >
+                {customTitle ? (
+                    <div className="flex items-center gap-3 max-w-[280px] font-['Poppins'] select-none">
+                        {CustomIcon && (
+                            <div
+                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors"
+                                style={{
+                                    backgroundColor: `${brandPrimary}18`,
+                                    color: brandPrimary,
+                                    border: `1px solid ${brandPrimary}30`,
+                                }}
+                            >
+                                <CustomIcon className="h-4 w-4" />
+                            </div>
+                        )}
+                        <div className="flex flex-col min-w-0 pr-1">
+                            <span className="text-[13px] font-semibold text-foreground tracking-tight leading-snug">
+                                {customTitle}
+                            </span>
+                            {customDescription && (
+                                <span className="text-[11px] font-normal text-muted-foreground leading-relaxed mt-0.5 line-clamp-2">
+                                    {customDescription}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    tooltipContentProps.children
+                )}
+            </TooltipContent>
         </Tooltip>
     );
 });
@@ -568,8 +634,8 @@ const SidebarMenuSubButton = React.forwardRef<
             data-size={size}
             data-active={isActive}
             className={cn(
-                'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-hidden ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground',
-                'data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground',
+                'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-hidden ring-sidebar-ring transition-colors duration-160 hover:bg-sidebar-hover hover:text-sidebar-hover-fg focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-sidebar-active active:text-sidebar-active-fg disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground',
+                'data-[active=true]:bg-sidebar-active data-[active=true]:text-sidebar-active-fg data-[active=true]:hover:bg-sidebar-active data-[active=true]:hover:text-sidebar-active-fg',
                 size === 'sm' && 'text-xs',
                 size === 'md' && 'text-sm',
                 'group-data-[collapsible=icon]:hidden',

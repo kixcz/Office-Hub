@@ -56,8 +56,8 @@ class College extends Model
         $presets = [
             'amber' => [
                 'primary_color' => '#F9C400',
-                'secondary_color' => '#4B2E83',
-                'accent_color' => '#FFF3C4',
+                'secondary_color' => '#1E293B',
+                'accent_color' => '#FEF3C7',
                 'surface_color' => '#FFFFFF',
                 'preset_key' => 'amber',
             ],

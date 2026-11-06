@@ -12,6 +12,7 @@ use App\Models\Program;
 use App\Models\Room;
 use App\Models\Section;
 use App\Services\CourseAndSectionSyncService;
+use App\Services\PortalContextService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,6 +23,23 @@ class SectionManagementController extends Controller
     {
         $currentPeriod = AcademicPeriod::current()
             ?? AcademicPeriod::orderBy('id', 'desc')->first();
+
+        $user = $request->user();
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        $scopeCollegeId = null;
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            $scopeCollegeId = $activeScopeId;
+        } elseif ($activeScopeType === 'program' && $activeScopeId) {
+            $scopeCollegeId = Program::find($activeScopeId)?->college_id;
+        } elseif (! $isInstitutionSuperAdmin) {
+            $scopeCollegeId = $user?->resolveActiveCollege()?->id;
+        }
 
         $selectedPeriodId = $request->input('academic_period_id', $currentPeriod?->id);
 
@@ -36,6 +54,14 @@ class SectionManagementController extends Controller
             'roomSchedules.faculty',
             'examSchedules',
         ]);
+
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $query->where('program_id', $activeScopeId);
+            } elseif ($scopeCollegeId) {
+                $query->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+            }
+        }
 
         if ($selectedPeriodId && $selectedPeriodId !== 'all') {
             $query->where('academic_period_id', $selectedPeriodId);
@@ -203,12 +229,25 @@ class SectionManagementController extends Controller
         });
 
         // Hierarchical Grouping: Program -> Year Level -> Sections
-        $programs = Program::with('curricula')->orderBy('code')->get();
+        $programsQuery = Program::with('curricula')->orderBy('code');
+        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+            $programsQuery->where('college_id', $scopeCollegeId);
+        }
+        $programs = $programsQuery->get();
+
         $academicPeriods = AcademicPeriod::orderBy('id', 'desc')->get();
-        $facultyMembers = Faculty::where('status', 'Active')
+
+        $facultyMembersQuery = Faculty::where('status', 'Active')
             ->orderBy('first_name', 'asc')
-            ->orderBy('last_name', 'asc')
-            ->get();
+            ->orderBy('last_name', 'asc');
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $facultyMembersQuery->where('program_id', $activeScopeId);
+            } elseif ($scopeCollegeId) {
+                $facultyMembersQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+            }
+        }
+        $facultyMembers = $facultyMembersQuery->get();
         $courses = Course::where('status', 'Active')->orderBy('code')->get();
 
         // Operational KPI stats

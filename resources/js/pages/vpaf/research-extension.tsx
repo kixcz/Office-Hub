@@ -77,8 +77,8 @@ export default function VpafResearchExtension({
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-[#5B21B6] border border-violet-200">
-                                <Lightbulb className="w-3.5 h-3.5 text-[#7C3AED]" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-[#0B3A67] dark:text-[#93C5FD] border border-violet-200">
+                                <Lightbulb className="w-3.5 h-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Scholarly Output & Community Impact
                             </span>
                             <span className="text-xs text-slate-500 font-medium">AY 2026–2027 Institutional Grants</span>
@@ -105,7 +105,7 @@ export default function VpafResearchExtension({
                     <div className="bg-white p-5 rounded-xl border border-indigo-50 shadow-sm">
                         <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
                             <span>Active Research Projects</span>
-                            <BookOpen className="w-4 h-4 text-[#7C3AED]" />
+                            <BookOpen className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
                         <div className="text-2xl font-bold text-[#17152E]">{totalResearch} Projects</div>
                         <div className="text-xs text-slate-400 mt-1">DSSC & Externally Funded</div>
@@ -125,7 +125,7 @@ export default function VpafResearchExtension({
                             <span>Scopus / WoS Publications</span>
                             <Award className="w-4 h-4 text-indigo-600" />
                         </div>
-                        <div className="text-2xl font-bold text-[#5B21B6]">18 Indexed Papers</div>
+                        <div className="text-2xl font-bold text-[#0B3A67] dark:text-[#93C5FD]">18 Indexed Papers</div>
                         <div className="text-xs text-slate-400 mt-1">CY 2026 Institutional Record</div>
                     </div>
 
@@ -156,10 +156,10 @@ export default function VpafResearchExtension({
                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
                                     isActive
                                         ? 'bg-[#5B21B6] text-white shadow-sm'
-                                        : 'bg-white text-slate-600 hover:text-[#5B21B6] hover:bg-violet-50 border border-indigo-50'
+                                        : 'bg-white text-slate-600 hover:text-[#0B3A67] dark:text-[#93C5FD] hover:bg-violet-50 border border-indigo-50'
                                 }`}
                             >
-                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#7C3AED]'}`} />
+                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#0B3A67] dark:text-[#93C5FD]'}`} />
                                 {tab.label}
                             </button>
                         );
@@ -183,7 +183,7 @@ export default function VpafResearchExtension({
                                     <div key={idx} className="p-4 rounded-xl border border-indigo-50 bg-[#F7F7FB] flex flex-col md:flex-row md:items-center justify-between gap-4">
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2">
-                                                <span className="px-2 py-0.5 rounded text-xs bg-indigo-100 text-[#5B21B6] font-mono font-bold">
+                                                <span className="px-2 py-0.5 rounded text-xs bg-indigo-100 text-[#0B3A67] dark:text-[#93C5FD] font-mono font-bold">
                                                     {res.college}
                                                 </span>
                                                 <span className="text-xs font-semibold text-slate-600">{res.fund}</span>
@@ -194,7 +194,7 @@ export default function VpafResearchExtension({
                                         <div className="flex items-center gap-4 shrink-0">
                                             <div className="text-right">
                                                 <span className="text-xs text-slate-400 block">Progress</span>
-                                                <span className="font-bold text-sm text-[#5B21B6]">{res.progress}%</span>
+                                                <span className="font-bold text-sm text-[#0B3A67] dark:text-[#93C5FD]">{res.progress}%</span>
                                             </div>
                                             <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
                                                 {res.status}
@@ -223,7 +223,7 @@ export default function VpafResearchExtension({
                                 ].map((ext, idx) => (
                                     <div key={idx} className="p-5 rounded-xl border border-indigo-50 bg-[#F7F7FB] space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <span className="px-2 py-0.5 rounded text-xs bg-indigo-100 text-[#5B21B6] font-mono font-bold">
+                                            <span className="px-2 py-0.5 rounded text-xs bg-indigo-100 text-[#0B3A67] dark:text-[#93C5FD] font-mono font-bold">
                                                 {ext.unit}
                                             </span>
                                             <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
@@ -258,9 +258,9 @@ export default function VpafResearchExtension({
                                     <div key={idx} className="p-4 rounded-xl border border-indigo-50 bg-[#F7F7FB] flex flex-col md:flex-row md:items-center justify-between gap-3">
                                         <div>
                                             <h3 className="font-bold text-[#17152E] text-sm">{pub.title}</h3>
-                                            <p className="text-xs text-slate-500 mt-0.5">{pub.author} • <span className="font-medium text-[#5B21B6]">{pub.journal}</span></p>
+                                            <p className="text-xs text-slate-500 mt-0.5">{pub.author} • <span className="font-medium text-[#0B3A67] dark:text-[#93C5FD]">{pub.journal}</span></p>
                                         </div>
-                                        <span className="text-xs font-semibold px-2.5 py-1 bg-violet-100 text-[#5B21B6] rounded-md shrink-0">
+                                        <span className="text-xs font-semibold px-2.5 py-1 bg-violet-100 text-[#0B3A67] dark:text-[#93C5FD] rounded-md shrink-0">
                                             {pub.citations}
                                         </span>
                                     </div>
@@ -288,7 +288,7 @@ export default function VpafResearchExtension({
                                 ].map((part, idx) => (
                                     <div key={idx} className="p-4 rounded-xl border border-indigo-50 bg-[#F7F7FB] space-y-2">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-xs font-bold text-[#5B21B6] bg-indigo-50 px-2 py-0.5 rounded">
+                                            <span className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] bg-indigo-50 px-2 py-0.5 rounded">
                                                 {part.type}
                                             </span>
                                             <span className="text-xs font-medium text-emerald-700">{part.validity}</span>

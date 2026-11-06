@@ -9,6 +9,7 @@ use App\Models\CurriculumCourse;
 use App\Models\Faculty;
 use App\Models\Program;
 use App\Models\Section;
+use App\Services\PortalContextService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -18,6 +19,23 @@ class CourseOfferingController extends Controller
     {
         $activePeriod = AcademicPeriod::current()
             ?? AcademicPeriod::orderBy('id', 'desc')->first();
+
+        $user = $request->user();
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        $scopeCollegeId = null;
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            $scopeCollegeId = $activeScopeId;
+        } elseif ($activeScopeType === 'program' && $activeScopeId) {
+            $scopeCollegeId = Program::find($activeScopeId)?->college_id;
+        } elseif (! $isInstitutionSuperAdmin) {
+            $scopeCollegeId = $user?->resolveActiveCollege()?->id;
+        }
 
         $selectedPeriodId = $request->input('academic_period_id', $activePeriod?->id);
 
@@ -29,6 +47,14 @@ class CourseOfferingController extends Controller
             'section',
             'faculty',
         ]);
+
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $query->where('program_id', $activeScopeId);
+            } elseif ($scopeCollegeId) {
+                $query->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+            }
+        }
 
         if ($selectedPeriodId && $selectedPeriodId !== 'all') {
             $query->where('academic_period_id', $selectedPeriodId);
@@ -72,13 +98,35 @@ class CourseOfferingController extends Controller
 
         // Dropdown selection data
         $academicPeriods = AcademicPeriod::orderBy('id', 'desc')->get();
-        $programs = Program::with('curricula')->orderBy('code')->get();
-        $sections = Section::orderBy('code')->get();
+        $programsQuery = Program::with('curricula')->orderBy('code');
+        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+            $programsQuery->where('college_id', $scopeCollegeId);
+        }
+        $programs = $programsQuery->get();
+
+        $sectionsQuery = Section::orderBy('code');
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $sectionsQuery->where('program_id', $activeScopeId);
+            } elseif ($scopeCollegeId) {
+                $sectionsQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+            }
+        }
+        $sections = $sectionsQuery->get();
+
         $courses = Course::where('status', 'Active')->orderBy('code')->get();
-        $facultyMembers = Faculty::where('status', 'Active')
+
+        $facultyMembersQuery = Faculty::where('status', 'Active')
             ->orderBy('first_name', 'asc')
-            ->orderBy('last_name', 'asc')
-            ->get();
+            ->orderBy('last_name', 'asc');
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $facultyMembersQuery->where('program_id', $activeScopeId);
+            } elseif ($scopeCollegeId) {
+                $facultyMembersQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+            }
+        }
+        $facultyMembers = $facultyMembersQuery->get();
 
         // Stats calculation
         $periodOfferings = CourseOffering::where('academic_period_id', $selectedPeriodId);

@@ -239,7 +239,7 @@ function CircularProgressAvatar({
                     cy={boxSize / 2}
                     r={radius}
                     fill="transparent"
-                    stroke="url(#veloraAvatarGrad)"
+                    stroke="url(#AscendAvatarGrad)"
                     strokeWidth={strokeWidth}
                     strokeDasharray={circumference}
                     strokeDashoffset={strokeDashoffset}
@@ -247,7 +247,7 @@ function CircularProgressAvatar({
                     className="transition-all duration-500"
                 />
                 <defs>
-                    <linearGradient id="veloraAvatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <linearGradient id="AscendAvatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor="#7C3AED" />
                         <stop offset="100%" stopColor="#4C1D95" />
                     </linearGradient>
@@ -256,7 +256,7 @@ function CircularProgressAvatar({
 
             {/* Inner Circular Avatar */}
             <div
-                className={`absolute overflow-hidden rounded-full border border-white bg-[#F3EFFE] text-[#5B21B6] shadow-2xs flex items-center justify-center font-extrabold dark:border-slate-900 dark:bg-[#262246] dark:text-[#A78BFA] ${
+                className={`absolute overflow-hidden rounded-full border border-white bg-[#F3EFFE] text-[#0B3A67] dark:text-[#93C5FD] shadow-2xs flex items-center justify-center font-extrabold dark:border-slate-900 dark:bg-slate-800 dark:text-[#93C5FD] ${
                     isLg ? 'h-13 w-13 text-base' : 'h-10 w-10 text-xs'
                 }`}
             >
@@ -269,7 +269,7 @@ function CircularProgressAvatar({
 
             {/* Bottom Completion Percentage Pill */}
             <span
-                className={`absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full border border-[#A78BFA]/70 bg-[#EDE9FE] px-1.5 py-0.2 font-extrabold tracking-tight text-[#4C1D95] shadow-2xs dark:border-[#7C3AED]/60 dark:bg-[#262246] dark:text-[#DDD6FE] ${
+                className={`absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full border border-[#8B1E3F]/30 bg-[#F1F5F9] px-1.5 py-0.2 font-extrabold tracking-tight text-[#0B3A67] shadow-2xs dark:border-[#0B3A67]/20 dark:bg-slate-800 dark:text-[#BFDBFE] ${
                     isLg ? 'text-[10px]' : 'text-[9px] leading-tight'
                 }`}
             >
@@ -392,7 +392,7 @@ export default function UsersIdentityIndex({
             `/institution/users/${userId}/status`,
             {
                 action,
-                reason: `Executed '${action}' via Velora Canonical Identity Directory.`,
+                reason: `Executed '${action}' via Ascend Canonical Identity Directory.`,
             },
             { preserveScroll: true },
         );
@@ -510,7 +510,7 @@ export default function UsersIdentityIndex({
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Velora_Institutional_Faculty_Matrix_${new Date().toISOString().slice(0, 10)}.csv`;
+        link.download = `Ascend_Institutional_Faculty_Matrix_${new Date().toISOString().slice(0, 10)}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -564,7 +564,7 @@ export default function UsersIdentityIndex({
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Velora_Canonical_Users_Directory_${new Date().toISOString().slice(0, 10)}.csv`;
+        link.download = `Ascend_Canonical_Users_Directory_${new Date().toISOString().slice(0, 10)}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -615,7 +615,7 @@ export default function UsersIdentityIndex({
             <body>
                 <div class="header">
                     <div>
-                        <h1>VELORA INSTITUTIONAL FACULTY MATRIX</h1>
+                        <h1>Ascend INSTITUTIONAL FACULTY MATRIX</h1>
                         <p>Davao del Sur State College · Canonical Identity & Academic Governance Report</p>
                     </div>
                     <div style="text-align:right;font-size:11px;color:#475569;">
@@ -651,27 +651,27 @@ export default function UsersIdentityIndex({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Users & Canonical Identity Directory — Velora" />
+            <Head title="Users & Canonical Identity Directory — Ascend" />
 
             <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 bg-[#F7F7FB] p-4 md:p-6 dark:bg-background">
                 {/* Deep Purple Hero Header Banner */}
-                <div className="relative rounded-2xl border border-[#5B21B6]/40 bg-gradient-to-r from-[#1E0B4B] via-[#3B147A] to-[#2E1065] p-6 text-white shadow-lg">
+                <div className="relative rounded-2xl border border-[#0B3A67]/30 bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] p-6 text-white shadow-lg">
                     {/* Decorative background wave */}
                     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
-                        <div className="absolute -top-20 right-16 h-64 w-64 rounded-full bg-[#7C3AED]/25 blur-3xl" />
-                        <div className="absolute -bottom-24 right-0 h-56 w-96 rounded-full bg-[#A78BFA]/20 blur-2xl" />
+                        <div className="absolute -top-20 right-16 h-64 w-64 rounded-full bg-[#0B3A67]/25 blur-3xl" />
+                        <div className="absolute -bottom-24 right-0 h-56 w-96 rounded-full bg-[#8B1E3F]/20 blur-2xl" />
                     </div>
 
                     <div className="relative z-10 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
                         <div>
                             <div className="mb-2.5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-[11px] font-bold tracking-wider text-white uppercase backdrop-blur-xs">
-                                <Users className="h-3.5 w-3.5 text-[#DDD6FE]" />
+                                <Users className="h-3.5 w-3.5 text-[#BFDBFE]" />
                                 Canonical Identity & User Management
                             </div>
                             <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                                Velora Canonical Users & Identity Directory
+                                Ascend Canonical Users & Identity Directory
                             </h1>
-                            <p className="mt-1.5 max-w-3xl text-xs leading-relaxed text-[#E9D5FF]/90 sm:text-sm">
+                            <p className="mt-1.5 max-w-3xl text-xs leading-relaxed text-[#DBEAFE]/90 sm:text-sm">
                                 Browse, manage, and govern all users across every Campus Entity, College, and Program
                                 with canonical identities, role bindings, and access control in a single, trusted
                                 directory.
@@ -683,7 +683,7 @@ export default function UsersIdentityIndex({
                                 href="/institution/scoped-roles"
                                 className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
                             >
-                                <Key className="h-3.5 w-3.5 text-[#DDD6FE]" />
+                                <Key className="h-3.5 w-3.5 text-[#BFDBFE]" />
                                 Scoped Role Assignments
                             </Link>
 
@@ -694,14 +694,14 @@ export default function UsersIdentityIndex({
                                     onClick={() => setIsHeaderReportMenuOpen((prev) => !prev)}
                                     className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-[#17152E] shadow-sm transition hover:bg-[#F7F7FB]"
                                 >
-                                    <Download className="h-3.5 w-3.5 text-[#5B21B6]" />
+                                    <Download className="h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                     Download Reports
                                     <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
                                 </button>
 
                                 {isHeaderReportMenuOpen && (
                                     <div className="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-[#E5E4F0] bg-white p-1.5 text-xs shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                                        <div className="px-3 py-1.5 text-[10px] font-extrabold tracking-wider text-[#5B21B6] uppercase dark:text-[#A78BFA]">
+                                        <div className="px-3 py-1.5 text-[10px] font-extrabold tracking-wider text-[#0B3A67] dark:text-[#93C5FD] uppercase dark:text-[#93C5FD]">
                                             Institutional Reports & Matrix
                                         </div>
                                         <button
@@ -710,9 +710,9 @@ export default function UsersIdentityIndex({
                                                 setIsHeaderReportMenuOpen(false);
                                                 setIsReportsModalOpen(true);
                                             }}
-                                            className="flex w-full items-center gap-2.5 rounded-xl bg-[#EDE9FE]/60 px-3 py-2.5 text-left font-bold text-[#4C1D95] transition hover:bg-[#EDE9FE] dark:bg-[#262246] dark:text-[#DDD6FE]"
+                                            className="flex w-full items-center gap-2.5 rounded-xl bg-[#F1F5F9] px-3 py-2.5 text-left font-bold text-[#0B3A67] transition hover:bg-[#F1F5F9] dark:bg-slate-800 dark:text-[#BFDBFE]"
                                         >
-                                            <Sparkles className="h-4 w-4 shrink-0 text-[#7C3AED]" />
+                                            <Sparkles className="h-4 w-4 shrink-0 text-[#0B3A67] dark:text-[#93C5FD]" />
                                             <div>
                                                 <div>Faculty Matrix Report Center</div>
                                                 <div className="text-[10px] font-normal text-slate-500 dark:text-slate-400">
@@ -738,7 +738,7 @@ export default function UsersIdentityIndex({
                                             onClick={() => printFacultyMatrix(facultyMatrix)}
                                             className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left font-semibold text-[#17152E] transition hover:bg-[#F7F7FB] dark:text-slate-200 dark:hover:bg-slate-800"
                                         >
-                                            <Printer className="h-4 w-4 shrink-0 text-[#5B21B6]" />
+                                            <Printer className="h-4 w-4 shrink-0 text-[#0B3A67] dark:text-[#93C5FD]" />
                                             <div>
                                                 <div>Print / Save PDF Faculty Matrix</div>
                                                 <div className="text-[10px] font-normal text-slate-500">
@@ -752,7 +752,7 @@ export default function UsersIdentityIndex({
                                             onClick={downloadCanonicalUsersCsv}
                                             className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left font-semibold text-[#17152E] transition hover:bg-[#F7F7FB] dark:text-slate-200 dark:hover:bg-slate-800"
                                         >
-                                            <FileText className="h-4 w-4 shrink-0 text-[#7C3AED]" />
+                                            <FileText className="h-4 w-4 shrink-0 text-[#0B3A67] dark:text-[#93C5FD]" />
                                             <div>
                                                 <div>Canonical Identity Directory (.CSV)</div>
                                                 <div className="text-[10px] font-normal text-slate-500">
@@ -766,7 +766,7 @@ export default function UsersIdentityIndex({
 
                             <Button
                                 onClick={() => setIsCreateOpen(true)}
-                                className="h-auto rounded-xl bg-[#7C3AED] px-4 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#6D28D9]"
+                                className="h-auto rounded-xl bg-[#0B3A67] px-4 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#1F5D9B]"
                             >
                                 <UserPlus className="mr-1.5 h-4 w-4" />
                                 Provision / Invite User
@@ -778,7 +778,7 @@ export default function UsersIdentityIndex({
                 {/* 4 KPI Summary Cards with Soft Icon Badges */}
                 <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="flex items-start gap-3.5 rounded-2xl border border-[#E5E4F0] bg-white p-4 shadow-2xs dark:border-border dark:bg-card">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA]">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]">
                             <Users className="h-5 w-5" />
                         </div>
                         <div>
@@ -813,14 +813,14 @@ export default function UsersIdentityIndex({
                     </div>
 
                     <div className="flex items-start gap-3.5 rounded-2xl border border-[#E5E4F0] bg-white p-4 shadow-2xs dark:border-border dark:bg-card">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#7C3AED] dark:bg-[#262246] dark:text-[#A78BFA]">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]">
                             <Layers className="h-5 w-5" />
                         </div>
                         <div>
                             <span className="text-xs font-bold text-[#17152E] dark:text-foreground">
                                 Multi-Scoped Role Holders
                             </span>
-                            <p className="mt-0.5 text-2xl font-black text-[#5B21B6] dark:text-[#A78BFA]">
+                            <p className="mt-0.5 text-2xl font-black text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                 {summaryStats?.multi_role_users ?? 0}
                             </p>
                             <span className="text-[11px] text-slate-500 dark:text-muted-foreground">
@@ -830,14 +830,14 @@ export default function UsersIdentityIndex({
                     </div>
 
                     <div className="flex items-start gap-3.5 rounded-2xl border border-[#E5E4F0] bg-white p-4 shadow-2xs dark:border-border dark:bg-card">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA]">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]">
                             <ShieldCheck className="h-5 w-5" />
                         </div>
                         <div>
                             <span className="text-xs font-bold text-[#17152E] dark:text-foreground">
                                 Mandatory MFA Enforced
                             </span>
-                            <p className="mt-0.5 text-2xl font-black text-[#5B21B6] dark:text-[#A78BFA]">
+                            <p className="mt-0.5 text-2xl font-black text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                 {summaryStats?.mfa_enforced ?? 0}
                             </p>
                             <span className="text-[11px] text-slate-500 dark:text-muted-foreground">
@@ -858,7 +858,7 @@ export default function UsersIdentityIndex({
                                 onChange={(e) => setSearch(e.target.value)}
                                 onBlur={() => applyFilters({ search })}
                                 placeholder="Search name, email, phone, or DSSC ID..."
-                                className="w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] py-2 pr-3 pl-9 text-xs text-[#17152E] placeholder:text-slate-400 focus:border-[#7C3AED] focus:bg-white focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                                className="w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] py-2 pr-3 pl-9 text-xs text-[#17152E] placeholder:text-slate-400 focus:border-[#0B3A67] focus:bg-white focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                             />
                         </form>
 
@@ -868,7 +868,7 @@ export default function UsersIdentityIndex({
                                 setEntityFilter(e.target.value);
                                 applyFilters({ entity: e.target.value });
                             }}
-                            className="rounded-xl border border-[#E5E4F0] bg-white px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#7C3AED] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                            className="rounded-xl border border-[#E5E4F0] bg-white px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#0B3A67] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                         >
                             <option value="All">All Entities / Campuses</option>
                             {entities.map((ent) => (
@@ -884,7 +884,7 @@ export default function UsersIdentityIndex({
                                 setCollegeFilter(e.target.value);
                                 applyFilters({ college: e.target.value });
                             }}
-                            className="rounded-xl border border-[#E5E4F0] bg-white px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#7C3AED] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                            className="rounded-xl border border-[#E5E4F0] bg-white px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#0B3A67] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                         >
                             <option value="All">All Colleges</option>
                             {colleges.map((col) => (
@@ -900,7 +900,7 @@ export default function UsersIdentityIndex({
                                 setRoleFilter(e.target.value);
                                 applyFilters({ role: e.target.value });
                             }}
-                            className="rounded-xl border border-[#E5E4F0] bg-white px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#7C3AED] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                            className="rounded-xl border border-[#E5E4F0] bg-white px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#0B3A67] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                         >
                             <option value="All">All Roles</option>
                             {roles.map((r) => (
@@ -916,7 +916,7 @@ export default function UsersIdentityIndex({
                                 setStatusFilter(e.target.value);
                                 applyFilters({ status: e.target.value });
                             }}
-                            className="rounded-xl border border-[#E5E4F0] bg-white px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#7C3AED] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                            className="rounded-xl border border-[#E5E4F0] bg-white px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#0B3A67] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                         >
                             <option value="All">All Statuses</option>
                             <option value="Active">Active</option>
@@ -931,9 +931,9 @@ export default function UsersIdentityIndex({
                             <button
                                 type="button"
                                 onClick={() => setIsFilterExportMenuOpen((prev) => !prev)}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-[#A78BFA]/70 bg-[#EDE9FE]/55 px-3.5 py-2 text-xs font-bold text-[#5B21B6] transition hover:bg-[#EDE9FE] dark:border-[#7C3AED]/50 dark:bg-[#262246] dark:text-[#DDD6FE]"
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-[#8B1E3F]/30 bg-[#F1F5F9] px-3.5 py-2 text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] transition hover:bg-[#F1F5F9] dark:border-[#0B3A67]/20 dark:bg-slate-800 dark:text-[#BFDBFE]"
                             >
-                                <Download className="h-3.5 w-3.5 text-[#7C3AED]" />
+                                <Download className="h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Export Faculty Matrix
                                 <ChevronDown className="h-3.5 w-3.5" />
                             </button>
@@ -946,9 +946,9 @@ export default function UsersIdentityIndex({
                                             setIsFilterExportMenuOpen(false);
                                             setIsReportsModalOpen(true);
                                         }}
-                                        className="flex w-full items-center gap-2 rounded-xl bg-[#EDE9FE]/60 px-3 py-2 text-left font-bold text-[#4C1D95] hover:bg-[#EDE9FE] dark:bg-[#262246] dark:text-[#DDD6FE]"
+                                        className="flex w-full items-center gap-2 rounded-xl bg-[#F1F5F9] px-3 py-2 text-left font-bold text-[#0B3A67] hover:bg-[#F1F5F9] dark:bg-slate-800 dark:text-[#BFDBFE]"
                                     >
-                                        <Eye className="h-3.5 w-3.5 text-[#7C3AED]" />
+                                        <Eye className="h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                         Open Interactive Faculty Matrix ({facultyMatrix.length})
                                     </button>
                                     <button
@@ -964,7 +964,7 @@ export default function UsersIdentityIndex({
                                         onClick={() => printFacultyMatrix(facultyMatrix)}
                                         className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-semibold text-[#17152E] hover:bg-[#F7F7FB] dark:text-slate-200 dark:hover:bg-slate-800"
                                     >
-                                        <Printer className="h-3.5 w-3.5 text-[#5B21B6]" />
+                                        <Printer className="h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                         Print / Save PDF Faculty Matrix
                                     </button>
                                 </div>
@@ -1022,11 +1022,11 @@ export default function UsersIdentityIndex({
                                                             <button
                                                                 type="button"
                                                                 onClick={() => openUserInspector(user, 'profile')}
-                                                                className="text-sm font-extrabold text-[#17152E] hover:text-[#5B21B6] hover:underline dark:text-foreground dark:hover:text-[#A78BFA]"
+                                                                className="text-sm font-extrabold text-[#17152E] hover:text-[#0B3A67] dark:text-[#93C5FD] hover:underline dark:text-foreground dark:hover:text-[#93C5FD]"
                                                             >
                                                                 {user.name}
                                                             </button>
-                                                            <span className="rounded-md bg-[#EDE9FE] px-2 py-0.5 font-mono text-[10px] font-bold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                            <span className="rounded-md bg-[#F1F5F9] px-2 py-0.5 font-mono text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                                 {user.institutional_id ||
                                                                     `DSSC-USR-${String(user.id).padStart(3, '0')}`}
                                                             </span>
@@ -1059,17 +1059,17 @@ export default function UsersIdentityIndex({
                                                     {/* College Pill */}
                                                     {primaryCollege ? (
                                                         <div className="flex flex-wrap items-center gap-1">
-                                                            <span className="inline-flex items-center rounded-md border border-[#A78BFA]/35 bg-[#EDE9FE]/85 px-2.5 py-0.5 text-[11px] font-bold text-[#4C1D95] dark:border-[#7C3AED]/40 dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                            <span className="inline-flex items-center rounded-md border border-[#8B1E3F]/30 bg-[#F1F5F9] px-2.5 py-0.5 text-[11px] font-bold text-[#0B3A67] dark:border-[#0B3A67]/20 dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                                 {primaryCollege.code} - {primaryCollege.name}
                                                             </span>
                                                             {extraCollegesCount > 0 && (
-                                                                <span className="rounded-md bg-[#EDE9FE] px-1.5 py-0.5 text-[10px] font-bold text-[#5B21B6]">
+                                                                <span className="rounded-md bg-[#F1F5F9] px-1.5 py-0.5 text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD]">
                                                                     +{extraCollegesCount}
                                                                 </span>
                                                             )}
                                                         </div>
                                                     ) : (
-                                                        <span className="inline-flex items-center rounded-md border border-[#A78BFA]/30 bg-[#EDE9FE]/60 px-2.5 py-0.5 text-[11px] font-semibold text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA]">
+                                                        <span className="inline-flex items-center rounded-md border border-[#8B1E3F]/30 bg-[#F1F5F9] px-2.5 py-0.5 text-[11px] font-semibold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]">
                                                             Central Platform Governance
                                                         </span>
                                                     )}
@@ -1101,7 +1101,7 @@ export default function UsersIdentityIndex({
                                                                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/90 bg-slate-100/80 px-2.5 py-1 text-[11px] font-bold text-[#17152E] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                                                             >
                                                                 <span>{sra.role?.name}</span>
-                                                                <span className="font-mono font-extrabold text-[#5B21B6] dark:text-[#A78BFA]">
+                                                                <span className="font-mono font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                                     [
                                                                     {sra.program?.code ||
                                                                         sra.college?.code ||
@@ -1118,7 +1118,7 @@ export default function UsersIdentityIndex({
                                                                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/90 bg-slate-100/80 px-2.5 py-1 text-[11px] font-bold text-[#17152E] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                                                             >
                                                                 <span>{r.name}</span>
-                                                                <span className="font-mono font-extrabold text-[#5B21B6] dark:text-[#A78BFA]">
+                                                                <span className="font-mono font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                                     [INST]
                                                                 </span>
                                                             </span>
@@ -1139,7 +1139,7 @@ export default function UsersIdentityIndex({
                                                             {user.account_status || 'Active'}
                                                         </span>
                                                         {user.mfa_required && (
-                                                            <span className="rounded-md border border-[#A78BFA]/50 bg-[#EDE9FE] px-2 py-0.5 text-[10px] font-bold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                            <span className="rounded-md border border-[#8B1E3F]/30 bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                                 MFA
                                                             </span>
                                                         )}
@@ -1169,8 +1169,8 @@ export default function UsersIdentityIndex({
                                                         aria-label="Open user actions"
                                                         className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
                                                             isActionOpen
-                                                                ? 'border-[#7C3AED] bg-[#EDE9FE] text-[#4C1D95]'
-                                                                : 'border-[#D4C5FF] bg-white text-[#17152E] hover:border-[#7C3AED] hover:bg-[#EDE9FE]/50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                                                                ? 'border-[#0B3A67] bg-[#F1F5F9] text-[#0B3A67]'
+                                                                : 'border-[#D4C5FF] bg-white text-[#17152E] hover:border-[#0B3A67] hover:bg-[#F1F5F9]/50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
                                                         }`}
                                                     >
                                                         <MoreHorizontal className="h-4 w-4" />
@@ -1181,9 +1181,9 @@ export default function UsersIdentityIndex({
                                                             <button
                                                                 type="button"
                                                                 onClick={() => openUserInspector(user, 'profile')}
-                                                                className="flex w-full items-center gap-2.5 rounded-xl bg-[#EDE9FE]/70 px-3 py-2 text-left font-bold text-[#4C1D95] transition hover:bg-[#EDE9FE] dark:bg-[#262246] dark:text-[#DDD6FE]"
+                                                                className="flex w-full items-center gap-2.5 rounded-xl bg-[#F1F5F9] px-3 py-2 text-left font-bold text-[#0B3A67] transition hover:bg-[#F1F5F9] dark:bg-slate-800 dark:text-[#BFDBFE]"
                                                             >
-                                                                <Eye className="h-3.5 w-3.5 text-[#5B21B6] dark:text-[#A78BFA]" />
+                                                                <Eye className="h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]" />
                                                                 View Profile
                                                             </button>
 
@@ -1292,8 +1292,8 @@ export default function UsersIdentityIndex({
                                             preserveState
                                             className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
                                                 link.active
-                                                    ? 'border-[#5B21B6] bg-[#5B21B6] text-white'
-                                                    : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#EDE9FE]/50 dark:border-border dark:bg-background dark:text-foreground'
+                                                    ? 'border-[#0B3A67] bg-[#0B3A67] text-white'
+                                                    : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#F1F5F9]/50 dark:border-border dark:bg-background dark:text-foreground'
                                             }`}
                                         >
                                             {cleanLabel}
@@ -1310,9 +1310,9 @@ export default function UsersIdentityIndex({
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
                         <div className="flex max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[#E5E4F0] bg-white shadow-2xl dark:border-border dark:bg-card">
                             {/* Modal Header */}
-                            <div className="flex flex-col justify-between gap-4 border-b border-[#E5E4F0] bg-gradient-to-r from-[#1E0B4B] via-[#3B147A] to-[#2E1065] px-6 py-5 text-white sm:flex-row sm:items-center">
+                            <div className="flex flex-col justify-between gap-4 border-b border-[#E5E4F0] bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] px-6 py-5 text-white sm:flex-row sm:items-center">
                                 <div>
-                                    <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-0.5 text-[10px] font-bold tracking-wider text-[#DDD6FE] uppercase">
+                                    <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-0.5 text-[10px] font-bold tracking-wider text-[#BFDBFE] uppercase">
                                         <FileSpreadsheet className="h-3 w-3" />
                                         Download Reports & Institutional Faculty Matrix
                                     </div>
@@ -1332,7 +1332,7 @@ export default function UsersIdentityIndex({
                                         onClick={() => downloadFacultyMatrixCsv(filteredMatrix)}
                                         className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-bold text-[#17152E] shadow-xs hover:bg-slate-100"
                                     >
-                                        <Download className="h-3.5 w-3.5 text-[#5B21B6]" />
+                                        <Download className="h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                         Download Matrix (.CSV / Excel)
                                     </button>
                                     <button
@@ -1363,7 +1363,7 @@ export default function UsersIdentityIndex({
                                             value={matrixSearch}
                                             onChange={(e) => setMatrixSearch(e.target.value)}
                                             placeholder="Filter faculty, rank, specialization..."
-                                            className="w-full rounded-xl border border-[#E5E4F0] bg-white py-1.5 pr-3 pl-8 text-xs focus:border-[#7C3AED] focus:outline-none dark:border-border dark:bg-background"
+                                            className="w-full rounded-xl border border-[#E5E4F0] bg-white py-1.5 pr-3 pl-8 text-xs focus:border-[#0B3A67] focus:outline-none dark:border-border dark:bg-background"
                                         />
                                     </div>
 
@@ -1391,7 +1391,7 @@ export default function UsersIdentityIndex({
                                     </select>
                                 </div>
 
-                                <div className="text-xs font-bold text-[#5B21B6] dark:text-[#A78BFA]">
+                                <div className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                     Showing {filteredMatrix.length} of {facultyMatrix.length} Faculty Records
                                 </div>
                             </div>
@@ -1400,7 +1400,7 @@ export default function UsersIdentityIndex({
                             <div className="flex-1 overflow-auto p-6">
                                 <div className="overflow-hidden rounded-xl border border-[#E5E4F0] dark:border-border">
                                     <table className="w-full text-left text-xs">
-                                        <thead className="bg-[#EDE9FE]/70 text-[10px] font-extrabold tracking-wider text-[#4C1D95] uppercase dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                        <thead className="bg-[#F1F5F9] text-[10px] font-extrabold tracking-wider text-[#0B3A67] uppercase dark:bg-slate-800 dark:text-[#BFDBFE]">
                                             <tr>
                                                 <th className="px-3.5 py-3">DSSC ID</th>
                                                 <th className="px-3.5 py-3">Faculty Member</th>
@@ -1417,7 +1417,7 @@ export default function UsersIdentityIndex({
                                                     key={fac.id}
                                                     className="hover:bg-[#F7F7FB] dark:hover:bg-muted/20"
                                                 >
-                                                    <td className="px-3.5 py-2.5 font-mono text-[11px] font-bold text-[#5B21B6] dark:text-[#A78BFA]">
+                                                    <td className="px-3.5 py-2.5 font-mono text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                         {fac.institutional_id}
                                                     </td>
                                                     <td className="px-3.5 py-2.5">
@@ -1427,7 +1427,7 @@ export default function UsersIdentityIndex({
                                                         <div className="text-[11px] text-slate-400">{fac.email}</div>
                                                     </td>
                                                     <td className="px-3.5 py-2.5">
-                                                        <span className="inline-flex items-center rounded bg-[#EDE9FE] px-1.5 py-0.5 text-[10px] font-bold text-[#4C1D95] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                        <span className="inline-flex items-center rounded bg-[#F1F5F9] px-1.5 py-0.5 text-[10px] font-bold text-[#0B3A67] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                             {fac.college_code}
                                                         </span>{' '}
                                                         <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
@@ -1457,7 +1457,7 @@ export default function UsersIdentityIndex({
                                                         {fac.roles}
                                                     </td>
                                                     <td className="px-3.5 py-2.5 text-center">
-                                                        <span className="inline-flex items-center rounded-full bg-[#EDE9FE] px-2 py-0.5 text-[10px] font-extrabold text-[#4C1D95] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                        <span className="inline-flex items-center rounded-full bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-extrabold text-[#0B3A67] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                             {fac.profile_completion}%
                                                         </span>
                                                     </td>
@@ -1473,7 +1473,7 @@ export default function UsersIdentityIndex({
                                 <button
                                     type="button"
                                     onClick={downloadCanonicalUsersCsv}
-                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#5B21B6] hover:underline dark:text-[#A78BFA]"
+                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline dark:text-[#93C5FD]"
                                 >
                                     <FileText className="h-3.5 w-3.5" />
                                     Also download Canonical Users & Scoped Roles Directory (.CSV)
@@ -1491,7 +1491,7 @@ export default function UsersIdentityIndex({
                                     <Button
                                         type="button"
                                         onClick={() => downloadFacultyMatrixCsv(filteredMatrix)}
-                                        className="rounded-xl bg-[#5B21B6] text-xs font-bold text-white hover:bg-[#4C1D95]"
+                                        className="rounded-xl bg-[#0B3A67] text-xs font-bold text-white hover:bg-[#082847]"
                                     >
                                         <Download className="mr-1.5 h-3.5 w-3.5" />
                                         Download Filtered Faculty Matrix (.CSV)
@@ -1507,7 +1507,7 @@ export default function UsersIdentityIndex({
                     <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs">
                         <div className="flex h-full w-full max-w-2xl flex-col overflow-hidden border-l border-border bg-card shadow-2xl">
                             {/* Inspector Header */}
-                            <div className="border-b border-border bg-gradient-to-r from-[#1E0B4B] via-[#3B147A] to-[#2E1065] p-6 text-white">
+                            <div className="border-b border-border bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] p-6 text-white">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-center gap-4">
                                         <CircularProgressAvatar
@@ -1518,14 +1518,14 @@ export default function UsersIdentityIndex({
                                         />
                                         <div>
                                             <div className="flex flex-wrap items-center gap-2">
-                                                <span className="rounded-md bg-[#EDE9FE] px-2 py-0.5 font-mono text-[10px] font-black text-[#4C1D95]">
+                                                <span className="rounded-md bg-[#F1F5F9] px-2 py-0.5 font-mono text-[10px] font-black text-[#0B3A67]">
                                                     {inspectedUser.institutional_id ||
                                                         `DSSC-USR-${String(inspectedUser.id).padStart(3, '0')}`}
                                                 </span>
                                                 <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300">
                                                     {inspectedUser.account_status || 'Active'}
                                                 </span>
-                                                <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-bold text-[#DDD6FE]">
+                                                <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-bold text-[#BFDBFE]">
                                                     Profile {inspectedUser.profile_completion ?? 92}% Complete
                                                 </span>
                                             </div>
@@ -1566,7 +1566,7 @@ export default function UsersIdentityIndex({
                                                 }
                                                 className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
                                                     drawerTab === tab.id
-                                                        ? 'bg-white text-[#4C1D95] shadow-sm'
+                                                        ? 'bg-white text-[#0B3A67] shadow-sm'
                                                         : 'bg-white/10 text-slate-200 hover:bg-white/20'
                                                 }`}
                                             >
@@ -1583,17 +1583,17 @@ export default function UsersIdentityIndex({
                                 {drawerTab === 'profile' && (
                                     <>
                                         {/* Profile Completeness Meter */}
-                                        <div className="rounded-2xl border border-[#A78BFA]/40 bg-[#EDE9FE]/35 p-4 dark:bg-[#262246]/40">
+                                        <div className="rounded-2xl border border-[#8B1E3F]/30 bg-[#F1F5F9] p-4 dark:bg-slate-800">
                                             <div className="flex items-center justify-between text-xs">
-                                                <span className=" inline-flex items-center gap-1.5 font-extrabold text-[#4C1D95] dark:text-[#DDD6FE]">
-                                                    <CheckCircle2 className="h-4 w-4 text-[#7C3AED]" />
+                                                <span className=" inline-flex items-center gap-1.5 font-extrabold text-[#0B3A67] dark:text-[#BFDBFE]">
+                                                    <CheckCircle2 className="h-4 w-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                                                     Canonical Profile Completeness
                                                 </span>
-                                                <span className="font-extrabold text-[#5B21B6] dark:text-[#A78BFA]">
+                                                <span className="font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                     {inspectedUser.profile_completion ?? 92}%
                                                 </span>
                                             </div>
-                                            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#EDE9FE] dark:bg-slate-800">
+                                            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#F1F5F9] dark:bg-slate-800">
                                                 <div
                                                     className="h-full rounded-full bg-gradient-to-r from-[#7C3AED] to-[#4C1D95]"
                                                     style={{
@@ -1606,7 +1606,7 @@ export default function UsersIdentityIndex({
                                         {/* Organizational Affiliations */}
                                         <div className="rounded-2xl border border-border bg-muted/20 p-4">
                                             <h3 className="text-xs font-extrabold tracking-wider text-muted-foreground uppercase">
-                                                Organizational Affiliations Across Velora
+                                                Organizational Affiliations Across Ascend
                                             </h3>
                                             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                                                 <div className="rounded-xl border border-border bg-card p-3">
@@ -1640,7 +1640,7 @@ export default function UsersIdentityIndex({
                                                             inspectedUser.resolved_colleges.map((c) => (
                                                                 <p
                                                                     key={c.code}
-                                                                    className="text-xs font-bold text-[#5B21B6] dark:text-[#A78BFA]"
+                                                                    className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]"
                                                                 >
                                                                     {c.code} — {c.name}
                                                                 </p>
@@ -1683,11 +1683,11 @@ export default function UsersIdentityIndex({
                                                     Official Email & Phone
                                                 </span>
                                                 <p className="mt-1 flex items-center gap-1.5 font-mono font-semibold">
-                                                    <Mail className="h-3.5 w-3.5 text-[#7C3AED]" />
+                                                    <Mail className="h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                                     {inspectedUser.email}
                                                 </p>
                                                 <p className="mt-1 flex items-center gap-1.5 font-mono text-muted-foreground">
-                                                    <Phone className="h-3.5 w-3.5 text-[#5B21B6]" />
+                                                    <Phone className="h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                                     {inspectedUser.phone ||
                                                         inspectedUser.faculty?.phone ||
                                                         '+63 917 000 0000'}
@@ -1718,12 +1718,12 @@ export default function UsersIdentityIndex({
                                         {inspectedUser.faculty && (
                                             <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
                                                 <div className="flex items-center justify-between">
-                                                    <h3 className="text-xs font-extrabold tracking-wider text-[#5B21B6] uppercase dark:text-[#A78BFA]">
+                                                    <h3 className="text-xs font-extrabold tracking-wider text-[#0B3A67] dark:text-[#93C5FD] uppercase dark:text-[#93C5FD]">
                                                         Academic & HR Profile Dossier
                                                     </h3>
                                                     <Link
                                                         href={`/faculties/${inspectedUser.faculty.id}`}
-                                                        className="text-xs font-bold text-[#7C3AED] hover:underline"
+                                                        className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline"
                                                     >
                                                         Open Full Faculty Portfolio →
                                                     </Link>
@@ -1794,7 +1794,7 @@ export default function UsersIdentityIndex({
                                             </h3>
                                             <Link
                                                 href="/institution/scoped-roles"
-                                                className="text-xs font-bold text-[#7C3AED] hover:underline"
+                                                className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline"
                                             >
                                                 + Bind Additional Role
                                             </Link>
@@ -1811,7 +1811,7 @@ export default function UsersIdentityIndex({
                                                         <span className="font-bold text-foreground">
                                                             {sra.role?.name}
                                                         </span>
-                                                        <span className="rounded-full bg-[#EDE9FE] px-2.5 py-0.5 text-[10px] font-bold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                        <span className="rounded-full bg-[#F1F5F9] px-2.5 py-0.5 text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                             {sra.designation_type || 'Primary'} · {sra.status}
                                                         </span>
                                                     </div>
@@ -1849,7 +1849,7 @@ export default function UsersIdentityIndex({
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="rounded bg-[#EDE9FE] px-2 py-0.5 text-[10px] font-bold text-[#5B21B6] uppercase dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                        <span className="rounded bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] uppercase dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                             {ev.type}
                                                         </span>
                                                         <span className="text-[11px] font-semibold text-muted-foreground">
@@ -1890,7 +1890,7 @@ export default function UsersIdentityIndex({
                                     <button
                                         type="button"
                                         onClick={() => runSecurityAction(inspectedUser.id, 'force_logout')}
-                                        className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-bold text-[#7C3AED] hover:bg-[#7C3AED]/10"
+                                        className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:bg-[#0B3A67]/10"
                                     >
                                         Force Session Logout
                                     </button>
@@ -2030,7 +2030,7 @@ export default function UsersIdentityIndex({
                                         type="checkbox"
                                         checked={data.mfa_required}
                                         onChange={(e) => setData('mfa_required', e.target.checked)}
-                                        className="rounded text-[#5B21B6]"
+                                        className="rounded text-[#0B3A67] dark:text-[#93C5FD]"
                                     />
                                     <span className="font-semibold">
                                         Require Multi-Factor Authentication (MFA) for this account
@@ -2049,7 +2049,7 @@ export default function UsersIdentityIndex({
                                     <Button
                                         type="submit"
                                         disabled={processing}
-                                        className="bg-[#5B21B6] text-xs font-bold text-white hover:bg-[#4C1D95]"
+                                        className="bg-[#0B3A67] text-xs font-bold text-white hover:bg-[#082847]"
                                     >
                                         {processing ? 'Provisioning...' : 'Create Canonical Identity'}
                                     </Button>

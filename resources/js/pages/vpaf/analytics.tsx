@@ -197,7 +197,7 @@ export default function VpafAnalytics({
                 {/* Header Banner */}
                 <div className="flex flex-col justify-between gap-4 rounded-2xl border border-[#E5E4F0] bg-white p-5 shadow-2xs sm:flex-row sm:items-center dark:border-border dark:bg-card">
                     <div>
-                        <div className="mb-1.5 inline-flex items-center gap-2 rounded-full bg-[#EDE9FE] px-3 py-0.5 text-[10px] font-bold tracking-wider text-[#5B21B6] uppercase dark:bg-[#262246] dark:text-[#DDD6FE]">
+                        <div className="mb-1.5 inline-flex items-center gap-2 rounded-full bg-[#F1F5F9] px-3 py-0.5 text-[10px] font-bold tracking-wider text-[#0B3A67] dark:text-[#93C5FD] uppercase dark:bg-slate-800 dark:text-[#BFDBFE]">
                             <BarChart3 className="h-3 w-3" />
                             Executive Analytics & Comparative Decision Support
                         </div>
@@ -215,9 +215,9 @@ export default function VpafAnalytics({
                             type="button"
                             onClick={downloadComparisonCsv}
                             variant="outline"
-                            className="rounded-xl border-[#E5E4F0] text-xs font-bold text-[#17152E] hover:bg-[#EDE9FE] dark:border-border dark:text-foreground"
+                            className="rounded-xl border-[#E5E4F0] text-xs font-bold text-[#17152E] hover:bg-[#F1F5F9] dark:border-border dark:text-foreground"
                         >
-                            <Download className="mr-1.5 h-3.5 w-3.5 text-[#5B21B6]" />
+                            <Download className="mr-1.5 h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                             Export Comparison Matrix (.CSV)
                         </Button>
                     </div>
@@ -238,7 +238,7 @@ export default function VpafAnalytics({
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'overview'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA]'
+                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <Building2 className="h-4 w-4" />
@@ -264,7 +264,7 @@ export default function VpafAnalytics({
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'comparison'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA]'
+                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <BarChart3 className="h-4 w-4" />
@@ -316,7 +316,7 @@ export default function VpafAnalytics({
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'decision-support'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#EDE9FE] text-[#7C3AED] dark:bg-[#262246] dark:text-[#DDD6FE]'
+                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]'
                             }`}
                         >
                             <Sparkles className="h-4 w-4" />
@@ -353,7 +353,7 @@ export default function VpafAnalytics({
                                     <div>
                                         <div className="flex items-start justify-between">
                                             <div>
-                                                <span className="font-mono text-xs font-black text-[#5B21B6] dark:text-[#A78BFA]">
+                                                <span className="font-mono text-xs font-black text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                     {col.code}
                                                 </span>
                                                 <h4 className="mt-1 text-base font-extrabold text-[#17152E] dark:text-foreground">
@@ -390,7 +390,7 @@ export default function VpafAnalytics({
                                             </div>
                                             <div className="rounded-xl border border-slate-100 p-2 dark:border-slate-800">
                                                 <span className="text-[10px] text-slate-400 uppercase">Delivered</span>
-                                                <div className="font-extrabold text-[#5B21B6]">{col.completion_rate}%</div>
+                                                <div className="font-extrabold text-[#0B3A67] dark:text-[#93C5FD]">{col.completion_rate}%</div>
                                             </div>
                                             <div className="rounded-xl border border-slate-100 p-2 dark:border-slate-800">
                                                 <span className="text-[10px] text-slate-400 uppercase">Compliance</span>
@@ -421,7 +421,7 @@ export default function VpafAnalytics({
                                         </span>
                                         <Link
                                             href={`/vpaf/academic-operations?tab=workload&college=${col.code}`}
-                                            className="font-bold text-[#5B21B6] hover:underline dark:text-[#A78BFA]"
+                                            className="font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline dark:text-[#93C5FD]"
                                         >
                                             View Workload & Schedules →
                                         </Link>
@@ -528,7 +528,7 @@ export default function VpafAnalytics({
                                             <td className="px-3 py-3 text-center font-bold text-[#17152E] dark:text-foreground">
                                                 {col.attendance_rate}%
                                             </td>
-                                            <td className="px-3 py-3 text-center font-bold text-[#5B21B6] dark:text-[#A78BFA]">
+                                            <td className="px-3 py-3 text-center font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                 {col.completion_rate}%
                                             </td>
                                             <td className="px-3 py-3 text-center font-bold text-emerald-600">
@@ -612,7 +612,7 @@ export default function VpafAnalytics({
                                         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                                             <div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="font-mono text-xs font-black text-[#5B21B6] dark:text-[#A78BFA]">
+                                                    <span className="font-mono text-xs font-black text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                         {col.code}
                                                     </span>
                                                     <span
@@ -678,7 +678,7 @@ export default function VpafAnalytics({
                 {activeTab === 'decision-support' && (
                     <div className="space-y-4">
                         <div className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4 text-xs dark:border-indigo-950/60 dark:bg-indigo-950/20">
-                            <div className="flex items-center gap-2 font-black text-[#5B21B6] dark:text-[#A78BFA]">
+                            <div className="flex items-center gap-2 font-black text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                 <Sparkles className="h-4 w-4" />
                                 Verified Executive Management Guidance
                             </div>
@@ -695,7 +695,7 @@ export default function VpafAnalytics({
                                     className="rounded-2xl border border-[#E5E4F0] bg-white p-5 shadow-2xs dark:border-border dark:bg-card"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <span className="rounded-full bg-[#EDE9FE] px-2.5 py-0.5 text-[10px] font-bold text-[#5B21B6] uppercase dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                        <span className="rounded-full bg-[#F1F5F9] px-2.5 py-0.5 text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] uppercase dark:bg-slate-800 dark:text-[#BFDBFE]">
                                             {insight.category}
                                         </span>
                                     </div>

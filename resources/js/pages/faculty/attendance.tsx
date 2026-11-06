@@ -268,13 +268,13 @@ export default function FacultyAttendancePage({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="My Attendance - Faculty Workspace" />
 
-            <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1500px] mx-auto">
+            <div className="w-full max-w-full min-w-0 p-4 md:p-6 lg:p-8 space-y-6">
                 {/* 1. Header Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card rounded-2xl border border-border p-6 shadow-2xs">
-                    <div>
-                        <div className="flex items-center gap-2.5">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-card rounded-2xl border border-border p-5 sm:p-6 shadow-2xs w-full min-w-0">
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2.5">
                             <h1 className="text-2xl font-black text-foreground tracking-tight">Teaching Attendance</h1>
-                            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-600 border border-amber-300 dark:border-amber-700/50">
+                            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-600 border border-amber-300 dark:border-amber-700/50 shrink-0">
                                 {academic_year} · {semester}
                             </span>
                         </div>
@@ -283,7 +283,7 @@ export default function FacultyAttendancePage({
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex flex-wrap items-center gap-2.5 shrink-0">
                         <Button
                             onClick={() => {
                                 setReportFormat(viewType);
@@ -307,7 +307,7 @@ export default function FacultyAttendancePage({
                 </div>
 
                 {/* 2. KPI Metric Cards (Consolidated with Super Admin metrics) */}
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 w-full min-w-0">
                     <div className="bg-card rounded-2xl border border-border p-4.5 shadow-2xs">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Attendance Rate</span>
@@ -507,7 +507,7 @@ export default function FacultyAttendancePage({
                             </div>
                         </div>
 
-                        <div className="overflow-x-auto border border-border rounded-xl">
+                        <div className="w-full max-w-full min-w-0 overflow-x-auto border border-border rounded-xl">
                             <table className="w-full text-left text-xs">
                                 <thead className="bg-muted/40 text-muted-foreground border-b border-border/80 uppercase text-[11px] font-bold">
                                     <tr>
@@ -645,7 +645,7 @@ export default function FacultyAttendancePage({
                             </span>
                         </div>
 
-                        <div className="overflow-x-auto border border-border rounded-xl">
+                        <div className="w-full max-w-full min-w-0 overflow-x-auto border border-border rounded-xl">
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead className="bg-muted/40 text-muted-foreground border-b border-border uppercase text-[10.5px] font-bold">
                                     <tr>

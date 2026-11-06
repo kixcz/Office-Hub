@@ -363,12 +363,10 @@ export default function SuperAdminDashboard({
                 >
                     <div className="flex items-center gap-3.5">
                         <div
-                            className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20 overflow-hidden p-1.5"
+                            className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20 overflow-hidden p-1.5"
                             style={
-                                collegeBranding
+                                collegeBranding?.primary_color
                                     ? {
-                                          backgroundColor: collegeBranding.accent_color,
-                                          color: collegeBranding.secondary_color,
                                           borderColor: `${collegeBranding.primary_color}50`,
                                       }
                                     : undefined

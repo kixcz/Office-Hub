@@ -81,13 +81,13 @@ export default function ChooseWorkspace({ availablePortals = [], defaultPortalId
 
     return (
         <div className="min-h-screen bg-[#F7F7FB] flex flex-col items-center justify-center p-4 sm:p-6 text-[#17152E]">
-            <Head title="Choose Workspace — Velora Governance" />
+            <Head title="Choose Workspace — Ascend Governance" />
 
             <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-10 shadow-xl border border-indigo-100 space-y-6">
                 {/* Header */}
                 <div className="text-center space-y-2">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-violet-100 text-[#5B21B6] shadow-2xs mb-1">
-                        <Sparkles className="w-6 h-6 text-[#7C3AED]" />
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-violet-100 text-[#0B3A67] dark:text-[#93C5FD] shadow-2xs mb-1">
+                        <Sparkles className="w-6 h-6 text-[#0B3A67] dark:text-[#93C5FD]" />
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#17152E]">
                         Choose Workspace Context
@@ -110,7 +110,7 @@ export default function ChooseWorkspace({ availablePortals = [], defaultPortalId
                                 onClick={() => setSelectedId(portal.id)}
                                 className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                                     isSelected
-                                        ? 'border-[#5B21B6] bg-violet-50/60 shadow-sm'
+                                        ? 'border-[#0B3A67] bg-violet-50/60 shadow-sm'
                                         : 'border-slate-100 bg-[#F7F7FB] hover:border-violet-200'
                                 }`}
                             >
@@ -118,7 +118,7 @@ export default function ChooseWorkspace({ availablePortals = [], defaultPortalId
                                     <div
                                         className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
                                             isSelected
-                                                ? 'bg-[#5B21B6] text-white shadow-2xs'
+                                                ? 'bg-[#0B3A67] text-white shadow-2xs'
                                                 : 'bg-white text-slate-600 border border-slate-200'
                                         }`}
                                     >
@@ -158,8 +158,8 @@ export default function ChooseWorkspace({ availablePortals = [], defaultPortalId
                                     disabled={isSubmitting}
                                     className={`shrink-0 font-bold text-xs ${
                                         isSelected
-                                            ? 'bg-[#5B21B6] hover:bg-[#4C1D95] text-white shadow-sm'
-                                            : 'bg-white hover:bg-violet-50 text-[#5B21B6] border border-indigo-200'
+                                            ? 'bg-[#0B3A67] hover:bg-[#082847] text-white shadow-sm'
+                                            : 'bg-white hover:bg-violet-50 text-[#0B3A67] dark:text-[#93C5FD] border border-indigo-200'
                                     }`}
                                 >
                                     Enter Workspace
@@ -176,7 +176,7 @@ export default function ChooseWorkspace({ availablePortals = [], defaultPortalId
                             type="checkbox"
                             checked={makeDefault}
                             onChange={(e) => setMakeDefault(e.target.checked)}
-                            className="rounded border-slate-300 text-[#5B21B6] focus:ring-[#7C3AED]"
+                            className="rounded border-slate-300 text-[#0B3A67] dark:text-[#93C5FD] focus:ring-[#0B3A67]"
                         />
                         <span>Remember my selected portal as default upon sign in</span>
                     </label>

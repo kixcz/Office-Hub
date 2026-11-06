@@ -134,7 +134,7 @@ export default function InstitutionAuditSecurity({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Security & Governance — Velora" />
+            <Head title="Security & Governance — Ascend" />
 
             <div className="mx-auto max-w-[1600px] space-y-6 p-4 md:p-6">
                 {/* Header */}
@@ -146,7 +146,7 @@ export default function InstitutionAuditSecurity({
                                 Security, Auditability & System Governance
                             </div>
                             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                                Velora Security & Governance Center
+                                Ascend Security & Governance Center
                             </h1>
                             <p className="mt-1.5 max-w-3xl text-sm text-slate-300">
                                 Inspect immutable Audit Logs, operational Activity Logs, human-readable Change History,
@@ -507,7 +507,7 @@ export default function InstitutionAuditSecurity({
                 {activeTab === 'system' && (
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
                         <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                            Technical System Settings (Velora Core)
+                            Technical System Settings (Ascend Core)
                         </h2>
                         <p className="text-xs text-slate-500">
                             Global technical parameters for locale, timezone, system email identity, upload limits, and
@@ -516,9 +516,9 @@ export default function InstitutionAuditSecurity({
 
                         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
                             {[
-                                { label: 'Platform Brand Name', value: 'Velora Institutional Governance' },
+                                { label: 'Platform Brand Name', value: 'Ascend Institutional Governance' },
                                 { label: 'Default Locale & Timezone', value: 'en_PH · Asia/Manila (UTC+08:00)' },
-                                { label: 'System Notification Identity', value: 'noreply-velora@dssc.edu.ph' },
+                                { label: 'System Notification Identity', value: 'noreply-Ascend@dssc.edu.ph' },
                                 { label: 'Max Evidence Upload Limit', value: '25 MB per document (PDF/JPG/PNG/XLSX)' },
                                 { label: 'Queue & Background Sync Driver', value: 'Database Queue (Asynchronous)' },
                                 { label: 'Maintenance Mode Status', value: 'Online · Production Ready' },

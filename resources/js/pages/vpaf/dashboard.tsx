@@ -177,21 +177,21 @@ export default function VpafDashboard({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="VPAF Executive Command Dashboard — Velora" />
+            <Head title="VPAF Executive Command Dashboard — Ascend" />
 
             <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 bg-[#F7F7FB] p-4 md:p-6 dark:bg-background">
                 {/* Executive Hero Banner */}
-                <div className="relative overflow-hidden rounded-3xl border border-[#5B21B6]/30 bg-gradient-to-r from-[#1E0B4B] via-[#3B147A] to-[#2E1065] p-6 text-white shadow-xl">
+                <div className="relative overflow-hidden rounded-3xl border border-[#0B3A67]/30 bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] p-6 text-white shadow-xl">
                     <div className="relative z-10 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
                         <div>
-                            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-[11px] font-bold tracking-wider text-[#DDD6FE] uppercase backdrop-blur-xs">
-                                <Sparkles className="h-3.5 w-3.5 text-[#A78BFA]" />
+                            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-[11px] font-bold tracking-wider text-[#BFDBFE] uppercase backdrop-blur-xs">
+                                <Sparkles className="h-3.5 w-3.5 text-[#93C5FD]" />
                                 Executive Oversight & Decision-Support Workspace
                             </div>
                             <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
                                 Vice President for Academic Affairs (VPAF)
                             </h1>
-                            <p className="mt-1.5 max-w-3xl text-xs leading-relaxed text-[#E9D5FF]/90 sm:text-sm">
+                            <p className="mt-1.5 max-w-3xl text-xs leading-relaxed text-[#DBEAFE]/90 sm:text-sm">
                                 High-level institutional intelligence across all campuses, entities, and colleges.
                                 Monitor cross-college attendance, instructional delivery, compliance health, facility
                                 bottlenecks, and TV broadcasts in a single decision-oriented cockpit.
@@ -201,9 +201,9 @@ export default function VpafDashboard({
                         <div className="flex flex-wrap items-center gap-2.5">
                             <Link
                                 href="/vpaf/tv-communications?tab=switcher"
-                                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-[#17152E] shadow-sm transition hover:bg-[#EDE9FE]"
+                                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-[#17152E] shadow-sm transition hover:bg-[#F1F5F9]"
                             >
-                                <Projector className="h-4 w-4 text-[#5B21B6]" />
+                                <Projector className="h-4 w-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 TV Channel Switcher
                             </Link>
 
@@ -211,13 +211,13 @@ export default function VpafDashboard({
                                 href="/vpaf/reports?tab=consolidated"
                                 className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/20"
                             >
-                                <FileText className="h-4 w-4 text-[#A78BFA]" />
+                                <FileText className="h-4 w-4 text-[#93C5FD]" />
                                 Consolidated Report
                             </Link>
 
                             <Link
                                 href="/vpaf/analytics?tab=risks"
-                                className="inline-flex items-center gap-2 rounded-xl bg-[#7C3AED] px-4 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#6D28D9]"
+                                className="inline-flex items-center gap-2 rounded-xl bg-[#8B1E3F] px-4 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#68152E]"
                             >
                                 <AlertTriangle className="h-4 w-4" />
                                 Risk Center ({kpis.critical_alerts + kpis.needs_attention_colleges})
@@ -230,13 +230,13 @@ export default function VpafDashboard({
                 <div className="rounded-2xl border border-[#E5E4F0] bg-white p-4 shadow-2xs dark:border-border dark:bg-card">
                     <div className="flex items-center justify-between pb-3 border-b border-[#E5E4F0] dark:border-border mb-3">
                         <div className="flex items-center gap-2 text-xs font-bold text-[#17152E] dark:text-foreground">
-                            <Filter className="h-4 w-4 text-[#5B21B6]" />
+                            <Filter className="h-4 w-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                             <span>Executive Filters: Scope & Observation Period</span>
                         </div>
                         <Button
                             type="button"
                             onClick={applyFilters}
-                            className="h-8 rounded-xl bg-[#5B21B6] px-3.5 text-xs font-bold text-white hover:bg-[#4C1D95]"
+                            className="h-8 rounded-xl bg-[#0B3A67] px-3.5 text-xs font-bold text-white hover:bg-[#1F5D9B]"
                         >
                             Apply Filters
                         </Button>
@@ -249,7 +249,7 @@ export default function VpafDashboard({
                             <select
                                 value={periodFilter}
                                 onChange={(e) => setPeriodFilter(e.target.value)}
-                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#7C3AED] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#0B3A67] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                             >
                                 {periods.map((p) => (
                                     <option key={p.id} value={p.id}>
@@ -265,7 +265,7 @@ export default function VpafDashboard({
                             <select
                                 value={entityFilter}
                                 onChange={(e) => setEntityFilter(e.target.value)}
-                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#7C3AED] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#0B3A67] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                             >
                                 <option value="All">All Campuses & Entities</option>
                                 {entities.map((ent) => (
@@ -282,7 +282,7 @@ export default function VpafDashboard({
                             <select
                                 value={collegeFilter}
                                 onChange={(e) => setCollegeFilter(e.target.value)}
-                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#7C3AED] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#0B3A67] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                             >
                                 <option value="All">All Colleges ({colleges.length})</option>
                                 {colleges.map((c) => (
@@ -299,7 +299,7 @@ export default function VpafDashboard({
                             <select
                                 value={programFilter}
                                 onChange={(e) => setProgramFilter(e.target.value)}
-                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#7C3AED] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#0B3A67] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                             >
                                 <option value="All">All Programs ({programs.length})</option>
                                 {programs.map((prog) => (
@@ -317,7 +317,7 @@ export default function VpafDashboard({
                                 type="date"
                                 value={dateRangeStart}
                                 onChange={(e) => setDateRangeStart(e.target.value)}
-                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#7C3AED] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#0B3A67] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                             />
                         </div>
 
@@ -328,7 +328,7 @@ export default function VpafDashboard({
                                 type="date"
                                 value={dateRangeEnd}
                                 onChange={(e) => setDateRangeEnd(e.target.value)}
-                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#7C3AED] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                                className="mt-1 w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 text-xs font-bold text-[#17152E] focus:border-[#0B3A67] focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                             />
                         </div>
                     </div>
@@ -354,9 +354,9 @@ export default function VpafDashboard({
                     <div className="rounded-2xl border border-[#E5E4F0] bg-white p-4 shadow-2xs dark:border-border dark:bg-card">
                         <div className="flex items-center justify-between">
                             <span className="text-[11px] font-bold text-slate-400 uppercase">Instructional Completion</span>
-                            <Clock className="h-4 w-4 text-[#5B21B6]" />
+                            <Clock className="h-4 w-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
-                        <p className="mt-1 text-2xl font-black text-[#5B21B6] dark:text-[#A78BFA]">
+                        <p className="mt-1 text-2xl font-black text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                             {kpis.instructional_completion}%
                         </p>
                         <span className="text-[11px] text-slate-500">Actual teaching hours delivered</span>
@@ -392,7 +392,7 @@ export default function VpafDashboard({
                     <div className="rounded-2xl border border-[#E5E4F0] bg-white p-4 shadow-2xs dark:border-border dark:bg-card">
                         <div className="flex items-center justify-between">
                             <span className="text-[11px] font-bold text-slate-400 uppercase">Facility Utilization</span>
-                            <Building2 className="h-4 w-4 text-[#7C3AED]" />
+                            <Building2 className="h-4 w-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
                         <p className="mt-1 text-2xl font-black text-[#17152E] dark:text-foreground">
                             {kpis.facility_utilization}%
@@ -479,7 +479,7 @@ export default function VpafDashboard({
                                 href="/vpaf/analytics?tab=comparison"
                                 className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5E4F0] bg-white px-3 py-1.5 text-xs font-bold text-[#17152E] shadow-2xs hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:text-foreground"
                             >
-                                <BarChart3 className="h-3.5 w-3.5 text-[#5B21B6]" />
+                                <BarChart3 className="h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Open Comparison Matrix →
                             </Link>
                         </div>
@@ -496,7 +496,7 @@ export default function VpafDashboard({
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <span className="font-mono text-xs font-extrabold text-[#5B21B6] dark:text-[#A78BFA]">
+                                                <span className="font-mono text-xs font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                     {col.code}
                                                 </span>
                                                 <span
@@ -515,7 +515,7 @@ export default function VpafDashboard({
                                             </p>
                                         </div>
 
-                                        <span className="rounded-md bg-[#EDE9FE] px-2 py-0.5 text-[10px] font-bold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                        <span className="rounded-md bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                             TV: {col.tv_channel_status}
                                         </span>
                                     </div>
@@ -540,7 +540,7 @@ export default function VpafDashboard({
                                             <span className="text-[10px] font-bold text-slate-400 uppercase">
                                                 Instructional Delivered
                                             </span>
-                                            <p className="font-extrabold text-[#5B21B6] dark:text-[#A78BFA]">
+                                            <p className="font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                 {col.completion_rate}%
                                             </p>
                                         </div>
@@ -568,7 +568,7 @@ export default function VpafDashboard({
                                     <div className="mt-3 space-y-1.5 text-[11px]">
                                         <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                                             <span>Scheduling Readiness:</span>
-                                            <span className="font-bold text-[#5B21B6] dark:text-[#A78BFA]">
+                                            <span className="font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                 {col.scheduling.status} ({col.scheduling.stage})
                                             </span>
                                         </div>
@@ -594,7 +594,7 @@ export default function VpafDashboard({
                                     </span>
                                     <Link
                                         href={`/vpaf/analytics?tab=overview&college=${col.code}`}
-                                        className="inline-flex items-center gap-1 font-bold text-[#5B21B6] hover:underline dark:text-[#A78BFA]"
+                                        className="inline-flex items-center gap-1 font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline dark:text-[#93C5FD]"
                                     >
                                         Inspect Unit <ArrowRight className="h-3 w-3" />
                                     </Link>
@@ -618,7 +618,7 @@ export default function VpafDashboard({
 
                         <Link
                             href="/vpaf/analytics?tab=risks"
-                            className="text-xs font-bold text-[#5B21B6] hover:underline dark:text-[#A78BFA]"
+                            className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline dark:text-[#93C5FD]"
                         >
                             Open Risk & Attention Center →
                         </Link>
@@ -653,7 +653,7 @@ export default function VpafDashboard({
 
                                 <Link
                                     href={alert.link}
-                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-bold text-[#5B21B6] shadow-2xs hover:bg-[#EDE9FE] dark:bg-card dark:text-[#A78BFA]"
+                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] shadow-2xs hover:bg-[#F1F5F9] dark:bg-card dark:text-[#93C5FD]"
                                 >
                                     Review & Action <ArrowRight className="h-3.5 w-3.5" />
                                 </Link>

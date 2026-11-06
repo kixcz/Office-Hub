@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Curriculum;
 use App\Models\CurriculumCourse;
 use App\Models\Program;
+use App\Services\PortalContextService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -14,12 +15,38 @@ class ProgramController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        $scopeCollegeId = null;
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            $scopeCollegeId = $activeScopeId;
+        } elseif ($activeScopeType === 'program' && $activeScopeId) {
+            $scopeCollegeId = Program::find($activeScopeId)?->college_id;
+        } elseif (! $isInstitutionSuperAdmin) {
+            $scopeCollegeId = $user?->resolveActiveCollege()?->id;
+        }
+
         $query = Program::with([
+            'college',
             'curricula' => function ($q) {
                 $q->withCount(['curriculumCourses', 'courses'])->orderBy('created_at', 'desc');
             },
             'curricula.curriculumCourses.course',
         ]);
+
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $query->where('id', $activeScopeId);
+            } elseif ($scopeCollegeId) {
+                $query->where('college_id', $scopeCollegeId);
+            }
+        }
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -43,10 +70,10 @@ class ProgramController extends Controller
 
         $allCourses = Course::where('status', 'Active')->orderBy('code')->get();
 
-        $totalPrograms = Program::count();
-        $activePrograms = Program::where('status', 'Active')->count();
-        $totalCurricula = Curriculum::count();
-        $activeCurricula = Curriculum::where('status', 'Active')->count();
+        $totalPrograms = $programs->count();
+        $activePrograms = $programs->where('status', 'Active')->count();
+        $totalCurricula = $programs->sum(fn ($p) => $p->curricula->count());
+        $activeCurricula = $programs->sum(fn ($p) => $p->curricula->where('status', 'Active')->count());
 
         return Inertia::render('programs/index', [
             'programs' => $programs,

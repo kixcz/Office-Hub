@@ -31,25 +31,420 @@ use Inertia\Response;
 class InstitutionGovernanceController extends Controller
 {
     /**
-     * Complete catalog of Velora modules controlled by the Institution Super Admin.
+     * Complete catalog of Ascend modules controlled by the Institution Super Admin.
      *
      * @return array<int, array<string, mixed>>
      */
     private function getModulesCatalog(): array
     {
         return [
-            ['id' => 'scheduling', 'name' => 'Semester Scheduling & OR-Tools', 'category' => 'Academic Operations', 'icon' => 'CalendarDays', 'global_enabled' => true],
-            ['id' => 'faculty_attendance', 'name' => 'Faculty Attendance & Reconciliation', 'category' => 'Faculty Governance', 'icon' => 'ClipboardCheck', 'global_enabled' => true],
-            ['id' => 'lab_monitoring', 'name' => 'Facility & Lab Monitoring', 'category' => 'Facilities', 'icon' => 'SquareActivity', 'global_enabled' => true],
-            ['id' => 'lab_inventory', 'name' => 'Laboratory Inventory & Assets', 'category' => 'Facilities', 'icon' => 'Monitor', 'global_enabled' => true],
-            ['id' => 'compliance', 'name' => 'Compliance Submissions & Tracker', 'category' => 'Compliance', 'icon' => 'FileCheck', 'global_enabled' => true],
-            ['id' => 'research_extension', 'name' => 'Research & Extension Tracking', 'category' => 'Evidence', 'icon' => 'BookOpen', 'global_enabled' => true],
-            ['id' => 'projects_tasks', 'name' => 'Projects & Tasks Coordination', 'category' => 'Coordination', 'icon' => 'BookCheckIcon', 'global_enabled' => true],
-            ['id' => 'accomplishments', 'name' => 'Accomplishment Portfolios', 'category' => 'Evidence', 'icon' => 'Award', 'global_enabled' => true],
-            ['id' => 'exam_monitoring', 'name' => 'Exam Schedule & Conduct Monitoring', 'category' => 'Academic Operations', 'icon' => 'CalendarDays', 'global_enabled' => true],
-            ['id' => 'make_up_classes', 'name' => 'Make-Up Class Recovery & Approvals', 'category' => 'Academic Operations', 'icon' => 'RefreshCw', 'global_enabled' => true],
-            ['id' => 'tv_studio', 'name' => 'Campus TV Studio & Digital Signage', 'category' => 'Communications', 'icon' => 'Tv', 'global_enabled' => true],
-            ['id' => 'performance', 'name' => 'Reports, Analytics & Recognition', 'category' => 'Analytics', 'icon' => 'Trophy', 'global_enabled' => true],
+            // ACADEMIC OPERATIONS
+            [
+                'id' => 'scheduling',
+                'name' => 'Semester Scheduling',
+                'category' => 'Academic Operations',
+                'short_purpose' => 'Generate and manage class schedules, rooms, and conflict detection using smart scheduling (OR-Tools).',
+                'purpose_details' => 'Generate and manage semester class schedules, room allocations, section timetables, and conflict detection using smart constraint satisfaction (OR-Tools).',
+                'key_features' => ['Automatic timetable generation', 'Conflict detection (faculty, section, room)', 'Faculty and dean review workflow', 'Published master timetable (single source of truth)'],
+                'is_required' => true,
+                'dependencies' => ['programs', 'academic_periods', 'facilities', 'faculty_directory'],
+                'dependency_labels' => ['Programs', 'Academic Period', 'Facilities (Rooms)', 'Faculty Directory'],
+                'available_roles' => ['College Admin (Manage)', 'Dean (Review & Approve)', 'Program Head (Draft & Request)', 'Faculty (View Schedule)'],
+                'access_matrix' => [
+                    'College Admin' => 'Configure + Finalize',
+                    'Dean' => 'Approve + Publish',
+                    'Program Head' => 'Create / Edit Program Load',
+                    'Faculty' => 'View Schedule',
+                    'VPAF' => 'Institution-wide Read Only',
+                ],
+                'institution_policy' => 'This module is institution-required and cannot be disabled by the College Admin.',
+                'can_college_admin_disable' => false,
+                'global_enabled' => true,
+            ],
+            [
+                'id' => 'faculty_workload',
+                'name' => 'Faculty Workload',
+                'category' => 'Academic Operations',
+                'short_purpose' => 'Manage faculty loads, teaching assignments, and workload summary.',
+                'purpose_details' => 'Monitors academic faculty workload credits, overload calculations, administrative releases, and compliance with institutional teaching load caps.',
+                'key_features' => ['Teaching load credit formulas', 'Overload & underload alerts', 'Release time deductions', 'Dean workload sign-off'],
+                'is_required' => true,
+                'dependencies' => ['scheduling', 'faculty_directory'],
+                'dependency_labels' => ['Semester Scheduling', 'Faculty Directory'],
+                'available_roles' => ['College Admin', 'Dean', 'Program Head', 'Faculty'],
+                'access_matrix' => [
+                    'College Admin' => 'Configure & Assign',
+                    'Dean' => 'Approve Workload',
+                    'Program Head' => 'Distribute Loads',
+                    'Faculty' => 'View Own Load',
+                    'VPAF' => 'Audit & Summary',
+                ],
+                'institution_policy' => 'Required by Commission on Higher Education and DSSC Academic Code.',
+                'can_college_admin_disable' => false,
+                'global_enabled' => true,
+            ],
+            [
+                'id' => 'exam_monitoring',
+                'name' => 'Exam Monitoring',
+                'category' => 'Academic Operations',
+                'short_purpose' => 'Record, monitor, and validate examination schedules and conduct.',
+                'purpose_details' => 'Schedules midterm and final examination slots, proctor assignments, room rooming lists, and verifies proctor attendance.',
+                'key_features' => ['Exam room assignment', 'Proctor roster assignment', 'Live conduct logs', 'Exam conflict resolution'],
+                'is_required' => false,
+                'dependencies' => ['scheduling', 'facilities'],
+                'dependency_labels' => ['Semester Scheduling', 'Facilities'],
+                'available_roles' => ['College Admin', 'Dean', 'Program Head', 'Faculty'],
+                'access_matrix' => [
+                    'College Admin' => 'Full Control',
+                    'Dean' => 'Oversight',
+                    'Program Head' => 'Roster Review',
+                    'Faculty' => 'View Proctoring Duties',
+                    'VPAF' => 'Read Only',
+                ],
+                'institution_policy' => 'Optional for graduate units; recommended for undergraduate colleges.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
+            [
+                'id' => 'make_up_classes',
+                'name' => 'Make-Up Classes',
+                'category' => 'Academic Operations',
+                'short_purpose' => 'Request and track make-up classes with approval workflow.',
+                'purpose_details' => 'Enables faculty to request class recovery schedules for missed sessions, coordinate room availability, and obtain dean endorsement.',
+                'key_features' => ['Make-up class application', 'Automated room conflict check', 'Dean endorsement workflow', 'Attendance reconciliation sync'],
+                'is_required' => false,
+                'dependencies' => ['scheduling', 'facilities'],
+                'dependency_labels' => ['Semester Scheduling', 'Facilities'],
+                'available_roles' => ['Faculty (Apply)', 'Dean (Approve)', 'Program Head (Endorse)', 'College Admin (Resolve)'],
+                'access_matrix' => [
+                    'Faculty' => 'Apply & Submit',
+                    'Program Head' => 'Endorse',
+                    'Dean' => 'Final Approval',
+                    'College Admin' => 'Room Conflict Assist',
+                    'VPAF' => 'Audit Trail',
+                ],
+                'institution_policy' => 'College Admin may configure approval hierarchies.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
+
+            // FACULTY & WORKFORCE
+            [
+                'id' => 'faculty_attendance',
+                'name' => 'Faculty Attendance',
+                'category' => 'Faculty & Workforce',
+                'short_purpose' => 'Daily faculty attendance tracking, reconciliation, and biometrics verification.',
+                'purpose_details' => 'Reconciles physical classroom monitoring records, biometric check-ins, and published schedules into official attendance reports.',
+                'key_features' => ['Biometrics & checker reconciliation', 'Tardiness & absence flagging', 'Make-up class integration', 'Monthly DTR generation'],
+                'is_required' => true,
+                'dependencies' => ['scheduling', 'facilities'],
+                'dependency_labels' => ['Semester Scheduling', 'Facilities'],
+                'available_roles' => ['College Admin', 'Dean', 'Program Head', 'Faculty', 'VPAF'],
+                'access_matrix' => [
+                    'College Admin' => 'Configure + Finalize',
+                    'Dean' => 'View + Review',
+                    'Program Head' => 'View Program Faculty',
+                    'Faculty' => 'View Own Records',
+                    'VPAF' => 'Institution-wide Read Only',
+                ],
+                'institution_policy' => 'Mandatory institution-wide governance compliance module.',
+                'can_college_admin_disable' => false,
+                'global_enabled' => true,
+            ],
+            [
+                'id' => 'lab_monitoring',
+                'name' => 'Lab & Facility Monitoring',
+                'category' => 'Faculty & Workforce',
+                'short_purpose' => 'Track laboratory usage, checker observations, and in-charge shift logs.',
+                'purpose_details' => 'Real-time observation logging by student assistants and non-teaching lab in-charge personnel to verify active class occupancy and hardware safety.',
+                'key_features' => ['Observation check-ins', 'Discrepancy reporting', 'Hourly room sweeps', 'EOD lab verification'],
+                'is_required' => true,
+                'dependencies' => ['facilities'],
+                'dependency_labels' => ['Facilities (Rooms & Labs)'],
+                'available_roles' => ['Lab In-Charge', 'College Admin', 'Dean'],
+                'access_matrix' => [
+                    'Lab In-Charge' => 'Record Observations & EOD',
+                    'College Admin' => 'Oversight & Verification',
+                    'Dean' => 'Read Only Summary',
+                    'VPAF' => 'Inspection Audit',
+                ],
+                'institution_policy' => 'Mandatory for colleges with computer or science laboratories.',
+                'can_college_admin_disable' => false,
+                'global_enabled' => true,
+            ],
+            [
+                'id' => 'lab_in_charge_mgmt',
+                'name' => 'Lab In-Charge Management',
+                'category' => 'Faculty & Workforce',
+                'short_purpose' => 'Assign and oversee laboratory custodians, technicians, and student assistants.',
+                'purpose_details' => 'Coordinates laboratory personnel shifts, designated accountable lab officers, and handover checklists.',
+                'key_features' => ['Shift scheduling', 'Handover notes', 'Accountability assignment', 'Attendance of lab staff'],
+                'is_required' => false,
+                'dependencies' => ['facilities', 'lab_monitoring'],
+                'dependency_labels' => ['Facilities', 'Lab & Facility Monitoring'],
+                'available_roles' => ['College Admin', 'Head Lab In-Charge'],
+                'access_matrix' => [
+                    'College Admin' => 'Assign Personnel',
+                    'Head Lab In-Charge' => 'Supervise Shift Roster',
+                    'Dean' => 'Read Only',
+                ],
+                'institution_policy' => 'College Admin may delegate shift assignment to Head Lab In-Charge.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
+
+            // FACILITIES & RESOURCES
+            [
+                'id' => 'facilities_mgmt',
+                'name' => 'Rooms & Laboratories',
+                'category' => 'Facilities & Resources',
+                'short_purpose' => 'Manage physical rooms, classrooms, laboratories, and specialized facilities.',
+                'purpose_details' => 'The definitive campus physical facility register, tracking capacities, equipment, location, and operational availability.',
+                'key_features' => ['Room registry & specs', 'Capability tagging (Projector, AC)', 'Shared room allocation', 'Availability windows'],
+                'is_required' => true,
+                'dependencies' => [],
+                'dependency_labels' => [],
+                'available_roles' => ['College Admin', 'Dean', 'Lab In-Charge'],
+                'access_matrix' => [
+                    'College Admin' => 'Full Management',
+                    'Dean' => 'View & Allocate',
+                    'Lab In-Charge' => 'Inspect & Report',
+                    'VPAF' => 'Physical Asset Oversight',
+                ],
+                'institution_policy' => 'Institution core foundational capability.',
+                'can_college_admin_disable' => false,
+                'global_enabled' => true,
+            ],
+            [
+                'id' => 'lab_inventory',
+                'name' => 'Inventory Management',
+                'category' => 'Facilities & Resources',
+                'short_purpose' => 'Track serialized assets, computer peripherals, and consumable lab supplies.',
+                'purpose_details' => 'End-to-end asset tracking for PC workstations, monitors, network switches, lab chemicals, and discrepancy verification workflows.',
+                'key_features' => ['Barcode / Asset tagging', 'Discrepancy reconciliation', 'Custodianship logging', 'Transfer requests'],
+                'is_required' => false,
+                'dependencies' => ['facilities_mgmt'],
+                'dependency_labels' => ['Rooms & Laboratories'],
+                'available_roles' => ['Lab In-Charge', 'College Admin'],
+                'access_matrix' => [
+                    'Lab In-Charge' => 'Item Auditing & Logs',
+                    'College Admin' => 'Approve Adjustments',
+                    'Dean' => 'Asset Summary',
+                    'VPAF' => 'Property Custodian Audit',
+                ],
+                'institution_policy' => 'Optional for purely lecture colleges; required for technology/science colleges.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
+            [
+                'id' => 'room_utilization',
+                'name' => 'Room Utilization',
+                'category' => 'Facilities & Resources',
+                'short_purpose' => 'Analyze space utilization rates, peak hours, and room occupancy ratios.',
+                'purpose_details' => 'Visualizes room efficiency percentages, unutilized hours, and seat utilization to assist space management decisions.',
+                'key_features' => ['Space efficiency charts', 'Peak utilization matrix', 'Low-occupancy warnings', 'CHED space norms reporting'],
+                'is_required' => false,
+                'dependencies' => ['facilities_mgmt', 'scheduling'],
+                'dependency_labels' => ['Rooms & Laboratories', 'Semester Scheduling'],
+                'available_roles' => ['Dean', 'College Admin', 'VPAF'],
+                'access_matrix' => [
+                    'Dean' => 'Strategic Planning',
+                    'College Admin' => 'Room Rebalancing',
+                    'VPAF' => 'Institution Space Allocation',
+                ],
+                'institution_policy' => 'Calculated automatically when Scheduling and Facilities are active.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
+
+            // COMPLIANCE & QUALITY
+            [
+                'id' => 'compliance',
+                'name' => 'Compliance Management',
+                'category' => 'Compliance & Quality',
+                'short_purpose' => 'Faculty syllabus, TOS, exam questionnaires, and academic compliance tracking.',
+                'purpose_details' => 'Tracks deadline-driven submissions including syllabi, instructional materials, Table of Specifications (TOS), and accreditation folders.',
+                'key_features' => ['Submission checklist matrix', 'Dean approval status', 'Audit trail for accreditation', 'Automated reminders'],
+                'is_required' => true,
+                'dependencies' => ['faculty_attendance'],
+                'dependency_labels' => ['Faculty Directory'],
+                'available_roles' => ['College Admin', 'Dean', 'Program Head', 'Faculty'],
+                'access_matrix' => [
+                    'Faculty' => 'Upload Deliverables',
+                    'Program Head' => 'Review & Endorse',
+                    'Dean' => 'Final Compliance Sign-Off',
+                    'College Admin' => 'Template & Deadline Setup',
+                ],
+                'institution_policy' => 'Mandatory for institutional ISO and CHED academic compliance.',
+                'can_college_admin_disable' => false,
+                'global_enabled' => true,
+            ],
+
+            // RESEARCH & ENGAGEMENT
+            [
+                'id' => 'research_extension',
+                'name' => 'Research & Extension',
+                'category' => 'Research, Extension & Engagement',
+                'short_purpose' => 'Track faculty research publications, citations, patents, and community extension.',
+                'purpose_details' => 'Records scholarly publications, ongoing research grants, patent filings, and extension community outreach deliverables.',
+                'key_features' => ['Publication database', 'Grant tracking', 'Community extension hours', 'Points computation'],
+                'is_required' => false,
+                'dependencies' => [],
+                'dependency_labels' => [],
+                'available_roles' => ['Faculty', 'Research Coordinator', 'Dean'],
+                'access_matrix' => [
+                    'Faculty' => 'Submit Publication & Extension',
+                    'Research Coordinator' => 'Validate & Score',
+                    'Dean' => 'College Research Summary',
+                    'VPAF' => 'Institutional Production Index',
+                ],
+                'institution_policy' => 'College Admin may configure optional local research guidelines.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
+            [
+                'id' => 'accomplishments',
+                'name' => 'Accomplishments & Recognition',
+                'category' => 'Research, Extension & Engagement',
+                'short_purpose' => 'Faculty portfolios, awards, honors, and merit accomplishment records.',
+                'purpose_details' => 'Comprehensive portfolio repository for awards, seminar certificates, faculty achievements, and merit recognition dossiers.',
+                'key_features' => ['Merit portfolios', 'Award certificates', 'Promotion points evidence', 'College spotlight feed'],
+                'is_required' => false,
+                'dependencies' => [],
+                'dependency_labels' => [],
+                'available_roles' => ['Faculty', 'Dean', 'College Admin'],
+                'access_matrix' => [
+                    'Faculty' => 'Maintain Portfolio',
+                    'Dean' => 'Review & Commend',
+                    'College Admin' => 'Archive & Export',
+                ],
+                'institution_policy' => 'Optional module.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
+            [
+                'id' => 'projects_tasks',
+                'name' => 'Projects & Tasks',
+                'category' => 'Research, Extension & Engagement',
+                'short_purpose' => 'Coordinate departmental committees, accreditation tasks, and special projects.',
+                'purpose_details' => 'Task assignment and milestone tracking for college committees, ISO auditing preparation, curriculum review, and departmental events.',
+                'key_features' => ['Kanban task boards', 'Milestone tracking', 'Committee assignment', 'Progress percentage reports'],
+                'is_required' => false,
+                'dependencies' => [],
+                'dependency_labels' => [],
+                'available_roles' => ['College Admin', 'Dean', 'Program Head', 'Faculty'],
+                'access_matrix' => [
+                    'College Admin' => 'Create Projects & Milestones',
+                    'Program Head' => 'Assign Tasks',
+                    'Faculty' => 'Update Task Status',
+                    'Dean' => 'Oversight',
+                ],
+                'institution_policy' => 'Optional departmental task management tool.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
+
+            // REPORTING & ANALYTICS
+            [
+                'id' => 'performance',
+                'name' => 'Reports & Analytics',
+                'category' => 'Reports & Analytics',
+                'short_purpose' => 'Consolidated college analytics, statistical dashboards, and official export reports.',
+                'purpose_details' => 'Generates official registrar and CHED tabular reports, accreditation summaries, faculty teaching effectiveness, and executive analytics.',
+                'key_features' => ['Executive KPI dashboard', 'Official PDF/Excel exporters', 'Signatory configuration', 'Historical comparisons'],
+                'is_required' => true,
+                'dependencies' => ['faculty_attendance', 'scheduling'],
+                'dependency_labels' => ['Faculty Attendance', 'Semester Scheduling'],
+                'available_roles' => ['Dean', 'College Admin', 'VPAF'],
+                'access_matrix' => [
+                    'Dean' => 'College Analytics & Reports',
+                    'College Admin' => 'Export Official Returns',
+                    'VPAF' => 'Cross-College Comparison',
+                ],
+                'institution_policy' => 'Mandatory for institutional reporting.',
+                'can_college_admin_disable' => false,
+                'global_enabled' => true,
+            ],
+
+            // TV & COMMUNICATIONS
+            [
+                'id' => 'tv_studio',
+                'name' => 'TV Studio',
+                'category' => 'TV & Communications',
+                'short_purpose' => 'Display campus announcements, live schedule feeds, and TV studio broadcasts.',
+                'purpose_details' => 'Broadcasts real-time lab availability, weather advisories, college announcements, and room schedules to smart TVs and hallway digital signage.',
+                'key_features' => ['Hallway kiosk mode', 'Live room availability tickers', 'Spotlight hero slides', 'Urgent alert banners'],
+                'is_required' => false,
+                'dependencies' => ['facilities_mgmt'],
+                'dependency_labels' => ['Rooms & Laboratories'],
+                'available_roles' => ['College Admin', 'Dean', 'Head Lab In-Charge'],
+                'access_matrix' => [
+                    'College Admin' => 'Manage Studio Slides',
+                    'Head Lab In-Charge' => 'Toggle Live Room Feeds',
+                    'Dean' => 'Broadcast Urgent Advisory',
+                ],
+                'institution_policy' => 'College Admin can configure digital signage channels.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
+
+            // AI & AUTOMATION
+            [
+                'id' => 'ai_document_understanding',
+                'name' => 'Document Understanding',
+                'category' => 'AI & Automation',
+                'short_purpose' => 'AI-assisted parsing of syllabi, exam questions, and compliance documents.',
+                'purpose_details' => 'Leverages Google Gemini vision and text reasoning to parse submitted syllabi, verify alignment with program outcomes, and detect formatting omissions.',
+                'key_features' => ['Automated syllabus outcome check', 'Bloom taxonomy verification', 'File discrepancy highlights', 'Batch compliance parsing'],
+                'is_required' => false,
+                'dependencies' => ['compliance'],
+                'dependency_labels' => ['Compliance Management'],
+                'available_roles' => ['College Admin', 'Dean'],
+                'access_matrix' => [
+                    'College Admin' => 'Run Document Audit',
+                    'Dean' => 'View AI Recommendations',
+                ],
+                'institution_policy' => 'Optional intelligence accelerator.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
+            [
+                'id' => 'ai_summaries',
+                'name' => 'AI-Assisted Summaries',
+                'category' => 'AI & Automation',
+                'short_purpose' => 'Automated executive narrative summaries for college accomplishments and attendance.',
+                'purpose_details' => 'Generates concise monthly executive briefing summaries from multi-module attendance records, student feedback, and lab operational reports.',
+                'key_features' => ['Monthly executive briefs', 'Attendance outlier commentary', 'Draft report generation'],
+                'is_required' => false,
+                'dependencies' => ['performance'],
+                'dependency_labels' => ['Reports & Analytics'],
+                'available_roles' => ['Dean', 'College Admin'],
+                'access_matrix' => [
+                    'Dean' => 'Generate Executive Summaries',
+                    'College Admin' => 'Review AI Drafts',
+                ],
+                'institution_policy' => 'Optional AI capability.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
+            [
+                'id' => 'ai_scheduling_assist',
+                'name' => 'Scheduling Assistance',
+                'category' => 'AI & Automation',
+                'short_purpose' => 'AI optimization and suggestion engine for timetable conflict resolution.',
+                'purpose_details' => 'Suggests optimal timetable swaps and room recommendations when hard constraints or instructor unavailability creates scheduling gridlock.',
+                'key_features' => ['Smart swap suggestions', 'Room preference heuristics', 'Workload balance advisor'],
+                'is_required' => false,
+                'dependencies' => ['scheduling'],
+                'dependency_labels' => ['Semester Scheduling'],
+                'available_roles' => ['College Admin'],
+                'access_matrix' => [
+                    'College Admin' => 'Run Optimization Suggestions',
+                ],
+                'institution_policy' => 'Optional AI optimization feature.',
+                'can_college_admin_disable' => true,
+                'global_enabled' => true,
+            ],
         ];
     }
 
@@ -529,10 +924,9 @@ class InstitutionGovernanceController extends Controller
                 });
 
             // Potential candidate program heads (Users who are faculty, coordinators, chairs, or leaders)
-            $candidateProgramHeads = User::where('is_active', true)
-                ->where('status', '!=', 'Suspended')
+            $candidateProgramHeads = User::where('account_status', '!=', 'Suspended')
                 ->orderBy('name')
-                ->get(['id', 'name', 'email', 'avatar', 'profile_photo_url']);
+                ->get(['id', 'name', 'email']);
 
             // Programs from other colleges that can be copied/templated
             $otherCollegesPrograms = Program::where('college_id', '!=', $targetCollege->id)
@@ -606,6 +1000,47 @@ class InstitutionGovernanceController extends Controller
                     'condition' => $r->condition ?: 'Good',
                     'status' => $r->status ?: 'Available',
                 ]);
+
+            // Stage 4: College Leadership & Administrative Scoped Roles
+            $leadershipAssignments = ScopedRoleAssignment::with(['user', 'role'])
+                ->where('college_id', $targetCollege->id)
+                ->whereNull('program_id') // purely college level
+                ->where('status', 'Active')
+                ->orderBy('created_at')
+                ->get()
+                ->map(fn ($sr) => [
+                    'id' => $sr->id,
+                    'user_id' => $sr->user_id,
+                    'user_name' => $sr->user?->name,
+                    'user_email' => $sr->user?->email,
+                    'user_avatar' => $sr->user?->avatar ?? $sr->user?->profile_photo_url,
+                    'user_title' => $sr->user?->title ?? 'Faculty Member',
+                    'role_id' => $sr->role_id,
+                    'role_name' => $sr->role?->name,
+                    'scope_level' => $sr->scope_level,
+                    'designation_type' => $sr->designation_type,
+                    'appointment_reference' => $sr->appointment_reference,
+                    'effective_from' => $sr->effective_from?->format('Y-m-d'),
+                    'effective_until' => $sr->effective_until?->format('Y-m-d'),
+                    'status' => $sr->status,
+                ]);
+
+            // Assignable leadership roles
+            $collegeAssignableRoles = Role::whereIn('name', [
+                'Dean',
+                'College Admin',
+                'College Secretary',
+                'Associate Dean',
+                'Assistant Dean',
+                'Research / Extension Coordinator',
+                'College TV Display / TV Manager',
+                'Coordinator',
+            ])->orderBy('name')->get(['id', 'name', 'description']);
+
+            // Available existing Ascend users to assign (reusing existing canonical accounts)
+            $availableUsers = User::where('account_status', '!=', 'Suspended')
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
         }
 
         return Inertia::render('institution/colleges/setup', [
@@ -618,6 +1053,9 @@ class InstitutionGovernanceController extends Controller
             'otherCollegesPrograms' => $otherCollegesPrograms,
             'facilities' => $facilities,
             'otherCollegesFacilities' => $otherCollegesFacilities,
+            'leadershipAssignments' => $leadershipAssignments ?? [],
+            'collegeAssignableRoles' => $collegeAssignableRoles ?? [],
+            'availableUsers' => $availableUsers ?? [],
         ]);
     }
 
@@ -1090,6 +1528,308 @@ class InstitutionGovernanceController extends Controller
     }
 
     /**
+     * Update Stage 3 Modules configuration (enabled modules, policy settings)
+     */
+    public function updateCollegeModules(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'enabled_modules' => 'required|array',
+            'module_policies' => 'nullable|array',
+            'allow_admin_configure_optional' => 'nullable|boolean',
+            'allow_admin_disable_required' => 'nullable|boolean',
+        ]);
+
+        $prev = $college->enabled_modules;
+        $enabled = $validated['enabled_modules'];
+
+        // Enforce required modules: if allow_admin_disable_required is false, ensure required modules remain true
+        $catalog = $this->getModulesCatalog();
+        $allowDisableRequired = $request->boolean('allow_admin_disable_required', false);
+
+        if (! $allowDisableRequired) {
+            foreach ($catalog as $mod) {
+                if (! empty($mod['is_required'])) {
+                    $enabled[$mod['id']] = true;
+                }
+            }
+        }
+
+        // Update inheritance settings for modules governance
+        $inheritance = is_array($college->inheritance_settings) ? $college->inheritance_settings : [];
+        $inheritance['allow_admin_configure_optional'] = $request->boolean('allow_admin_configure_optional', true);
+        $inheritance['allow_admin_disable_required'] = $allowDisableRequired;
+        if (! empty($validated['module_policies'])) {
+            $inheritance['module_policies'] = $validated['module_policies'];
+        }
+
+        $college->update([
+            'enabled_modules' => $enabled,
+            'inheritance_settings' => $inheritance,
+        ]);
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Updated College Modules Configuration',
+            targetName: "{$college->code} Modules",
+            actor: $request->user(),
+            previousValue: $prev,
+            newValue: $enabled,
+            reason: 'Configured capability modules and access policies in Stage 3 setup.',
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'College',
+        );
+
+        return back()->with('success', "Capabilities and module configuration updated for {$college->code}.");
+    }
+
+    /**
+     * Apply a predefined module bundle template (e.g. Standard Academic, Full Tech College, Minimal Lecture)
+     */
+    public function applyModuleTemplate(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'template_key' => 'required|string|in:full_tech,standard_academic,minimal_lecture,research_focused',
+        ]);
+
+        $key = $validated['template_key'];
+        $catalog = $this->getModulesCatalog();
+        $enabled = [];
+
+        foreach ($catalog as $m) {
+            if ($m['is_required']) {
+                $enabled[$m['id']] = true;
+
+                continue;
+            }
+
+            if ($key === 'full_tech') {
+                $enabled[$m['id']] = true;
+            } elseif ($key === 'standard_academic') {
+                $enabled[$m['id']] = in_array($m['id'], [
+                    'exam_monitoring',
+                    'make_up_classes',
+                    'lab_in_charge_mgmt',
+                    'lab_inventory',
+                    'room_utilization',
+                    'accomplishments',
+                    'tv_studio',
+                ]);
+            } elseif ($key === 'minimal_lecture') {
+                $enabled[$m['id']] = in_array($m['id'], [
+                    'exam_monitoring',
+                    'make_up_classes',
+                    'room_utilization',
+                ]);
+            } elseif ($key === 'research_focused') {
+                $enabled[$m['id']] = in_array($m['id'], [
+                    'research_extension',
+                    'accomplishments',
+                    'projects_tasks',
+                    'ai_document_understanding',
+                    'ai_summaries',
+                ]);
+            }
+        }
+
+        $college->update(['enabled_modules' => $enabled]);
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Applied Module Template',
+            targetName: "{$college->code} ({$key})",
+            actor: $request->user(),
+            previousValue: null,
+            newValue: $enabled,
+            reason: "Applied module bundle template '{$key}' in Stage 3.",
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'College',
+        );
+
+        return back()->with('success', "Applied '{$key}' capability template to {$college->code}.");
+    }
+
+    /**
+     * Assign an existing Ascend user to a college-level leadership or administrative role (Stage 4)
+     */
+    public function assignCollegeLeadershipRole(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'role_id' => 'required|exists:roles,id',
+            'designation_type' => 'nullable|string|in:Primary,Secondary,OIC,Interim,Special Order',
+            'effective_from' => 'nullable|date',
+            'effective_until' => 'nullable|date|after_or_equal:effective_from',
+            'appointment_reference' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $user = User::findOrFail($validated['user_id']);
+        $role = Role::findOrFail($validated['role_id']);
+
+        // Check if user already holds this exact role at this college
+        $existing = ScopedRoleAssignment::where('user_id', $user->id)
+            ->where('role_id', $role->id)
+            ->where('college_id', $college->id)
+            ->whereNull('program_id')
+            ->first();
+
+        if ($existing) {
+            $existing->update([
+                'status' => 'Active',
+                'designation_type' => $validated['designation_type'] ?? 'Primary',
+                'effective_from' => $validated['effective_from'] ?? now()->toDateString(),
+                'effective_until' => $validated['effective_until'] ?? null,
+                'appointment_reference' => $validated['appointment_reference'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'assigned_by_user_id' => $request->user()?->id,
+            ]);
+            $assignment = $existing;
+        } else {
+            $assignment = ScopedRoleAssignment::create([
+                'user_id' => $user->id,
+                'role_id' => $role->id,
+                'institution' => 'Davao Del Sur State College',
+                'scope_level' => 'College',
+                'college_id' => $college->id,
+                'designation_type' => $validated['designation_type'] ?? 'Primary',
+                'effective_from' => $validated['effective_from'] ?? now()->toDateString(),
+                'effective_until' => $validated['effective_until'] ?? null,
+                'appointment_reference' => $validated['appointment_reference'] ?? null,
+                'status' => 'Active',
+                'notes' => $validated['notes'] ?? null,
+                'assigned_by_user_id' => $request->user()?->id,
+            ]);
+        }
+
+        // If the assigned role is Dean, sync dean_name on college for backward compatibility
+        if ($role->name === 'Dean') {
+            $college->update(['dean_name' => $user->name]);
+        }
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Assigned College Leadership Role',
+            targetName: "{$user->name} as {$role->name} ({$college->code})",
+            actor: $request->user(),
+            previousValue: null,
+            newValue: $assignment->toArray(),
+            reason: "Assigned {$user->name} to {$role->name} in Stage 4 Leadership & Access.",
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'ScopedRoleAssignment',
+        );
+
+        return back()->with('success', "Assigned {$user->name} as {$role->name} for {$college->code}.");
+    }
+
+    /**
+     * Remove or revoke a college-level leadership role assignment (Stage 4)
+     */
+    public function removeCollegeLeadershipRole(Request $request, College $college, ScopedRoleAssignment $assignment): RedirectResponse
+    {
+        $userName = $assignment->user?->name;
+        $roleName = $assignment->role?->name;
+        $prev = $assignment->toArray();
+
+        $assignment->delete();
+
+        // If Dean was deleted, clear dean_name if matching
+        if ($roleName === 'Dean' && $college->dean_name === $userName) {
+            $anotherDean = ScopedRoleAssignment::where('college_id', $college->id)
+                ->whereHas('role', fn ($q) => $q->where('name', 'Dean'))
+                ->where('status', 'Active')
+                ->first();
+
+            $college->update(['dean_name' => $anotherDean?->user?->name ?? null]);
+        }
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Removed College Leadership Role',
+            targetName: "{$userName} from {$roleName} ({$college->code})",
+            actor: $request->user(),
+            previousValue: $prev,
+            newValue: null,
+            reason: 'Revoked leadership designation in Stage 4 setup.',
+            severity: 'warning',
+            collegeScope: $college->code,
+            targetType: 'ScopedRoleAssignment',
+        );
+
+        return back()->with('success', "Removed {$userName} from {$roleName} assignment.");
+    }
+
+    /**
+     * Invite a new user and assign them to a college leadership role (Stage 4)
+     */
+    public function inviteCollegeLeadershipUser(Request $request, College $college): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'role_id' => 'required|exists:roles,id',
+            'designation_type' => 'nullable|string',
+            'effective_from' => 'nullable|date',
+            'appointment_reference' => 'nullable|string|max:255',
+        ]);
+
+        $role = Role::findOrFail($validated['role_id']);
+
+        // Check if user already exists by email
+        $user = User::where('email', $validated['email'])->first();
+
+        if (! $user) {
+            // Create user account with provisional password and active status
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => bcrypt('password'),
+                'is_active' => true,
+                'account_status' => 'Active',
+            ]);
+        }
+
+        // Assign college scoped role
+        ScopedRoleAssignment::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'role_id' => $role->id,
+                'college_id' => $college->id,
+                'scope_level' => 'College',
+            ],
+            [
+                'institution' => 'Davao Del Sur State College',
+                'designation_type' => $validated['designation_type'] ?? 'Primary',
+                'effective_from' => $validated['effective_from'] ?? now()->toDateString(),
+                'appointment_reference' => $validated['appointment_reference'] ?? null,
+                'status' => 'Active',
+                'assigned_by_user_id' => $request->user()?->id,
+            ]
+        );
+
+        if ($role->name === 'Dean') {
+            $college->update(['dean_name' => $user->name]);
+        }
+
+        InstitutionAuditLog::record(
+            module: 'Organization',
+            action: 'Invited & Assigned College Leader',
+            targetName: "{$user->name} as {$role->name} ({$college->code})",
+            actor: $request->user(),
+            previousValue: null,
+            newValue: ['email' => $user->email, 'role' => $role->name],
+            reason: 'Created/reused account and assigned leadership role in Stage 4 setup.',
+            severity: 'info',
+            collegeScope: $college->code,
+            targetType: 'ScopedRoleAssignment',
+        );
+
+        return back()->with('success', "User {$user->name} registered and assigned as {$role->name}.");
+    }
+
+    /**
      * Update Stage 5 Programs settings (e.g. allow college admin to modify definitions, require head)
      */
     public function updateProgramsSettings(Request $request, College $college): RedirectResponse
@@ -1521,7 +2261,7 @@ class InstitutionGovernanceController extends Controller
             'header_line_1' => 'Republic of the Philippines',
             'header_line_2' => 'DAVAO DEL SUR STATE COLLEGE',
             'header_line_3' => 'Brgy. Matti, Digos City, Davao del Sur, Philippines 8002',
-            'footer_notice' => 'ISO 9001:2015 Certified · Generated via Velora / COMPASS Institutional Governance Platform',
+            'footer_notice' => 'ISO 9001:2015 Certified · Generated via Ascend / COMPASS Institutional Governance Platform',
             'methodology_note' => 'Attendance and workload metrics are reconciled across verified schedules, EHRIS official business records, and physical facility monitoring.',
             'allowed_export_formats' => ['PDF', 'XLSX', 'CSV'],
             'naming_convention' => '{INSTITUTION}_{ENTITY}_{COLLEGE}_{MODULE}_{AY}_{SEM}_{DATE}',
@@ -1540,7 +2280,7 @@ class InstitutionGovernanceController extends Controller
             : now()->format('M j, Y, g:i A');
 
         $defaultHeader = ($reportConfig['header_line_1'] ?? 'Republic of the Philippines').' · '.($reportConfig['header_line_2'] ?? 'DAVAO DEL SUR STATE COLLEGE');
-        $defaultFooter = $reportConfig['footer_notice'] ?? 'ISO 9001:2015 Certified · Generated via Velora / COMPASS Institutional Governance Platform';
+        $defaultFooter = $reportConfig['footer_notice'] ?? 'ISO 9001:2015 Certified · Generated via Ascend / COMPASS Institutional Governance Platform';
 
         $profile = [
             'name' => InstitutionSetting::getVal('institution_name', 'Davao Del Sur State College'),
@@ -1549,7 +2289,7 @@ class InstitutionGovernanceController extends Controller
             'timezone' => InstitutionSetting::getVal('institution_timezone', 'Asia/Manila (UTC+08:00)'),
             'email' => InstitutionSetting::getVal('institution_email', 'president@dssc.edu.ph'),
             'website' => InstitutionSetting::getVal('institution_website', 'https://www.dssc.edu.ph'),
-            'logo_url' => InstitutionSetting::getVal('institution_logo_url', '/velora_logo-removebg-preview.png'),
+            'logo_url' => InstitutionSetting::getVal('institution_logo_url', '/Ascend.png'),
             'report_header' => InstitutionSetting::getVal('institution_report_header', $defaultHeader),
             'report_footer' => InstitutionSetting::getVal('institution_report_footer', $defaultFooter),
             'last_updated' => $lastUpdated,
@@ -2018,7 +2758,7 @@ class InstitutionGovernanceController extends Controller
             actor: $request->user(),
             previousValue: null,
             newValue: $user->only(['institutional_id', 'name', 'email', 'account_status', 'mfa_required']),
-            reason: 'Created single canonical account in Velora Identity Directory.',
+            reason: 'Created single canonical account in Ascend Identity Directory.',
             severity: 'success',
         );
 
@@ -2118,7 +2858,7 @@ class InstitutionGovernanceController extends Controller
     }
 
     /**
-     * Ensure comprehensive module permissions exist across all 12 Velora modules
+     * Ensure comprehensive module permissions exist across all 12 Ascend modules
      */
     protected function ensurePermissionCatalogSynced(): void
     {
@@ -2430,7 +3170,7 @@ class InstitutionGovernanceController extends Controller
                 'allowed_scopes' => $role->allowed_scopes,
                 'permissions_count' => count($permIds),
             ],
-            reason: 'Custom reusable role created via Velora Role Editor.',
+            reason: 'Custom reusable role created via Ascend Role Editor.',
             severity: 'success',
         );
 

@@ -67,8 +67,8 @@ interface Props {
 }
 
 const QUICK_THEME_PRESETS = [
-    { key: 'amber', name: 'Gold & Indigo', primary_color: '#F9C400', secondary_color: '#4B2E83', accent_color: '#FFF3C4', surface_color: '#FFFFFF' },
-    { key: 'purple', name: 'Velora Purple', primary_color: '#7C3AED', secondary_color: '#4C1D95', accent_color: '#EDE9FE', surface_color: '#FFFFFF' },
+    { key: 'amber', name: 'Gold & Slate', primary_color: '#F9C400', secondary_color: '#1E293B', accent_color: '#FEF3C7', surface_color: '#FFFFFF' },
+    { key: 'purple', name: 'Ascend Purple', primary_color: '#7C3AED', secondary_color: '#4C1D95', accent_color: '#EDE9FE', surface_color: '#FFFFFF' },
     { key: 'blue', name: 'Royal Blue', primary_color: '#2563EB', secondary_color: '#1E3A8A', accent_color: '#DBEAFE', surface_color: '#FFFFFF' },
     { key: 'emerald', name: 'Forest Green', primary_color: '#059669', secondary_color: '#064E3B', accent_color: '#D1FAE5', surface_color: '#FFFFFF' },
     { key: 'crimson', name: 'Crimson Red', primary_color: '#DC2626', secondary_color: '#7F1D1D', accent_color: '#FEE2E2', surface_color: '#FFFFFF' },
@@ -100,7 +100,7 @@ export default function CollegeBrandSettings({ college, institutionBranding, par
         header_style: currentBranding.header_style || 'light',
         sidebar_style: currentBranding.sidebar_style || 'colored_active',
         report_header: currentBranding.report_header || `${college.name} (${college.code})`,
-        report_footer: currentBranding.report_footer || 'ISO 9001:2015 Certified · Generated via Velora Platform',
+        report_footer: currentBranding.report_footer || 'ISO 9001:2015 Certified · Generated via Ascend Platform',
         tv_theme: currentBranding.tv_theme || 'college_glass',
         logo: null as File | null,
         remove_logo: false,
@@ -556,7 +556,7 @@ export default function CollegeBrandSettings({ college, institutionBranding, par
                                                 </div>
                                                 <div className="leading-tight">
                                                     <div className="flex items-center gap-1">
-                                                        <span className="text-xs font-black text-foreground">Velora</span>
+                                                        <span className="text-xs font-black text-foreground">Ascend</span>
                                                         <span className="text-xs font-black" style={{ color: data.primary_color }}>
                                                             {data.short_name || college.code}
                                                         </span>

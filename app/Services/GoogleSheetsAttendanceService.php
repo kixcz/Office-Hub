@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SyncGoogleSheetsAttendanceJob;
 use App\Models\AttendanceSourceSnapshot;
 use App\Models\Faculty;
 use App\Models\FacultyAttendance;
@@ -117,7 +118,7 @@ class GoogleSheetsAttendanceService
             'last_error' => $previous['last_error'] ?? null,
         ]), 3600);
 
-        \App\Jobs\SyncGoogleSheetsAttendanceJob::dispatch();
+        SyncGoogleSheetsAttendanceJob::dispatch();
     }
 
     /**

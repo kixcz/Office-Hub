@@ -343,17 +343,17 @@ export default function FacultyExamSchedulesPage({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="My Exam Schedules - Timetable & Room Monitoring" />
 
-            <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1550px] mx-auto">
+            <div className="w-full max-w-full min-w-0 p-4 md:p-6 lg:p-8 space-y-6">
                 {/* 1. Header Banner & Hero Info */}
-                <div className="relative overflow-hidden rounded-2xl border border-amber-300/40 dark:border-amber-800/40 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-6 shadow-xs">
+                <div className="relative overflow-hidden rounded-2xl border border-amber-300/40 dark:border-amber-800/40 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-5 sm:p-6 shadow-xs w-full min-w-0">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <div className="flex items-center gap-2.5">
-                                <span className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-700/50">
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2.5">
+                                <span className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-700/50 shrink-0">
                                     <BookOpen className="w-5 h-5" />
                                 </span>
                                 <h1 className="text-2xl font-black text-foreground tracking-tight">My Exam Schedules</h1>
-                                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-300/50">
+                                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-300/50 shrink-0">
                                     {currentPeriod?.name || '1st Semester AY 2026-2027'}
                                 </span>
                             </div>
@@ -364,7 +364,7 @@ export default function FacultyExamSchedulesPage({
                             </p>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2.5">
+                        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
                             <Button
                                 onClick={() => {
                                     if (myOfferings.length > 0 && selectedOfferingIndex === '') {
@@ -511,7 +511,7 @@ export default function FacultyExamSchedulesPage({
 
                 {/* 3. Main Display Views */}
                 {viewMode === 'timetable' && (
-                    <div className="bg-card rounded-2xl border border-border p-5 shadow-2xs space-y-4">
+                    <div className="bg-card rounded-2xl border border-border p-5 shadow-2xs space-y-4 w-full max-w-full min-w-0 overflow-hidden">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
                             <div>
                                 <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
@@ -535,17 +535,17 @@ export default function FacultyExamSchedulesPage({
                         </div>
 
                         {/* Timetable Matrix */}
-                        <div className="overflow-x-auto rounded-xl border border-border">
+                        <div className="w-full max-w-full min-w-0 overflow-x-auto rounded-xl border border-border">
                             <table className="w-full border-collapse text-xs select-none">
                                 <thead>
                                     <tr className="bg-[#fef9c3] dark:bg-amber-950/40 text-[#422006] dark:text-amber-200 border-b border-[#fde047] dark:border-amber-800/50">
-                                        <th className="py-3 px-3 text-left font-black w-24 uppercase tracking-wider text-[11px] border-r border-[#fde047]/60 dark:border-amber-800/30">
+                                        <th className="py-3 px-3 text-left font-black w-24 uppercase tracking-wider text-[11px] border-r border-[#fde047]/60 dark:border-amber-800/30 whitespace-nowrap">
                                             Time Window
                                         </th>
                                         {DAYS.map((day) => (
                                             <th
                                                 key={day}
-                                                className="py-3 px-3 text-left font-black uppercase tracking-wider text-[11px] border-r border-[#fde047]/60 dark:border-amber-800/30 min-w-[190px]"
+                                                className="py-3 px-3 text-left font-black uppercase tracking-wider text-[11px] border-r border-[#fde047]/60 dark:border-amber-800/30 min-w-[140px] md:min-w-[170px]"
                                             >
                                                 {day}
                                             </th>

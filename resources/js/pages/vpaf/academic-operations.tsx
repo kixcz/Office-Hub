@@ -135,8 +135,8 @@ export default function VpafAcademicOperations({
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-[#5B21B6] border border-violet-200">
-                                <BookOpen className="w-3.5 h-3.5 text-[#7C3AED]" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-[#0B3A67] dark:text-[#93C5FD] border border-violet-200">
+                                <BookOpen className="w-3.5 h-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Academic Operations Management
                             </span>
                             <span className="text-xs text-slate-500 font-medium">AY 2026–2027 • 1st Semester</span>
@@ -151,8 +151,8 @@ export default function VpafAcademicOperations({
 
                     <div className="flex items-center gap-2">
                         <Link href="/vpaf/reports?tab=academic-operations">
-                            <Button variant="outline" className="border-indigo-200 text-[#5B21B6] hover:bg-violet-50 font-medium">
-                                <FileSpreadsheet className="w-4 h-4 mr-2 text-[#7C3AED]" />
+                            <Button variant="outline" className="border-indigo-200 text-[#0B3A67] dark:text-[#93C5FD] hover:bg-violet-50 font-medium">
+                                <FileSpreadsheet className="w-4 h-4 mr-2 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Operations Report
                             </Button>
                         </Link>
@@ -169,7 +169,7 @@ export default function VpafAcademicOperations({
                     <div className="bg-white p-5 rounded-xl border border-indigo-50 shadow-sm">
                         <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
                             <span>Total Teaching Force</span>
-                            <Users className="w-4 h-4 text-[#7C3AED]" />
+                            <Users className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
                         <div className="text-2xl font-bold text-[#17152E]">{totalFaculty}</div>
                         <div className="text-xs text-slate-400 mt-1">Across 5 academic colleges</div>
@@ -189,9 +189,9 @@ export default function VpafAcademicOperations({
                     <div className="bg-white p-5 rounded-xl border border-indigo-50 shadow-sm">
                         <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
                             <span>Instructional Completion</span>
-                            <CheckCircle2 className="w-4 h-4 text-[#5B21B6]" />
+                            <CheckCircle2 className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                         </div>
-                        <div className="text-2xl font-bold text-[#5B21B6]">{avgCompletion}%</div>
+                        <div className="text-2xl font-bold text-[#0B3A67] dark:text-[#93C5FD]">{avgCompletion}%</div>
                         <div className="text-xs text-slate-400 mt-1">Delivered contact hours vs syllabus target</div>
                     </div>
 
@@ -223,10 +223,10 @@ export default function VpafAcademicOperations({
                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
                                     isActive
                                         ? 'bg-[#5B21B6] text-white shadow-sm'
-                                        : 'bg-white text-slate-600 hover:text-[#5B21B6] hover:bg-violet-50 border border-indigo-50'
+                                        : 'bg-white text-slate-600 hover:text-[#0B3A67] dark:text-[#93C5FD] hover:bg-violet-50 border border-indigo-50'
                                 }`}
                             >
-                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#7C3AED]'}`} />
+                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#0B3A67] dark:text-[#93C5FD]'}`} />
                                 {tab.label}
                             </button>
                         );
@@ -276,7 +276,7 @@ export default function VpafAcademicOperations({
                                                 <tr key={col.code} className="hover:bg-violet-50/40 transition-colors">
                                                     <td className="py-3.5 px-4">
                                                         <div className="font-bold text-[#17152E] flex items-center gap-2">
-                                                            <span className="px-2 py-0.5 rounded text-xs bg-indigo-100 text-[#5B21B6] font-mono font-semibold">
+                                                            <span className="px-2 py-0.5 rounded text-xs bg-indigo-100 text-[#0B3A67] dark:text-[#93C5FD] font-mono font-semibold">
                                                                 {col.code}
                                                             </span>
                                                             {col.name}
@@ -438,7 +438,7 @@ export default function VpafAcademicOperations({
 
                                 <div className="space-y-3 pt-2">
                                     <div className="p-3 bg-violet-50 rounded-xl border border-violet-100">
-                                        <div className="text-xs font-bold text-[#5B21B6]">Travel Order Impact</div>
+                                        <div className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD]">Travel Order Impact</div>
                                         <p className="text-xs text-slate-600 mt-1">
                                             CED lower presence (91.8%) is primarily driven by 5 faculty members conducting off-campus regional practice teaching supervision with approved Travel Orders.
                                         </p>
@@ -454,7 +454,7 @@ export default function VpafAcademicOperations({
                                     <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
                                         <div className="text-xs font-bold text-emerald-800">Biometric & RFID Sync</div>
                                         <p className="text-xs text-slate-600 mt-1">
-                                            100% of campus biometric turnstiles and faculty room logging terminals are synced daily with the Velora Governance server.
+                                            100% of campus biometric turnstiles and faculty room logging terminals are synced daily with the Ascend Governance server.
                                         </p>
                                     </div>
                                 </div>
@@ -475,7 +475,7 @@ export default function VpafAcademicOperations({
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xs px-3 py-1 bg-violet-100 text-[#5B21B6] rounded-full font-semibold">
+                                    <span className="text-xs px-3 py-1 bg-violet-100 text-[#0B3A67] dark:text-[#93C5FD] rounded-full font-semibold">
                                         Standard: 54 Hours per 3-Unit Course
                                     </span>
                                 </div>
@@ -504,7 +504,7 @@ export default function VpafAcademicOperations({
                                                         {col.name} <span className="text-slate-400 font-normal">({col.code})</span>
                                                     </td>
                                                     <td className="py-3.5 px-4 text-center font-mono text-slate-600">{reqHours.toLocaleString()} hrs</td>
-                                                    <td className="py-3.5 px-4 text-center font-mono font-semibold text-[#5B21B6]">{deliveredHours.toLocaleString()} hrs</td>
+                                                    <td className="py-3.5 px-4 text-center font-mono font-semibold text-[#0B3A67] dark:text-[#93C5FD]">{deliveredHours.toLocaleString()} hrs</td>
                                                     <td className="py-3.5 px-4 text-center">
                                                         <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold ${
                                                             col.completion_rate >= 95 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
@@ -567,7 +567,7 @@ export default function VpafAcademicOperations({
                                                         ? 'bg-emerald-100 text-emerald-800'
                                                         : col.scheduling.status.includes('Conflicts')
                                                         ? 'bg-rose-100 text-rose-800'
-                                                        : 'bg-indigo-100 text-[#5B21B6]'
+                                                        : 'bg-indigo-100 text-[#0B3A67] dark:text-[#93C5FD]'
                                                 }`}>
                                                     {col.scheduling.status}
                                                 </span>
@@ -614,7 +614,7 @@ export default function VpafAcademicOperations({
                                     </div>
 
                                     <div className="flex items-start gap-3">
-                                        <div className="w-5 h-5 rounded-full bg-indigo-100 text-[#5B21B6] flex items-center justify-center font-bold text-xs shrink-0">4</div>
+                                        <div className="w-5 h-5 rounded-full bg-indigo-100 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center font-bold text-xs shrink-0">4</div>
                                         <div>
                                             <strong className="text-slate-800 block">VPAF Official Endorsement & Publishing</strong>
                                             Final lock of timetables and public broadcast to Student Portals.
@@ -643,7 +643,7 @@ export default function VpafAcademicOperations({
                                 <div className="p-5 rounded-xl border border-indigo-50 bg-[#F7F7FB] space-y-3">
                                     <div className="flex items-center justify-between">
                                         <h3 className="font-bold text-[#17152E] text-base flex items-center gap-2">
-                                            <Clock className="w-4 h-4 text-[#7C3AED]" /> Midterm Examination Deployment
+                                            <Clock className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" /> Midterm Examination Deployment
                                         </h3>
                                         <span className="text-xs px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bold">100% Conducted</span>
                                     </div>

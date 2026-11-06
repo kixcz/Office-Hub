@@ -387,7 +387,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
     const getTierBadge = (tier?: string) => {
         switch (tier) {
             case 'Institution':
-                return 'bg-[#EDE9FE] text-[#4C1D95] border-[#A78BFA]/60 dark:bg-[#262246] dark:text-[#DDD6FE]';
+                return 'bg-[#F1F5F9] text-[#0B3A67] border-[#8B1E3F]/30 dark:bg-slate-800 dark:text-[#BFDBFE]';
             case 'Entity':
                 return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300';
             case 'College':
@@ -421,7 +421,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
             return <Crown className="h-4 w-4 text-amber-500" />;
         }
         if (roleName.includes('Admin')) {
-            return <Shield className="h-4 w-4 text-[#5B21B6] dark:text-[#A78BFA]" />;
+            return <Shield className="h-4 w-4 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]" />;
         }
         if (roleName.includes('Dean') || roleName.includes('Coordinator')) {
             return <GraduationCap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />;
@@ -454,7 +454,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Velora_Role_Permission_Matrix_${new Date().toISOString().slice(0, 10)}.csv`;
+        link.download = `Ascend_Role_Permission_Matrix_${new Date().toISOString().slice(0, 10)}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -463,13 +463,13 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Role Management & Permission Matrix — Velora Governance" />
+            <Head title="Role Management & Permission Matrix — Ascend Governance" />
 
             <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 bg-[#F7F7FB] p-4 md:p-6 dark:bg-background">
                 {/* Header Banner */}
                 <div className="flex flex-col justify-between gap-4 rounded-2xl border border-[#E5E4F0] bg-white p-5 shadow-2xs sm:flex-row sm:items-center dark:border-border dark:bg-card">
                     <div>
-                        <div className="mb-1.5 inline-flex items-center gap-2 rounded-full bg-[#EDE9FE] px-3 py-0.5 text-[10px] font-bold tracking-wider text-[#5B21B6] uppercase dark:bg-[#262246] dark:text-[#DDD6FE]">
+                        <div className="mb-1.5 inline-flex items-center gap-2 rounded-full bg-[#F1F5F9] px-3 py-0.5 text-[10px] font-bold tracking-wider text-[#0B3A67] dark:text-[#93C5FD] uppercase dark:bg-slate-800 dark:text-[#BFDBFE]">
                             <Key className="h-3 w-3" />
                             Access Control & Governance Architecture
                         </div>
@@ -478,7 +478,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         </h1>
                         <p className="mt-1 max-w-2xl text-xs text-slate-500 dark:text-muted-foreground">
                             Create and manage system roles, define their access permissions, and control what each role
-                            can do across Velora modules. Roles define <em>what</em> is allowed; scoped assignments
+                            can do across Ascend modules. Roles define <em>what</em> is allowed; scoped assignments
                             determine <em>where</em>.
                         </p>
                     </div>
@@ -486,7 +486,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                     <div className="flex flex-wrap items-center gap-3">
                         {/* KPI Summary Pills */}
                         <div className="flex items-center gap-2 rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 dark:border-border dark:bg-muted/40">
-                            <Users className="h-4 w-4 text-[#5B21B6] dark:text-[#A78BFA]" />
+                            <Users className="h-4 w-4 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]" />
                             <div className="text-left">
                                 <div className="text-sm font-extrabold text-[#17152E] dark:text-foreground">
                                     {roles.length}
@@ -496,7 +496,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         </div>
 
                         <div className="flex items-center gap-2 rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] px-3 py-2 dark:border-border dark:bg-muted/40">
-                            <Grid className="h-4 w-4 text-[#7C3AED]" />
+                            <Grid className="h-4 w-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                             <div className="text-left">
                                 <div className="text-sm font-extrabold text-[#17152E] dark:text-foreground">
                                     {permissions.length}
@@ -519,9 +519,9 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                             type="button"
                             onClick={downloadMatrixCsv}
                             variant="outline"
-                            className="rounded-xl border-[#E5E4F0] text-xs font-bold text-[#17152E] hover:bg-[#EDE9FE] dark:border-border dark:text-foreground"
+                            className="rounded-xl border-[#E5E4F0] text-xs font-bold text-[#17152E] hover:bg-[#F1F5F9] dark:border-border dark:text-foreground"
                         >
-                            <Download className="mr-1.5 h-3.5 w-3.5 text-[#5B21B6]" />
+                            <Download className="mr-1.5 h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                             Download Matrix (.CSV)
                         </Button>
                     </div>
@@ -534,7 +534,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         onClick={() => setActiveTab('roles')}
                         className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
                             activeTab === 'roles'
-                                ? 'border-[#5B21B6] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
+                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
                                 : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:text-foreground'
                         }`}
                     >
@@ -542,7 +542,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'roles'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA]'
+                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <Users className="h-4 w-4" />
@@ -560,7 +560,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         onClick={() => setActiveTab('matrix')}
                         className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
                             activeTab === 'matrix'
-                                ? 'border-[#5B21B6] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
+                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
                                 : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:text-foreground'
                         }`}
                     >
@@ -568,7 +568,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'matrix'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA]'
+                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <Grid className="h-4 w-4" />
@@ -586,7 +586,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         onClick={() => setActiveTab('authority')}
                         className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
                             activeTab === 'authority'
-                                ? 'border-[#5B21B6] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
+                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
                                 : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:text-foreground'
                         }`}
                     >
@@ -594,7 +594,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'authority'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA]'
+                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <ShieldCheck className="h-4 w-4" />
@@ -612,7 +612,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         onClick={() => setActiveTab('cards')}
                         className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
                             activeTab === 'cards'
-                                ? 'border-[#5B21B6] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
+                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
                                 : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:text-foreground'
                         }`}
                     >
@@ -620,7 +620,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'cards'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA]'
+                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <Layers className="h-4 w-4" />
@@ -638,7 +638,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         onClick={() => setActiveTab('table')}
                         className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
                             activeTab === 'table'
-                                ? 'border-[#5B21B6] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
+                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
                                 : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:text-foreground'
                         }`}
                     >
@@ -646,7 +646,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'table'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA]'
+                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <FileText className="h-4 w-4" />
@@ -672,7 +672,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                 <Button
                                     type="button"
                                     onClick={handleOpenCreate}
-                                    className="h-8 rounded-xl bg-[#5B21B6] px-3 text-xs font-bold text-white hover:bg-[#4C1D95]"
+                                    className="h-8 rounded-xl bg-[#0B3A67] px-3 text-xs font-bold text-white hover:bg-[#082847]"
                                 >
                                     <Plus className="mr-1 h-3.5 w-3.5" />
                                     Create Role
@@ -690,7 +690,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                         setPageNumber(1);
                                     }}
                                     placeholder="Search roles..."
-                                    className="w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] py-2 pr-9 pl-9 text-xs text-[#17152E] placeholder:text-slate-400 focus:border-[#7C3AED] focus:bg-white focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
+                                    className="w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] py-2 pr-9 pl-9 text-xs text-[#17152E] placeholder:text-slate-400 focus:border-[#0B3A67] focus:bg-white focus:outline-none dark:border-border dark:bg-background dark:text-foreground"
                                 />
                                 <Filter className="pointer-events-none absolute top-1/2 right-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                             </div>
@@ -706,7 +706,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                             onClick={() => setSelectedRoleId(role.id)}
                                             className={`flex items-start justify-between gap-3 rounded-2xl border p-3.5 text-left transition ${
                                                 isSelected
-                                                    ? 'border-[#A78BFA] bg-[#EDE9FE]/50 shadow-2xs dark:border-[#7C3AED]/70 dark:bg-[#262246]/60'
+                                                    ? 'border-[#A78BFA] bg-[#F1F5F9] shadow-2xs dark:border-[#0B3A67]/20 dark:bg-slate-800'
                                                     : 'border-[#E5E4F0] bg-white hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:hover:bg-muted/30'
                                             }`}
                                         >
@@ -715,7 +715,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                                         role.name.includes('Super Admin')
                                                             ? 'bg-amber-100 text-amber-600'
-                                                            : 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]'
+                                                            : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]'
                                                     }`}
                                                 >
                                                     {getRoleIcon(role.name, role.tier)}
@@ -730,7 +730,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                 </div>
                                             </div>
 
-                                            <span className="shrink-0 rounded-full bg-[#EDE9FE] px-2 py-0.5 text-[10px] font-extrabold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                            <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                 {role.permissions.length} perms
                                             </span>
                                         </button>
@@ -748,8 +748,8 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                             onClick={() => setPageNumber(idx + 1)}
                                             className={`h-7 w-7 rounded-lg text-xs font-bold transition ${
                                                 pageNumber === idx + 1
-                                                    ? 'bg-[#5B21B6] text-white'
-                                                    : 'bg-[#F7F7FB] text-slate-600 hover:bg-[#EDE9FE] dark:bg-muted dark:text-slate-300'
+                                                    ? 'bg-[#0B3A67] text-white'
+                                                    : 'bg-[#F7F7FB] text-slate-600 hover:bg-[#F1F5F9] dark:bg-muted dark:text-slate-300'
                                             }`}
                                         >
                                             {idx + 1}
@@ -778,7 +778,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                     {selectedRole.name}
                                                 </h2>
                                                 {selectedRole.is_system_role && (
-                                                    <span className="rounded-full bg-[#EDE9FE] px-2.5 py-0.5 text-[10px] font-extrabold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                    <span className="rounded-full bg-[#F1F5F9] px-2.5 py-0.5 text-[10px] font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                         System Role
                                                     </span>
                                                 )}
@@ -804,7 +804,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                             onClick={() => handleOpenEdit(selectedRole)}
                                             className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5E4F0] bg-white px-3 py-1.5 text-xs font-bold text-[#17152E] shadow-2xs hover:bg-[#F7F7FB] dark:border-border dark:bg-background dark:text-foreground"
                                         >
-                                            <Edit3 className="h-3.5 w-3.5 text-[#5B21B6]" />
+                                            <Edit3 className="h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                             Edit
                                         </button>
 
@@ -813,7 +813,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                             onClick={() => handleOpenDuplicate(selectedRole)}
                                             className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5E4F0] bg-white px-3 py-1.5 text-xs font-bold text-[#17152E] shadow-2xs hover:bg-[#F7F7FB] dark:border-border dark:bg-background dark:text-foreground"
                                         >
-                                            <Copy className="h-3.5 w-3.5 text-[#7C3AED]" />
+                                            <Copy className="h-3.5 w-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                             Duplicate
                                         </button>
 
@@ -867,7 +867,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                         onClick={() => setRoleDetailTab('permissions')}
                                         className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
                                             roleDetailTab === 'permissions'
-                                                ? 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]'
+                                                ? 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]'
                                                 : 'text-slate-500 hover:text-[#17152E] dark:hover:text-foreground'
                                         }`}
                                     >
@@ -880,7 +880,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                         onClick={() => setRoleDetailTab('details')}
                                         className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
                                             roleDetailTab === 'details'
-                                                ? 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]'
+                                                ? 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]'
                                                 : 'text-slate-500 hover:text-[#17152E] dark:hover:text-foreground'
                                         }`}
                                     >
@@ -893,7 +893,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                         onClick={() => setRoleDetailTab('users')}
                                         className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
                                             roleDetailTab === 'users'
-                                                ? 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]'
+                                                ? 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]'
                                                 : 'text-slate-500 hover:text-[#17152E] dark:hover:text-foreground'
                                         }`}
                                     >
@@ -906,7 +906,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                         onClick={() => setRoleDetailTab('activity')}
                                         className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
                                             roleDetailTab === 'activity'
-                                                ? 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]'
+                                                ? 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]'
                                                 : 'text-slate-500 hover:text-[#17152E] dark:hover:text-foreground'
                                         }`}
                                     >
@@ -936,7 +936,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                     onClick={() => setRolePermViewMode('grouped')}
                                                     className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 transition ${
                                                         rolePermViewMode === 'grouped'
-                                                            ? 'bg-white text-[#5B21B6] shadow-2xs dark:bg-card dark:text-[#A78BFA]'
+                                                            ? 'bg-white text-[#0B3A67] dark:text-[#93C5FD] shadow-2xs dark:bg-card dark:text-[#93C5FD]'
                                                             : 'text-slate-500'
                                                     }`}
                                                 >
@@ -948,7 +948,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                     onClick={() => setRolePermViewMode('all')}
                                                     className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 transition ${
                                                         rolePermViewMode === 'all'
-                                                            ? 'bg-white text-[#5B21B6] shadow-2xs dark:bg-card dark:text-[#A78BFA]'
+                                                            ? 'bg-white text-[#0B3A67] dark:text-[#93C5FD] shadow-2xs dark:bg-card dark:text-[#93C5FD]'
                                                             : 'text-slate-500'
                                                     }`}
                                                 >
@@ -976,7 +976,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                         {/* Module Accordion Header */}
                                                         <div className="flex items-center justify-between bg-[#F7F7FB] p-3 dark:bg-muted/30">
                                                             <div className="flex items-center gap-3">
-                                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                                     <Building2 className="h-4 w-4" />
                                                                 </div>
                                                                 <div>
@@ -1006,7 +1006,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                                                 true
                                                                             )
                                                                         }
-                                                                        className="rounded-lg border border-[#A78BFA]/50 bg-[#EDE9FE] px-2 py-0.5 text-[10px] font-bold text-[#5B21B6] hover:bg-[#DDD6FE]"
+                                                                        className="rounded-lg border border-[#8B1E3F]/30 bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:bg-[#DDD6FE]"
                                                                     >
                                                                         Enable All
                                                                     </button>
@@ -1064,14 +1064,14 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                                                             type="checkbox"
                                                                                             readOnly
                                                                                             checked={isChecked}
-                                                                                            className="h-4 w-4 rounded border-[#A78BFA] text-[#5B21B6] focus:ring-[#7C3AED]"
+                                                                                            className="h-4 w-4 rounded border-[#A78BFA] text-[#0B3A67] dark:text-[#93C5FD] focus:ring-[#0B3A67]"
                                                                                         />
                                                                                     </td>
                                                                                     <td className="px-3 py-2.5 font-bold text-[#17152E] dark:text-foreground">
                                                                                         {perm.name}
                                                                                     </td>
                                                                                     <td className="px-3 py-2.5">
-                                                                                        <span className="rounded-md bg-[#EDE9FE] px-2 py-0.5 text-[10px] font-bold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                                                        <span className="rounded-md bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                                                             {perm.capability}
                                                                                         </span>
                                                                                     </td>
@@ -1128,7 +1128,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                     {(selectedRole.allowed_scopes ?? [selectedRole.tier]).map((sc) => (
                                                         <span
                                                             key={sc}
-                                                            className="rounded-md bg-[#EDE9FE] px-2 py-0.5 font-mono text-[10px] font-bold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]"
+                                                            className="rounded-md bg-[#F1F5F9] px-2 py-0.5 font-mono text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]"
                                                         >
                                                             {sc}
                                                         </span>
@@ -1171,7 +1171,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                             </h3>
                                             <a
                                                 href="/institution/scoped-roles"
-                                                className="text-xs font-bold text-[#5B21B6] hover:underline dark:text-[#A78BFA]"
+                                                className="text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline dark:text-[#93C5FD]"
                                             >
                                                 + Assign Role to Another User
                                             </a>
@@ -1199,7 +1199,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                                 </div>
                                                             </td>
                                                             <td className="px-3.5 py-2.5">
-                                                                <span className="rounded bg-[#EDE9FE] px-2 py-0.5 text-[10px] font-bold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                                <span className="rounded bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                                     {u.scope_level}: {u.scope_code}
                                                                 </span>
                                                             </td>
@@ -1282,7 +1282,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                         value={matrixSearch}
                                         onChange={(e) => setMatrixSearch(e.target.value)}
                                         placeholder="Filter actions or capabilities..."
-                                        className="w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] py-1.5 pr-3 pl-8 text-xs focus:border-[#7C3AED] focus:bg-white focus:outline-none dark:border-border dark:bg-background"
+                                        className="w-full rounded-xl border border-[#E5E4F0] bg-[#F7F7FB] py-1.5 pr-3 pl-8 text-xs focus:border-[#0B3A67] focus:bg-white focus:outline-none dark:border-border dark:bg-background"
                                     />
                                 </div>
 
@@ -1349,7 +1349,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                     </span>
                                                 </td>
                                                 <td className="px-3 py-2.5 text-center">
-                                                    <span className="rounded-md bg-[#EDE9FE] px-2 py-0.5 text-[10px] font-extrabold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                    <span className="rounded-md bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                         {perm.capability}
                                                     </span>
                                                 </td>
@@ -1359,7 +1359,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                         <td
                                                             key={r.id}
                                                             onClick={() => handleToggleCell(r.id, perm.id)}
-                                                            className="cursor-pointer px-3 py-2.5 text-center transition hover:bg-[#EDE9FE]/50"
+                                                            className="cursor-pointer px-3 py-2.5 text-center transition hover:bg-[#F1F5F9]/50"
                                                             title={`Click to toggle ${perm.name} on ${r.name}`}
                                                         >
                                                             {hasPerm ? (
@@ -1385,7 +1385,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E5E4F0] pb-5 dark:border-border">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-[#5B21B6] dark:bg-violet-950/60 dark:text-[#A78BFA]">
+                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-[#0B3A67] dark:text-[#93C5FD] dark:bg-violet-950/60 dark:text-[#93C5FD]">
                                             Scoped Governance Policy
                                         </span>
                                         <span className="text-xs text-slate-400">Institutional Appointment Rules</span>
@@ -1401,7 +1401,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
 
                                 <div className="flex items-center gap-2">
                                     <Link href="/institution/scoped-roles">
-                                        <Button className="bg-[#5B21B6] hover:bg-[#4C1D95] text-white text-xs font-bold shadow-2xs">
+                                        <Button className="bg-[#0B3A67] hover:bg-[#082847] text-white text-xs font-bold shadow-2xs">
                                             Open Scoped Role Assignments
                                         </Button>
                                     </Link>
@@ -1431,7 +1431,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                             {
                                                 authority: 'VPAF / Executive Oversight',
                                                 tag: 'Executive Delegation',
-                                                tagColor: 'bg-indigo-100 text-[#5B21B6]',
+                                                tagColor: 'bg-indigo-100 text-[#0B3A67] dark:text-[#93C5FD]',
                                                 roles: 'Dean, Program Head, Research Coordinator, Extension Coordinator, College Admin, Entity Admin',
                                                 scopes: 'Institution, Campus Entity, College',
                                                 rules: 'Authorizes academic and administrative leadership designations across DSSC entities per Board of Trustees appointment orders.',
@@ -1487,7 +1487,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                 <td className="py-4 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
                                                     {row.roles}
                                                 </td>
-                                                <td className="py-4 px-4 text-xs font-mono font-medium text-[#5B21B6] dark:text-[#A78BFA]">
+                                                <td className="py-4 px-4 text-xs font-mono font-medium text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                     {row.scopes}
                                                 </td>
                                                 <td className="py-4 px-4 text-xs text-slate-600 dark:text-muted-foreground leading-relaxed">
@@ -1515,7 +1515,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                         <h3 className="text-sm font-black text-[#17152E] uppercase tracking-wider dark:text-foreground">
                                             {tierName} Tier Roles ({tierRoles.length})
                                         </h3>
-                                        <span className="rounded-full bg-[#EDE9FE] px-2.5 py-0.5 text-[10px] font-extrabold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                        <span className="rounded-full bg-[#F1F5F9] px-2.5 py-0.5 text-[10px] font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                             {tierName} Scope Authority
                                         </span>
                                     </div>
@@ -1529,7 +1529,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                 <div>
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2.5">
-                                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                                 {getRoleIcon(role.name, role.tier)}
                                                             </div>
                                                             <div>
@@ -1571,7 +1571,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                             </span>
                                                         ))}
                                                         {role.permissions.length > 3 && (
-                                                            <span className="rounded bg-[#EDE9FE] px-1.5 py-0.5 text-[9px] font-bold text-[#5B21B6]">
+                                                            <span className="rounded bg-[#F1F5F9] px-1.5 py-0.5 text-[9px] font-bold text-[#0B3A67] dark:text-[#93C5FD]">
                                                                 +{role.permissions.length - 3} more
                                                             </span>
                                                         )}
@@ -1590,7 +1590,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                                 setSelectedRoleId(role.id);
                                                                 setActiveTab('roles');
                                                             }}
-                                                            className="rounded-lg bg-[#EDE9FE] px-2.5 py-1 text-xs font-bold text-[#5B21B6] hover:bg-[#DDD6FE]"
+                                                            className="rounded-lg bg-[#F1F5F9] px-2.5 py-1 text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:bg-[#DDD6FE]"
                                                         >
                                                             Inspect
                                                         </button>
@@ -1629,7 +1629,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                             <Button
                                 type="button"
                                 onClick={handleOpenCreate}
-                                className="rounded-xl bg-[#5B21B6] text-xs font-bold text-white hover:bg-[#4C1D95]"
+                                className="rounded-xl bg-[#0B3A67] text-xs font-bold text-white hover:bg-[#082847]"
                             >
                                 <Plus className="mr-1.5 h-3.5 w-3.5" />
                                 Create Role
@@ -1679,7 +1679,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                 {role.users_count}
                                             </td>
                                             <td className="px-3 py-3 text-center">
-                                                <span className="rounded-full bg-[#EDE9FE] px-2 py-0.5 font-mono text-[10px] font-extrabold text-[#5B21B6] dark:bg-[#262246] dark:text-[#DDD6FE]">
+                                                <span className="rounded-full bg-[#F1F5F9] px-2 py-0.5 font-mono text-[10px] font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#BFDBFE]">
                                                     {role.permissions.length}
                                                 </span>
                                             </td>
@@ -1719,7 +1719,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                                     setOpenMenuRoleId(null);
                                                                     handleOpenEdit(role);
                                                                 }}
-                                                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-bold text-[#17152E] hover:bg-[#EDE9FE] hover:text-[#5B21B6] dark:text-slate-200"
+                                                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-bold text-[#17152E] hover:bg-[#F1F5F9] hover:text-[#0B3A67] dark:text-[#93C5FD] dark:text-slate-200"
                                                             >
                                                                 <Edit3 className="h-3.5 w-3.5" />
                                                                 Edit Role
@@ -1798,9 +1798,9 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                     <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs">
                         <div className="flex h-full w-full max-w-3xl flex-col overflow-hidden border-l border-[#E5E4F0] bg-white shadow-2xl dark:border-border dark:bg-card">
                             {/* Editor Header */}
-                            <div className="flex items-center justify-between border-b border-[#E5E4F0] bg-gradient-to-r from-[#1E0B4B] via-[#3B147A] to-[#2E1065] p-5 text-white">
+                            <div className="flex items-center justify-between border-b border-[#E5E4F0] bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] p-5 text-white">
                                 <div>
-                                    <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold text-[#DDD6FE] uppercase">
+                                    <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold text-[#BFDBFE] uppercase">
                                         {editorMode === 'create' ? 'Create New Role' : 'Focused Role Editor'}
                                     </span>
                                     <h2 className="mt-1 text-lg font-black">
@@ -1833,7 +1833,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                         onClick={() => setEditorTab(tab.id as any)}
                                         className={`mr-4 border-b-2 py-1 transition ${
                                             editorTab === tab.id
-                                                ? 'border-[#5B21B6] text-[#5B21B6] dark:border-[#A78BFA] dark:text-[#A78BFA]'
+                                                ? 'border-[#0B3A67] text-[#0B3A67] dark:text-[#93C5FD] dark:border-[#A78BFA] dark:text-[#93C5FD]'
                                                 : 'border-transparent text-slate-500 hover:text-[#17152E]'
                                         }`}
                                     >
@@ -1921,7 +1921,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                         type="checkbox"
                                                         checked={editorData.requires_mfa}
                                                         onChange={(e) => setEditorData('requires_mfa', e.target.checked)}
-                                                        className="rounded text-[#5B21B6]"
+                                                        className="rounded text-[#0B3A67] dark:text-[#93C5FD]"
                                                     />
                                                     Mandatory Multi-Factor Authentication (MFA)
                                                 </label>
@@ -1930,7 +1930,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                         type="checkbox"
                                                         checked={editorData.requires_approval}
                                                         onChange={(e) => setEditorData('requires_approval', e.target.checked)}
-                                                        className="rounded text-[#5B21B6]"
+                                                        className="rounded text-[#0B3A67] dark:text-[#93C5FD]"
                                                     />
                                                     Require Institutional Approval for Role Assignment
                                                 </label>
@@ -1957,7 +1957,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                     <button
                                                         type="button"
                                                         onClick={() => setEditorData('permission_ids', permissions.map((p) => p.id))}
-                                                        className="rounded-lg bg-[#EDE9FE] px-2.5 py-1 text-xs font-bold text-[#5B21B6]"
+                                                        className="rounded-lg bg-[#F1F5F9] px-2.5 py-1 text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD]"
                                                     >
                                                         Select All ({permissions.length})
                                                     </button>
@@ -2011,7 +2011,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                                             );
                                                                         }
                                                                     }}
-                                                                    className="text-[11px] font-bold text-[#5B21B6] hover:underline"
+                                                                    className="text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline"
                                                                 >
                                                                     {selectedInMod === modPerms.length ? 'Deselect Module' : 'Select Module'}
                                                                 </button>
@@ -2043,7 +2043,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                                                         );
                                                                                     }
                                                                                 }}
-                                                                                className="mt-0.5 rounded text-[#5B21B6]"
+                                                                                className="mt-0.5 rounded text-[#0B3A67] dark:text-[#93C5FD]"
                                                                             />
                                                                             <div>
                                                                                 <div className="font-bold text-[#17152E] dark:text-foreground">
@@ -2085,7 +2085,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                             key={scope}
                                                             className={`flex items-center gap-3 rounded-2xl border p-3.5 cursor-pointer transition ${
                                                                 checked
-                                                                    ? 'border-[#5B21B6] bg-[#EDE9FE]/40 dark:bg-[#262246]/40'
+                                                                    ? 'border-[#0B3A67] bg-[#F1F5F9] dark:bg-slate-800'
                                                                     : 'border-[#E5E4F0] bg-white dark:border-border dark:bg-card'
                                                             }`}
                                                         >
@@ -2105,7 +2105,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                                         );
                                                                     }
                                                                 }}
-                                                                className="rounded text-[#5B21B6]"
+                                                                className="rounded text-[#0B3A67] dark:text-[#93C5FD]"
                                                             />
                                                             <div>
                                                                 <div className="text-xs font-bold">{scope} Level</div>
@@ -2124,7 +2124,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                     {editorTab === 'review' && (
                                         <div className="space-y-4">
                                             <div className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4 text-xs dark:border-indigo-900/50 dark:bg-indigo-950/20">
-                                                <div className="flex items-center gap-2 font-extrabold text-[#5B21B6] dark:text-[#A78BFA]">
+                                                <div className="flex items-center gap-2 font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD]">
                                                     <Info className="h-4 w-4" />
                                                     Pre-Save Impact Summary
                                                 </div>
@@ -2177,7 +2177,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                     else if (editorTab === 'permissions') setEditorTab('scopes');
                                                     else if (editorTab === 'scopes') setEditorTab('review');
                                                 }}
-                                                className="rounded-xl bg-[#5B21B6] text-xs font-bold text-white hover:bg-[#4C1D95]"
+                                                className="rounded-xl bg-[#0B3A67] text-xs font-bold text-white hover:bg-[#082847]"
                                             >
                                                 Continue to Next Step →
                                             </Button>
@@ -2185,7 +2185,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                             <Button
                                                 type="submit"
                                                 disabled={editorProcessing}
-                                                className="rounded-xl bg-[#5B21B6] text-xs font-bold text-white hover:bg-[#4C1D95]"
+                                                className="rounded-xl bg-[#0B3A67] text-xs font-bold text-white hover:bg-[#082847]"
                                             >
                                                 {editorProcessing
                                                     ? 'Saving Role...'
@@ -2236,7 +2236,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                     </Button>
                                     <Button
                                         type="submit"
-                                        className="bg-[#5B21B6] text-xs font-bold text-white hover:bg-[#4C1D95]"
+                                        className="bg-[#0B3A67] text-xs font-bold text-white hover:bg-[#082847]"
                                     >
                                         Confirm Duplicate
                                     </Button>

@@ -75,7 +75,7 @@ export default function InstitutionGlobalDefaults({ defaults }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Global Defaults — Velora Platform Configuration" />
+            <Head title="Global Defaults — Ascend Platform Configuration" />
 
             <div className="mx-auto max-w-[1600px] space-y-6 p-4 md:p-6">
                 {/* Header */}
@@ -87,7 +87,7 @@ export default function InstitutionGlobalDefaults({ defaults }: Props) {
                                 Inherited Platform Behaviors
                             </div>
                             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                                Velora Global Defaults
+                                Ascend Global Defaults
                             </h1>
                             <p className="mt-1.5 max-w-3xl text-sm text-slate-300">
                                 Configure baseline settings inherited by all Entities and Colleges: default operating

@@ -265,9 +265,9 @@ export default function FacultyProfileShow({
     user_permissions,
 }: Props) {
     const { active_branding } = usePage<SharedData>().props;
-    const collegeName = active_branding?.scope_name || 'COLLEGE OF INFORMATION AND DIGITAL SCIENCES';
+    const collegeName = faculty?.program?.college?.name?.toUpperCase() || active_branding?.scope_name || 'COLLEGE';
     const institutionName = active_branding?.institution_name || 'DAVAO DEL SUR STATE COLLEGE';
-    const collegeLogoUrl = active_branding?.logo_url || '/CIDS_Logo.jpg';
+    const collegeLogoUrl = faculty?.program?.college?.logo_url || active_branding?.logo_url || '/CIDS_Logo.jpg';
     const institutionLogoUrl = active_branding?.institution_logo_url || '/DSSC.jpg';
 
     const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -482,8 +482,8 @@ export default function FacultyProfileShow({
                             {/* Details */}
                             <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                                    <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                                        College of Information and Digital Sciences
+                                    <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                                        {faculty.program?.college?.name || active_branding?.scope_name || 'College'}
                                     </span>
                                     <span className="text-muted-foreground/40">·</span>
                                     <span className="text-xs font-mono text-muted-foreground font-semibold">

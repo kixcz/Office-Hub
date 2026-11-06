@@ -140,7 +140,7 @@ class RolesAndUsersSeeder extends Seeder
         $labUser = User::firstOrCreate(
             ['email' => 'labincharge@cids.edu'],
             [
-                'name' => 'Engr. Marco Torres (Lab In-Charge)',
+                'name' => 'Ace Fuentes (Lab In-Charge)',
                 'password' => Hash::make('password'),
             ]
         );

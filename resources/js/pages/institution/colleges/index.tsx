@@ -286,7 +286,7 @@ export default function CollegesIndex({
             case 'Ready':
                 return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
             case 'In Setup':
-                return 'bg-[#7C3AED]/10 text-[#5B21B6] dark:text-[#A78BFA] border-[#7C3AED]/20';
+                return 'bg-[#0B3A67]/10 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] border-[#0B3A67]/20';
             case 'Suspended':
             case 'Archived':
                 return 'bg-slate-500/10 text-slate-500 border-slate-500/20';
@@ -312,7 +312,7 @@ export default function CollegesIndex({
 
                 {/* Top Authority Pill & Hierarchy Path */}
                 <div className="relative z-10 flex flex-wrap items-center gap-3">
-                    <span className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-bold bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA] border border-[#A78BFA]/40 shadow-2xs">
+                    <span className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-bold bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD] border border-[#8B1E3F]/30 shadow-2xs">
                         Institution Super Admin Exclusive Authority
                     </span>
                     <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
@@ -328,7 +328,7 @@ export default function CollegesIndex({
 
                 {/* Page Title Block with Rounded Lavender Icon Box */}
                 <div className="relative z-10 flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-2xl bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA] flex items-center justify-center shrink-0 border border-[#A78BFA]/40 shadow-2xs">
+                    <div className="h-12 w-12 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#8B1E3F]/30 shadow-2xs">
                         <Layers className="w-6 h-6" />
                     </div>
                     <div className="space-y-1">
@@ -345,7 +345,7 @@ export default function CollegesIndex({
                 <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Card 1: Total Entities / Campuses */}
                     <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA] flex items-center justify-center shrink-0">
+                        <div className="h-12 w-12 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0">
                             <Building2 className="w-6 h-6" />
                         </div>
                         <div>
@@ -375,7 +375,7 @@ export default function CollegesIndex({
 
                     {/* Card 3: Readiness Average */}
                     <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-[#EDE9FE] dark:bg-[#262246] text-[#7C3AED] dark:text-[#A78BFA] flex items-center justify-center shrink-0">
+                        <div className="h-12 w-12 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0">
                             <Target className="w-6 h-6" />
                         </div>
                         <div>
@@ -386,7 +386,7 @@ export default function CollegesIndex({
                                 </span>
                                 <span
                                     title="Average guided onboarding readiness across all units in this view"
-                                    className="text-muted-foreground hover:text-[#7C3AED] cursor-help"
+                                    className="text-muted-foreground hover:text-[#0B3A67] dark:text-[#93C5FD] cursor-help"
                                 >
                                     <Info className="w-4 h-4" />
                                 </span>
@@ -416,7 +416,7 @@ export default function CollegesIndex({
                             onClick={() => setViewMode('tree')}
                             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                 viewMode === 'tree'
-                                    ? 'bg-[#5B21B6] text-white shadow-sm'
+                                    ? 'bg-[#0B3A67] text-white shadow-sm'
                                     : 'text-[#17152E] dark:text-slate-200 hover:bg-muted/60'
                             }`}
                         >
@@ -431,7 +431,7 @@ export default function CollegesIndex({
                             }}
                             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                 viewMode === 'entities'
-                                    ? 'bg-[#5B21B6] text-white shadow-sm'
+                                    ? 'bg-[#0B3A67] text-white shadow-sm'
                                     : 'text-[#17152E] dark:text-slate-200 hover:bg-muted/60'
                             }`}
                         >
@@ -446,7 +446,7 @@ export default function CollegesIndex({
                             }}
                             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                 viewMode === 'colleges'
-                                    ? 'bg-[#5B21B6] text-white shadow-sm'
+                                    ? 'bg-[#0B3A67] text-white shadow-sm'
                                     : 'text-[#17152E] dark:text-slate-200 hover:bg-muted/60'
                             }`}
                         >
@@ -459,14 +459,14 @@ export default function CollegesIndex({
                         <Button
                             onClick={() => openCreateModal('Entity')}
                             variant="outline"
-                            className="h-10 px-4 font-bold text-xs rounded-xl border-[#7C3AED]/50 bg-card text-[#5B21B6] dark:text-[#A78BFA] hover:bg-[#EDE9FE]/60 dark:hover:bg-[#262246] cursor-pointer shadow-2xs"
+                            className="h-10 px-4 font-bold text-xs rounded-xl border-[#0B3A67]/20 bg-card text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] hover:bg-[#F1F5F9]/60 dark:hover:bg-[#262246] cursor-pointer shadow-2xs"
                         >
                             <Plus className="w-4 h-4 mr-1.5" />
                             Create Entity / Campus
                         </Button>
                         <Button
                             onClick={() => openCreateModal('College')}
-                            className="h-10 px-4 bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                            className="h-10 px-4 bg-[#0B3A67] text-white hover:bg-[#082847] font-bold text-xs rounded-xl shadow-sm cursor-pointer"
                         >
                             <Plus className="w-4 h-4 mr-1.5" />
                             Create College
@@ -481,7 +481,7 @@ export default function CollegesIndex({
                         <div className="lg:col-span-7 rounded-2xl border border-border bg-card p-6 shadow-xs space-y-5">
                             <div className="flex items-center justify-between border-b border-border/60 pb-3">
                                 <div className="flex items-center gap-2">
-                                    <Network className="w-4 h-4 text-[#7C3AED]" />
+                                    <Network className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                                     <h3 className="text-sm font-extrabold">
                                         Davao Del Sur State College (DSSC) — Hierarchy Tree
                                     </h3>
@@ -493,9 +493,9 @@ export default function CollegesIndex({
 
                             {/* Root Institution Node */}
                             <div className="space-y-4">
-                                <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#17152E] via-[#4C1D95] to-[#5B21B6] text-white border border-[#A78BFA]/30 flex items-center justify-between">
+                                <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] text-white border border-[#8B1E3F]/30 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-lg bg-[#7C3AED] text-white font-black text-xs">
+                                        <div className="p-2 rounded-lg bg-[#0B3A67] text-white font-black text-xs">
                                             DSSC
                                         </div>
                                         <div>
@@ -509,14 +509,14 @@ export default function CollegesIndex({
                                     </div>
                                     <Link
                                         href="/institution/profile"
-                                        className="text-[11px] font-bold text-[#A78BFA] hover:underline"
+                                        className="text-[11px] font-bold text-[#93C5FD] hover:underline"
                                     >
                                         Institution Profile →
                                     </Link>
                                 </div>
 
                                 {/* Entities & Child Colleges */}
-                                <div className="space-y-4 pl-4 border-l-2 border-[#7C3AED]/30">
+                                <div className="space-y-4 pl-4 border-l-2 border-[#0B3A67]/20">
                                     {entities.map((entity) => {
                                         const childColleges = colleges.filter((c) => c.parent_id === entity.id);
                                         const isEntitySelected = activeUnit?.id === entity.id;
@@ -527,12 +527,12 @@ export default function CollegesIndex({
                                                     onClick={() => setSelectedUnit(entity)}
                                                     className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
                                                         isEntitySelected
-                                                            ? 'border-[#7C3AED] bg-[#7C3AED]/10 shadow-xs'
+                                                            ? 'border-[#0B3A67] bg-[#0B3A67]/10 shadow-xs'
                                                             : 'border-border bg-muted/20 hover:bg-muted/40'
                                                     }`}
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <div className="p-2 rounded-lg bg-[#7C3AED]/15 text-[#7C3AED] border border-[#7C3AED]/30">
+                                                        <div className="p-2 rounded-lg bg-[#0B3A67]/15 text-[#0B3A67] dark:text-[#93C5FD] border border-[#0B3A67]/20">
                                                             <Building2 className="w-4 h-4" />
                                                         </div>
                                                         <div>
@@ -570,7 +570,7 @@ export default function CollegesIndex({
                                                                     onClick={() => setSelectedUnit(col)}
                                                                     className={`p-3 rounded-xl border cursor-pointer transition-all space-y-2 ${
                                                                         isColSelected
-                                                                            ? 'border-[#7C3AED] bg-[#7C3AED]/10 shadow-xs'
+                                                                            ? 'border-[#0B3A67] bg-[#0B3A67]/10 shadow-xs'
                                                                             : 'border-border/70 bg-card hover:bg-muted/30'
                                                                     }`}
                                                                 >
@@ -608,7 +608,7 @@ export default function CollegesIndex({
                                                                                     key={prog.id}
                                                                                     className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-muted/60 border border-border text-foreground"
                                                                                 >
-                                                                                    <GraduationCap className="w-3 h-3 inline mr-1 text-[#7C3AED]" />
+                                                                                    <GraduationCap className="w-3 h-3 inline mr-1 text-[#0B3A67] dark:text-[#93C5FD]" />
                                                                                     {prog.code}
                                                                                 </span>
                                                                             ))}
@@ -626,7 +626,7 @@ export default function CollegesIndex({
                                     {/* Unassigned / Root-Attached Colleges */}
                                     {colleges.filter((c) => !c.parent_id).length > 0 && (
                                         <div className="space-y-2 pt-2">
-                                            <span className="text-[10px] font-bold uppercase text-[#7C3AED]">
+                                            <span className="text-[10px] font-bold uppercase text-[#0B3A67] dark:text-[#93C5FD]">
                                                 Colleges Pending Parent Entity Assignment
                                             </span>
                                             {colleges
@@ -637,7 +637,7 @@ export default function CollegesIndex({
                                                         onClick={() => setSelectedUnit(col)}
                                                         className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between ${
                                                             activeUnit?.id === col.id
-                                                                ? 'border-[#7C3AED] bg-[#7C3AED]/10'
+                                                                ? 'border-[#0B3A67] bg-[#0B3A67]/10'
                                                                 : 'border-border bg-card'
                                                         }`}
                                                     >
@@ -675,7 +675,7 @@ export default function CollegesIndex({
                                     <div className="flex items-start justify-between gap-3 border-b border-border/60 pb-4">
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <span className="px-2.5 py-0.5 rounded-md bg-[#7C3AED]/15 text-[#7C3AED] font-mono font-extrabold text-xs border border-[#7C3AED]/30">
+                                                <span className="px-2.5 py-0.5 rounded-md bg-[#0B3A67]/15 text-[#0B3A67] dark:text-[#93C5FD] font-mono font-extrabold text-xs border border-[#0B3A67]/20">
                                                     {activeUnit.code}
                                                 </span>
                                                 <span className="text-xs text-muted-foreground font-semibold">
@@ -740,7 +740,7 @@ export default function CollegesIndex({
                                             <span className="text-[10px] text-muted-foreground uppercase font-bold block">
                                                 Onboarding Readiness
                                             </span>
-                                            <span className="font-mono font-bold text-[#7C3AED] mt-0.5 block">
+                                            <span className="font-mono font-bold text-[#0B3A67] dark:text-[#93C5FD] mt-0.5 block">
                                                 {activeUnit.setup_progress}% ({activeUnit.setup_stage})
                                             </span>
                                         </div>
@@ -754,7 +754,7 @@ export default function CollegesIndex({
                                             </span>
                                             <Link
                                                 href="/institution/scoped-roles"
-                                                className="text-[11px] font-bold text-[#7C3AED] hover:underline"
+                                                className="text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline"
                                             >
                                                 + Assign Admin
                                             </Link>
@@ -779,7 +779,7 @@ export default function CollegesIndex({
                                                             </span>
                                                         </div>
                                                         <div className="text-right">
-                                                            <span className="px-2 py-0.5 rounded bg-[#7C3AED]/10 text-[#7C3AED] font-bold text-[10px] border border-[#7C3AED]/20">
+                                                            <span className="px-2 py-0.5 rounded bg-[#0B3A67]/10 text-[#0B3A67] dark:text-[#93C5FD] font-bold text-[10px] border border-[#0B3A67]/20">
                                                                 {sr.role?.name}
                                                             </span>
                                                             {sr.designation_type && (
@@ -797,10 +797,10 @@ export default function CollegesIndex({
                                     {/* Enabled Modules Snapshot */}
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold">Enabled Velora Modules</span>
+                                            <span className="text-xs font-bold">Enabled Ascend Modules</span>
                                             <Link
                                                 href={`/institution/colleges/setup?college=${activeUnit.id}`}
-                                                className="text-[11px] font-bold text-[#7C3AED] hover:underline"
+                                                className="text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline"
                                             >
                                                 Configure Modules →
                                             </Link>
@@ -857,7 +857,7 @@ export default function CollegesIndex({
                                     <div className="pt-3 border-t border-border/60 flex items-center justify-between">
                                         <Link
                                             href={`/institution/colleges/setup?college=${activeUnit.id}`}
-                                            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#7C3AED] hover:underline"
+                                            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3A67] dark:text-[#93C5FD] hover:underline"
                                         >
                                             <Sliders className="w-3.5 h-3.5" />
                                             Open 11-Stage Guided Setup
@@ -891,7 +891,7 @@ export default function CollegesIndex({
                                             ? 'Search entities or campuses...'
                                             : 'Search colleges, codes, or deans...'
                                     }
-                                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-border/80 bg-card text-xs font-medium text-[#17152E] dark:text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] shadow-2xs"
+                                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-border/80 bg-card text-xs font-medium text-[#17152E] dark:text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67] shadow-2xs"
                                 />
                             </div>
 
@@ -903,7 +903,7 @@ export default function CollegesIndex({
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full h-11 px-3.5 pr-8 rounded-xl border border-border/80 bg-card text-xs font-bold text-[#17152E] dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] shadow-2xs cursor-pointer"
+                                    className="w-full h-11 px-3.5 pr-8 rounded-xl border border-border/80 bg-card text-xs font-bold text-[#17152E] dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67] shadow-2xs cursor-pointer"
                                 >
                                     <option value="All Statuses">All Statuses</option>
                                     <option value="Active">Active</option>
@@ -924,7 +924,7 @@ export default function CollegesIndex({
                                 <select
                                     value={campusTypeFilter}
                                     onChange={(e) => setCampusTypeFilter(e.target.value)}
-                                    className="w-full h-11 px-3.5 pr-8 rounded-xl border border-border/80 bg-card text-xs font-bold text-[#17152E] dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] shadow-2xs cursor-pointer"
+                                    className="w-full h-11 px-3.5 pr-8 rounded-xl border border-border/80 bg-card text-xs font-bold text-[#17152E] dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67] shadow-2xs cursor-pointer"
                                 >
                                     <option value="All Campus Types">
                                         {viewMode === 'entities' ? 'All Campus Types' : 'All Parent Campuses'}
@@ -955,7 +955,7 @@ export default function CollegesIndex({
                                 <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value as any)}
-                                    className="w-full h-11 px-3.5 pr-8 rounded-xl border border-border/80 bg-card text-xs font-bold text-[#17152E] dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] shadow-2xs cursor-pointer"
+                                    className="w-full h-11 px-3.5 pr-8 rounded-xl border border-border/80 bg-card text-xs font-bold text-[#17152E] dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67] shadow-2xs cursor-pointer"
                                 >
                                     <option value="name-asc">
                                         {viewMode === 'entities' ? 'Campus Name (A - Z)' : 'College Name (A - Z)'}
@@ -976,7 +976,7 @@ export default function CollegesIndex({
                                     onClick={() => setDisplayLayout('grid')}
                                     className={`h-9 w-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
                                         displayLayout === 'grid'
-                                            ? 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA] shadow-2xs'
+                                            ? 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD] shadow-2xs'
                                             : 'text-muted-foreground hover:text-foreground'
                                     }`}
                                     title="Grid View"
@@ -988,7 +988,7 @@ export default function CollegesIndex({
                                     onClick={() => setDisplayLayout('list')}
                                     className={`h-9 w-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
                                         displayLayout === 'list'
-                                            ? 'bg-[#EDE9FE] text-[#5B21B6] dark:bg-[#262246] dark:text-[#A78BFA] shadow-2xs'
+                                            ? 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD] shadow-2xs'
                                             : 'text-muted-foreground hover:text-foreground'
                                     }`}
                                     title="List View"
@@ -1001,7 +1001,7 @@ export default function CollegesIndex({
                         {/* Cards Grid or List */}
                         {filteredUnits.length === 0 ? (
                             <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center space-y-2">
-                                <Building2 className="w-8 h-8 text-[#7C3AED] mx-auto opacity-70" />
+                                <Building2 className="w-8 h-8 text-[#0B3A67] dark:text-[#93C5FD] mx-auto opacity-70" />
                                 <p className="text-sm font-bold text-[#17152E] dark:text-white">
                                     No matching {viewMode === 'entities' ? 'entities or campuses' : 'colleges'} found
                                 </p>
@@ -1028,7 +1028,7 @@ export default function CollegesIndex({
                                     return (
                                         <div
                                             key={unit.id}
-                                            className="relative overflow-hidden rounded-2xl border border-[#A78BFA]/35 bg-card p-5 pt-6 shadow-xs hover:shadow-md hover:border-[#7C3AED]/60 transition-all flex flex-col justify-between"
+                                            className="relative overflow-hidden rounded-2xl border border-[#8B1E3F]/30 bg-card p-5 pt-6 shadow-xs hover:shadow-md hover:border-[#0B3A67]/20 transition-all flex flex-col justify-between"
                                         >
                                             {/* Top Deep Indigo / Violet Accent Bar */}
                                             <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#5B21B6] via-[#7C3AED] to-[#A78BFA]" />
@@ -1037,7 +1037,7 @@ export default function CollegesIndex({
                                                 {/* Card Header: Lavender Icon + Title/Type + Status Pill */}
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="flex items-start gap-3.5 min-w-0">
-                                                        <div className="w-12 h-12 rounded-2xl bg-[#EDE9FE] dark:bg-[#262246] text-[#5B21B6] dark:text-[#A78BFA] flex items-center justify-center shrink-0 border border-[#A78BFA]/30 overflow-hidden p-1.5">
+                                                        <div className="w-12 h-12 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#8B1E3F]/30 overflow-hidden p-1.5">
                                                             {unit.logo_url ? (
                                                                 <img
                                                                     src={unit.logo_url}
@@ -1099,9 +1099,9 @@ export default function CollegesIndex({
                                                             {progress}% ({stageLabel})
                                                         </span>
                                                     </div>
-                                                    <div className="w-full h-2.5 rounded-full bg-[#EDE9FE] dark:bg-[#262246] overflow-hidden">
+                                                    <div className="w-full h-2.5 rounded-full bg-[#F1F5F9] dark:bg-slate-800 overflow-hidden">
                                                         <div
-                                                            className="h-full rounded-full bg-gradient-to-r from-[#5B21B6] to-[#7C3AED] transition-all duration-300"
+                                                            className="h-full rounded-full bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] transition-all duration-300"
                                                             style={{ width: `${progress}%` }}
                                                         />
                                                     </div>
@@ -1112,15 +1112,15 @@ export default function CollegesIndex({
                                             <div className="pt-4 mt-5 border-t border-border/60 grid grid-cols-2 items-center divide-x divide-border/70">
                                                 <Link
                                                     href={`/institution/colleges/setup?college=${unit.id}`}
-                                                    className="inline-flex items-center justify-start gap-2 text-xs font-extrabold text-[#5B21B6] dark:text-[#A78BFA] hover:text-[#4C1D95] transition-colors pr-3"
+                                                    className="inline-flex items-center justify-start gap-2 text-xs font-extrabold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] hover:text-[#0B3A67] transition-colors pr-3"
                                                 >
-                                                    <Settings className="w-4 h-4 text-[#7C3AED]" />
+                                                    <Settings className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                                                     Configure
                                                 </Link>
                                                 <button
                                                     type="button"
                                                     onClick={() => openReorgModal(unit)}
-                                                    className="inline-flex items-center justify-end gap-2 text-xs font-semibold text-[#17152E]/80 dark:text-slate-300 hover:text-[#5B21B6] transition-colors pl-3 cursor-pointer"
+                                                    className="inline-flex items-center justify-end gap-2 text-xs font-semibold text-[#17152E]/80 dark:text-slate-300 hover:text-[#0B3A67] dark:text-[#93C5FD] transition-colors pl-3 cursor-pointer"
                                                 >
                                                     <ArrowRightLeft className="w-3.5 h-3.5" />
                                                     Move / Archive
@@ -1148,7 +1148,7 @@ export default function CollegesIndex({
                                     <p className="text-xs text-muted-foreground">
                                         {createModalMode === 'Entity'
                                             ? 'Configure Entity Name, Code, Campus Type, address, effective dates, TV availability, local override policy, and assign an Entity Admin.'
-                                            : 'Select Parent Entity, enter College Name, Code, Dean, initial College Admin, and enabled Velora modules.'}
+                                            : 'Select Parent Entity, enter College Name, Code, Dean, initial College Admin, and enabled Ascend modules.'}
                                     </p>
                                 </div>
                                 <button
@@ -1311,7 +1311,7 @@ export default function CollegesIndex({
                                             type="checkbox"
                                             checked={data.entity_tv_enabled}
                                             onChange={(e) => setData('entity_tv_enabled', e.target.checked)}
-                                            className="rounded text-[#7C3AED]"
+                                            className="rounded text-[#0B3A67] dark:text-[#93C5FD]"
                                         />
                                         <span className="font-semibold">Enable Campus / Unit TV Signage Workspace</span>
                                     </label>
@@ -1320,7 +1320,7 @@ export default function CollegesIndex({
                                             type="checkbox"
                                             checked={data.allow_local_overrides}
                                             onChange={(e) => setData('allow_local_overrides', e.target.checked)}
-                                            className="rounded text-[#7C3AED]"
+                                            className="rounded text-[#0B3A67] dark:text-[#93C5FD]"
                                         />
                                         <span className="font-semibold">Allow Local Policy & Report Signatory Overrides</span>
                                     </label>
@@ -1333,7 +1333,7 @@ export default function CollegesIndex({
                                     <Button
                                         type="submit"
                                         disabled={processing}
-                                        className="bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs"
+                                        className="bg-[#0B3A67] text-white hover:bg-[#082847] font-bold text-xs"
                                     >
                                         {processing ? 'Registering...' : `Create ${createModalMode}`}
                                     </Button>
@@ -1418,7 +1418,7 @@ export default function CollegesIndex({
                                     <Button
                                         type="submit"
                                         disabled={reorgForm.processing}
-                                        className="bg-[#5B21B6] text-white hover:bg-[#4C1D95] font-bold text-xs"
+                                        className="bg-[#0B3A67] text-white hover:bg-[#082847] font-bold text-xs"
                                     >
                                         Confirm Structural Change
                                     </Button>

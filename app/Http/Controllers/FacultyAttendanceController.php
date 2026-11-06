@@ -13,6 +13,7 @@ use App\Models\Meeting;
 use App\Models\Program;
 use App\Models\TravelOrder;
 use App\Services\GoogleSheetsAttendanceService;
+use App\Services\PortalContextService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,12 +36,38 @@ class FacultyAttendanceController extends Controller
         // Preload RoomSchedules into static memory cache so FacultyAttendance accessors execute 0 additional SQL queries
         FacultyAttendance::getCachedRoomSchedules();
 
-        $programs = Cache::remember(
-            Meeting::PROGRAMS_LOOKUP_CACHE_KEY,
-            300,
-            fn () => Program::orderBy('name')->get()
-        );
-        $faculties = Faculty::with('program:id,code,name')->orderBy('last_name')->get();
+        $user = $request->user();
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        $scopeCollegeId = null;
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            $scopeCollegeId = $activeScopeId;
+        } elseif ($activeScopeType === 'program' && $activeScopeId) {
+            $scopeCollegeId = Program::find($activeScopeId)?->college_id;
+        } elseif (! $isInstitutionSuperAdmin) {
+            $scopeCollegeId = $user?->resolveActiveCollege()?->id;
+        }
+
+        $programsQuery = Program::orderBy('name');
+        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+            $programsQuery->where('college_id', $scopeCollegeId);
+        }
+        $programs = $programsQuery->get();
+
+        $facultiesQuery = Faculty::with('program:id,code,name')->orderBy('last_name');
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $facultiesQuery->where('program_id', $activeScopeId);
+            } elseif ($scopeCollegeId) {
+                $facultiesQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+            }
+        }
+        $faculties = $facultiesQuery->get();
 
         // Filters
         $selectedProgram = $request->query('program');
@@ -51,22 +78,33 @@ class FacultyAttendanceController extends Controller
         $search = $request->query('search', '');
 
         // Fetch all summaries and all weekly sessions once (eliminating duplicate filtered + unfiltered queries)
-        $allSummaries = FacultyAttendanceSummary::with([
+        $allSummariesQuery = FacultyAttendanceSummary::with([
             'faculty:id,first_name,last_name,email,profile_picture,academic_rank,employment_type,spreadsheet_name,program_id,employment_start_date,employment_end_date,teaching_assignment_effective_from,teaching_assignment_effective_until',
             'faculty.program:id,code,name',
         ])
-            ->orderBy('instructor_name')
-            ->get();
+            ->orderBy('instructor_name');
 
-        $allWeeklySessions = FacultyAttendance::with([
+        $allWeeklySessionsQuery = FacultyAttendance::with([
             'faculty:id,first_name,last_name,program_id,profile_picture',
             'faculty.program:id,code,name',
             'roomSchedule',
             'makeUpRequest',
         ])
             ->orderBy('session_date')
-            ->orderBy('time_slot')
-            ->get();
+            ->orderBy('time_slot');
+
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $allSummariesQuery->whereHas('faculty', fn ($q) => $q->where('program_id', $activeScopeId));
+                $allWeeklySessionsQuery->whereHas('faculty', fn ($q) => $q->where('program_id', $activeScopeId));
+            } elseif ($scopeCollegeId) {
+                $allSummariesQuery->whereHas('faculty.program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+                $allWeeklySessionsQuery->whereHas('faculty.program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+            }
+        }
+
+        $allSummaries = $allSummariesQuery->get();
+        $allWeeklySessions = $allWeeklySessionsQuery->get();
 
         // Available periods ordered chronologically (derived in-memory from $allSummaries and $allWeeklySessions)
         $monthOrder = [

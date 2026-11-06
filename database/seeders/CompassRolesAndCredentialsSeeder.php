@@ -74,9 +74,9 @@ class CompassRolesAndCredentialsSeeder extends Seeder
                 'is_faculty' => true,
             ],
             [
-                'name' => 'Engr. Marco Torres (Lab In-Charge)',
+                'name' => 'Ace Fuentes (Lab In-Charge)',
                 'email' => 'labincharge@cids.edu',
-                'role' => 'Head Lab / Facility In-Charge',
+                'role' => 'Lab In-Charge',
                 'is_faculty' => true,
             ],
             [

@@ -471,7 +471,7 @@ class VpafExecutiveController extends Controller
             [
                 'id' => 1,
                 'type' => 'Institutional',
-                'title' => 'Velora Digital Campus Integration Phase II',
+                'title' => 'Ascend Digital Campus Integration Phase II',
                 'lead_unit' => 'VPAF / ICT Services',
                 'progress' => 85,
                 'status' => 'On Track',
