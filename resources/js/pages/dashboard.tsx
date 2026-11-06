@@ -387,7 +387,7 @@ export default function SuperAdminDashboard({
                                     isProgramHead
                                         ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
                                         : isDean
-                                        ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                                        ? 'bg-[#8B1E3F]/10 text-[#8B1E3F] dark:text-[#F43F5E] border-[#8B1E3F]/20'
                                         : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
                                 }`}>
                                     {user_role}
@@ -605,12 +605,12 @@ export default function SuperAdminDashboard({
 
                         <Link
                             href="/schedule/reviews?tab=flags"
-                            className="flex flex-col p-3 rounded-xl border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 transition-colors group"
+                            className="flex flex-col p-3 rounded-xl border border-[#0B3A67]/20 bg-[#0B3A67]/5 hover:bg-[#0B3A67]/10 transition-colors group"
                         >
-                            <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
+                            <span className="text-[10px] font-bold text-[#0B3A67] dark:text-[#93C5FD] uppercase tracking-wider">
                                 Schedule Flags
                             </span>
-                            <span className="text-xl font-black text-purple-700 dark:text-purple-400 mt-1">
+                            <span className="text-xl font-black text-[#0B3A67] dark:text-[#93C5FD] mt-1">
                                 {action_required?.schedule_flags ?? 2} Flags
                             </span>
                             <span className="text-[10px] text-muted-foreground group-hover:text-foreground mt-1 flex items-center gap-1 font-semibold">
@@ -676,7 +676,7 @@ export default function SuperAdminDashboard({
                     {/* Tasks Completed */}
                     <div className="bg-card rounded-2xl border border-border p-4.5 shadow-2xs hover:shadow-xs transition-shadow">
                         <div className="flex items-center justify-between">
-                            <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center">
+                            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center">
                                 <CheckSquare className="w-5 h-5" />
                             </div>
                         </div>
@@ -688,7 +688,7 @@ export default function SuperAdminDashboard({
                             {/* Progress bar */}
                             <div className="w-full bg-muted rounded-full h-1.5 mt-2 overflow-hidden">
                                 <div
-                                    className="bg-purple-500 h-full rounded-full"
+                                    className="bg-[#0B3A67] h-full rounded-full"
                                     style={{ width: `${kpis.tasks_rate}%` }}
                                 />
                             </div>
@@ -1097,8 +1097,8 @@ export default function SuperAdminDashboard({
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 mt-4">
-                                <div className="p-3.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40">
-                                    <div className="text-2xl font-black text-purple-700 dark:text-purple-300">
+                                <div className="p-3.5 rounded-xl bg-[#8B1E3F]/5 dark:bg-[#8B1E3F]/20 border border-[#8B1E3F]/20 dark:border-[#8B1E3F]/30">
+                                    <div className="text-2xl font-black text-[#8B1E3F] dark:text-[#F43F5E]">
                                         {kpis.research_active}
                                     </div>
                                     <div className="text-xs font-bold text-foreground mt-0.5">Active Research Projects</div>
@@ -1120,7 +1120,7 @@ export default function SuperAdminDashboard({
                                         recent_research_extension_activities.map((act, idx) => (
                                             <div key={idx} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-1.5 truncate">
-                                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${act.type === 'Research' ? 'bg-purple-500' : 'bg-teal-500'}`} />
+                                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${act.type === 'Research' ? 'bg-[#8B1E3F]' : 'bg-teal-500'}`} />
                                                     <span className="truncate">{act.title}</span>
                                                 </div>
                                                 <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">{act.date}</span>
