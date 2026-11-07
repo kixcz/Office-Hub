@@ -347,7 +347,7 @@ export default function FacultyResearchExtensionPage({
 
                     {/* Card 4: Verified Roles */}
                     <div className="p-4 rounded-2xl border border-border bg-card shadow-2xs flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/60 dark:border-purple-800/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                        <div className="w-11 h-11 rounded-2xl bg-[#8B1E3F]/10 border border-[#8B1E3F]/30 text-[#8B1E3F] dark:text-rose-400 flex items-center justify-center shrink-0">
                             <Award className="w-5 h-5" />
                         </div>
                         <div>
@@ -845,7 +845,7 @@ export default function FacultyResearchExtensionPage({
                                 {/* Item 3 */}
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex items-start gap-2.5">
-                                        <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center shrink-0">
+                                        <div className="w-8 h-8 rounded-xl bg-[#8B1E3F]/10 text-[#8B1E3F] dark:text-rose-400 flex items-center justify-center shrink-0">
                                             <Award className="w-4 h-4" />
                                         </div>
                                         <div>

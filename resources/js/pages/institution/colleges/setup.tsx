@@ -112,22 +112,31 @@ const STAGES = [
 
 const QUICK_THEME_PRESETS = [
     {
-        key: 'amber',
-        name: 'Gold & Slate',
-        primary_color: '#F9C400',
-        secondary_color: '#1E293B',
-        accent_color: '#FEF3C7',
+        key: 'ascend',
+        name: 'Ascend Blue & Maroon (Default)',
+        primary_color: '#0B3A67',
+        secondary_color: '#1F5D9B',
+        accent_color: '#8B1E3F',
         surface_color: '#FFFFFF',
-        gradient: 'linear-gradient(135deg, #F9C400 0%, #F59E0B 55%, #1E293B 100%)',
+        gradient: 'linear-gradient(135deg, #0B3A67 0%, #1F5D9B 55%, #8B1E3F 100%)',
+    },
+    {
+        key: 'maroon',
+        name: 'Primary Maroon & Deep Maroon',
+        primary_color: '#8B1E3F',
+        secondary_color: '#68152E',
+        accent_color: '#F1F5F9',
+        surface_color: '#FFFFFF',
+        gradient: 'linear-gradient(135deg, #8B1E3F 0%, #68152E 55%, #0B3A67 100%)',
     },
     {
         key: 'blue',
         name: 'Sapphire & Navy',
-        primary_color: '#3B82F6',
-        secondary_color: '#1E3A8A',
+        primary_color: '#0B3A67',
+        secondary_color: '#1F5D9B',
         accent_color: '#DBEAFE',
         surface_color: '#FFFFFF',
-        gradient: 'linear-gradient(135deg, #60A5FA 0%, #2563EB 55%, #1E3A8A 100%)',
+        gradient: 'linear-gradient(135deg, #1F5D9B 0%, #0B3A67 100%)',
     },
     {
         key: 'emerald',
@@ -157,13 +166,13 @@ const QUICK_THEME_PRESETS = [
         gradient: 'linear-gradient(135deg, #2DD4BF 0%, #0D9488 55%, #134E4A 100%)',
     },
     {
-        key: 'purple',
-        name: 'Ascend Violet & Magenta',
-        primary_color: '#7C3AED',
-        secondary_color: '#4C1D95',
-        accent_color: '#EDE9FE',
+        key: 'amber',
+        name: 'Gold & Slate',
+        primary_color: '#F9C400',
+        secondary_color: '#1E293B',
+        accent_color: '#FEF3C7',
         surface_color: '#FFFFFF',
-        gradient: 'linear-gradient(135deg, #F472B6 0%, #9333EA 55%, #4C1D95 100%)',
+        gradient: 'linear-gradient(135deg, #F9C400 0%, #F59E0B 55%, #1E293B 100%)',
     },
 ];
 
@@ -177,7 +186,7 @@ const breadcrumbs: BreadcrumbItem[] = [
  * Determine whether text on a given hex background should be dark or white for contrast
  */
 function getContrastText(hex: string): string {
-    const clean = (hex || '#5B21B6').replace('#', '');
+    const clean = (hex || '#0B3A67').replace('#', '');
     if (clean.length !== 6) {
         return '#FFFFFF';
     }
@@ -185,7 +194,7 @@ function getContrastText(hex: string): string {
     const g = parseInt(clean.substring(2, 4), 16);
     const b = parseInt(clean.substring(4, 6), 16);
     const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-    return yiq >= 155 ? '#17152E' : '#FFFFFF';
+    return yiq >= 155 ? '#111827' : '#FFFFFF';
 }
 
 export default function CollegeSetup({
@@ -203,11 +212,11 @@ export default function CollegeSetup({
     availableUsers = [],
 }: Props) {
     const defaultBranding: CollegeBranding = currentCollege.branding || {
-        primary_color: currentCollege.code === 'CAS' ? '#F9C400' : '#7C3AED',
-        secondary_color: currentCollege.code === 'CAS' ? '#1E293B' : '#4C1D95',
-        accent_color: currentCollege.code === 'CAS' ? '#FEF3C7' : '#EDE9FE',
+        primary_color: '#0B3A67',
+        secondary_color: '#1F5D9B',
+        accent_color: '#8B1E3F',
         surface_color: '#FFFFFF',
-        preset_key: currentCollege.color_theme || (currentCollege.code === 'CAS' ? 'amber' : 'purple'),
+        preset_key: currentCollege.color_theme || 'ascend',
         slogan:
             currentCollege.code === 'CAS'
                 ? 'Knowledge. Creativity. Service to Society.'
@@ -238,12 +247,12 @@ export default function CollegeSetup({
         contact_email: currentCollege.contact_email || '',
         contact_phone: currentCollege.contact_phone || '',
         address: currentCollege.address || '',
-        color_theme: defaultBranding.preset_key || currentCollege.color_theme || 'amber',
+        color_theme: defaultBranding.preset_key || currentCollege.color_theme || 'ascend',
         primary_color: defaultBranding.primary_color,
         secondary_color: defaultBranding.secondary_color,
         accent_color: defaultBranding.accent_color,
         surface_color: defaultBranding.surface_color,
-        preset_key: defaultBranding.preset_key || 'amber',
+        preset_key: defaultBranding.preset_key || 'ascend',
         slogan: defaultBranding.slogan,
         logo: null as File | null,
         remove_logo: false,
@@ -260,11 +269,11 @@ export default function CollegeSetup({
     // Sync state when switching colleges from the unit dropdown
     useEffect(() => {
         const b = currentCollege.branding || {
-            primary_color: currentCollege.code === 'CAS' ? '#F9C400' : '#7C3AED',
-            secondary_color: currentCollege.code === 'CAS' ? '#1E293B' : '#4C1D95',
-            accent_color: currentCollege.code === 'CAS' ? '#FEF3C7' : '#EDE9FE',
+            primary_color: '#0B3A67',
+            secondary_color: '#1F5D9B',
+            accent_color: '#8B1E3F',
             surface_color: '#FFFFFF',
-            preset_key: currentCollege.color_theme || (currentCollege.code === 'CAS' ? 'amber' : 'purple'),
+            preset_key: currentCollege.color_theme || 'ascend',
             slogan:
                 currentCollege.code === 'CAS'
                     ? 'Knowledge. Creativity. Service to Society.'
@@ -359,9 +368,7 @@ export default function CollegeSetup({
     };
 
     const handleResetToDefault = () => {
-        const fallbackPreset =
-            QUICK_THEME_PRESETS.find((p) => p.key === (currentCollege.code === 'CAS' ? 'amber' : 'purple')) ||
-            QUICK_THEME_PRESETS[0];
+        const fallbackPreset = QUICK_THEME_PRESETS[0];
         setLogoPreview(currentCollege.logo_url || null);
         setData((prev) => ({
             ...prev,
@@ -517,62 +524,63 @@ export default function CollegeSetup({
                                 const isLast = idx === STAGES.length - 1;
 
                                 return (
-                                    <div key={stage.id} className="relative flex items-start gap-3">
-                                        {/* Vertical connector line */}
-                                        {!isLast && (
                                             <div
-                                                className={`absolute left-[13px] top-7 bottom-[-8px] w-[2px] ${
-                                                    isCompleted
-                                                        ? 'bg-emerald-500/50'
-                                                        : 'bg-border/80'
+                                                key={stage.id}
+                                                className={`relative flex items-center gap-2.5 p-1 rounded-xl transition-all ${
+                                                    isCurrent ? 'bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] text-white shadow-sm' : ''
                                                 }`}
-                                            />
-                                        )}
+                                            >
+                                                {/* Vertical connector line */}
+                                                {!isLast && (
+                                                    <div
+                                                        className={`absolute left-[17px] top-8 bottom-[-10px] w-[2px] pointer-events-none ${
+                                                            isCompleted
+                                                                ? 'bg-emerald-500/50'
+                                                                : 'bg-border/80'
+                                                        }`}
+                                                    />
+                                                )}
 
-                                        {/* Step Circle Indicator */}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleStageClick(stage.id, idx)}
-                                            className={`relative z-10 mt-2.5 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 transition-all cursor-pointer ${
-                                                isCompleted
-                                                    ? 'bg-emerald-500 text-white shadow-2xs'
-                                                    : isCurrent
-                                                      ? 'bg-[#4C1D95] text-white ring-4 ring-[#EDE9FE] dark:ring-[#262246]'
-                                                      : 'bg-card border-2 border-border text-muted-foreground hover:border-[#0B3A67]'
-                                            }`}
-                                        >
-                                            {isCompleted ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : stage.num}
-                                        </button>
-
-                                        {/* Step Pill Button */}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleStageClick(stage.id, idx)}
-                                            className={`flex-1 text-left px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
-                                                isCurrent
-                                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#1F5D9B] text-white shadow-sm'
-                                                    : 'hover:bg-[#F7F7FB] dark:hover:bg-[#1E1B38] text-[#17152E] dark:text-white'
-                                            }`}
-                                        >
-                                            <div className="min-w-0 pr-2">
-                                                <p
-                                                    className={`text-xs font-extrabold leading-snug truncate ${
-                                                        isCurrent ? 'text-white' : 'text-[#17152E] dark:text-white'
+                                                {/* Step Circle Indicator */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleStageClick(stage.id, idx)}
+                                                    className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 transition-all cursor-pointer ${
+                                                        isCompleted
+                                                            ? 'bg-emerald-500 text-white shadow-2xs'
+                                                            : isCurrent
+                                                              ? 'bg-white text-[#0B3A67] shadow-xs'
+                                                              : 'bg-card border-2 border-border text-muted-foreground hover:border-[#0B3A67]'
                                                     }`}
                                                 >
-                                                    {stage.label}
-                                                </p>
-                                                <p
-                                                    className={`text-[11px] truncate mt-0.5 ${
-                                                        isCurrent ? 'text-white/85' : 'text-muted-foreground'
-                                                    }`}
+                                                    {isCompleted ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : stage.num}
+                                                </button>
+
+                                                {/* Step Pill Text Button */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleStageClick(stage.id, idx)}
+                                                    className={`flex-1 text-left py-1.5 pr-2 transition-all flex items-center justify-between cursor-pointer min-w-0`}
                                                 >
-                                                    {stage.desc}
-                                                </p>
+                                                    <div className="min-w-0 pr-1">
+                                                        <p
+                                                            className={`text-xs font-extrabold leading-snug truncate ${
+                                                                isCurrent ? 'text-white' : 'text-[#17152E] dark:text-white'
+                                                            }`}
+                                                        >
+                                                            {stage.label}
+                                                        </p>
+                                                        <p
+                                                            className={`text-[11px] truncate mt-0.5 ${
+                                                                isCurrent ? 'text-white/85' : 'text-muted-foreground'
+                                                            }`}
+                                                        >
+                                                            {stage.desc}
+                                                        </p>
+                                                    </div>
+                                                    {isCurrent && <ChevronRight className="w-4 h-4 text-white shrink-0 ml-1" />}
+                                                </button>
                                             </div>
-                                            {isCurrent && <ChevronRight className="w-4 h-4 text-white shrink-0" />}
-                                        </button>
-                                    </div>
                                 );
                             })}
                         </div>
@@ -932,13 +940,13 @@ export default function CollegeSetup({
                                                                 title={preset.name}
                                                                 className={`relative h-10 rounded-xl transition-all cursor-pointer flex items-center justify-end pr-2.5 ${
                                                                     isSelected
-                                                                        ? 'ring-2 ring-[#5B21B6] ring-offset-2 scale-[1.02] shadow-sm'
+                                                                        ? 'ring-2 ring-[#0B3A67] ring-offset-2 scale-[1.02] shadow-sm'
                                                                         : 'opacity-90 hover:opacity-100 hover:scale-[1.02]'
                                                                 }`}
                                                                 style={{ background: preset.gradient }}
                                                             >
                                                                 {isSelected && (
-                                                                    <span className="w-5 h-5 rounded-full bg-[#4C1D95] text-white flex items-center justify-center shadow-xs border border-white/60">
+                                                                    <span className="w-5 h-5 rounded-full bg-[#0B3A67] text-white flex items-center justify-center shadow-xs border border-white/60">
                                                                         <Check className="w-3 h-3 stroke-[3]" />
                                                                     </span>
                                                                 )}

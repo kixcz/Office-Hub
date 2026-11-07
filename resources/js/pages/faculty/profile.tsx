@@ -223,7 +223,7 @@ export default function FacultyProfilePage({
             <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1700px] mx-auto text-slate-800 dark:text-slate-100">
                 {/* Toast Notification */}
                 {toastMessage && (
-                    <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-amber-400 border border-amber-400/40 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold animate-in fade-in slide-in-from-bottom-4">
+                    <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-amber-400 border border-blue-200 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold animate-in fade-in slide-in-from-bottom-4">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                         <span>{toastMessage}</span>
                     </div>
@@ -234,7 +234,7 @@ export default function FacultyProfilePage({
                     <div className="flex items-center gap-5 min-w-0">
                         {/* Avatar */}
                         <div className="relative group shrink-0">
-                            <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl bg-gradient-to-br from-amber-200 via-amber-300 to-amber-400 text-slate-900 border-4 border-amber-100 dark:border-amber-950/40 flex items-center justify-center font-black text-2xl sm:text-3xl shadow-sm overflow-hidden">
+                            <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl bg-gradient-to-br from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white border-4 border-slate-100 dark:border-slate-800 flex items-center justify-center font-black text-2xl sm:text-3xl shadow-sm overflow-hidden">
                                 {faculty?.photo_url ? (
                                     <img src={faculty.photo_url} alt={faculty.full_name} className="w-full h-full object-cover" />
                                 ) : (
@@ -261,7 +261,7 @@ export default function FacultyProfilePage({
                                 <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight truncate">
                                     {faculty?.title_name || (faculty ? `Instr. ${faculty.first_name} ${faculty.last_name}` : 'Instr. Kaye Antoinette Panaligan')}
                                 </h1>
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400/15 text-amber-900 dark:text-amber-300 border border-amber-400/40">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                                     {faculty?.academic_rank || 'Instructor I'}
                                 </span>
                             </div>
@@ -284,8 +284,8 @@ export default function FacultyProfilePage({
                             </p>
 
                             {(faculty?.quote || data.quote) && (
-                                <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-amber-400/10 border border-amber-400/30 text-amber-950 dark:text-amber-200 text-xs italic">
-                                    <Quote className="w-3 h-3 text-amber-500 shrink-0 not-italic rotate-180" />
+                                <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs italic">
+                                    <Quote className="w-3 h-3 text-[#0B3A67] dark:text-blue-400 shrink-0 not-italic rotate-180" />
                                     <span className="line-clamp-1">"{faculty?.quote || data.quote}"</span>
                                 </div>
                             )}
@@ -324,7 +324,7 @@ export default function FacultyProfilePage({
                             <button
                                 type="button"
                                 onClick={() => openAction('Request Profile Update', 'Profile & Contact Update', 'profile')}
-                                className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-black flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+                                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white text-xs font-black flex items-center gap-2 transition-all shadow-xs cursor-pointer"
                             >
                                 <Edit3 className="w-3.5 h-3.5 stroke-[2.5]" />
                                 <span>Request Update</span>
@@ -337,7 +337,7 @@ export default function FacultyProfilePage({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Stat 1: Credited Load */}
                     <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-2xs flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-xl bg-amber-400/15 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30">
+                        <div className="w-11 h-11 rounded-xl bg-[#0B3A67]/10 text-[#0B3A67] dark:text-blue-300 flex items-center justify-center shrink-0 border border-[#0B3A67]/20">
                             <BookOpen className="w-5 h-5" />
                         </div>
                         <div>
@@ -391,7 +391,7 @@ export default function FacultyProfilePage({
 
                     {/* Stat 4: Research & Extension */}
                     <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-2xs flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/30">
+                        <div className="w-11 h-11 rounded-xl bg-[#8B1E3F]/10 text-[#8B1E3F] dark:text-rose-400 flex items-center justify-center shrink-0 border border-[#8B1E3F]/30">
                             <FlaskConical className="w-5 h-5" />
                         </div>
                         <div>
@@ -409,8 +409,8 @@ export default function FacultyProfilePage({
                 </div>
 
                 {/* 3. VERIFIED NOTICE CALLOUT */}
-                <div className="p-3.5 rounded-xl border border-amber-300/40 bg-amber-400/5 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-3">
-                    <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 text-slate-800 dark:text-slate-200 text-xs flex items-center gap-3">
+                    <Info className="w-4 h-4 text-[#0B3A67] dark:text-blue-400 shrink-0" />
                     <span>
                         <strong>Official Faculty Dossier:</strong> Institutional records are maintained in compliance with CIDS Academic Regulations. Personal contact details can be edited directly; academic rank, appointment, and loading changes require verification.
                     </span>
@@ -433,7 +433,7 @@ export default function FacultyProfilePage({
                                     onClick={() => setActiveTab(tab.id as any)}
                                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all cursor-pointer ${
                                         isActive
-                                            ? 'bg-amber-400 text-slate-950 font-black shadow-xs'
+                                            ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white font-bold shadow-xs'
                                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                     }`}
                                 >
@@ -454,7 +454,7 @@ export default function FacultyProfilePage({
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-4 rounded-2xl border border-border shadow-2xs">
                             <div>
                                 <h2 className="text-lg font-black text-foreground tracking-tight flex items-center gap-2">
-                                    <currentTabMeta.icon className="w-5 h-5 text-amber-500" />
+                                    <currentTabMeta.icon className="w-5 h-5 text-[#0B3A67] dark:text-blue-400" />
                                     <span>{currentTabMeta.label}</span>
                                 </h2>
                                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -476,7 +476,7 @@ export default function FacultyProfilePage({
                                     <button
                                         type="button"
                                         onClick={() => setIsEditing(true)}
-                                        className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                                     >
                                         <Edit3 className="w-3.5 h-3.5 stroke-[2.5]" />
                                         <span>Edit Details</span>
@@ -497,7 +497,7 @@ export default function FacultyProfilePage({
                                             `${currentTabMeta.label} Update`,
                                             activeTab === 'attendance' ? 'attendance' : activeTab === 'loading' ? 'workload' : 'other'
                                         )}
-                                        className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                                     >
                                         <ArrowUpRight className="w-3.5 h-3.5 stroke-[2.5]" />
                                         <span>Action</span>
@@ -519,7 +519,7 @@ export default function FacultyProfilePage({
                                                         type="email"
                                                         value={data.email}
                                                         onChange={(e) => setData('email', e.target.value)}
-                                                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-amber-400"
+                                                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-[#0B3A67]"
                                                         required
                                                     />
                                                     {errors.email && <div className="text-xs text-rose-500 mt-1">{errors.email}</div>}
@@ -531,7 +531,7 @@ export default function FacultyProfilePage({
                                                         type="text"
                                                         value={data.phone}
                                                         onChange={(e) => setData('phone', e.target.value)}
-                                                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-amber-400"
+                                                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-[#0B3A67]"
                                                     />
                                                 </div>
 
@@ -541,7 +541,7 @@ export default function FacultyProfilePage({
                                                         type="text"
                                                         value={data.office_room}
                                                         onChange={(e) => setData('office_room', e.target.value)}
-                                                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-amber-400"
+                                                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-[#0B3A67]"
                                                     />
                                                 </div>
 
@@ -551,7 +551,7 @@ export default function FacultyProfilePage({
                                                         type="text"
                                                         value={data.specialization}
                                                         onChange={(e) => setData('specialization', e.target.value)}
-                                                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-amber-400"
+                                                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-[#0B3A67]"
                                                     />
                                                 </div>
 
@@ -563,7 +563,7 @@ export default function FacultyProfilePage({
                                                         rows={3}
                                                         value={data.bio}
                                                         onChange={(e) => setData('bio', e.target.value)}
-                                                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-medium focus:outline-none focus:border-amber-400 leading-relaxed"
+                                                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-medium focus:outline-none focus:border-[#0B3A67] leading-relaxed"
                                                         placeholder="Write a brief professional bio about your academic focus, teaching philosophy, or background..."
                                                     />
                                                     <span className="text-[10px] text-muted-foreground mt-0.5 block">
@@ -580,10 +580,10 @@ export default function FacultyProfilePage({
                                                             type="text"
                                                             value={data.quote}
                                                             onChange={(e) => setData('quote', e.target.value)}
-                                                            className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-amber-400 italic"
+                                                            className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-[#0B3A67] italic"
                                                             placeholder="e.g. Inspiring innovation through practical knowledge."
                                                         />
-                                                        <Quote className="w-4 h-4 text-amber-500 absolute left-3 top-1/2 -translate-y-1/2 not-italic rotate-180" />
+                                                        <Quote className="w-4 h-4 text-[#0B3A67] dark:text-blue-400 absolute left-3 top-1/2 -translate-y-1/2 not-italic rotate-180" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -597,7 +597,7 @@ export default function FacultyProfilePage({
                                                             type="password"
                                                             value={data.password}
                                                             onChange={(e) => setData('password', e.target.value)}
-                                                            className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-amber-400"
+                                                            className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-[#0B3A67]"
                                                             placeholder="Leave blank to keep current"
                                                         />
                                                     </div>
@@ -607,7 +607,7 @@ export default function FacultyProfilePage({
                                                             type="password"
                                                             value={data.password_confirmation}
                                                             onChange={(e) => setData('password_confirmation', e.target.value)}
-                                                            className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-amber-400"
+                                                            className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-semibold focus:outline-none focus:border-[#0B3A67]"
                                                         />
                                                     </div>
                                                 </div>
@@ -617,7 +617,7 @@ export default function FacultyProfilePage({
                                                 <button
                                                     type="submit"
                                                     disabled={processing}
-                                                    className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+                                                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-black text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
                                                 >
                                                     <Save className="w-4 h-4 stroke-[2.5]" />
                                                     <span>Save Changes</span>
@@ -638,7 +638,7 @@ export default function FacultyProfilePage({
                                         <div className="lg:col-span-8 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-4">
                                             <div className="flex items-center justify-between pb-2 border-b border-border">
                                                 <div className="font-bold text-sm text-foreground flex items-center gap-2">
-                                                    <User className="w-4 h-4 text-amber-500" />
+                                                    <User className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                                     <span>Personal & Contact Information</span>
                                                 </div>
                                                 <button
@@ -679,10 +679,10 @@ export default function FacultyProfilePage({
 
                                             {/* Faculty Bio & Quote Showcase Card */}
                                             <div className="pt-2 border-t border-border/60 space-y-3">
-                                                <div className="p-4 rounded-xl bg-amber-400/5 border border-amber-400/20 space-y-2.5">
+                                                <div className="p-4 rounded-xl bg-blue-50/30 border border-blue-200 dark:border-blue-900/40 space-y-2.5">
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2 text-xs font-bold text-amber-950 dark:text-amber-200">
-                                                            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                                        <div className="flex items-center gap-2 text-xs font-bold text-[#0B3A67] dark:text-blue-200">
+                                                            <Sparkles className="w-3.5 h-3.5 text-[#0B3A67] dark:text-blue-400" />
                                                             <span>Faculty Bio & Showcase</span>
                                                         </div>
                                                         <button
@@ -703,13 +703,13 @@ export default function FacultyProfilePage({
                                                     </p>
 
                                                     {(faculty?.quote || data.quote) ? (
-                                                        <div className="pt-2 border-t border-amber-400/20 flex items-start gap-2 text-xs font-semibold text-amber-900 dark:text-amber-200 italic">
-                                                            <Quote className="w-3.5 h-3.5 text-amber-500 shrink-0 not-italic rotate-180 mt-0.5" />
+                                                        <div className="pt-2 border-t border-blue-200 dark:border-blue-900/30 flex items-start gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 italic">
+                                                            <Quote className="w-3.5 h-3.5 text-[#0B3A67] dark:text-blue-400 shrink-0 not-italic rotate-180 mt-0.5" />
                                                             <span>"{faculty?.quote || data.quote}"</span>
                                                         </div>
                                                     ) : (
-                                                        <div className="pt-2 border-t border-amber-400/20 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                                                            <Quote className="w-3 h-3 text-amber-500/60 rotate-180" />
+                                                        <div className="pt-2 border-t border-blue-200 dark:border-blue-900/30 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                                            <Quote className="w-3 h-3 text-[#0B3A67] dark:text-blue-400/60 rotate-180" />
                                                             <span>Click "Edit Bio" to add your favorite motto or quote.</span>
                                                         </div>
                                                     )}
@@ -730,7 +730,7 @@ export default function FacultyProfilePage({
                                                         <div className="font-bold text-foreground">Contact information</div>
                                                         <div className="text-[10px] text-muted-foreground">Editable subject to verification</div>
                                                     </div>
-                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/15 text-amber-900 dark:text-amber-300">
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0B3A67] dark:bg-blue-950/40 dark:text-blue-300">
                                                         Self-Editable
                                                     </span>
                                                 </div>
@@ -793,7 +793,7 @@ export default function FacultyProfilePage({
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                                 <div className="lg:col-span-8 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-4">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <Briefcase className="w-4 h-4 text-amber-500" />
+                                        <Briefcase className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                         <span>Official Appointment</span>
                                     </div>
 
@@ -848,25 +848,25 @@ export default function FacultyProfilePage({
                                         </div>
                                     </div>
 
-                                    <div className="p-3 rounded-xl border border-amber-300/40 bg-amber-400/5 text-amber-900 dark:text-amber-200 text-xs">
+                                    <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 text-slate-800 dark:text-slate-200 text-xs">
                                         Credited workload is calculated from approved institutional policies and applies only to the correct academic period.
                                     </div>
                                 </div>
 
                                 <div className="lg:col-span-6 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-3">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <Clock className="w-4 h-4 text-purple-500" />
+                                        <Clock className="w-4 h-4 text-[#8B1E3F]" />
                                         <span>Employment & Designation History</span>
                                     </div>
 
                                     <div className="relative pl-4 border-l-2 border-border space-y-4 text-xs ml-2">
                                         <div className="relative">
-                                            <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-4 ring-card" />
+                                            <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-[#0B3A67] ring-4 ring-card" />
                                             <div className="font-bold text-foreground">Current Appointment</div>
                                             <div className="text-[11px] text-muted-foreground">Instructor I · BSIS · Active</div>
                                         </div>
                                         <div className="relative">
-                                            <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-4 ring-card" />
+                                            <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-[#0B3A67] ring-4 ring-card" />
                                             <div className="font-bold text-foreground">Approved Designation</div>
                                             <div className="text-[11px] text-muted-foreground">Academic & Curriculum Coordinator · 3 credited units</div>
                                         </div>
@@ -916,7 +916,7 @@ export default function FacultyProfilePage({
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                                 <div className="lg:col-span-7 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-4">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <GraduationCap className="w-4 h-4 text-amber-500" />
+                                        <GraduationCap className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                         <span>Academic Degrees</span>
                                     </div>
 
@@ -964,14 +964,14 @@ export default function FacultyProfilePage({
                                         </div>
                                     </div>
 
-                                    <div className="p-3 rounded-xl border border-amber-300/40 bg-amber-400/5 text-amber-900 dark:text-amber-200 text-xs">
+                                    <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 text-slate-800 dark:text-slate-200 text-xs">
                                         Only approved qualifications should be used by the faculty loading engine to establish subject eligibility.
                                     </div>
                                 </div>
 
                                 <div className="lg:col-span-12 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-3">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <Award className="w-4 h-4 text-purple-500" />
+                                        <Award className="w-4 h-4 text-[#8B1E3F]" />
                                         <span>Certificates & Professional Qualifications</span>
                                     </div>
 
@@ -1022,14 +1022,14 @@ export default function FacultyProfilePage({
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                                 <div className="lg:col-span-7 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-3">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <BookOpen className="w-4 h-4 text-amber-500" />
+                                        <BookOpen className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                         <span>Teaching Areas & Competencies</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2 pt-1">
-                                        <span className="px-3 py-1.5 rounded-xl bg-amber-400/20 text-amber-900 dark:text-amber-200 border border-amber-400/40 text-xs font-bold">
+                                        <span className="px-3 py-1.5 rounded-xl bg-blue-100 dark:bg-blue-950/50 text-slate-700 dark:text-slate-300 border border-blue-200 text-xs font-bold">
                                             Artificial Intelligence
                                         </span>
-                                        <span className="px-3 py-1.5 rounded-xl bg-amber-400/20 text-amber-900 dark:text-amber-200 border border-amber-400/40 text-xs font-bold">
+                                        <span className="px-3 py-1.5 rounded-xl bg-blue-100 dark:bg-blue-950/50 text-slate-700 dark:text-slate-300 border border-blue-200 text-xs font-bold">
                                             Machine Learning
                                         </span>
                                         <span className="px-3 py-1.5 rounded-xl bg-muted text-foreground border border-border text-xs font-semibold">
@@ -1061,7 +1061,7 @@ export default function FacultyProfilePage({
                                                 <div className="font-bold text-foreground">Preferred Subjects</div>
                                                 <div className="text-[10px] text-muted-foreground">Used during faculty loading</div>
                                             </div>
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/15 text-amber-900 dark:text-amber-300">
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0B3A67] dark:bg-blue-950/40 dark:text-blue-300">
                                                 3 recorded
                                             </span>
                                         </div>
@@ -1088,7 +1088,7 @@ export default function FacultyProfilePage({
 
                                 <div className="lg:col-span-12 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-3">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <Calendar className="w-4 h-4 text-purple-500" />
+                                        <Calendar className="w-4 h-4 text-[#8B1E3F]" />
                                         <span>Current Teaching Assignments</span>
                                     </div>
 
@@ -1162,7 +1162,7 @@ export default function FacultyProfilePage({
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                                 <div className="lg:col-span-8 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-4">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <Clock className="w-4 h-4 text-amber-500" />
+                                        <Clock className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                         <span>Current Semester Load</span>
                                     </div>
 
@@ -1294,7 +1294,7 @@ export default function FacultyProfilePage({
 
                                 <div className="lg:col-span-4 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-3">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <Briefcase className="w-4 h-4 text-purple-500" />
+                                        <Briefcase className="w-4 h-4 text-[#8B1E3F]" />
                                         <span>Non-Teaching Credits</span>
                                     </div>
 
@@ -1319,7 +1319,7 @@ export default function FacultyProfilePage({
                                         </div>
                                     </div>
 
-                                    <div className="p-3 rounded-xl border border-amber-300/40 bg-amber-400/5 text-amber-900 dark:text-amber-200 text-xs mt-3">
+                                    <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 text-slate-800 dark:text-slate-200 text-xs mt-3">
                                         Faculty can request a review but cannot directly alter approved loading.
                                     </div>
                                 </div>
@@ -1331,7 +1331,7 @@ export default function FacultyProfilePage({
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                                 <div className="lg:col-span-8 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-4">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <Clock className="w-4 h-4 text-amber-500" />
+                                        <Clock className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                         <span>Attendance at a Glance</span>
                                     </div>
 
@@ -1428,7 +1428,7 @@ export default function FacultyProfilePage({
                                                             <td className="py-3 px-3">
                                                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                                                     att.status === 'present' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' :
-                                                                    att.status === 'late' ? 'bg-amber-400/15 text-amber-900 dark:text-amber-300' :
+                                                                    att.status === 'late' ? 'bg-blue-50 text-[#0B3A67] dark:bg-blue-950/40 dark:text-blue-300' :
                                                                     'bg-rose-500/15 text-rose-700 dark:text-rose-400'
                                                                 }`}>
                                                                     {att.status}
@@ -1489,7 +1489,7 @@ export default function FacultyProfilePage({
 
                                 <div className="lg:col-span-7 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-3">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <AlertCircle className="w-4 h-4 text-amber-500" />
+                                        <AlertCircle className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                         <span>Needs Attention</span>
                                     </div>
 
@@ -1499,7 +1499,7 @@ export default function FacultyProfilePage({
                                                 <div className="font-bold text-foreground">Table of Specifications (TOS) & Test Questionnaire</div>
                                                 <div className="text-[10px] text-muted-foreground">Midterm deadline approaching</div>
                                             </div>
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/15 text-amber-900 dark:text-amber-300">
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0B3A67] dark:bg-blue-950/40 dark:text-blue-300">
                                                 Due Soon
                                             </span>
                                         </div>
@@ -1527,7 +1527,7 @@ export default function FacultyProfilePage({
                                 <div className="lg:col-span-12 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-3">
                                     <div className="font-bold text-sm text-foreground flex items-center justify-between pb-2 border-b border-border">
                                         <div className="flex items-center gap-2">
-                                            <FileText className="w-4 h-4 text-purple-500" />
+                                            <FileText className="w-4 h-4 text-[#8B1E3F]" />
                                             <span>Requirement & Submission Records</span>
                                         </div>
                                         <Link
@@ -1575,7 +1575,7 @@ export default function FacultyProfilePage({
                                                             <td className="py-3 px-3 text-muted-foreground">Midterm Exam</td>
                                                             <td className="py-3 px-3 font-mono">Oct 14, 2026</td>
                                                             <td className="py-3 px-3">
-                                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/15 text-amber-900 dark:text-amber-300">Pending</span>
+                                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0B3A67] dark:bg-blue-950/40 dark:text-blue-300">Pending</span>
                                                             </td>
                                                             <td className="py-3 px-3">
                                                                 <Link href="/faculty/requirements" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Submit</Link>
@@ -1606,7 +1606,7 @@ export default function FacultyProfilePage({
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                                 <div className="lg:col-span-12 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-4">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <FlaskConical className="w-4 h-4 text-purple-500" />
+                                        <FlaskConical className="w-4 h-4 text-[#8B1E3F]" />
                                         <span>Research & Extension Participation</span>
                                     </div>
 
@@ -1625,7 +1625,7 @@ export default function FacultyProfilePage({
                                         </div>
                                     </div>
 
-                                    <div className="p-3 rounded-xl border border-amber-300/40 bg-amber-400/5 text-amber-900 dark:text-amber-200 text-xs">
+                                    <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 text-slate-800 dark:text-slate-200 text-xs">
                                         Research and extension expectations should reflect approved appointments and workload credits; participation alone does not establish individual performance.
                                     </div>
                                 </div>
@@ -1696,7 +1696,7 @@ export default function FacultyProfilePage({
                                     <button
                                         type="button"
                                         onClick={() => openAction('Submit Extension Evidence', 'Community Digital Literacy Proof', 'other')}
-                                        className="w-full mt-2 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs transition-colors cursor-pointer"
+                                        className="w-full mt-2 py-2 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-black text-xs transition-colors cursor-pointer"
                                     >
                                         Submit Evidence
                                     </button>
@@ -1709,7 +1709,7 @@ export default function FacultyProfilePage({
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                                 <div className="lg:col-span-7 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-4">
                                     <div className="font-bold text-sm text-foreground flex items-center gap-2 pb-2 border-b border-border">
-                                        <Trophy className="w-4 h-4 text-amber-500" />
+                                        <Trophy className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                         <span>Accomplishment Summary</span>
                                     </div>
 
@@ -1739,14 +1739,14 @@ export default function FacultyProfilePage({
                                         <span>Printable Statement</span>
                                     </div>
 
-                                    <div className="p-3 rounded-xl border border-amber-300/40 bg-amber-400/5 text-amber-900 dark:text-amber-200 text-xs">
+                                    <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 text-slate-800 dark:text-slate-200 text-xs">
                                         Generate an individual accomplishment report with configurable sections and authorized signatories. Only verified outputs are marked official.
                                     </div>
 
                                     <button
                                         type="button"
                                         onClick={() => window.print()}
-                                        className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
+                                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-black text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
                                     >
                                         <Printer className="w-3.5 h-3.5" />
                                         <span>Print Current Statement</span>
@@ -1756,7 +1756,7 @@ export default function FacultyProfilePage({
                                 <div className="lg:col-span-12 bg-card border border-border rounded-2xl p-5 shadow-2xs space-y-3">
                                     <div className="font-bold text-sm text-foreground flex items-center justify-between pb-2 border-b border-border">
                                         <div className="flex items-center gap-2">
-                                            <Award className="w-4 h-4 text-purple-500" />
+                                            <Award className="w-4 h-4 text-[#8B1E3F]" />
                                             <span>Documented Accomplishments</span>
                                         </div>
                                         <Link
@@ -1857,7 +1857,7 @@ export default function FacultyProfilePage({
                                     type="text"
                                     value={requestModal.subject}
                                     onChange={(e) => setRequestModal({ ...requestModal, subject: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-border bg-background font-semibold focus:outline-none focus:border-amber-400"
+                                    className="w-full px-3 py-2 rounded-xl border border-border bg-background font-semibold focus:outline-none focus:border-[#0B3A67]"
                                     placeholder="e.g. Schedule discrepancy, course assignment, contact update"
                                     required
                                 />
@@ -1869,7 +1869,7 @@ export default function FacultyProfilePage({
                                     rows={3}
                                     value={requestExplanation}
                                     onChange={(e) => setRequestExplanation(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-xl border border-border bg-background font-medium focus:outline-none focus:border-amber-400"
+                                    className="w-full px-3 py-2 rounded-xl border border-border bg-background font-medium focus:outline-none focus:border-[#0B3A67]"
                                     placeholder="Describe the requested correction and relevant details."
                                     required
                                 />
@@ -1895,7 +1895,7 @@ export default function FacultyProfilePage({
                                 <button
                                     type="submit"
                                     disabled={isSubmittingRequest}
-                                    className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-black text-xs flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
                                 >
                                     {isSubmittingRequest ? (
                                         <span>Submitting...</span>

@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\Faculty;
+use App\Models\Program;
 use App\Services\CourseAndSectionSyncService;
+use App\Services\PortalContextService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -12,12 +14,48 @@ class CourseController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        $scopeCollegeId = null;
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            $scopeCollegeId = $activeScopeId;
+        } elseif ($activeScopeType === 'program' && $activeScopeId) {
+            $scopeCollegeId = Program::find($activeScopeId)?->college_id;
+        } elseif (! $isInstitutionSuperAdmin) {
+            $scopeCollegeId = $user?->resolveActiveCollege()?->id;
+        }
+
         $query = Course::with([
             'curriculumCourses.curriculum.program',
             'courseOfferings.academicPeriod',
             'courseOfferings.section',
             'courseOfferings.faculty',
         ]);
+
+        if (! $isInstitutionSuperAdmin) {
+            if ($activeScopeType === 'program' && $activeScopeId) {
+                $query->where(function ($q) use ($activeScopeId) {
+                    $q->where('program_id', $activeScopeId)
+                        ->orWhereHas('curriculumCourses.curriculum', function ($cq) use ($activeScopeId) {
+                            $cq->where('program_id', $activeScopeId);
+                        });
+                });
+            } elseif ($scopeCollegeId) {
+                $query->where(function ($q) use ($scopeCollegeId) {
+                    $q->whereHas('curriculumCourses.curriculum.program', function ($cp) use ($scopeCollegeId) {
+                        $cp->where('college_id', $scopeCollegeId);
+                    })->orWhereHas('program', function ($p) use ($scopeCollegeId) {
+                        $p->where('college_id', $scopeCollegeId);
+                    });
+                });
+            }
+        }
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -54,16 +92,31 @@ class CourseController extends Controller
 
         $courses = $query->orderBy('code', 'asc')->paginate($perPage)->withQueryString();
 
-        // Get qualified faculty members based on specialization tags
-        $facultyMembers = Faculty::where('status', 'Active')
-            ->orderBy('first_name', 'asc')
+        $facultyQuery = Faculty::where('status', 'Active');
+        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+            $facultyQuery->whereHas('program', function ($p) use ($scopeCollegeId) {
+                $p->where('college_id', $scopeCollegeId);
+            });
+        }
+        $facultyMembers = $facultyQuery->orderBy('first_name', 'asc')
             ->orderBy('last_name', 'asc')
             ->get();
 
-        $totalCourses = Course::count();
-        $lectureLabSplit = Course::where('lab_hours', '>', 0)->count();
-        $pureLecture = Course::where('lab_hours', '<=', 0)->count();
-        $activeCourses = Course::where('status', 'Active')->count();
+        $statsQuery = Course::query();
+        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+            $statsQuery->where(function ($q) use ($scopeCollegeId) {
+                $q->whereHas('curriculumCourses.curriculum.program', function ($cp) use ($scopeCollegeId) {
+                    $cp->where('college_id', $scopeCollegeId);
+                })->orWhereHas('program', function ($p) use ($scopeCollegeId) {
+                    $p->where('college_id', $scopeCollegeId);
+                });
+            });
+        }
+
+        $totalCourses = (clone $statsQuery)->count();
+        $lectureLabSplit = (clone $statsQuery)->where('lab_hours', '>', 0)->count();
+        $pureLecture = (clone $statsQuery)->where('lab_hours', '<=', 0)->count();
+        $activeCourses = (clone $statsQuery)->where('status', 'Active')->count();
 
         // Facility types, categories, and sources in catalog
         $facilityTypes = Course::distinct()->pluck('required_facility_type')->filter()->values();

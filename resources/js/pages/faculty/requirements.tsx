@@ -248,7 +248,7 @@ export default function FacultyRequirementsPage({
                 );
             case 'Course Syllabi':
                 return (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/60">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-[#8B1E3F] border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60">
                         {cat}
                     </span>
                 );
@@ -337,7 +337,7 @@ export default function FacultyRequirementsPage({
                 {/* 1. Header Hero with Yellow Theme Accent */}
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-400/40 dark:border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 shadow-xs">
+                        <div className="h-12 w-12 rounded-xl bg-[#0B3A67]/10 dark:bg-[#0B3A67]/20 border border-[#0B3A67]/30 flex items-center justify-center text-[#0B3A67] dark:text-blue-400 shrink-0 shadow-xs">
                             <FileUp className="w-6 h-6 stroke-[2.2]" />
                         </div>
                         <div>
@@ -345,7 +345,7 @@ export default function FacultyRequirementsPage({
                                 <h1 className="text-2xl font-bold tracking-tight text-foreground">
                                     Required Academic Outputs
                                 </h1>
-                                <Badge variant="outline" className="text-xs bg-amber-50/60 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-300/50">
+                                <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950/40 text-[#0B3A67] dark:text-blue-300 border-blue-200 dark:border-blue-800">
                                     AY {current_period?.academic_year || '2026-2027'} • {current_period?.semester || '1st Semester'}
                                 </Badge>
                             </div>
@@ -363,7 +363,7 @@ export default function FacultyRequirementsPage({
                                 onClick={() => setViewMode('table')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                                     viewMode === 'table'
-                                        ? 'bg-amber-500 text-white shadow-xs font-bold'
+                                        ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs font-bold'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                                 title="Table View"
@@ -376,7 +376,7 @@ export default function FacultyRequirementsPage({
                                 onClick={() => setViewMode('cards')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                                     viewMode === 'cards'
-                                        ? 'bg-amber-500 text-white shadow-xs font-bold'
+                                        ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs font-bold'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                                 title="Card View"
@@ -389,7 +389,7 @@ export default function FacultyRequirementsPage({
                         {/* Primary Action Button (Shades of Yellow) */}
                         <Button
                             onClick={() => openUploadModal()}
-                            className="bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-semibold text-xs h-9.5 px-4 rounded-lg shadow-sm gap-2 transition-colors cursor-pointer border border-amber-600/20"
+                            className="bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-semibold text-xs h-9.5 px-4 rounded-lg shadow-sm gap-2 transition-colors cursor-pointer border border-amber-600/20"
                         >
                             <UploadCloud className="w-4 h-4 stroke-[2.2]" />
                             <span>Upload Requirement</span>
@@ -514,7 +514,7 @@ export default function FacultyRequirementsPage({
                                         }}
                                         className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer ${
                                             isActive
-                                                ? 'bg-amber-500 text-white shadow-xs font-bold'
+                                                ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs font-bold'
                                                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                         }`}
                                     >

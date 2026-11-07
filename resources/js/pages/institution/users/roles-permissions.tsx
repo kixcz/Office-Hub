@@ -534,15 +534,15 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         onClick={() => setActiveTab('roles')}
                         className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
                             activeTab === 'roles'
-                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
-                                : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:text-foreground'
+                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] text-white shadow-md'
+                                : 'border-[#E5E4F0] bg-white text-[#111827] hover:bg-[#F8FAFC] dark:border-border dark:bg-card dark:text-foreground'
                         }`}
                     >
                         <div
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'roles'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
+                                    : 'bg-[#EFF6FF] text-[#0B3A67] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <Users className="h-4 w-4" />
@@ -560,15 +560,15 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         onClick={() => setActiveTab('matrix')}
                         className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
                             activeTab === 'matrix'
-                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
-                                : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:text-foreground'
+                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] text-white shadow-md'
+                                : 'border-[#E5E4F0] bg-white text-[#111827] hover:bg-[#F8FAFC] dark:border-border dark:bg-card dark:text-foreground'
                         }`}
                     >
                         <div
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'matrix'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
+                                    : 'bg-[#EFF6FF] text-[#0B3A67] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <Grid className="h-4 w-4" />
@@ -586,15 +586,15 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         onClick={() => setActiveTab('authority')}
                         className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
                             activeTab === 'authority'
-                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
-                                : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:text-foreground'
+                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] text-white shadow-md'
+                                : 'border-[#E5E4F0] bg-white text-[#111827] hover:bg-[#F8FAFC] dark:border-border dark:bg-card dark:text-foreground'
                         }`}
                     >
                         <div
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'authority'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
+                                    : 'bg-[#EFF6FF] text-[#0B3A67] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <ShieldCheck className="h-4 w-4" />
@@ -612,15 +612,15 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         onClick={() => setActiveTab('cards')}
                         className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
                             activeTab === 'cards'
-                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
-                                : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:text-foreground'
+                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] text-white shadow-md'
+                                : 'border-[#E5E4F0] bg-white text-[#111827] hover:bg-[#F8FAFC] dark:border-border dark:bg-card dark:text-foreground'
                         }`}
                     >
                         <div
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'cards'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
+                                    : 'bg-[#EFF6FF] text-[#0B3A67] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <Layers className="h-4 w-4" />
@@ -638,15 +638,15 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                         onClick={() => setActiveTab('table')}
                         className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
                             activeTab === 'table'
-                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white shadow-md'
-                                : 'border-[#E5E4F0] bg-white text-[#17152E] hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:text-foreground'
+                                ? 'border-[#0B3A67] bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] text-white shadow-md'
+                                : 'border-[#E5E4F0] bg-white text-[#111827] hover:bg-[#F8FAFC] dark:border-border dark:bg-card dark:text-foreground'
                         }`}
                     >
                         <div
                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                 activeTab === 'table'
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD]'
+                                    : 'bg-[#EFF6FF] text-[#0B3A67] dark:bg-slate-800 dark:text-[#93C5FD]'
                             }`}
                         >
                             <FileText className="h-4 w-4" />
@@ -706,7 +706,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                             onClick={() => setSelectedRoleId(role.id)}
                                             className={`flex items-start justify-between gap-3 rounded-2xl border p-3.5 text-left transition ${
                                                 isSelected
-                                                    ? 'border-[#A78BFA] bg-[#F1F5F9] shadow-2xs dark:border-[#0B3A67]/20 dark:bg-slate-800'
+                                                    ? 'border-[#0B3A67] bg-[#EFF6FF] shadow-2xs dark:border-[#1F5D9B]/40 dark:bg-slate-800'
                                                     : 'border-[#E5E4F0] bg-white hover:bg-[#F7F7FB] dark:border-border dark:bg-card dark:hover:bg-muted/30'
                                             }`}
                                         >
@@ -1064,7 +1064,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                                                                             type="checkbox"
                                                                                             readOnly
                                                                                             checked={isChecked}
-                                                                                            className="h-4 w-4 rounded border-[#A78BFA] text-[#0B3A67] dark:text-[#93C5FD] focus:ring-[#0B3A67]"
+                                                                                            className="h-4 w-4 rounded border-[#0B3A67]/40 text-[#0B3A67] dark:text-[#93C5FD] focus:ring-[#0B3A67]"
                                                                                         />
                                                                                     </td>
                                                                                     <td className="px-3 py-2.5 font-bold text-[#17152E] dark:text-foreground">
@@ -1833,7 +1833,7 @@ export default function RolesPermissionsIndex({ roles = [], permissions = [], au
                                         onClick={() => setEditorTab(tab.id as any)}
                                         className={`mr-4 border-b-2 py-1 transition ${
                                             editorTab === tab.id
-                                                ? 'border-[#0B3A67] text-[#0B3A67] dark:text-[#93C5FD] dark:border-[#A78BFA] dark:text-[#93C5FD]'
+                                                ? 'border-[#0B3A67] text-[#0B3A67] dark:border-[#1F5D9B] dark:text-[#93C5FD]'
                                                 : 'border-transparent text-slate-500 hover:text-[#17152E]'
                                         }`}
                                     >

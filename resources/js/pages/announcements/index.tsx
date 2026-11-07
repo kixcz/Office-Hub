@@ -151,7 +151,7 @@ export default function AnnouncementsIndex({
         const cat = (category || 'General').toLowerCase();
         if (cat === 'requirement') {
             return (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/60 text-[#8B1E3F] dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/60">
                     Requirement
                 </span>
             );
@@ -207,8 +207,8 @@ export default function AnnouncementsIndex({
                 );
             case 'scheduled':
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EFF6FF] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/25">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#8B1E3F]" />
                         Scheduled
                     </span>
                 );
@@ -233,7 +233,7 @@ export default function AnnouncementsIndex({
         const cat = (category || '').toLowerCase();
         if (cat === 'requirement') {
             return (
-                <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center shrink-0 shadow-2xs">
+                <div className="w-9 h-9 rounded-xl bg-[#8B1E3F]/10 text-[#8B1E3F] dark:text-rose-400 border border-[#8B1E3F]/30 flex items-center justify-center shrink-0 shadow-2xs">
                     <FileText className="w-4 h-4" />
                 </div>
             );
@@ -285,10 +285,10 @@ export default function AnnouncementsIndex({
             
             <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-7xl mx-auto w-full transition-colors">
                 {/* Hero Header Banner */}
-                <div className="rounded-2xl border border-amber-200/60 dark:border-amber-900/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-950/30 dark:via-amber-950/10 dark:to-transparent p-6 sm:p-7 relative overflow-hidden flex items-center justify-between shadow-2xs">
+                <div className="rounded-2xl border border-[#0B3A67]/20 dark:border-[#0B3A67]/30 bg-gradient-to-r from-[#0B3A67]/10 via-[#1F5D9B]/5 to-transparent dark:from-[#0B3A67]/30 dark:via-[#1F5D9B]/10 dark:to-transparent p-6 sm:p-7 relative overflow-hidden flex items-center justify-between shadow-2xs">
                     {/* Left Info */}
                     <div className="flex items-center gap-4 z-10">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-200/80 dark:border-amber-800/80 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-2xs">
+                        <div className="w-12 h-12 rounded-2xl bg-[#EFF6FF] dark:bg-slate-800 border border-[#175C94]/30 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center shrink-0 shadow-2xs">
                             <Megaphone className="w-6 h-6" />
                         </div>
                         <div>
@@ -303,7 +303,7 @@ export default function AnnouncementsIndex({
 
                     {/* Right Decorative Megaphone Illustration */}
                     <div className="hidden md:flex items-center opacity-85 pointer-events-none select-none">
-                        <svg className="w-32 h-24 text-amber-500/30 dark:text-amber-400/20" viewBox="0 0 160 120" fill="none" stroke="currentColor">
+                        <svg className="w-32 h-24 text-[#0B3A67]/20 dark:text-[#93C5FD]/15" viewBox="0 0 160 120" fill="none" stroke="currentColor">
                             {/* Stylized Megaphone Cone */}
                             <path d="M40 50 L95 25 L105 30 L105 90 L95 95 L40 70 Z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="3" strokeLinejoin="round" />
                             {/* Megaphone Handle */}
@@ -359,7 +359,7 @@ export default function AnnouncementsIndex({
                     {/* Scheduled */}
                     <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50 flex items-center justify-center shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/20 flex items-center justify-center shrink-0">
                                 <Clock className="w-5 h-5" />
                             </div>
                             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Scheduled</span>
@@ -405,7 +405,7 @@ export default function AnnouncementsIndex({
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Search announcements..."
-                                className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                                className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#175C94]/25"
                             />
                         </div>
 
@@ -414,7 +414,7 @@ export default function AnnouncementsIndex({
                             <select
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="appearance-none bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl pl-3 pr-8 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                                className="appearance-none bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl pl-3 pr-8 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#175C94]/25 cursor-pointer"
                             >
                                 <option value="all">All Categories</option>
                                 <option value="General">General</option>
@@ -431,7 +431,7 @@ export default function AnnouncementsIndex({
                             <select
                                 value={selectedPriority}
                                 onChange={(e) => setSelectedPriority(e.target.value)}
-                                className="appearance-none bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl pl-3 pr-8 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                                className="appearance-none bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl pl-3 pr-8 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#175C94]/25 cursor-pointer"
                             >
                                 <option value="all">All Priorities</option>
                                 <option value="normal">Normal</option>
@@ -446,7 +446,7 @@ export default function AnnouncementsIndex({
                             <select
                                 value={selectedStatus}
                                 onChange={(e) => setSelectedStatus(e.target.value)}
-                                className="appearance-none bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl pl-3 pr-8 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                                className="appearance-none bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl pl-3 pr-8 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#175C94]/25 cursor-pointer"
                             >
                                 <option value="all">All Statuses</option>
                                 <option value="active">Active</option>
@@ -677,7 +677,7 @@ export default function AnnouncementsIndex({
                                 type="text" 
                                 value={data.title} 
                                 onChange={e => setData('title', e.target.value)} 
-                                className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-background px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                                className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-background px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#175C94]" 
                                 placeholder="Announcement headline"
                                 required 
                             />
@@ -691,7 +691,7 @@ export default function AnnouncementsIndex({
                                 value={data.message} 
                                 onChange={e => setData('message', e.target.value)} 
                                 rows={4} 
-                                className="flex w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-background p-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                                className="flex w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-background p-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#175C94]" 
                                 placeholder="Full announcement details..."
                                 required 
                             />
@@ -796,7 +796,7 @@ export default function AnnouncementsIndex({
                 <DialogContent className="sm:max-w-[550px] rounded-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-base font-bold flex items-center gap-2">
-                            <Megaphone className="w-5 h-5 text-amber-500" />
+                            <Megaphone className="w-5 h-5 text-[#0B3A67] dark:text-[#93C5FD]" />
                             Announcement Details
                         </DialogTitle>
                     </DialogHeader>

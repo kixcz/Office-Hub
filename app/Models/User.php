@@ -246,16 +246,32 @@ class User extends Authenticatable
         }
 
         // 2. Check active ScopedRoleAssignment with college_id or program_id
+        // Filter out assignments pointing to top-level Entity (parent_id is null / type is Entity)
         $scopedAssignment = $this->scopedRoleAssignments()
             ->with(['college', 'program.college'])
             ->where('status', 'Active')
             ->where(function ($q) {
                 $q->whereNotNull('college_id')->orWhereNotNull('program_id');
             })
+            ->whereHas('college', function ($q) {
+                $q->where('type', '!=', 'Entity');
+            })
             ->latest('id')
             ->first();
 
-        if ($scopedAssignment?->college) {
+        if (! $scopedAssignment) {
+            // Fallback to any assignment with program or college if no non-entity college found
+            $scopedAssignment = $this->scopedRoleAssignments()
+                ->with(['college', 'program.college'])
+                ->where('status', 'Active')
+                ->where(function ($q) {
+                    $q->whereNotNull('college_id')->orWhereNotNull('program_id');
+                })
+                ->latest('id')
+                ->first();
+        }
+
+        if ($scopedAssignment?->college && $scopedAssignment->college->type !== 'Entity') {
             return $scopedAssignment->college;
         }
 

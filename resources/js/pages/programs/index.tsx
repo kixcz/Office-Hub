@@ -459,9 +459,9 @@ export default function ProgramsCurriculumIndex({
 
             <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-[1600px] mx-auto w-full transition-colors">
                 {/* 1. Hero Header Banner */}
-                <div className="rounded-2xl border border-amber-200/60 dark:border-amber-900/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-950/30 dark:via-amber-950/10 dark:to-transparent p-6 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-2xs">
+                <div className="rounded-2xl border border-blue-200/60 dark:border-blue-900/40 bg-gradient-to-r from-blue-500/10 via-blue-500/5 to-transparent dark:from-blue-950/30 dark:via-blue-950/10 dark:to-transparent p-6 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-2xs">
                     <div className="flex items-center gap-4 z-10">
-                        <div className="w-13 h-13 rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-200/90 dark:border-amber-800/80 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-2xs p-3">
+                        <div className="w-13 h-13 rounded-2xl bg-blue-100 dark:bg-blue-950/60 border border-blue-200/90 dark:border-blue-800/80 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-2xs p-3">
                             <GraduationCap className="w-7 h-7" />
                         </div>
                         <div>
@@ -469,7 +469,7 @@ export default function ProgramsCurriculumIndex({
                                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                                     Programs & Curriculum
                                 </h1>
-                                <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                                     Academic Blueprint
                                 </span>
                             </div>
@@ -482,7 +482,7 @@ export default function ProgramsCurriculumIndex({
                     <div className="flex items-center gap-3 z-10">
                         <button
                             onClick={() => setIsAddProgramOpen(true)}
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400 rounded-xl shadow-xs transition-all cursor-pointer"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500 rounded-xl shadow-xs transition-all cursor-pointer"
                         >
                             <Plus className="w-4 h-4 stroke-[2.5]" />
                             <span>Create Degree Program</span>
@@ -493,7 +493,7 @@ export default function ProgramsCurriculumIndex({
                 {/* 2. Top Metric Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50 flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center shrink-0">
                             <GraduationCap className="w-6 h-6" />
                         </div>
                         <div>
@@ -553,7 +553,7 @@ export default function ProgramsCurriculumIndex({
                         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs">
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                                    <Building2 className="w-4 h-4 text-amber-500" />
+                                    <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                     <span>Academic Programs</span>
                                 </h2>
                                 <span className="text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
@@ -569,7 +569,7 @@ export default function ProgramsCurriculumIndex({
                                     placeholder="Filter by code or name..."
                                     value={programSearch}
                                     onChange={(e) => setProgramSearch(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                                    className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                             </div>
 
@@ -589,7 +589,7 @@ export default function ProgramsCurriculumIndex({
                                             className={cn(
                                                 'p-3.5 rounded-xl border transition-all cursor-pointer text-left relative group',
                                                 isSelected
-                                                    ? 'bg-amber-50/70 border-amber-300 dark:bg-amber-950/30 dark:border-amber-700/80 shadow-xs ring-1 ring-amber-400/30'
+                                                    ? 'bg-blue-50/70 border-blue-300 dark:bg-blue-950/30 dark:border-blue-700/80 shadow-xs ring-1 ring-blue-400/30'
                                                     : 'bg-white dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                                             )}
                                         >
@@ -598,8 +598,8 @@ export default function ProgramsCurriculumIndex({
                                                     <span className={cn(
                                                         'font-extrabold text-sm px-2.5 py-1 rounded-lg tracking-tight',
                                                         isSelected
-                                                            ? 'bg-amber-500 text-white'
-                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 group-hover:bg-amber-100 group-hover:text-amber-800 dark:group-hover:bg-amber-900/40'
+                                                            ? 'bg-blue-600 text-white'
+                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 group-hover:bg-blue-100 group-hover:text-blue-800 dark:group-hover:bg-blue-900/40'
                                                     )}>
                                                         {prog.code}
                                                     </span>
@@ -648,7 +648,7 @@ export default function ProgramsCurriculumIndex({
                                                                 }}
                                                                 className="cursor-pointer gap-2"
                                                             >
-                                                                <Plus className="w-3.5 h-3.5 text-amber-500" />
+                                                                <Plus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                                                                 <span>Add Curriculum</span>
                                                             </DropdownMenuItem>
 
@@ -696,7 +696,7 @@ export default function ProgramsCurriculumIndex({
                                                 <span>Curricula: <strong className="text-slate-700 dark:text-slate-300">{prog.curricula?.length || 0}</strong> ({activeCurricCount} active)</span>
                                                 <ChevronRight className={cn(
                                                     'w-4 h-4 transition-transform',
-                                                    isSelected ? 'text-amber-500 translate-x-1' : 'opacity-40'
+                                                    isSelected ? 'text-blue-600 dark:text-blue-400 translate-x-1' : 'opacity-40'
                                                 )} />
                                             </div>
                                         </div>
@@ -715,7 +715,7 @@ export default function ProgramsCurriculumIndex({
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-lg font-black text-amber-600 dark:text-amber-400">
+                                            <span className="text-lg font-black text-blue-600 dark:text-blue-400">
                                                 {selectedProgram.code}
                                             </span>
                                             <span className="text-slate-300 dark:text-slate-700">•</span>
@@ -738,7 +738,7 @@ export default function ProgramsCurriculumIndex({
                                         </button>
                                         <button
                                             onClick={() => setIsAddCurriculumOpen(true)}
-                                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white dark:text-slate-950 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 cursor-pointer shadow-2xs"
                                         >
                                             <Plus className="w-3.5 h-3.5" />
                                             <span>New Curriculum Version</span>
@@ -852,7 +852,7 @@ export default function ProgramsCurriculumIndex({
 
                                 {/* Active Curriculum Metadata Bar */}
                                 {activeCurriculum && (
-                                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-3 py-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 text-xs">
+                                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-3 py-2 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/30 text-xs">
                                         <div className="flex items-center gap-4">
                                             <span>Effective Year: <strong>{activeCurriculum.effective_year}</strong></span>
                                             <span>Total Required Units: <strong>{activeCurriculum.total_units} units</strong></span>
@@ -878,7 +878,7 @@ export default function ProgramsCurriculumIndex({
                                             {/* Subheader banner */}
                                             <div className="px-4 py-2.5 bg-slate-100/70 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                                    <span className="w-2 h-2 rounded-full bg-blue-600" />
                                                     <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-100">
                                                         Year {group.year} • {group.semester}
                                                     </h3>
@@ -890,13 +890,13 @@ export default function ProgramsCurriculumIndex({
                                                 <div className="flex items-center gap-3 text-xs font-semibold text-slate-600 dark:text-slate-300">
                                                     <span>Lec: <strong className="text-slate-900 dark:text-white">{group.totalLec}h</strong></span>
                                                     <span>Lab: <strong className="text-slate-900 dark:text-white">{group.totalLab}h</strong></span>
-                                                    <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold">
+                                                    <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 font-bold">
                                                         {group.totalUnits} Units
                                                     </span>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleOpenAddCourseForTerm(group.year, group.semester)}
-                                                        className="ml-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white dark:text-slate-950 flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                                                        className="ml-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
                                                         title={`Add course to Year ${group.year} ${group.semester}`}
                                                     >
                                                         <Plus className="w-3.5 h-3.5" />
@@ -972,7 +972,7 @@ export default function ProgramsCurriculumIndex({
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => handleOpenEditCourse(cc)}
-                                                                                className="p-1 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
+                                                                                className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
                                                                                 title="Edit course sequence / placement"
                                                                             >
                                                                                 <Edit className="w-3.5 h-3.5" />
@@ -1030,7 +1030,7 @@ export default function ProgramsCurriculumIndex({
                                         placeholder="e.g. BSIT"
                                         value={addProgramForm.data.code}
                                         onChange={(e) => addProgramForm.setData('code', e.target.value.toUpperCase())}
-                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                     />
                                 </div>
                                 <div>
@@ -1042,7 +1042,7 @@ export default function ProgramsCurriculumIndex({
                                         required
                                         value={addProgramForm.data.duration_years}
                                         onChange={(e) => addProgramForm.setData('duration_years', Number(e.target.value))}
-                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                        className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                     />
                                 </div>
                             </div>
@@ -1055,7 +1055,7 @@ export default function ProgramsCurriculumIndex({
                                     placeholder="Bachelor of Science in Information Technology"
                                     value={addProgramForm.data.name}
                                     onChange={(e) => addProgramForm.setData('name', e.target.value)}
-                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                    className="w-full mt-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                 />
                             </div>
 
@@ -1087,7 +1087,7 @@ export default function ProgramsCurriculumIndex({
                             </div>
 
                             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                                <label className="text-xs font-bold text-amber-700 dark:text-amber-400">Baseline Curriculum Version</label>
+                                <label className="text-xs font-bold text-blue-700 dark:text-blue-400">Baseline Curriculum Version</label>
                                 <div className="grid grid-cols-2 gap-3 mt-1.5">
                                     <input
                                         type="text"
@@ -1117,7 +1117,7 @@ export default function ProgramsCurriculumIndex({
                                 <button
                                     type="submit"
                                     disabled={addProgramForm.processing}
-                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-blue-600 dark:text-white rounded-lg hover:bg-slate-800 dark:hover:bg-blue-500"
                                 >
                                     Save Program Blueprint
                                 </button>
@@ -1242,7 +1242,7 @@ export default function ProgramsCurriculumIndex({
                                 <button
                                     type="submit"
                                     disabled={editProgramForm.processing}
-                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-blue-600 dark:text-white rounded-lg hover:bg-slate-800 dark:hover:bg-blue-500"
                                 >
                                     Update Program
                                 </button>
@@ -1321,7 +1321,7 @@ export default function ProgramsCurriculumIndex({
                                 <button
                                     type="submit"
                                     disabled={addCurriculumForm.processing}
-                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-blue-600 dark:text-white rounded-lg hover:bg-slate-800 dark:hover:bg-blue-500"
                                 >
                                     Create Version
                                 </button>
@@ -1375,7 +1375,7 @@ export default function ProgramsCurriculumIndex({
                                 <button
                                     type="submit"
                                     disabled={copyCurriculumForm.processing}
-                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-blue-600 dark:text-white rounded-lg hover:bg-slate-800 dark:hover:bg-blue-500"
                                 >
                                     Clone Sequence Matrix
                                 </button>
@@ -1488,7 +1488,7 @@ export default function ProgramsCurriculumIndex({
                                 <button
                                     type="submit"
                                     disabled={addCourseForm.processing}
-                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-blue-600 dark:text-white rounded-lg hover:bg-slate-800 dark:hover:bg-blue-500"
                                 >
                                     Place in Matrix
                                 </button>
@@ -1596,7 +1596,7 @@ export default function ProgramsCurriculumIndex({
                                 <button
                                     type="submit"
                                     disabled={editCourseForm.processing}
-                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-amber-500 dark:text-slate-950 rounded-lg"
+                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-blue-600 dark:text-white rounded-lg hover:bg-slate-800 dark:hover:bg-blue-500"
                                 >
                                     Update Course Placement
                                 </button>

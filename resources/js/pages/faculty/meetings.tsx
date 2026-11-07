@@ -240,7 +240,7 @@ export default function FacultyMeetingsPage({
             case 'consultation':
                 return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300';
             case 'workshop':
-                return 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300';
+                return 'bg-rose-100 text-[#8B1E3F] dark:bg-rose-950/60 dark:text-rose-300';
             default:
                 return 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300';
         }
@@ -271,7 +271,7 @@ export default function FacultyMeetingsPage({
                 {/* 1. Header Banner */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5 border border-amber-200 dark:border-amber-800/60 shadow-2xs">
+                        <div className="w-12 h-12 rounded-xl bg-[#0B3A67]/10 text-[#0B3A67] dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5 border border-[#0B3A67]/20 shadow-2xs">
                             <CalendarIcon className="w-6 h-6 stroke-[2.2]" />
                         </div>
                         <div>
@@ -288,7 +288,7 @@ export default function FacultyMeetingsPage({
                         <button
                             type="button"
                             onClick={() => setIsAddEventOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs md:text-sm font-bold shadow-xs hover:shadow-md transition-all active:scale-[0.98]"
+                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white text-xs md:text-sm font-bold shadow-xs hover:shadow-md transition-all active:scale-[0.98]"
                         >
                             <Plus className="w-4 h-4 stroke-[2.5]" />
                             <span>Add Personal Event</span>
@@ -497,7 +497,7 @@ export default function FacultyMeetingsPage({
                             className={cn(
                                 'px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap',
                                 activeTab === 'all'
-                                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-300/70 dark:border-amber-700/60 shadow-2xs'
+                                    ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs'
                                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                             )}
                         >
@@ -509,7 +509,7 @@ export default function FacultyMeetingsPage({
                             className={cn(
                                 'px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap',
                                 activeTab === 'meetings'
-                                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-300/70 dark:border-amber-700/60 shadow-2xs'
+                                    ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs'
                                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                             )}
                         >
@@ -521,7 +521,7 @@ export default function FacultyMeetingsPage({
                             className={cn(
                                 'px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap',
                                 activeTab === 'activities'
-                                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-300/70 dark:border-amber-700/60 shadow-2xs'
+                                    ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs'
                                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                             )}
                         >
@@ -1093,7 +1093,7 @@ export default function FacultyMeetingsPage({
                             </button>
                             <button
                                 type="submit"
-                                className="px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-2xs"
+                                className="px-4 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white shadow-2xs"
                             >
                                 Save Event
                             </button>

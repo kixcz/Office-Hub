@@ -69,19 +69,19 @@ export default function TvStudioDashboardPage({ stats, recent_slides, quick_acti
             <TvStudioLayout>
                 <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
                     {/* Hero Header */}
-                    <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/80 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden border border-amber-900/40 shadow-lg">
-                        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-500/25 via-transparent to-transparent pointer-events-none" />
+                    <div className="bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#68152E] rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden border border-[#8B1E3F]/30 shadow-lg">
+                        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-400/20 via-transparent to-transparent pointer-events-none" />
 
                         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="space-y-2 max-w-2xl">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-bold uppercase tracking-wider">
-                                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-[#EFF6FF] text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+                                    <Sparkles className="w-3.5 h-3.5 text-white" />
                                     <span>TV Display Studio Workspace</span>
                                 </div>
                                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
                                     Live TV Presentation Management
                                 </h1>
-                                <p className="text-sm text-slate-300 leading-relaxed font-normal">
+                                <p className="text-sm text-slate-200 leading-relaxed font-normal">
                                     Streamline college announcements, schedule grids, top faculty recognition, and real-time room utilization across CIDS hallway displays.
                                 </p>
                             </div>
@@ -90,9 +90,9 @@ export default function TvStudioDashboardPage({ stats, recent_slides, quick_acti
                                 <Link
                                     href="/tv-display"
                                     target="_blank"
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs sm:text-sm transition-all shadow-md hover:shadow-lg cursor-pointer shrink-0 border border-amber-500/30"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-[#0B3A67] font-bold text-xs sm:text-sm transition-all shadow-md hover:shadow-lg cursor-pointer shrink-0 border border-white/40"
                                 >
-                                    <Tv className="w-4 h-4 text-slate-950" />
+                                    <Tv className="w-4 h-4 text-[#0B3A67]" />
                                     <span>Launch Screen</span>
                                     <ExternalLink className="w-3.5 h-3.5 opacity-80" />
                                 </Link>
@@ -101,7 +101,7 @@ export default function TvStudioDashboardPage({ stats, recent_slides, quick_acti
                                     href="/tv-config/slides/builder"
                                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs sm:text-sm transition-all cursor-pointer shrink-0 backdrop-blur-sm"
                                 >
-                                    <Paintbrush className="w-4 h-4 text-amber-400" />
+                                    <Paintbrush className="w-4 h-4 text-white" />
                                     <span>Visual Builder</span>
                                 </Link>
                             </div>
@@ -110,27 +110,27 @@ export default function TvStudioDashboardPage({ stats, recent_slides, quick_acti
                         {/* Quick Telemetry Bar */}
                         <div className="mt-6 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
                             <div>
-                                <span className="text-slate-400 block font-medium">Display Status</span>
-                                <span className="text-emerald-400 font-bold flex items-center gap-1.5 mt-0.5">
+                                <span className="text-slate-200/80 block font-medium">Display Status</span>
+                                <span className="text-emerald-300 font-bold flex items-center gap-1.5 mt-0.5">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                                     {stats.display_status} (1 Client Active)
                                 </span>
                             </div>
                             <div>
-                                <span className="text-slate-400 block font-medium">Active Playlist</span>
+                                <span className="text-slate-200/80 block font-medium">Active Playlist</span>
                                 <span className="text-white font-bold mt-0.5 block truncate">
                                     {stats.active_playlist}
                                 </span>
                             </div>
                             <div>
-                                <span className="text-slate-400 block font-medium">Rotation Cycle</span>
-                                <span className="text-amber-300 font-bold mt-0.5 block">
+                                <span className="text-slate-200/80 block font-medium">Rotation Cycle</span>
+                                <span className="text-[#93C5FD] font-bold mt-0.5 block">
                                     {stats.total_rotation_time}
                                 </span>
                             </div>
                             <div>
-                                <span className="text-slate-400 block font-medium">Resolution</span>
-                                <span className="text-blue-300 font-bold mt-0.5 block">
+                                <span className="text-slate-200/80 block font-medium">Resolution</span>
+                                <span className="text-blue-200 font-bold mt-0.5 block">
                                     {stats.resolution}
                                 </span>
                             </div>
@@ -235,12 +235,12 @@ export default function TvStudioDashboardPage({ stats, recent_slides, quick_acti
 
                             <Link
                                 href="/tv-config/slides/builder"
-                                className="group p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 transition-all shadow-2xs"
+                                className="group p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-[#175C94] dark:hover:border-blue-500 transition-all shadow-2xs"
                             >
-                                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                                <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center group-hover:scale-105 transition-transform">
                                     <Paintbrush className="w-5 h-5" />
                                 </div>
-                                <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-3 group-hover:text-amber-600 transition-colors">
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-3 group-hover:text-[#0B3A67] transition-colors">
                                     Visual Slide Builder
                                 </h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
@@ -250,14 +250,14 @@ export default function TvStudioDashboardPage({ stats, recent_slides, quick_acti
 
                             <Link
                                 href="/tv-config/spotlight"
-                                className="group p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent border border-amber-300 dark:border-amber-800/80 hover:border-amber-500 transition-all shadow-2xs"
+                                className="group p-5 rounded-2xl bg-gradient-to-br from-[#EFF6FF] via-white to-slate-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/80 border border-[#0B3A67]/20 dark:border-blue-900/40 hover:border-[#175C94] transition-all shadow-2xs"
                             >
-                                <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center group-hover:scale-105 transition-transform font-black">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white flex items-center justify-center group-hover:scale-105 transition-transform font-black">
                                     <Sparkles className="w-5 h-5" />
                                 </div>
-                                <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-3 group-hover:text-amber-600 transition-colors flex items-center gap-1.5">
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-3 group-hover:text-[#0B3A67] transition-colors flex items-center gap-1.5">
                                     <span>Recognition & Celebrations</span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 font-extrabold uppercase">New</span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#8B1E3F] text-white font-extrabold uppercase">New</span>
                                 </h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                                     Create visual hero Spotlight Slides for faculty achievements, awards, approaching birthdays, research publications, and milestones.

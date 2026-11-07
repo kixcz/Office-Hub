@@ -134,16 +134,16 @@ export default function InstitutionProfile({ profile }: Props) {
 
             <div className="flex flex-col gap-5 p-4 md:p-6 max-w-7xl mx-auto w-full">
                 {/* Top Header Banner Card */}
-                <div className="relative overflow-hidden rounded-2xl border border-[#8B1E3F]/30 bg-gradient-to-r from-[#F7F7FB] via-[#F3E8FF]/60 to-[#EDE9FE]/80 dark:from-[#17152E] dark:via-[#1E1B38] dark:to-[#262246] px-5 py-4 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    {/* Soft decorative lavender wave */}
-                    <div className="pointer-events-none absolute -right-12 -bottom-12 h-40 w-72 rounded-full bg-[#A78BFA]/25 blur-2xl" />
+                <div className="relative overflow-hidden rounded-2xl border border-[#8B1E3F]/30 bg-gradient-to-r from-[#EFF6FF] via-[#F8FAFC] to-[#F1F5F9] dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-800 px-5 py-4 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    {/* Soft decorative ambient glow */}
+                    <div className="pointer-events-none absolute -right-12 -bottom-12 h-40 w-72 rounded-full bg-[#1F5D9B]/15 blur-2xl" />
 
                     <div className="relative z-10 flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#8B1E3F]/30 shadow-2xs">
+                        <div className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#0B3A67]/20 shadow-2xs">
                             <Layers className="w-6 h-6" />
                         </div>
                         <div>
-                            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-[#17152E] dark:text-white leading-tight">
+                            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
                                 Institution Profile & Identity
                             </h1>
                             <p className="text-xs md:text-[13px] text-muted-foreground mt-0.5">
@@ -155,7 +155,7 @@ export default function InstitutionProfile({ profile }: Props) {
                     <div className="relative z-10 flex flex-wrap items-center gap-3">
                         <Link
                             href="/institution/global-defaults"
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] hover:bg-[#DDD6FE] dark:bg-slate-800 dark:text-[#93C5FD] border border-[#8B1E3F]/30 transition-colors shadow-2xs"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold bg-white text-[#0B3A67] hover:bg-[#EFF6FF] dark:bg-slate-800 dark:text-[#93C5FD] border border-[#0B3A67]/20 transition-colors shadow-2xs"
                         >
                             <Settings className="w-3.5 h-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                             Institution Settings
@@ -182,11 +182,11 @@ export default function InstitutionProfile({ profile }: Props) {
                     <div className="lg:col-span-5 rounded-2xl border border-border/80 bg-card p-6 shadow-xs flex flex-col justify-between space-y-5">
                         {/* Card Header */}
                         <div className="flex items-start gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#8B1E3F]/30">
+                            <div className="h-10 w-10 rounded-xl bg-[#EFF6FF] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#0B3A67]/20">
                                 <Building2 className="w-5 h-5" />
                             </div>
                             <div>
-                                <h2 className="text-base font-extrabold text-[#17152E] dark:text-white leading-snug">
+                                <h2 className="text-base font-extrabold text-slate-900 dark:text-white leading-snug">
                                     Institutional Identity
                                 </h2>
                                 <p className="text-xs text-muted-foreground">
@@ -200,7 +200,7 @@ export default function InstitutionProfile({ profile }: Props) {
                             <div
                                 onClick={() => fileInputRef.current?.click()}
                                 title="Click to upload or change the official Institution Logo"
-                                className="group relative w-32 h-32 rounded-3xl bg-gradient-to-b from-[#FFFFFF] to-[#F3E8FF]/60 dark:from-[#1E1B38] dark:to-[#262246] border-2 border-[#8B1E3F]/30 shadow-md p-4 flex items-center justify-center cursor-pointer hover:border-[#0B3A67] transition-all"
+                                className="group relative w-32 h-32 rounded-3xl bg-gradient-to-b from-[#FFFFFF] to-[#EFF6FF] dark:from-slate-900 dark:to-slate-800 border-2 border-[#0B3A67]/25 shadow-md p-4 flex items-center justify-center cursor-pointer hover:border-[#0B3A67] transition-all"
                             >
                                 <img
                                     src={logoPreview}
@@ -212,7 +212,7 @@ export default function InstitutionProfile({ profile }: Props) {
                                 />
 
                                 {/* Hover overlay hint */}
-                                <div className="absolute inset-0 rounded-3xl bg-[#17152E]/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1">
+                                <div className="absolute inset-0 rounded-3xl bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1">
                                     <Upload className="w-4 h-4" />
                                     <span>Change Logo</span>
                                 </div>
@@ -224,7 +224,7 @@ export default function InstitutionProfile({ profile }: Props) {
                                         e.stopPropagation();
                                         fileInputRef.current?.click();
                                     }}
-                                    className="absolute bottom-2 right-2 h-8 w-8 rounded-xl bg-white dark:bg-[#17152E] text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] border border-[#8B1E3F]/30 shadow-sm flex items-center justify-center hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+                                    className="absolute bottom-2 right-2 h-8 w-8 rounded-xl bg-white dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] border border-[#0B3A67]/25 shadow-sm flex items-center justify-center hover:bg-[#EFF6FF] transition-colors cursor-pointer"
                                     title="Change Logo"
                                 >
                                     <Camera className="w-4 h-4" />
@@ -241,10 +241,10 @@ export default function InstitutionProfile({ profile }: Props) {
                                 <p className="mt-1.5 text-xs font-semibold text-rose-500">{errors.logo}</p>
                             )}
 
-                            <h3 className="font-extrabold text-lg text-[#17152E] dark:text-white mt-4 leading-snug">
+                            <h3 className="font-extrabold text-lg text-slate-900 dark:text-white mt-4 leading-snug">
                                 {data.name}
                             </h3>
-                            <span className="inline-block mt-1.5 px-4 py-1 text-xs font-extrabold rounded-full bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD] border border-[#8B1E3F]/30">
+                            <span className="inline-block mt-1.5 px-4 py-1 text-xs font-extrabold rounded-full bg-[#EFF6FF] text-[#0B3A67] dark:bg-slate-800 dark:text-[#93C5FD] border border-[#0B3A67]/20">
                                 {data.acronym}
                             </span>
                         </div>
@@ -255,9 +255,9 @@ export default function InstitutionProfile({ profile }: Props) {
                         {/* Metadata List */}
                         <div className="space-y-3.5 text-xs text-left">
                             <div className="flex items-start gap-3">
-                                <MapPin className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] shrink-0 mt-0.5" />
+                                <MapPin className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD] shrink-0 mt-0.5" />
                                 <div>
-                                    <span className="font-bold text-[#17152E] dark:text-white block">
+                                    <span className="font-bold text-slate-900 dark:text-white block">
                                         Official Address
                                     </span>
                                     <span className="text-muted-foreground leading-relaxed block mt-0.5">
@@ -267,9 +267,9 @@ export default function InstitutionProfile({ profile }: Props) {
                             </div>
 
                             <div className="flex items-start gap-3">
-                                <Globe className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] shrink-0 mt-0.5" />
+                                <Globe className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD] shrink-0 mt-0.5" />
                                 <div>
-                                    <span className="font-bold text-[#17152E] dark:text-white block">
+                                    <span className="font-bold text-slate-900 dark:text-white block">
                                         System Timezone
                                     </span>
                                     <span className="text-muted-foreground block mt-0.5">{data.timezone}</span>
@@ -277,9 +277,9 @@ export default function InstitutionProfile({ profile }: Props) {
                             </div>
 
                             <div className="flex items-start gap-3">
-                                <Mail className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] shrink-0 mt-0.5" />
+                                <Mail className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD] shrink-0 mt-0.5" />
                                 <div>
-                                    <span className="font-bold text-[#17152E] dark:text-white block">
+                                    <span className="font-bold text-slate-900 dark:text-white block">
                                         Institutional Email
                                     </span>
                                     <span className="text-muted-foreground block mt-0.5">{data.email}</span>
@@ -287,9 +287,9 @@ export default function InstitutionProfile({ profile }: Props) {
                             </div>
 
                             <div className="flex items-start gap-3">
-                                <Link2 className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] shrink-0 mt-0.5" />
+                                <Link2 className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD] shrink-0 mt-0.5" />
                                 <div>
-                                    <span className="font-bold text-[#17152E] dark:text-white block">
+                                    <span className="font-bold text-slate-900 dark:text-white block">
                                         Institution Website
                                     </span>
                                     <span className="text-muted-foreground block mt-0.5">{data.website}</span>
@@ -298,13 +298,13 @@ export default function InstitutionProfile({ profile }: Props) {
                         </div>
 
                         {/* Bottom Sub-card: Institution Seal / Brand Identity */}
-                        <div className="rounded-2xl bg-[#F7F7FB] dark:bg-[#1E1B38] border border-[#8B1E3F]/30 p-3.5 flex items-center justify-between gap-3">
+                        <div className="rounded-2xl bg-[#EFF6FF]/60 dark:bg-slate-900/60 border border-[#0B3A67]/20 p-3.5 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3 min-w-0">
-                                <div className="h-10 w-10 rounded-full bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#8B1E3F]/30">
+                                <div className="h-10 w-10 rounded-full bg-white dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#0B3A67]/20 shadow-xs">
                                     <Award className="w-5 h-5" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-xs font-extrabold text-[#17152E] dark:text-white">
+                                    <p className="text-xs font-extrabold text-slate-900 dark:text-white">
                                         Institution Seal / Brand Identity
                                     </p>
                                     <p className="text-[11px] text-muted-foreground leading-snug">
@@ -315,7 +315,7 @@ export default function InstitutionProfile({ profile }: Props) {
                             <button
                                 type="button"
                                 onClick={() => setIsPreviewModalOpen(true)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#17152E] border border-border text-xs font-bold text-[#17152E] dark:text-white hover:border-[#0B3A67] transition-colors shrink-0 shadow-2xs cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-border text-xs font-bold text-slate-900 dark:text-white hover:border-[#0B3A67] transition-colors shrink-0 shadow-2xs cursor-pointer"
                             >
                                 <Eye className="w-3.5 h-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Preview
@@ -329,11 +329,11 @@ export default function InstitutionProfile({ profile }: Props) {
                         <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-start gap-3">
-                                    <div className="h-10 w-10 rounded-xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#8B1E3F]/30">
+                                    <div className="h-10 w-10 rounded-xl bg-[#EFF6FF] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#0B3A67]/20">
                                         <Settings className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <h2 className="text-base font-extrabold text-[#17152E] dark:text-white leading-snug">
+                                        <h2 className="text-base font-extrabold text-slate-900 dark:text-white leading-snug">
                                             Institutional Configuration Parameters
                                         </h2>
                                         <p className="text-xs text-muted-foreground">
@@ -345,7 +345,7 @@ export default function InstitutionProfile({ profile }: Props) {
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#8B1E3F]/30 bg-[#F7F7FB] hover:bg-[#F1F5F9] dark:bg-[#1E1B38] text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] transition-colors shrink-0 cursor-pointer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#0B3A67]/20 bg-[#EFF6FF] hover:bg-[#DBEAFE] dark:bg-slate-800 text-[11px] font-bold text-[#0B3A67] dark:text-[#93C5FD] transition-colors shrink-0 cursor-pointer"
                                 >
                                     <Camera className="w-3.5 h-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                     Upload New Logo
@@ -353,7 +353,7 @@ export default function InstitutionProfile({ profile }: Props) {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[#17152E] dark:text-white block">
+                                <label className="text-xs font-bold text-slate-900 dark:text-white block">
                                     Full Legal Name *
                                 </label>
                                 <input
@@ -361,14 +361,14 @@ export default function InstitutionProfile({ profile }: Props) {
                                     required
                                     value={data.name}
                                     onChange={(e) => setData('name', e.target.value)}
-                                    className="w-full h-10 rounded-xl border border-border/80 bg-[#F7F7FB] dark:bg-[#131126] px-3.5 text-xs font-semibold text-[#17152E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
+                                    className="w-full h-10 rounded-xl border border-border/80 bg-slate-50 dark:bg-slate-900 px-3.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
                                 />
                                 {errors.name && <p className="text-[11px] text-rose-500">{errors.name}</p>}
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-[#17152E] dark:text-white block">
+                                    <label className="text-xs font-bold text-slate-900 dark:text-white block">
                                         Acronym / Abbreviation *
                                     </label>
                                     <input
@@ -376,19 +376,19 @@ export default function InstitutionProfile({ profile }: Props) {
                                         required
                                         value={data.acronym}
                                         onChange={(e) => setData('acronym', e.target.value)}
-                                        className="w-full h-10 rounded-xl border border-border/80 bg-[#F7F7FB] dark:bg-[#131126] px-3.5 text-xs font-bold text-[#17152E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
+                                        className="w-full h-10 rounded-xl border border-border/80 bg-slate-50 dark:bg-slate-900 px-3.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
                                     />
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-[#17152E] dark:text-white block">
+                                    <label className="text-xs font-bold text-slate-900 dark:text-white block">
                                         System Timezone *
                                     </label>
                                     <div className="relative">
                                         <select
                                             value={data.timezone}
                                             onChange={(e) => setData('timezone', e.target.value)}
-                                            className="w-full h-10 rounded-xl border border-border/80 bg-[#F7F7FB] dark:bg-[#131126] px-3.5 pr-9 text-xs font-medium text-[#17152E] dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67] cursor-pointer"
+                                            className="w-full h-10 rounded-xl border border-border/80 bg-slate-50 dark:bg-slate-900 px-3.5 pr-9 text-xs font-medium text-slate-900 dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67] cursor-pointer"
                                         >
                                             {TIMEZONE_OPTIONS.map((tz) => (
                                                 <option key={tz} value={tz}>
@@ -402,7 +402,7 @@ export default function InstitutionProfile({ profile }: Props) {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[#17152E] dark:text-white block">
+                                <label className="text-xs font-bold text-slate-900 dark:text-white block">
                                     Official Campus Address *
                                 </label>
                                 <textarea
@@ -410,7 +410,7 @@ export default function InstitutionProfile({ profile }: Props) {
                                     required
                                     value={data.address}
                                     onChange={(e) => setData('address', e.target.value)}
-                                    className="w-full rounded-xl border border-border/80 bg-[#F7F7FB] dark:bg-[#131126] px-3.5 py-2.5 text-xs font-medium text-[#17152E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
+                                    className="w-full rounded-xl border border-border/80 bg-slate-50 dark:bg-slate-900 px-3.5 py-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
                                 />
                             </div>
                         </div>
@@ -418,11 +418,11 @@ export default function InstitutionProfile({ profile }: Props) {
                         {/* Card 2: Report & Letterhead Defaults */}
                         <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-4">
                             <div className="flex items-start gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#8B1E3F]/30">
+                                <div className="h-10 w-10 rounded-xl bg-[#EFF6FF] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#0B3A67]/20">
                                     <FileText className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h2 className="text-base font-extrabold text-[#17152E] dark:text-white leading-snug">
+                                    <h2 className="text-base font-extrabold text-slate-900 dark:text-white leading-snug">
                                         Report & Letterhead Defaults
                                     </h2>
                                     <p className="text-xs text-muted-foreground">
@@ -432,26 +432,26 @@ export default function InstitutionProfile({ profile }: Props) {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[#17152E] dark:text-white block">
+                                <label className="text-xs font-bold text-slate-900 dark:text-white block">
                                     Report Header Letterhead
                                 </label>
                                 <input
                                     type="text"
                                     value={data.report_header}
                                     onChange={(e) => setData('report_header', e.target.value)}
-                                    className="w-full h-10 rounded-xl border border-border/80 bg-[#F7F7FB] dark:bg-[#131126] px-3.5 font-mono text-xs font-semibold text-[#17152E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
+                                    className="w-full h-10 rounded-xl border border-border/80 bg-slate-50 dark:bg-slate-900 px-3.5 font-mono text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
                                 />
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[#17152E] dark:text-white block">
+                                <label className="text-xs font-bold text-slate-900 dark:text-white block">
                                     Accreditation Footer Notice
                                 </label>
                                 <textarea
                                     rows={2}
                                     value={data.report_footer}
                                     onChange={(e) => setData('report_footer', e.target.value)}
-                                    className="w-full rounded-xl border border-border/80 bg-[#F7F7FB] dark:bg-[#131126] px-3.5 py-2.5 font-mono text-xs font-medium text-[#17152E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
+                                    className="w-full rounded-xl border border-border/80 bg-slate-50 dark:bg-slate-900 px-3.5 py-2.5 font-mono text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/30 focus:border-[#0B3A67]"
                                 />
                             </div>
                         </div>
@@ -459,11 +459,11 @@ export default function InstitutionProfile({ profile }: Props) {
                         {/* Card 3: Branding & Identity Rules */}
                         <div className="rounded-2xl border border-border/80 bg-card px-5 py-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-start gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-[#F1F5F9] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#8B1E3F]/30">
+                                <div className="h-10 w-10 rounded-xl bg-[#EFF6FF] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#0B3A67]/20">
                                     <Layers className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-extrabold text-[#17152E] dark:text-white leading-snug">
+                                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white leading-snug">
                                         Branding & Identity Rules
                                     </h3>
                                     <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
@@ -472,7 +472,7 @@ export default function InstitutionProfile({ profile }: Props) {
                                 </div>
                             </div>
 
-                            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-[#F1F5F9] text-[#0B3A67] dark:text-[#93C5FD] dark:bg-slate-800 dark:text-[#93C5FD] border border-[#8B1E3F]/30 shrink-0 self-start sm:self-center">
+                            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#0B3A67] dark:bg-slate-800 dark:text-[#93C5FD] border border-[#0B3A67]/20 shrink-0 self-start sm:self-center">
                                 <Check className="w-3.5 h-3.5 text-[#0B3A67] dark:text-[#93C5FD]" />
                                 Inherited from Platform Standards
                             </span>
@@ -484,7 +484,7 @@ export default function InstitutionProfile({ profile }: Props) {
                                 type="button"
                                 variant="outline"
                                 onClick={handleResetChanges}
-                                className="h-11 px-5 rounded-xl border-border/90 bg-card text-xs font-bold text-[#17152E] dark:text-white hover:bg-muted/60 cursor-pointer shadow-2xs"
+                                className="h-11 px-5 rounded-xl border-border/90 bg-card text-xs font-bold text-slate-900 dark:text-white hover:bg-muted/60 cursor-pointer shadow-2xs"
                             >
                                 <RotateCcw className="w-4 h-4 mr-2 text-muted-foreground" />
                                 Reset Changes
@@ -493,7 +493,7 @@ export default function InstitutionProfile({ profile }: Props) {
                             <Button
                                 type="submit"
                                 disabled={processing}
-                                className="h-11 px-6 rounded-xl bg-[#0B3A67] hover:bg-[#082847] text-white font-bold text-xs shadow-md shadow-[#5B21B6]/20 cursor-pointer"
+                                className="h-11 px-6 rounded-xl bg-[#0B3A67] hover:bg-[#175C94] text-white font-bold text-xs shadow-md shadow-[#0B3A67]/20 cursor-pointer"
                             >
                                 <Save className="w-4 h-4 mr-2" />
                                 {processing ? 'Saving Changes...' : 'Save Institution Profile'}
@@ -509,7 +509,7 @@ export default function InstitutionProfile({ profile }: Props) {
                             <div className="flex items-center justify-between border-b border-border pb-3">
                                 <div className="flex items-center gap-2.5">
                                     <Award className="w-5 h-5 text-[#0B3A67] dark:text-[#93C5FD]" />
-                                    <h3 className="text-base font-extrabold text-[#17152E] dark:text-white">
+                                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
                                         Official Letterhead & Brand Identity Preview
                                     </h3>
                                 </div>
@@ -524,7 +524,7 @@ export default function InstitutionProfile({ profile }: Props) {
 
                             {/* Simulated Official Document Header & Footer */}
                             <div className="rounded-xl border border-border bg-white text-slate-900 p-6 shadow-inner space-y-6">
-                                <div className="flex items-center gap-4 border-b-2 border-[#4C1D95] pb-4">
+                                <div className="flex items-center gap-4 border-b-2 border-[#0B3A67] pb-4">
                                     <img
                                         src={logoPreview}
                                         alt="Seal"
@@ -534,7 +534,7 @@ export default function InstitutionProfile({ profile }: Props) {
                                         <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                                             {data.report_header}
                                         </p>
-                                        <h4 className="text-base font-black text-[#17152E] uppercase">
+                                        <h4 className="text-base font-black text-[#0B3A67] uppercase">
                                             {data.name} ({data.acronym})
                                         </h4>
                                         <p className="text-[11px] text-slate-600">{data.address}</p>
@@ -566,7 +566,7 @@ export default function InstitutionProfile({ profile }: Props) {
                                 <Button
                                     type="button"
                                     onClick={() => setIsPreviewModalOpen(false)}
-                                    className="bg-[#0B3A67] hover:bg-[#082847] text-white text-xs font-bold rounded-xl"
+                                    className="bg-[#0B3A67] hover:bg-[#175C94] text-white text-xs font-bold rounded-xl"
                                 >
                                     Close Preview
                                 </Button>

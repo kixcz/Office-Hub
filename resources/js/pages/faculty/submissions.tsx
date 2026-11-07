@@ -263,7 +263,7 @@ export default function FacultySubmissionsPage({
         }
         if (titleLower.includes('tos') || titleLower.includes('specification')) {
             return (
-                <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-200/50">
+                <div className="w-8 h-8 rounded-lg bg-[#8B1E3F]/10 text-[#8B1E3F] dark:text-rose-400 flex items-center justify-center shrink-0 border border-[#8B1E3F]/20">
                     <FileCheck2 className="w-4 h-4" />
                 </div>
             );
@@ -423,7 +423,7 @@ export default function FacultySubmissionsPage({
                 <div className="relative rounded-2xl border border-border bg-card p-6 shadow-xs overflow-hidden">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs border border-amber-200/50">
+                            <div className="w-12 h-12 rounded-2xl bg-[#0B3A67]/10 text-[#0B3A67] dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs border border-[#0B3A67]/20">
                                 <FileText className="w-6 h-6" />
                             </div>
                             <div>
@@ -440,7 +440,7 @@ export default function FacultySubmissionsPage({
                         <div className="flex items-center gap-3 w-full md:w-auto">
                             <Button
                                 onClick={() => setIsUploadOpen(true)}
-                                className="h-10 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs cursor-pointer flex items-center gap-2"
+                                className="h-10 px-5 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-2"
                             >
                                 <Upload className="w-4 h-4" />
                                 <span>Submit Document</span>
@@ -1078,7 +1078,7 @@ export default function FacultySubmissionsPage({
                             <Button
                                 type="submit"
                                 disabled={isSubmitting || !selectedUploadReq}
-                                className="rounded-xl text-xs h-9 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold cursor-pointer"
+                                className="rounded-xl text-xs h-9 bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-bold cursor-pointer"
                             >
                                 {isSubmitting ? 'Uploading...' : 'Submit Output'}
                             </Button>

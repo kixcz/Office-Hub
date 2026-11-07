@@ -307,8 +307,8 @@ export default function CollegesIndex({
             <Head title="Organization Management & Structure Tree · Platform Governance" />
 
             <div className="relative flex flex-col gap-5 p-4 md:p-7 max-w-7xl mx-auto w-full overflow-hidden">
-                {/* Soft decorative lavender wave in top-right background */}
-                <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-96 rounded-full bg-gradient-to-bl from-[#A78BFA]/20 via-[#7C3AED]/10 to-transparent blur-3xl" />
+                {/* Soft decorative ambient glow in top-right background */}
+                <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-96 rounded-full bg-gradient-to-bl from-[#0B3A67]/15 via-[#1F5D9B]/10 to-transparent blur-3xl" />
 
                 {/* Top Authority Pill & Hierarchy Path */}
                 <div className="relative z-10 flex flex-wrap items-center gap-3">
@@ -1030,8 +1030,8 @@ export default function CollegesIndex({
                                             key={unit.id}
                                             className="relative overflow-hidden rounded-2xl border border-[#8B1E3F]/30 bg-card p-5 pt-6 shadow-xs hover:shadow-md hover:border-[#0B3A67]/20 transition-all flex flex-col justify-between"
                                         >
-                                            {/* Top Deep Indigo / Violet Accent Bar */}
-                                            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#5B21B6] via-[#7C3AED] to-[#A78BFA]" />
+                                            {/* Top Ascend Blue to Maroon Accent Bar */}
+                                            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F]" />
 
                                             <div className="space-y-4">
                                                 {/* Card Header: Lavender Icon + Title/Type + Status Pill */}

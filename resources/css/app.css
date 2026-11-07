@@ -203,17 +203,43 @@
     background: transparent;
 }
 .tv-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(124, 58, 237, 0.25);
+    background: rgba(11, 58, 103, 0.25);
     border-radius: 9999px;
 }
 .tv-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(124, 58, 237, 0.65);
+    background: rgba(11, 58, 103, 0.65);
 }
 .dark .tv-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(167, 139, 250, 0.2);
+    background: rgba(31, 93, 155, 0.25);
 }
 .dark .tv-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(167, 139, 250, 0.7);
+    background: rgba(31, 93, 155, 0.7);
+}
+
+/* Inertia / NProgress loading bar */
+#nprogress .bar {
+    background: linear-gradient(
+        90deg,
+        #0b3a67 0%,
+        #1f5d9b 50%,
+        #8b1e3f 100%
+    ) !important;
+
+    height: 3px !important;
+}
+
+/* Glow at the leading edge */
+#nprogress .peg {
+    box-shadow:
+        0 0 10px rgba(31, 93, 155, 0.45),
+        0 0 5px rgba(139, 30, 63, 0.3) !important;
+}
+
+/* Optional: keep it above your fixed header */
+#nprogress {
+    pointer-events: none;
+    position: relative;
+    z-index: 99999;
 }
 
 /* Hide scrollbar utility */

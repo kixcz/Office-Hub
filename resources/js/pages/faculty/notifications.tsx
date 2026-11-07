@@ -90,16 +90,16 @@ export default function FacultyNotificationsPage({ faculty, notifications = [], 
                 return {
                     icon: FileText,
                     badge: 'Deadline',
-                    color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50',
-                    iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+                    color: 'bg-[#0B3A67]/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50',
+                    iconBg: 'bg-[#0B3A67]/10 text-amber-600 dark:text-amber-400',
                 };
             case 'schedule':
             case 'schedule_faculty_reassignment':
                 return {
                     icon: MapPin,
                     badge: 'Schedule',
-                    color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-900/50',
-                    iconBg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+                    color: 'bg-[#8B1E3F]/10 text-[#8B1E3F] dark:text-rose-400 border-[#8B1E3F]/20 dark:border-[#8B1E3F]/40',
+                    iconBg: 'bg-[#8B1E3F]/10 text-[#8B1E3F] dark:text-rose-400',
                 };
             case 'research':
                 return {
@@ -134,7 +134,7 @@ export default function FacultyNotificationsPage({ faculty, notifications = [], 
                 <div className="bg-card rounded-2xl border border-border p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2.5">
-                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-[#0B3A67]/10 border border-amber-500/20 text-[#0B3A67] flex items-center justify-center shrink-0">
                                 <Bell className="w-5 h-5" />
                             </div>
                             <div>
@@ -160,7 +160,7 @@ export default function FacultyNotificationsPage({ faculty, notifications = [], 
                             </button>
                         )}
                         <span className="px-3 py-1.5 rounded-xl bg-muted/60 border border-border text-xs font-semibold text-muted-foreground">
-                            <strong className="text-foreground">{items.length}</strong> total • <strong className="text-amber-500">{activeUnreadCount}</strong> unread
+                            <strong className="text-foreground">{items.length}</strong> total • <strong className="text-[#0B3A67]">{activeUnreadCount}</strong> unread
                         </span>
                     </div>
                 </div>
@@ -172,7 +172,7 @@ export default function FacultyNotificationsPage({ faculty, notifications = [], 
                         onClick={() => setSelectedTab('all')}
                         className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
                             selectedTab === 'all'
-                                ? 'bg-amber-500 text-slate-950 shadow-2xs font-extrabold'
+                                ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs font-bold'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                         }`}
                     >
@@ -189,14 +189,14 @@ export default function FacultyNotificationsPage({ faculty, notifications = [], 
                         onClick={() => setSelectedTab('unread')}
                         className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
                             selectedTab === 'unread'
-                                ? 'bg-amber-500 text-slate-950 shadow-2xs font-extrabold'
+                                ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs font-bold'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                         }`}
                     >
                         Unread
                         {activeUnreadCount > 0 && (
                             <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                                selectedTab === 'unread' ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-amber-500 text-slate-950 font-bold'
+                                selectedTab === 'unread' ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white font-bold'
                             }`}>
                                 {activeUnreadCount}
                             </span>
@@ -208,7 +208,7 @@ export default function FacultyNotificationsPage({ faculty, notifications = [], 
                         onClick={() => setSelectedTab('announcements')}
                         className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
                             selectedTab === 'announcements'
-                                ? 'bg-amber-500 text-slate-950 shadow-2xs font-extrabold'
+                                ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs font-bold'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                         }`}
                     >
@@ -220,7 +220,7 @@ export default function FacultyNotificationsPage({ faculty, notifications = [], 
                         onClick={() => setSelectedTab('deadlines')}
                         className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
                             selectedTab === 'deadlines'
-                                ? 'bg-amber-500 text-slate-950 shadow-2xs font-extrabold'
+                                ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs font-bold'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                         }`}
                     >
@@ -232,7 +232,7 @@ export default function FacultyNotificationsPage({ faculty, notifications = [], 
                         onClick={() => setSelectedTab('system')}
                         className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
                             selectedTab === 'system'
-                                ? 'bg-amber-500 text-slate-950 shadow-2xs font-extrabold'
+                                ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs font-bold'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                         }`}
                     >
@@ -263,12 +263,12 @@ export default function FacultyNotificationsPage({ faculty, notifications = [], 
                                     key={n.id}
                                     onClick={() => handleMarkAsRead(n)}
                                     className={`p-4 md:p-5 hover:bg-muted/30 transition-all flex items-start gap-4 cursor-pointer relative ${
-                                        !n.read ? 'bg-amber-500/[0.03]' : ''
+                                        !n.read ? 'bg-[#0B3A67]/[0.04]' : ''
                                     }`}
                                 >
                                     {/* Unread indicator dot */}
                                     {!n.read && (
-                                        <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-full bg-amber-500" />
+                                        <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-full bg-[#0B3A67]" />
                                     )}
 
                                     {/* Icon */}
@@ -327,7 +327,7 @@ export default function FacultyNotificationsPage({ faculty, notifications = [], 
                                                     e.stopPropagation();
                                                     handleMarkAsRead(n);
                                                 }}
-                                                className="text-[11px] font-bold text-amber-500 hover:text-amber-600 px-2 py-1 rounded-md hover:bg-amber-500/10 transition-colors"
+                                                className="text-[11px] font-bold text-[#0B3A67] hover:text-amber-600 px-2 py-1 rounded-md hover:bg-[#0B3A67]/10 transition-colors"
                                                 title="Mark as read"
                                             >
                                                 Mark read

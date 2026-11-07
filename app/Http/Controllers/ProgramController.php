@@ -68,7 +68,17 @@ class ProgramController extends Controller
 
         $programs = $query->orderBy('id', 'asc')->get();
 
-        $allCourses = Course::where('status', 'Active')->orderBy('code')->get();
+        $coursesQuery = Course::where('status', 'Active');
+        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+            $coursesQuery->where(function ($q) use ($scopeCollegeId) {
+                $q->whereHas('curriculumCourses.curriculum.program', function ($cp) use ($scopeCollegeId) {
+                    $cp->where('college_id', $scopeCollegeId);
+                })->orWhereHas('program', function ($p) use ($scopeCollegeId) {
+                    $p->where('college_id', $scopeCollegeId);
+                });
+            });
+        }
+        $allCourses = $coursesQuery->orderBy('code')->get();
 
         $totalPrograms = $programs->count();
         $activePrograms = $programs->where('status', 'Active')->count();

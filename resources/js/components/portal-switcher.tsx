@@ -96,26 +96,26 @@ export function PortalSwitcher() {
                 <button
                     type="button"
                     disabled={isSwitching}
-                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-muted/70 text-foreground transition-all shadow-2xs group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#E2E8F0] dark:border-slate-800 bg-white hover:bg-gradient-to-r hover:from-[#F8FAFC] hover:to-[#EFF6FF] text-[#1E293B] dark:bg-card dark:text-foreground transition-all shadow-2xs group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#175C94]/20 data-[state=open]:bg-gradient-to-r data-[state=open]:from-[#EFF6FF] data-[state=open]:to-[#E0F2FE] data-[state=open]:border-[#175C94] data-[state=open]:shadow-sm"
                     title="Switch Active Portal & Workspace Context"
                 >
-                    <div className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <div className="w-5 h-5 rounded-lg bg-[#EFF6FF] text-[#0B3A67] dark:bg-slate-800 dark:text-[#93C5FD] flex items-center justify-center shrink-0 border border-[#175C94]/20">
                         <ActiveIcon className="w-3.5 h-3.5" />
                     </div>
                     <div className="flex flex-col text-left leading-none">
                         <div className="flex items-center gap-1">
-                            <span className="text-xs font-bold tracking-tight text-foreground truncate max-w-[130px] sm:max-w-[160px]">
+                            <span className="text-xs font-bold tracking-tight text-[#0F172A] dark:text-white truncate max-w-[130px] sm:max-w-[160px]">
                                 {active.short_label}
                             </span>
                             {active.is_default && (
                                 <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500 shrink-0" title="Default Workspace" />
                             )}
                         </div>
-                        <span className="text-[9px] font-semibold text-muted-foreground truncate max-w-[130px] sm:max-w-[160px] mt-0.5">
+                        <span className="text-[9px] font-semibold text-[#64748B] dark:text-slate-400 truncate max-w-[130px] sm:max-w-[160px] mt-0.5">
                             Scope: {active.scope_code || active.scope_level}
                         </span>
                     </div>
-                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors ml-0.5 shrink-0" />
+                    <ChevronDown className="w-3.5 h-3.5 text-[#64748B] group-hover:text-[#175C94] transition-colors ml-0.5 shrink-0" />
                 </button>
             </DropdownMenuTrigger>
 
@@ -147,15 +147,15 @@ export function PortalSwitcher() {
                                 onClick={() => handleSwitch(assignment)}
                                 className={`flex items-start gap-2.5 p-2.5 rounded-xl cursor-pointer transition-all ${
                                     isActive
-                                        ? 'bg-sidebar-accent text-sidebar-accent-foreground border border-sidebar-border font-semibold'
-                                        : 'hover:bg-muted/60 text-foreground'
+                                        ? 'bg-gradient-to-r from-[#E0F2FE] to-[#EEF2FF] text-[#0B3A67] border-l-2 border-l-[#175C94] font-semibold dark:from-[#0B3A67]/30 dark:to-[#175C94]/20 dark:text-[#93C5FD]'
+                                        : 'hover:bg-gradient-to-r hover:from-[#F1F5F9] hover:to-[#EFF6FF] hover:text-[#0B3A67] text-[#1E293B] dark:text-slate-200'
                                 }`}
                             >
                                 <div
                                     className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
                                         isActive
-                                            ? 'bg-primary text-primary-foreground shadow-2xs'
-                                            : 'bg-muted text-muted-foreground'
+                                            ? 'bg-[#0B3A67] text-white shadow-2xs'
+                                            : 'bg-[#F1F5F9] dark:bg-slate-800 text-[#64748B]'
                                     }`}
                                 >
                                     <Icon className="w-4 h-4" />

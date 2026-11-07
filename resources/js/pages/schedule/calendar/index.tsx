@@ -365,7 +365,7 @@ export default function ConsolidatedCalendarIndex({
                 {/* ========================================================================= */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
-                        <div className="p-3 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-xs">
+                        <div className="p-3 rounded-2xl bg-[#EFF6FF] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/25 shadow-xs">
                             <CalendarIcon className="w-7 h-7" />
                         </div>
                         <div>
@@ -381,9 +381,9 @@ export default function ConsolidatedCalendarIndex({
                     <div className="flex items-center gap-2 self-start sm:self-auto">
                         <Link
                             href="/schedule/calendar-import"
-                            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer shadow-2xs"
+                            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold border border-[#175C94]/30 bg-[#EFF6FF] text-[#0B3A67] dark:bg-slate-800 dark:text-[#93C5FD] hover:bg-[#E0F2FE] transition-all cursor-pointer shadow-2xs"
                         >
-                            <CalendarRange className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                            <CalendarRange className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                             <span>AI Calendar Import</span>
                         </Link>
 
@@ -392,7 +392,7 @@ export default function ConsolidatedCalendarIndex({
                                 setNewEventForm((prev) => ({ ...prev, date: selectedDateStr }));
                                 setIsAddModalOpen(true);
                             }}
-                            className="bg-amber-500 hover:bg-amber-600 text-white font-bold h-10 px-5 rounded-xl shadow-xs gap-2 transition-all cursor-pointer"
+                            className="bg-[#0B3A67] hover:bg-[#175C94] text-white font-bold h-10 px-5 rounded-xl shadow-xs gap-2 transition-all cursor-pointer"
                         >
                             <Plus className="w-4 h-4 stroke-[3]" />
                             <span>Add Event</span>
@@ -490,7 +490,7 @@ export default function ConsolidatedCalendarIndex({
                                 className={cn(
                                     'px-3.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer',
                                     viewMode === 'month'
-                                        ? 'bg-amber-500 text-white shadow-2xs'
+                                        ? 'bg-[#0B3A67] text-white shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
                                 )}
                             >
@@ -502,7 +502,7 @@ export default function ConsolidatedCalendarIndex({
                                 className={cn(
                                     'px-3.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer',
                                     viewMode === 'week'
-                                        ? 'bg-amber-500 text-white shadow-2xs'
+                                        ? 'bg-[#0B3A67] text-white shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
                                 )}
                             >
@@ -514,7 +514,7 @@ export default function ConsolidatedCalendarIndex({
                                 className={cn(
                                     'px-3.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer',
                                     viewMode === 'agenda'
-                                        ? 'bg-amber-500 text-white shadow-2xs'
+                                        ? 'bg-[#0B3A67] text-white shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
                                 )}
                             >
@@ -694,7 +694,7 @@ export default function ConsolidatedCalendarIndex({
                                             className={cn(
                                                 'relative h-12 sm:h-14 flex flex-col items-center justify-center rounded-xl transition-all cursor-pointer group',
                                                 isSelected
-                                                    ? 'bg-amber-500 text-white font-extrabold shadow-sm ring-2 ring-amber-500/30'
+                                                    ? 'bg-[#0B3A67] text-white font-extrabold shadow-sm ring-2 ring-[#0B3A67]/30'
                                                     : cell.isCurrentMonth
                                                     ? 'text-foreground hover:bg-muted/70 font-semibold'
                                                     : 'text-muted-foreground/35 hover:bg-muted/30 font-normal'
@@ -753,7 +753,7 @@ export default function ConsolidatedCalendarIndex({
                                 Examination
                             </span>
                             <span className="flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#8B1E3F] inline-block" />
                                 Others
                             </span>
                         </div>
@@ -764,7 +764,7 @@ export default function ConsolidatedCalendarIndex({
                         {/* Day Schedule Header */}
                         <div className="flex items-center justify-between pb-4 border-b border-border/70">
                             <div className="flex items-center gap-2">
-                                <CalendarIcon className="w-5 h-5 text-amber-500 shrink-0" />
+                                <CalendarIcon className="w-5 h-5 text-[#0B3A67] dark:text-[#93C5FD] shrink-0" />
                                 <h2 className="text-base sm:text-lg font-bold text-foreground">
                                     Events on {selectedDateFormatted}
                                 </h2>
@@ -896,7 +896,7 @@ export default function ConsolidatedCalendarIndex({
                 <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="text-base font-bold flex items-center gap-2">
-                            <Plus className="w-4 h-4 text-amber-500" />
+                            <Plus className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
                             Schedule New Event
                         </DialogTitle>
                         <DialogDescription className="text-xs">
@@ -1019,7 +1019,7 @@ export default function ConsolidatedCalendarIndex({
                                 type="submit"
                                 size="sm"
                                 disabled={isSubmitting}
-                                className="bg-amber-500 hover:bg-amber-600 text-white font-bold"
+                                className="bg-[#0B3A67] hover:bg-[#175C94] text-white font-bold"
                             >
                                 {isSubmitting ? 'Saving...' : 'Save Event'}
                             </Button>

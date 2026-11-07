@@ -274,7 +274,7 @@ export default function FacultyAttendancePage({
                     <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2.5">
                             <h1 className="text-2xl font-black text-foreground tracking-tight">Teaching Attendance</h1>
-                            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-600 border border-amber-300 dark:border-amber-700/50 shrink-0">
+                            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-[#0B3A67]/10 text-[#0B3A67] dark:text-blue-300 border border-[#0B3A67]/20 shrink-0">
                                 {academic_year} · {semester}
                             </span>
                         </div>
@@ -298,7 +298,7 @@ export default function FacultyAttendancePage({
 
                         <Link
                             href="/faculty/corrections"
-                            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors h-9"
+                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors h-9"
                         >
                             <Send className="w-3.5 h-3.5" />
                             <span>Dispute / Request Correction</span>
@@ -549,7 +549,7 @@ export default function FacultyAttendancePage({
                                                         r.status.toLowerCase() === 'late' && "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
                                                         (r.status.toLowerCase() === 'absent' || r.status.toLowerCase() === 'unattended') && "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
                                                         r.status.toLowerCase() === 'online' && "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-                                                        (r.status.toLowerCase() === 'on-leave' || r.status.toLowerCase() === 'leave') && "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300"
+                                                        (r.status.toLowerCase() === 'on-leave' || r.status.toLowerCase() === 'leave') && "bg-[#8B1E3F]/15 text-[#8B1E3F] dark:bg-[#8B1E3F]/30 dark:text-rose-300"
                                                     )}>
                                                         {r.status}
                                                     </span>
@@ -607,7 +607,7 @@ export default function FacultyAttendancePage({
                                                     className={cn(
                                                         "h-8 min-w-8 px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer",
                                                         currentPage === page
-                                                            ? "bg-amber-500 text-slate-950 shadow-xs"
+                                                            ? "bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs"
                                                             : "border border-border bg-background text-foreground hover:bg-muted/50"
                                                     )}
                                                 >

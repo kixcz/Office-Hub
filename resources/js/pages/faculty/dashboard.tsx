@@ -153,52 +153,44 @@ export default function FacultyDashboard({
             <Head title={`Faculty Dashboard - ${collegeCode} OfficeHub`} />
 
             <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto font-sans">
-                {/* 1. Header Hero Banner themed by College Branding */}
+                {/* 1. Header Hero Banner themed with Ascend Deep Blue & Maroon gradient */}
                 <div
-                    className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-r from-card via-muted/40 to-card p-6 md:p-8 shadow-xs"
-                    style={
-                        collegeBranding?.primary_color
-                            ? {
-                                  borderColor: `${collegeBranding.primary_color}45`,
-                              }
-                            : undefined
-                    }
+                    className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-8 shadow-lg text-white"
                 >
+                    {/* Decorative subtle background overlay / glow */}
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-                        <div className="flex items-center gap-4">
-                            <div
-                                className="w-16 h-16 rounded-2xl bg-card border-2 border-border shadow-sm flex items-center justify-center text-xl font-black text-foreground overflow-hidden shrink-0"
-                                style={
-                                    collegeBranding?.primary_color
-                                        ? {
-                                              borderColor: collegeBranding.primary_color,
-                                          }
-                                        : undefined
-                                }
-                            >
-                                {faculty?.photo_url ? (
-                                    <img src={faculty.photo_url} alt={faculty.full_name || auth.user.name} className="w-full h-full object-cover" />
-                                ) : (
-                                    faculty ? `${faculty.first_name[0]}${faculty.last_name[0]}` : (auth.user?.name ? auth.user.name.slice(0, 2).toUpperCase() : 'FA')
-                                )}
+                        <div className="flex items-center gap-5">
+                            {/* Faculty Avatar with Deep Blue to Maroon Ring */}
+                            <div className="relative group shrink-0">
+                                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] p-[3px] shadow-md">
+                                    <div className="w-full h-full rounded-[13px] bg-slate-900/60 overflow-hidden flex items-center justify-center text-xl sm:text-2xl font-black text-white backdrop-blur-xs">
+                                        {faculty?.photo_url ? (
+                                            <img src={faculty.photo_url} alt={faculty.full_name || auth.user.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            faculty ? `${faculty.first_name[0]}${faculty.last_name[0]}` : (auth.user?.name ? auth.user.name.slice(0, 2).toUpperCase() : 'FA')
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                             <div>
-                                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                <div className="text-xs font-bold text-white/80 uppercase tracking-wider">
                                     {greeting}
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                                    <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
+                                <div className="flex flex-wrap items-center gap-2.5 mt-0.5">
+                                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs">
                                         {faculty?.title_name || (faculty ? `${faculty.academic_rank?.includes('Prof') ? 'Prof.' : 'Instr.'} ${faculty.first_name} ${faculty.last_name}` : auth.user.name)}
                                     </h1>
                                     <span
-                                        className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20"
+                                        className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/15 text-white border border-white/25 backdrop-blur-xs shadow-2xs"
                                     >
                                         {faculty?.academic_rank || 'Faculty Member'}
                                     </span>
                                 </div>
-                                <div className="text-xs font-medium text-muted-foreground mt-1 flex items-center gap-2">
-                                    <span>{faculty?.program?.name || 'BSIT'}</span>
-                                    <span>•</span>
+                                <div className="text-xs font-semibold text-white/90 mt-1.5 flex flex-wrap items-center gap-2">
+                                    <span>{faculty?.program?.name || 'Bachelor of Science in Information Technology'}</span>
+                                    <span className="text-white/60">•</span>
                                     <span>
                                         {collegeName} ({collegeCode})
                                     </span>
@@ -207,19 +199,19 @@ export default function FacultyDashboard({
                         </div>
 
                         {/* Right side banner quote / photo background */}
-                        <div className="hidden lg:flex items-center gap-4 bg-card/80 backdrop-blur-md px-5 py-3 rounded-xl border border-border text-right">
+                        <div className="hidden lg:flex items-center gap-4 bg-white/10 backdrop-blur-md px-5 py-3 rounded-xl border border-white/20 text-right shadow-xs">
                             {activeCollege?.logo_url && (
                                 <img
                                     src={activeCollege.logo_url}
                                     alt={collegeCode}
-                                    className="w-9 h-9 object-contain shrink-0"
+                                    className="w-10 h-10 object-contain shrink-0 drop-shadow-xs"
                                 />
                             )}
                             <div className="flex flex-col">
-                                <span className="text-xs font-bold italic text-foreground tracking-wide">
+                                <span className="text-xs font-bold italic text-white tracking-wide">
                                     &ldquo;{collegeSlogan}&rdquo;
                                 </span>
-                                <span className="text-[10px] text-muted-foreground font-semibold mt-0.5">
+                                <span className="text-[10px] text-white/80 font-medium mt-0.5">
                                     {collegeCode} Academic Excellence 2026–2027
                                 </span>
                             </div>
@@ -357,7 +349,7 @@ export default function FacultyDashboard({
                         <div>
                             <div className="flex items-center justify-between border-b border-border/60 pb-3">
                                 <div className="flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-amber-500" />
+                                    <Calendar className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                     <h3 className="text-sm font-bold text-foreground">Today's Schedule</h3>
                                 </div>
                                 <Link
@@ -412,9 +404,9 @@ export default function FacultyDashboard({
                                         </div>
                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                                             item.type === 'Laboratory'
-                                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
+                                                ? 'bg-[#8B1E3F]/10 text-[#8B1E3F] dark:bg-[#8B1E3F]/20 dark:text-rose-300'
                                                 : item.type === 'Meeting'
-                                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                                ? 'bg-[#0B3A67]/10 text-[#0B3A67] dark:bg-blue-950/50 dark:text-blue-300'
                                                 : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
                                         }`}>
                                             {item.type}
@@ -430,7 +422,7 @@ export default function FacultyDashboard({
                         <div>
                             <div className="flex items-center justify-between border-b border-border/60 pb-3">
                                 <div className="flex items-center gap-2">
-                                    <CheckSquare className="w-4 h-4 text-amber-500" />
+                                    <CheckSquare className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                     <h3 className="text-sm font-bold text-foreground">My Tasks</h3>
                                 </div>
                                 <Link
@@ -447,7 +439,7 @@ export default function FacultyDashboard({
                                     onClick={() => setTaskFilter('all')}
                                     className={`px-2.5 py-1 rounded-lg transition-colors ${
                                         taskFilter === 'all'
-                                            ? 'bg-primary text-primary-foreground font-bold'
+                                            ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white font-bold'
                                             : 'text-muted-foreground hover:bg-muted'
                                     }`}
                                 >
@@ -457,7 +449,7 @@ export default function FacultyDashboard({
                                     onClick={() => setTaskFilter('pending')}
                                     className={`px-2.5 py-1 rounded-lg transition-colors ${
                                         taskFilter === 'pending'
-                                            ? 'bg-primary text-primary-foreground font-bold'
+                                            ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white font-bold'
                                             : 'text-muted-foreground hover:bg-muted'
                                     }`}
                                 >
@@ -467,7 +459,7 @@ export default function FacultyDashboard({
                                     onClick={() => setTaskFilter('in_progress')}
                                     className={`px-2.5 py-1 rounded-lg transition-colors ${
                                         taskFilter === 'in_progress'
-                                            ? 'bg-primary text-primary-foreground font-bold'
+                                            ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white font-bold'
                                             : 'text-muted-foreground hover:bg-muted'
                                     }`}
                                 >
@@ -477,7 +469,7 @@ export default function FacultyDashboard({
                                     onClick={() => setTaskFilter('completed')}
                                     className={`px-2.5 py-1 rounded-lg transition-colors ${
                                         taskFilter === 'completed'
-                                            ? 'bg-primary text-primary-foreground font-bold'
+                                            ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white font-bold'
                                             : 'text-muted-foreground hover:bg-muted'
                                     }`}
                                 >
@@ -516,7 +508,7 @@ export default function FacultyDashboard({
                                                     task.priority === 'High'
                                                         ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
                                                         : task.priority === 'Medium'
-                                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                                        ? 'bg-[#0B3A67]/10 text-[#0B3A67] dark:bg-blue-950/50 dark:text-blue-300'
                                                         : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
                                                 }`}
                                             >
@@ -537,7 +529,7 @@ export default function FacultyDashboard({
                         <div>
                             <div className="flex items-center justify-between border-b border-border/60 pb-3">
                                 <div className="flex items-center gap-2">
-                                    <Megaphone className="w-4 h-4 text-amber-500" />
+                                    <Megaphone className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                     <h3 className="text-sm font-bold text-foreground">Notifications</h3>
                                 </div>
                                 <Link
@@ -591,7 +583,7 @@ export default function FacultyDashboard({
                         <div>
                             <div className="flex items-center justify-between border-b border-border/60 pb-3">
                                 <div className="flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-amber-500" />
+                                    <FileText className="w-4 h-4 text-[#0B3A67] dark:text-blue-400" />
                                     <h3 className="text-sm font-bold text-foreground">Current Teaching Load</h3>
                                 </div>
                                 <Link
@@ -671,7 +663,7 @@ export default function FacultyDashboard({
                                                     className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
                                                         item.status === 'On Track'
                                                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                                                            : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                                            : 'bg-[#0B3A67]/10 text-[#0B3A67] dark:bg-blue-950/50 dark:text-blue-300'
                                                     }`}
                                                 >
                                                     ● {item.status}
@@ -701,7 +693,7 @@ export default function FacultyDashboard({
                         <div>
                             <div className="flex items-center justify-between border-b border-border/60 pb-3">
                                 <div className="flex items-center gap-2">
-                                    <FlaskConical className="w-4 h-4 text-purple-500" />
+                                    <FlaskConical className="w-4 h-4 text-[#8B1E3F] dark:text-rose-400" />
                                     <h3 className="text-sm font-bold text-foreground">Research & Extension</h3>
                                 </div>
                                 <Link
@@ -718,7 +710,7 @@ export default function FacultyDashboard({
                                     onClick={() => setResearchTab('research')}
                                     className={`px-3 py-1 rounded-lg transition-colors ${
                                         researchTab === 'research'
-                                            ? 'bg-primary text-primary-foreground font-bold'
+                                            ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white font-bold'
                                             : 'text-muted-foreground hover:bg-muted'
                                     }`}
                                 >
@@ -728,7 +720,7 @@ export default function FacultyDashboard({
                                     onClick={() => setResearchTab('extension')}
                                     className={`px-3 py-1 rounded-lg transition-colors ${
                                         researchTab === 'extension'
-                                            ? 'bg-primary text-primary-foreground font-bold'
+                                            ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white font-bold'
                                             : 'text-muted-foreground hover:bg-muted'
                                     }`}
                                 >
@@ -797,7 +789,7 @@ export default function FacultyDashboard({
                                             event.type === 'Meeting'
                                                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
                                                 : event.type === 'Workshop'
-                                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
+                                                ? 'bg-[#8B1E3F]/10 text-[#8B1E3F] dark:bg-[#8B1E3F]/20 dark:text-rose-300'
                                                 : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
                                         }`}>
                                             {event.type}

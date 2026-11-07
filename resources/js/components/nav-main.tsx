@@ -52,7 +52,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                                         const isSubActive = subItem.url === page.url;
                                                         return (
                                                             <SidebarMenuSubItem key={subItem.title}>
-                                                                 <SidebarMenuSubButton asChild isActive={isSubActive} className={`text-[13px] py-1.5 px-2 rounded-lg transition-colors duration-160 ${isSubActive ? 'bg-sidebar-active text-sidebar-active-fg font-bold' : 'text-muted-foreground hover:text-sidebar-hover-fg hover:bg-sidebar-hover'}`}>
+                                                                 <SidebarMenuSubButton asChild isActive={isSubActive} className={`text-[13px] py-1.5 px-2 rounded-lg transition-colors duration-160 ${isSubActive ? 'bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white font-bold shadow-xs' : 'text-muted-foreground hover:text-sidebar-hover-fg hover:bg-sidebar-hover'}`}>
                                                                     <Link href={subItem.url} prefetch className="flex items-center gap-2.5 w-full">
                                                                         <span className={`size-1.5 rounded-full shrink-0 ${isSubActive ? 'bg-current' : 'bg-gray-300 dark:bg-gray-600'}`} />
                                                                         <span className="truncate">{subItem.title}</span>

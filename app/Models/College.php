@@ -54,16 +54,23 @@ class College extends Model
     public function getBrandingAttribute(): array
     {
         $presets = [
-            'amber' => [
-                'primary_color' => '#F9C400',
-                'secondary_color' => '#1E293B',
-                'accent_color' => '#FEF3C7',
+            'ascend' => [
+                'primary_color' => '#0B3A67',
+                'secondary_color' => '#1F5D9B',
+                'accent_color' => '#8B1E3F',
                 'surface_color' => '#FFFFFF',
-                'preset_key' => 'amber',
+                'preset_key' => 'ascend',
+            ],
+            'maroon' => [
+                'primary_color' => '#8B1E3F',
+                'secondary_color' => '#68152E',
+                'accent_color' => '#F1F5F9',
+                'surface_color' => '#FFFFFF',
+                'preset_key' => 'maroon',
             ],
             'blue' => [
-                'primary_color' => '#2563EB',
-                'secondary_color' => '#1E3A8A',
+                'primary_color' => '#0B3A67',
+                'secondary_color' => '#1F5D9B',
                 'accent_color' => '#DBEAFE',
                 'surface_color' => '#FFFFFF',
                 'preset_key' => 'blue',
@@ -89,19 +96,12 @@ class College extends Model
                 'surface_color' => '#FFFFFF',
                 'preset_key' => 'teal',
             ],
-            'purple' => [
-                'primary_color' => '#7C3AED',
-                'secondary_color' => '#4C1D95',
-                'accent_color' => '#EDE9FE',
+            'amber' => [
+                'primary_color' => '#F9C400',
+                'secondary_color' => '#1E293B',
+                'accent_color' => '#FEF3C7',
                 'surface_color' => '#FFFFFF',
-                'preset_key' => 'purple',
-            ],
-            'indigo' => [
-                'primary_color' => '#4F46E5',
-                'secondary_color' => '#312E81',
-                'accent_color' => '#E0E7FF',
-                'surface_color' => '#FFFFFF',
-                'preset_key' => 'indigo',
+                'preset_key' => 'amber',
             ],
         ];
 
@@ -113,8 +113,8 @@ class College extends Model
             'COE' => 'Engineering sustainable solutions for the future.',
         ];
 
-        $themeKey = $this->color_theme ?: ($this->code === 'CAS' ? 'amber' : 'purple');
-        $basePreset = $presets[$themeKey] ?? $presets['purple'];
+        $themeKey = $this->color_theme ?: 'ascend';
+        $basePreset = $presets[$themeKey] ?? $presets['ascend'];
 
         $stored = is_array($this->report_defaults) ? ($this->report_defaults['branding'] ?? []) : [];
 

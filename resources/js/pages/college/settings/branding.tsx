@@ -67,12 +67,13 @@ interface Props {
 }
 
 const QUICK_THEME_PRESETS = [
-    { key: 'amber', name: 'Gold & Slate', primary_color: '#F9C400', secondary_color: '#1E293B', accent_color: '#FEF3C7', surface_color: '#FFFFFF' },
-    { key: 'purple', name: 'Ascend Purple', primary_color: '#7C3AED', secondary_color: '#4C1D95', accent_color: '#EDE9FE', surface_color: '#FFFFFF' },
-    { key: 'blue', name: 'Royal Blue', primary_color: '#2563EB', secondary_color: '#1E3A8A', accent_color: '#DBEAFE', surface_color: '#FFFFFF' },
+    { key: 'ascend', name: 'Ascend Blue & Maroon', primary_color: '#0B3A67', secondary_color: '#1F5D9B', accent_color: '#8B1E3F', surface_color: '#FFFFFF' },
+    { key: 'maroon', name: 'Primary Maroon', primary_color: '#8B1E3F', secondary_color: '#68152E', accent_color: '#F1F5F9', surface_color: '#FFFFFF' },
+    { key: 'blue', name: 'Royal Blue', primary_color: '#0B3A67', secondary_color: '#1F5D9B', accent_color: '#DBEAFE', surface_color: '#FFFFFF' },
     { key: 'emerald', name: 'Forest Green', primary_color: '#059669', secondary_color: '#064E3B', accent_color: '#D1FAE5', surface_color: '#FFFFFF' },
     { key: 'crimson', name: 'Crimson Red', primary_color: '#DC2626', secondary_color: '#7F1D1D', accent_color: '#FEE2E2', surface_color: '#FFFFFF' },
     { key: 'teal', name: 'Ocean Teal', primary_color: '#0D9488', secondary_color: '#134E4A', accent_color: '#CCFBF1', surface_color: '#FFFFFF' },
+    { key: 'amber', name: 'Gold & Slate', primary_color: '#F9C400', secondary_color: '#1E293B', accent_color: '#FEF3C7', surface_color: '#FFFFFF' },
 ];
 
 export default function CollegeBrandSettings({ college, institutionBranding, parentEntityBranding, semanticColors }: Props) {
@@ -89,12 +90,12 @@ export default function CollegeBrandSettings({ college, institutionBranding, par
     const currentBranding = college.branding;
 
     const { data, setData, post, processing } = useForm({
-        primary_color: currentBranding.primary_color || '#7C3AED',
-        secondary_color: currentBranding.secondary_color || '#4C1D95',
-        accent_color: currentBranding.accent_color || '#EDE9FE',
+        primary_color: currentBranding.primary_color || '#0B3A67',
+        secondary_color: currentBranding.secondary_color || '#1F5D9B',
+        accent_color: currentBranding.accent_color || '#8B1E3F',
         surface_color: currentBranding.surface_color || '#FFFFFF',
-        dark_color: currentBranding.dark_color || '#17152E',
-        preset_key: currentBranding.preset_key || 'purple',
+        dark_color: currentBranding.dark_color || '#68152E',
+        preset_key: currentBranding.preset_key || 'ascend',
         slogan: currentBranding.slogan || '',
         short_name: currentBranding.short_name || college.acronym || college.code,
         header_style: currentBranding.header_style || 'light',

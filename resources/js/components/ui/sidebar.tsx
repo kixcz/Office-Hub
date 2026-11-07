@@ -397,7 +397,7 @@ const SidebarMenuItem = React.forwardRef<HTMLLIElement, React.ComponentProps<'li
 SidebarMenuItem.displayName = 'SidebarMenuItem';
 
 const sidebarMenuButtonVariants = cva(
-    'peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-xl p-2 text-left text-[13px] outline-hidden ring-sidebar-ring transition-colors duration-160 ease-in-out hover:bg-sidebar-hover hover:text-sidebar-hover-fg focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-active data-[active=true]:font-bold data-[active=true]:text-sidebar-active-fg data-[active=true]:hover:bg-sidebar-active data-[active=true]:hover:text-sidebar-active-fg data-[active=true]:hover:brightness-95 data-[state=open]:hover:bg-sidebar-hover data-[state=open]:hover:text-sidebar-hover-fg group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 data-[active=true]:[&>svg]:text-inherit',
+    'peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-xl p-2 text-left text-[13px] outline-hidden ring-sidebar-ring transition-all duration-160 ease-in-out hover:bg-sidebar-hover hover:text-sidebar-hover-fg focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-gradient-to-r data-[active=true]:from-[#0B3A67] data-[active=true]:via-[#1F5D9B] data-[active=true]:to-[#8B1E3F] data-[active=true]:font-bold data-[active=true]:text-white data-[active=true]:shadow-sm data-[active=true]:hover:opacity-95 data-[active=true]:hover:text-white data-[state=open]:hover:bg-sidebar-hover data-[state=open]:hover:text-sidebar-hover-fg group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 data-[active=true]:[&>svg]:text-white',
     {
         variants: {
             variant: {
@@ -469,9 +469,9 @@ const SidebarMenuButton = React.forwardRef<
         tooltipContentProps = rest;
     }
 
-    // Determine branding theme: college vs main institutional theme (deep indigo/purple)
+    // Determine branding theme: college vs main institutional theme (Ascend deep blue / navy)
     const isCollegeScope = activeBranding?.scope_type === 'college' || portalContext?.active_assignment?.scope_type === 'College';
-    const brandPrimary = (isCollegeScope && activeBranding?.primary_color) ? activeBranding.primary_color : (activeBranding?.primary_color || '#4C1D95');
+    const brandPrimary = (isCollegeScope && activeBranding?.primary_color) ? activeBranding.primary_color : (activeBranding?.primary_color || '#0B3A67');
     const isCustomCollegeTheme = !!brandPrimary;
 
     return (
@@ -482,7 +482,7 @@ const SidebarMenuButton = React.forwardRef<
                 align="center"
                 sideOffset={12}
                 hidden={state !== 'collapsed' || isMobile}
-                className="overflow-visible rounded-2xl border bg-popover/95 backdrop-blur-md p-3 text-popover-foreground shadow-2xl transition-all"
+                className="z-[100] overflow-visible rounded-2xl border bg-popover/95 backdrop-blur-md p-3 text-popover-foreground shadow-2xl transition-all"
                 style={{
                     borderColor: `${brandPrimary}40`,
                     boxShadow: `0 14px 30px -6px ${brandPrimary}25, 0 4px 12px -2px rgba(0, 0, 0, 0.08)`,
@@ -635,7 +635,7 @@ const SidebarMenuSubButton = React.forwardRef<
             data-active={isActive}
             className={cn(
                 'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-hidden ring-sidebar-ring transition-colors duration-160 hover:bg-sidebar-hover hover:text-sidebar-hover-fg focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-sidebar-active active:text-sidebar-active-fg disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground',
-                'data-[active=true]:bg-sidebar-active data-[active=true]:text-sidebar-active-fg data-[active=true]:hover:bg-sidebar-active data-[active=true]:hover:text-sidebar-active-fg',
+                'data-[active=true]:bg-gradient-to-r data-[active=true]:from-[#0B3A67] data-[active=true]:via-[#1F5D9B] data-[active=true]:to-[#8B1E3F] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:hover:opacity-95 data-[active=true]:hover:text-white',
                 size === 'sm' && 'text-xs',
                 size === 'md' && 'text-sm',
                 'group-data-[collapsible=icon]:hidden',

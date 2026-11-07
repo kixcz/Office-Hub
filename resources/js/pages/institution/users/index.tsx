@@ -232,7 +232,7 @@ function CircularProgressAvatar({
                     fill="transparent"
                     stroke="currentColor"
                     strokeWidth={strokeWidth}
-                    className="text-[#EDE9FE] dark:text-[#2D2654]"
+                    className="text-slate-200 dark:text-slate-700"
                 />
                 <circle
                     cx={boxSize / 2}
@@ -248,15 +248,16 @@ function CircularProgressAvatar({
                 />
                 <defs>
                     <linearGradient id="AscendAvatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#7C3AED" />
-                        <stop offset="100%" stopColor="#4C1D95" />
+                        <stop offset="0%" stopColor="#0B3A67" />
+                        <stop offset="50%" stopColor="#1F5D9B" />
+                        <stop offset="100%" stopColor="#8B1E3F" />
                     </linearGradient>
                 </defs>
             </svg>
 
             {/* Inner Circular Avatar */}
             <div
-                className={`absolute overflow-hidden rounded-full border border-white bg-[#F3EFFE] text-[#0B3A67] dark:text-[#93C5FD] shadow-2xs flex items-center justify-center font-extrabold dark:border-slate-900 dark:bg-slate-800 dark:text-[#93C5FD] ${
+                className={`absolute overflow-hidden rounded-full border border-white bg-[#EFF6FF] text-[#0B3A67] shadow-2xs flex items-center justify-center font-extrabold dark:border-slate-900 dark:bg-slate-800 dark:text-[#93C5FD] ${
                     isLg ? 'h-13 w-13 text-base' : 'h-10 w-10 text-xs'
                 }`}
             >
@@ -602,12 +603,12 @@ export default function UsersIdentityIndex({
             <head>
                 <title>Institutional Faculty Matrix — Davao del Sur State College</title>
                 <style>
-                    body { font-family: system-ui, -apple-system, sans-serif; color: #17152E; padding: 24px; }
-                    .header { border-bottom: 2px solid #5B21B6; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
-                    h1 { margin: 0; font-size: 20px; color: #4C1D95; }
+                    body { font-family: system-ui, -apple-system, sans-serif; color: #111827; padding: 24px; }
+                    .header { border-bottom: 2px solid #0B3A67; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+                    h1 { margin: 0; font-size: 20px; color: #0B3A67; }
                     p { margin: 4px 0 0; font-size: 12px; color: #475569; }
                     table { width: 100%; border-collapse: collapse; font-size: 11px; }
-                    th { background: #EDE9FE; color: #4C1D95; text-align: left; padding: 8px; border: 1px solid #DDD6FE; text-transform: uppercase; font-size: 10px; }
+                    th { background: #EFF6FF; color: #0B3A67; text-align: left; padding: 8px; border: 1px solid #BFDBFE; text-transform: uppercase; font-size: 10px; }
                     td { padding: 7px 8px; border: 1px solid #E2E8F0; vertical-align: top; }
                     tr:nth-child(even) { background: #F8FAFC; }
                 </style>
@@ -1595,7 +1596,7 @@ export default function UsersIdentityIndex({
                                             </div>
                                             <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#F1F5F9] dark:bg-slate-800">
                                                 <div
-                                                    className="h-full rounded-full bg-gradient-to-r from-[#7C3AED] to-[#4C1D95]"
+                                                    className="h-full rounded-full bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F]"
                                                     style={{
                                                         width: `${inspectedUser.profile_completion ?? 92}%`,
                                                     }}

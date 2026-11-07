@@ -321,8 +321,8 @@ export default function FacultyExamSchedulesPage({
                 );
             case 'Rescheduled':
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                        <RotateCcw className="h-3 w-3 text-purple-500" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#8B1E3F]/10 text-[#8B1E3F] dark:text-rose-400 border border-[#8B1E3F]/20">
+                        <RotateCcw className="h-3 w-3 text-[#8B1E3F]" />
                         Rescheduled
                     </span>
                 );
@@ -345,15 +345,15 @@ export default function FacultyExamSchedulesPage({
 
             <div className="w-full max-w-full min-w-0 p-4 md:p-6 lg:p-8 space-y-6">
                 {/* 1. Header Banner & Hero Info */}
-                <div className="relative overflow-hidden rounded-2xl border border-amber-300/40 dark:border-amber-800/40 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-5 sm:p-6 shadow-xs w-full min-w-0">
+                <div className="relative overflow-hidden rounded-2xl border border-[#0B3A67]/20 dark:border-[#0B3A67]/40 bg-gradient-to-r from-[#0B3A67]/10 via-[#1F5D9B]/5 to-[#8B1E3F]/10 p-5 sm:p-6 shadow-xs w-full min-w-0">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2.5">
-                                <span className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-700/50 shrink-0">
+                                <span className="p-2 rounded-xl bg-[#0B3A67]/15 text-[#0B3A67] dark:text-blue-300 border border-[#0B3A67]/30 shrink-0">
                                     <BookOpen className="w-5 h-5" />
                                 </span>
                                 <h1 className="text-2xl font-black text-foreground tracking-tight">My Exam Schedules</h1>
-                                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-300/50 shrink-0">
+                                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-50 dark:bg-blue-950/40 text-[#0B3A67] dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
                                     {currentPeriod?.name || '1st Semester AY 2026-2027'}
                                 </span>
                             </div>
@@ -372,7 +372,7 @@ export default function FacultyExamSchedulesPage({
                                     }
                                     setIsCreateModalOpen(true);
                                 }}
-                                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md gap-2"
+                                className="bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-bold shadow-md gap-2"
                             >
                                 <Plus className="w-4 h-4" />
                                 Add Exam Schedule
@@ -669,7 +669,7 @@ export default function FacultyExamSchedulesPage({
                                         }
                                         setIsCreateModalOpen(true);
                                     }}
-                                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs"
+                                    className="bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-bold text-xs"
                                 >
                                     <Plus className="w-4 h-4 mr-1.5" />
                                     Add Exam Schedule
@@ -689,8 +689,8 @@ export default function FacultyExamSchedulesPage({
                                             <div className={cn(
                                                 "p-4 border-b",
                                                 isLab
-                                                    ? "bg-gradient-to-r from-indigo-500/10 via-indigo-500/5 to-transparent border-indigo-200/50 dark:border-indigo-900/50"
-                                                    : "bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-amber-200/50 dark:border-amber-900/50"
+                                                    ? "bg-gradient-to-r from-[#0B3A67]/10 via-[#1F5D9B]/5 to-[#8B1E3F]/10 border-blue-200/60 dark:border-blue-900/50"
+                                                    : "bg-gradient-to-r from-[#0B3A67]/10 via-[#1F5D9B]/5 to-[#8B1E3F]/10 border-blue-200/60 dark:border-blue-900/50"
                                             )}>
                                                 <div className="flex items-center justify-between gap-2 mb-2">
                                                     <span className={cn(
@@ -985,7 +985,7 @@ export default function FacultyExamSchedulesPage({
                                         className={cn(
                                             "flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-bold transition-all cursor-pointer",
                                             componentType === 'Laboratory'
-                                                ? "bg-indigo-600 text-white border-indigo-700 shadow-xs"
+                                                ? "bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white border-[#0B3A67] shadow-xs"
                                                 : "bg-background text-muted-foreground border-input hover:text-foreground"
                                         )}
                                     >
@@ -1137,7 +1137,7 @@ export default function FacultyExamSchedulesPage({
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs"
+                                className="bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-bold text-xs"
                             >
                                 {isSubmitting ? 'Saving...' : 'Confirm & Save Schedule'}
                             </Button>

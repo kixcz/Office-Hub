@@ -234,7 +234,7 @@ export default function FacultyCalendarPage({
             case 'examination':
                 return 'bg-emerald-500';
             case 'activity':
-                return 'bg-purple-500';
+                return 'bg-[#8B1E3F]';
             default:
                 return 'bg-amber-500';
         }
@@ -245,7 +245,7 @@ export default function FacultyCalendarPage({
             case 'personal':
                 return 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20';
             case 'activity':
-                return 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/20';
+                return 'bg-[#8B1E3F]/10 text-[#8B1E3F] dark:text-rose-300 border-[#8B1E3F]/20';
             case 'meeting':
                 return 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/20';
             case 'deadline':
@@ -325,7 +325,7 @@ export default function FacultyCalendarPage({
                     <div>
                         <div className="flex items-center gap-2.5">
                             <h1 className="text-2xl font-black text-foreground tracking-tight">Personal Academic Calendar</h1>
-                            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-600 border border-amber-300 dark:border-amber-700/50">
+                            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-[#0B3A67]/10 text-[#0B3A67] dark:text-blue-300 border border-[#0B3A67]/20">
                                 {faculty?.first_name} {faculty?.last_name}
                             </span>
                         </div>
@@ -371,7 +371,7 @@ export default function FacultyCalendarPage({
                                 setNewEventForm((prev) => ({ ...prev, date: selectedDateStr }));
                                 setIsAddModalOpen(true);
                             }}
-                            className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-1.5 rounded-xl h-9 shadow-xs"
+                            className="bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-bold text-xs gap-1.5 rounded-xl h-9 shadow-xs"
                         >
                             <Plus className="w-3.5 h-3.5" />
                             <span>Add Personal Event</span>
@@ -468,7 +468,7 @@ export default function FacultyCalendarPage({
                                                 d.isCurrentMonth
                                                     ? "bg-card/70 hover:bg-muted/40 border-border/80"
                                                     : "bg-muted/20 text-muted-foreground/40 border-border/30",
-                                                isSelected && "ring-2 ring-amber-500 border-amber-500 bg-amber-500/5",
+                                                isSelected && "ring-2 ring-[#0B3A67] border-[#0B3A67] bg-[#0B3A67]/5",
                                                 hasPersonal && "border-amber-300 dark:border-amber-800/60"
                                             )}
                                         >
@@ -477,7 +477,7 @@ export default function FacultyCalendarPage({
                                                     className={cn(
                                                         "text-xs font-black w-6 h-6 rounded-full flex items-center justify-center",
                                                         isSelected
-                                                            ? "bg-amber-600 text-white shadow-xs"
+                                                            ? "bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] text-white shadow-xs"
                                                             : d.isCurrentMonth
                                                             ? "text-foreground"
                                                             : "text-muted-foreground/40"
@@ -504,7 +504,7 @@ export default function FacultyCalendarPage({
                                                                 ? "bg-blue-100 dark:bg-blue-950/70 text-blue-900 dark:text-blue-200"
                                                                 : ev.type === 'deadline'
                                                                 ? "bg-rose-100 dark:bg-rose-950/70 text-rose-900 dark:text-rose-200"
-                                                                : "bg-purple-100 dark:bg-purple-950/70 text-purple-900 dark:text-purple-200"
+                                                                : "bg-rose-100 dark:bg-rose-950/70 text-[#8B1E3F] dark:text-rose-200"
                                                         )}
                                                     >
                                                         <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", getDotColor(ev.type))} />
@@ -543,7 +543,7 @@ export default function FacultyCalendarPage({
                                     <span>Exam</span>
                                 </span>
                                 <span className="flex items-center gap-1.5">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+                                    <span className="w-2.5 h-2.5 rounded-full bg-[#8B1E3F]" />
                                     <span>Activity</span>
                                 </span>
                             </div>
@@ -567,7 +567,7 @@ export default function FacultyCalendarPage({
                                         setNewEventForm((prev) => ({ ...prev, date: selectedDateStr }));
                                         setIsAddModalOpen(true);
                                     }}
-                                    className="h-8 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white gap-1 rounded-lg"
+                                    className="h-8 text-xs font-bold bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white gap-1 rounded-lg"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
                                     <span>Add</span>
@@ -830,7 +830,7 @@ export default function FacultyCalendarPage({
                                     type="submit"
                                     size="sm"
                                     disabled={isSubmitting}
-                                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                                    className="bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-bold"
                                 >
                                     {isSubmitting ? 'Saving...' : 'Add Event to Calendar'}
                                 </Button>
