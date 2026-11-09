@@ -284,32 +284,33 @@ export default function AnnouncementsIndex({
             <Head title="Announcements" />
             
             <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-7xl mx-auto w-full transition-colors">
-                {/* Hero Header Banner */}
-                <div className="rounded-2xl border border-[#0B3A67]/20 dark:border-[#0B3A67]/30 bg-gradient-to-r from-[#0B3A67]/10 via-[#1F5D9B]/5 to-transparent dark:from-[#0B3A67]/30 dark:via-[#1F5D9B]/10 dark:to-transparent p-6 sm:p-7 relative overflow-hidden flex items-center justify-between shadow-2xs">
+                {/* Hero Header Banner with Deep Blue & Maroon gradient */}
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 sm:p-7 shadow-lg text-white flex items-center justify-between">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
                     {/* Left Info */}
                     <div className="flex items-center gap-4 z-10">
-                        <div className="w-12 h-12 rounded-2xl bg-[#EFF6FF] dark:bg-slate-800 border border-[#175C94]/30 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center shrink-0 shadow-2xs">
+                        <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 backdrop-blur-xs shadow-xs">
                             <Megaphone className="w-6 h-6" />
                         </div>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-xs">
                                 Announcements
                             </h1>
-                            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
+                            <p className="text-xs sm:text-sm font-medium text-white/80 mt-1">
                                 Manage official communications for the college and public displays.
                             </p>
                         </div>
                     </div>
 
                     {/* Right Decorative Megaphone Illustration */}
-                    <div className="hidden md:flex items-center opacity-85 pointer-events-none select-none">
-                        <svg className="w-32 h-24 text-[#0B3A67]/20 dark:text-[#93C5FD]/15" viewBox="0 0 160 120" fill="none" stroke="currentColor">
+                    <div className="hidden md:flex items-center opacity-70 pointer-events-none select-none z-10">
+                        <svg className="w-32 h-24 text-white/30" viewBox="0 0 160 120" fill="none" stroke="currentColor">
                             {/* Stylized Megaphone Cone */}
-                            <path d="M40 50 L95 25 L105 30 L105 90 L95 95 L40 70 Z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="3" strokeLinejoin="round" />
+                            <path d="M40 50 L95 25 L105 30 L105 90 L95 95 L40 70 Z" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="3" strokeLinejoin="round" />
                             {/* Megaphone Handle */}
                             <path d="M55 70 L55 95 L45 95 L45 65" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
                             {/* Bell opening ring */}
-                            <ellipse cx="105" cy="60" rx="6" ry="30" fill="currentColor" fillOpacity="0.4" stroke="currentColor" strokeWidth="3" />
+                            <ellipse cx="105" cy="60" rx="6" ry="30" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="3" />
                             {/* Soundwave lines */}
                             <path d="M120 40 C 130 50, 130 70, 120 80" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                             <path d="M135 30 C 150 45, 150 75, 135 90" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />

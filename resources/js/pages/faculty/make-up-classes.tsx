@@ -230,24 +230,32 @@ export default function FacultyMakeUpClassesPage({
             <Head title="Faculty Make-Up Classes" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
-                {/* Header */}
-                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-b pb-4">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-2xl font-bold tracking-tight">Make-Up Class Scheduling</h1>
-                            <Badge variant="outline" className="text-xs bg-muted">
-                                {currentPeriod?.academic_year || 'A.Y. 2026-2027'} - {currentPeriod?.semester || '1st Semester'}
-                            </Badge>
+                {/* Header Banner */}
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 backdrop-blur-xs shadow-xs">
+                                <CalendarIcon className="w-6 h-6 stroke-[2.2]" />
+                            </div>
+                            <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs">Make-Up Class Scheduling</h1>
+                                    <Badge variant="outline" className="text-xs bg-white/15 text-white border-white/25 backdrop-blur-xs shadow-2xs">
+                                        {currentPeriod?.academic_year || 'A.Y. 2026-2027'} - {currentPeriod?.semester || '1st Semester'}
+                                    </Badge>
+                                </div>
+                                <p className="text-xs sm:text-sm text-white/80 font-medium mt-1 max-w-2xl">
+                                    File replacement class schedules for missed sessions, track Program Head and Dean endorsements, and submit post-session conduct reports.
+                                </p>
+                            </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            File replacement class schedules for missed sessions, track Program Head and Dean endorsements, and submit post-session conduct reports.
-                        </p>
-                    </div>
 
-                    <Button onClick={handleOpenCreateModal} className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        File Make-Up Class Request
-                    </Button>
+                        <Button onClick={handleOpenCreateModal} className="bg-white text-slate-900 hover:bg-white/90 font-bold shadow-md gap-2 rounded-xl shrink-0">
+                            <Plus className="h-4 w-4 text-[#0B3A67]" />
+                            <span>File Make-Up Request</span>
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Requests List */}

@@ -477,42 +477,43 @@ export default function LabDashboardModule({
 
     return (
         <div className="space-y-4">
-            {/* 1. MODULE-SPECIFIC HEADER */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 sm:p-4 rounded-xl border shadow-2xs">
-                <div className="flex items-center gap-3">
-                    <div className="h-11 w-11 rounded-xl bg-amber-500 flex items-center justify-center text-white shadow-xs shrink-0">
+            {/* 1. MODULE-SPECIFIC HEADER with Deep Blue & Maroon gradient */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-5 sm:p-6 shadow-lg text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                <div className="flex items-center gap-3.5 relative z-10">
+                    <div className="h-12 w-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white backdrop-blur-xs shadow-xs shrink-0">
                         <BarChart3 className="h-6 w-6 stroke-[2.2]" />
                     </div>
                     <div>
-                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
-                            Dashboard
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-xs">
+                            Laboratory Dashboard
                         </h1>
-                        <p className="text-xs sm:text-sm text-muted-foreground font-normal">
+                        <p className="text-xs sm:text-sm text-white/80 font-medium mt-0.5">
                             Live overview of laboratory operations, timetable utilization, and active alerts.
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap relative z-10 shrink-0">
                     {/* Period Navigator with functional offset */}
-                    <div className="inline-flex items-center rounded-lg border bg-background px-1 py-1 text-xs shadow-2xs">
+                    <div className="inline-flex items-center rounded-xl border border-white/20 bg-white/15 backdrop-blur-xs px-1.5 py-1 text-xs text-white shadow-2xs">
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            className="h-7 w-7 text-white/80 hover:text-white hover:bg-white/20"
                             onClick={() => setSelectedPeriodOffset((prev) => prev - 1)}
                             title="Previous week"
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <div className="flex items-center gap-1.5 px-2 font-semibold text-foreground text-xs whitespace-nowrap">
-                            <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                        <div className="flex items-center gap-1.5 px-2 font-bold text-white text-xs whitespace-nowrap">
+                            <CalendarIcon className="h-3.5 w-3.5 text-white/80" />
                             <span>{selectedPeriodLabel}</span>
                         </div>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            className="h-7 w-7 text-white/80 hover:text-white hover:bg-white/20"
                             onClick={() => setSelectedPeriodOffset((prev) => prev + 1)}
                             title="Next week"
                         >
@@ -524,10 +525,10 @@ export default function LabDashboardModule({
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 px-3 text-xs border-amber-500 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 font-bold gap-1.5 shadow-2xs shrink-0"
+                        className="h-9 px-3 text-xs bg-white text-slate-900 border-white/30 hover:bg-white/90 font-bold gap-1.5 shadow-2xs shrink-0"
                         onClick={() => router.get('/monitoring/lab-in-charge/end-of-day')}
                     >
-                        <FileCheck className="h-4 w-4 text-amber-600" />
+                        <FileCheck className="h-4 w-4 text-emerald-600" />
                         <span>End-of-Day Closing Report</span>
                     </Button>
                 </div>

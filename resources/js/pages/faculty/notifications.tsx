@@ -130,37 +130,38 @@ export default function FacultyNotificationsPage({ faculty, notifications = [], 
             <Head title="Notifications - OfficeHub" />
 
             <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1200px] mx-auto">
-                {/* Header Banner */}
-                <div className="bg-card rounded-2xl border border-border p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-10 h-10 rounded-xl bg-[#0B3A67]/10 border border-amber-500/20 text-[#0B3A67] flex items-center justify-center shrink-0">
-                                <Bell className="w-5 h-5" />
+                {/* Header Banner with Deep Blue & Maroon gradient */}
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white flex flex-col md:flex-row md:items-center justify-between gap-5">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 backdrop-blur-xs shadow-xs">
+                                <Bell className="w-6 h-6" />
                             </div>
                             <div>
-                                <h1 className="text-xl md:text-2xl font-black text-foreground tracking-tight">
+                                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs">
                                     Notifications & Alerts
                                 </h1>
-                                <p className="text-xs text-muted-foreground mt-0.5">
+                                <p className="text-xs sm:text-sm text-white/80 font-medium mt-1">
                                     Real-time administrative broadcasts, deadline reminders, schedule adjustments, and system activity.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2.5 self-start md:self-auto">
+                    <div className="flex items-center gap-2.5 self-start md:self-auto relative z-10 shrink-0">
                         {activeUnreadCount > 0 && (
                             <button
                                 type="button"
                                 onClick={handleMarkAllAsRead}
-                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-background hover:bg-muted text-xs font-bold text-foreground transition-all shadow-2xs cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-white/90 text-slate-900 text-xs font-bold transition-all shadow-md cursor-pointer"
                             >
-                                <CheckCheck className="w-4 h-4 text-emerald-500" />
-                                Mark all as read
+                                <CheckCheck className="w-4 h-4 text-emerald-600" />
+                                <span>Mark all as read</span>
                             </button>
                         )}
-                        <span className="px-3 py-1.5 rounded-xl bg-muted/60 border border-border text-xs font-semibold text-muted-foreground">
-                            <strong className="text-foreground">{items.length}</strong> total • <strong className="text-[#0B3A67]">{activeUnreadCount}</strong> unread
+                        <span className="px-3 py-1.5 rounded-xl bg-white/15 border border-white/25 text-xs font-semibold text-white backdrop-blur-xs shadow-2xs">
+                            <strong className="text-white">{items.length}</strong> total • <strong className="text-white underline">{activeUnreadCount}</strong> unread
                         </span>
                     </div>
                 </div>

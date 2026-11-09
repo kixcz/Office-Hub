@@ -449,33 +449,34 @@ export default function LabAttendanceModule({
 
     return (
         <div className="space-y-4">
-            {/* 1. MODULE-SPECIFIC HEADER */}
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card p-4 sm:p-5 rounded-2xl border shadow-xs">
-                <div className="space-y-1">
+            {/* 1. MODULE-SPECIFIC HEADER with Deep Blue & Maroon gradient */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                <div className="space-y-1 relative z-10">
                     <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                            <span className="h-2 w-2 rounded-full bg-amber-500 inline-block" />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/15 text-white border border-white/25 backdrop-blur-xs shadow-2xs">
+                            <span className="h-2 w-2 rounded-full bg-emerald-400 inline-block animate-pulse" />
                             Operational Attendance
                         </span>
                     </div>
 
-                    <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
+                    <h1 className="text-xl sm:text-3xl font-black tracking-tight text-white drop-shadow-xs">
                         Lab Attendance Monitoring
                     </h1>
 
-                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2.5 gap-y-0.5 pt-0.5 font-medium">
+                    <div className="text-xs text-white/80 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 pt-0.5 font-medium">
                         <span>{academicPeriod.name}</span>
-                        <span className="text-muted-foreground/40">|</span>
-                        <span>Date: <strong className="text-foreground">{selectedDateFormatted}</strong></span>
-                        <span className="text-muted-foreground/40">|</span>
-                        <span>Assigned Laboratories: <strong className="text-foreground">{assignedRooms.length || 6}</strong></span>
-                        <span className="text-muted-foreground/40">|</span>
-                        <span>Verified Schedule: <strong className="text-foreground">{scheduleVersion}</strong></span>
+                        <span className="text-white/40">|</span>
+                        <span>Date: <strong className="text-white font-bold">{selectedDateFormatted}</strong></span>
+                        <span className="text-white/40">|</span>
+                        <span>Assigned Laboratories: <strong className="text-white font-bold">{assignedRooms.length || 6}</strong></span>
+                        <span className="text-white/40">|</span>
+                        <span>Verified Schedule: <strong className="text-white font-bold">{scheduleVersion}</strong></span>
                     </div>
                 </div>
 
-                {/* Right Header Actions: Generate Report & Period Pill Switcher */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 self-start xl:self-auto shrink-0">
+                {/* Right Header Actions */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 self-start xl:self-auto shrink-0 relative z-10">
                     {/* Generate Report Button with Dropdown Options */}
                     <div className="relative inline-block">
                         <Button

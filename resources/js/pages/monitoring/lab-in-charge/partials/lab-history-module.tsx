@@ -295,40 +295,41 @@ export default function LabHistoryModule({
 
     return (
         <div className="space-y-4">
-            {/* 1. MODULE-SPECIFIC HEADER (Orange rounded history icon + "Monitoring History" + Subtitle + Date Stepper + Export button) */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 sm:p-5 rounded-2xl border shadow-xs">
-                <div className="flex items-center gap-3.5">
-                    <div className="h-12 w-12 rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-sm shrink-0">
+            {/* 1. MODULE-SPECIFIC HEADER with Deep Blue & Maroon gradient */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                <div className="flex items-center gap-4 relative z-10">
+                    <div className="h-12 w-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white backdrop-blur-xs shadow-xs shrink-0">
                         <History className="h-6 w-6 stroke-[2.2]" />
                     </div>
                     <div>
-                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
+                        <h1 className="text-xl sm:text-3xl font-black tracking-tight text-white drop-shadow-xs">
                             Monitoring History
                         </h1>
-                        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                        <p className="text-xs sm:text-sm text-white/80 font-medium mt-1">
                             View the complete audit trail of all recorded observations in your assigned laboratories.
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 self-start sm:self-center shrink-0">
+                <div className="flex items-center gap-2.5 self-start sm:self-center shrink-0 relative z-10">
                     {/* Date Stepper */}
-                    <div className="flex items-center bg-background border border-input rounded-xl shadow-2xs p-1">
+                    <div className="flex items-center bg-white/15 border border-white/20 backdrop-blur-xs rounded-xl shadow-2xs p-1 text-white">
                         <button
                             type="button"
                             onClick={() => setDateRange('Oct 12 – Oct 18, 2026')}
-                            className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                            className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </button>
-                        <div className="flex items-center gap-2 px-2.5 text-xs font-semibold">
-                            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                        <div className="flex items-center gap-2 px-2.5 text-xs font-bold">
+                            <Calendar className="h-3.5 w-3.5 text-white/80" />
                             <span>{dateRange}</span>
                         </div>
                         <button
                             type="button"
                             onClick={() => setDateRange('Oct 26 – Nov 01, 2026')}
-                            className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                            className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
                         >
                             <ChevronRight className="h-4 w-4" />
                         </button>
@@ -337,10 +338,10 @@ export default function LabHistoryModule({
                     {/* Export Button */}
                     <Button
                         onClick={handleExport}
-                        className="h-10 px-4 text-xs sm:text-sm font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs rounded-xl gap-2 transition-all"
+                        className="h-10 px-4 text-xs sm:text-sm font-bold bg-white text-slate-900 hover:bg-white/90 shadow-md rounded-xl gap-2 transition-all cursor-pointer"
                     >
-                        <Download className="h-4 w-4 stroke-[2.5]" />
-                        Export
+                        <Download className="h-4 w-4 stroke-[2.5] text-[#0B3A67]" />
+                        <span>Export</span>
                     </Button>
                 </div>
             </div>

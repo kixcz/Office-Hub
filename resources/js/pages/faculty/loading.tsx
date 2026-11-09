@@ -29,11 +29,26 @@ export default function FacultyLoadingPage({ faculty, courses = [], total_units,
             <Head title="Faculty Loading - Workspace" />
 
             <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1500px] mx-auto">
-                <div className="bg-card rounded-2xl border border-border p-6 shadow-2xs">
-                    <h1 className="text-2xl font-black text-foreground tracking-tight">Approved Faculty Workload</h1>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                        Approved teaching assignments and credited workload for AY 2026–2027, 1st Semester.
-                    </p>
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 backdrop-blur-xs shadow-xs">
+                                <Briefcase className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs">Approved Faculty Workload</h1>
+                                <p className="text-xs sm:text-sm text-white/80 font-medium mt-0.5">
+                                    Approved teaching assignments and credited workload for AY 2026–2027, 1st Semester.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/15 text-white border border-white/25 backdrop-blur-xs shadow-2xs">
+                                Official Load Assignment
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Workload Metric Summary */}

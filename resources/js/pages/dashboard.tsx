@@ -350,66 +350,53 @@ export default function SuperAdminDashboard({
             <Head title={`${dashboardTitle} - ${collegeCode} OfficeHub`} />
 
             <div className="p-4 md:p-6 lg:p-7 space-y-6 max-w-[1600px] mx-auto font-sans">
-                {/* 1. Header with Compact Persistent Filters Row */}
+                {/* 1. Header with Compact Persistent Filters Row (Deep Blue & Maroon gradient) */}
                 <div
-                    className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card rounded-2xl border border-border p-5 shadow-2xs"
-                    style={
-                        collegeBranding
-                            ? {
-                                  borderColor: `${collegeBranding.primary_color}45`,
-                              }
-                            : undefined
-                    }
+                    className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white flex flex-col xl:flex-row xl:items-center justify-between gap-5"
                 >
-                    <div className="flex items-center gap-3.5">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                    
+                    <div className="flex items-center gap-4 relative z-10">
                         <div
-                            className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20 overflow-hidden p-1.5"
-                            style={
-                                collegeBranding?.primary_color
-                                    ? {
-                                          borderColor: `${collegeBranding.primary_color}50`,
-                                      }
-                                    : undefined
-                            }
+                            className="w-13 h-13 rounded-2xl bg-white/15 text-white flex items-center justify-center shrink-0 border border-white/20 overflow-hidden p-1.5 backdrop-blur-xs shadow-xs"
                         >
                             {activeCollege?.logo_url ? (
-                                <img src={activeCollege.logo_url} alt={collegeCode} className="w-full h-full object-contain" />
+                                <img src={activeCollege.logo_url} alt={collegeCode} className="w-full h-full object-contain drop-shadow-xs" />
                             ) : (
-                                <TrendingUp className="w-6 h-6" />
+                                <TrendingUp className="w-6 h-6 text-white" />
                             )}
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight drop-shadow-xs">
                                     {dashboardTitle}
                                 </h1>
-                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border ${
+                                <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border backdrop-blur-xs shadow-2xs ${
                                     isProgramHead
-                                        ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                                        ? 'bg-blue-400/20 text-white border-blue-300/40'
                                         : isDean
-                                        ? 'bg-[#8B1E3F]/10 text-[#8B1E3F] dark:text-[#F43F5E] border-[#8B1E3F]/20'
-                                        : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                                        ? 'bg-rose-400/20 text-white border-rose-300/40'
+                                        : 'bg-white/20 text-white border-white/30'
                                 }`}>
                                     {user_role}
                                 </span>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
+                            <p className="text-xs sm:text-sm text-white/80 font-medium mt-1 max-w-2xl leading-relaxed">
                                 {dashboardSubtitle}
                             </p>
                             {collegeBranding?.slogan && (
                                 <p
-                                    className="text-[11px] font-bold italic mt-1"
-                                    style={{ color: collegeBranding.secondary_color }}
+                                    className="text-[11px] font-bold italic mt-1 text-white/90"
                                 >
                                     &ldquo;{collegeBranding.slogan}&rdquo;
                                 </p>
                             )}
-                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 mt-1.5">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/15 text-white border border-white/25 backdrop-blur-xs shadow-2xs mt-2">
                                 <span>🎓 AY {academicYear} • {semester}</span>
                                 {program_code && (
                                     <>
-                                        <span>•</span>
-                                        <span className="text-blue-600 dark:text-blue-400 font-extrabold">{program_code}</span>
+                                        <span className="text-white/60">•</span>
+                                        <span className="text-white font-extrabold">{program_code}</span>
                                     </>
                                 )}
                             </div>
@@ -417,15 +404,15 @@ export default function SuperAdminDashboard({
                     </div>
 
                     {/* Filter Bar Controls */}
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3 relative z-10 shrink-0">
                         {/* Academic Year */}
                         <div className="flex flex-col text-[11px]">
-                            <span className="font-semibold text-muted-foreground mb-1">Academic Year</span>
+                            <span className="font-bold text-white/80 mb-1">Academic Year</span>
                             <div className="relative">
                                 <select
                                     value={academicYear}
                                     onChange={(e) => handleAcademicYearChange(e.target.value)}
-                                    className="appearance-none bg-background border border-border text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 hover:border-slate-400 cursor-pointer focus:ring-1 focus:ring-amber-500 shadow-2xs"
+                                    className="appearance-none bg-white text-slate-900 border-none text-xs font-bold rounded-xl pl-3 pr-8 py-2 shadow-md cursor-pointer focus:ring-2 focus:ring-white/40"
                                 >
                                     {uniqueAcademicYears.map((ay) => (
                                         <option key={ay} value={ay}>
@@ -433,18 +420,18 @@ export default function SuperAdminDashboard({
                                         </option>
                                     ))}
                                 </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-2 pointer-events-none" />
+                                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5 pointer-events-none" />
                             </div>
                         </div>
 
                         {/* Semester */}
                         <div className="flex flex-col text-[11px]">
-                            <span className="font-semibold text-muted-foreground mb-1">Semester</span>
+                            <span className="font-bold text-white/80 mb-1">Semester</span>
                             <div className="relative">
                                 <select
                                     value={semester}
                                     onChange={(e) => handleSemesterChange(e.target.value)}
-                                    className="appearance-none bg-background border border-border text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 hover:border-slate-400 cursor-pointer focus:ring-1 focus:ring-amber-500 shadow-2xs"
+                                    className="appearance-none bg-white text-slate-900 border-none text-xs font-bold rounded-xl pl-3 pr-8 py-2 shadow-md cursor-pointer focus:ring-2 focus:ring-white/40"
                                 >
                                     {(semestersForCurrentYear.length > 0 ? semestersForCurrentYear : ['1st Semester', '2nd Semester']).map((sem) => (
                                         <option key={sem} value={sem}>
@@ -452,13 +439,13 @@ export default function SuperAdminDashboard({
                                         </option>
                                     ))}
                                 </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-2 pointer-events-none" />
+                                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5 pointer-events-none" />
                             </div>
                         </div>
 
                         {/* Program */}
                         <div className="flex flex-col text-[11px]">
-                            <span className="font-semibold text-muted-foreground mb-1">Program</span>
+                            <span className="font-bold text-white/80 mb-1">Program</span>
                             <div className="relative">
                                 <select
                                     value={programId}
@@ -468,7 +455,7 @@ export default function SuperAdminDashboard({
                                         setFacultyId('all');
                                         handleFilterChange({ program_id: val, faculty_id: 'all' });
                                     }}
-                                    className="appearance-none bg-background border border-border text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 hover:border-slate-400 cursor-pointer focus:ring-1 focus:ring-amber-500 shadow-2xs"
+                                    className="appearance-none bg-white text-slate-900 border-none text-xs font-bold rounded-xl pl-3 pr-8 py-2 shadow-md cursor-pointer focus:ring-2 focus:ring-white/40 max-w-[150px] truncate"
                                 >
                                     <option value="all">All Programs</option>
                                     {available_programs.map((p) => (
@@ -477,13 +464,13 @@ export default function SuperAdminDashboard({
                                         </option>
                                     ))}
                                 </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-2 pointer-events-none" />
+                                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5 pointer-events-none" />
                             </div>
                         </div>
 
                         {/* Faculty Filter */}
                         <div className="flex flex-col text-[11px]">
-                            <span className="font-semibold text-muted-foreground mb-1">Faculty</span>
+                            <span className="font-bold text-white/80 mb-1">Faculty</span>
                             <div className="relative">
                                 <select
                                     value={facultyId}
@@ -492,7 +479,7 @@ export default function SuperAdminDashboard({
                                         setFacultyId(val);
                                         handleFilterChange({ faculty_id: val });
                                     }}
-                                    className="appearance-none bg-background border border-border text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 hover:border-slate-400 cursor-pointer focus:ring-1 focus:ring-amber-500 shadow-2xs max-w-[150px] truncate"
+                                    className="appearance-none bg-white text-slate-900 border-none text-xs font-bold rounded-xl pl-3 pr-8 py-2 shadow-md cursor-pointer focus:ring-2 focus:ring-white/40 max-w-[150px] truncate"
                                 >
                                     <option value="all">College-Wide</option>
                                     {available_faculties.map((f) => (
@@ -501,15 +488,15 @@ export default function SuperAdminDashboard({
                                         </option>
                                     ))}
                                 </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-2 pointer-events-none" />
+                                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5 pointer-events-none" />
                             </div>
                         </div>
 
                         {/* Date Range Badge */}
                         <div className="flex flex-col text-[11px]">
-                            <span className="font-semibold text-muted-foreground mb-1">Reporting Date Range</span>
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-muted/30 text-xs font-semibold text-foreground">
-                                <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span className="font-bold text-white/80 mb-1">Reporting Date Range</span>
+                            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 border border-white/20 text-xs font-semibold text-white backdrop-blur-xs shadow-2xs">
+                                <CalendarDays className="w-3.5 h-3.5 text-white/80" />
                                 <span>{dateRange}</span>
                             </div>
                         </div>
@@ -519,9 +506,9 @@ export default function SuperAdminDashboard({
                             <span className="invisible mb-1">Report</span>
                             <Link
                                 href="/performance/faculty/report"
-                                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                                className="px-3.5 py-2 rounded-xl bg-white hover:bg-white/90 text-slate-900 font-bold text-xs flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
                             >
-                                <Download className="w-3.5 h-3.5" />
+                                <Download className="w-3.5 h-3.5 text-[#0B3A67]" />
                                 <span>Export Report</span>
                             </Link>
                         </div>

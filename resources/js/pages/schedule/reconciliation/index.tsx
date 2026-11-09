@@ -272,7 +272,7 @@ export default function ScheduleReconciliation({
 
     const getConfidenceBadge = (score: number) => {
         if (score >= 90) return <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-mono">{score}%</Badge>;
-        if (score >= 70) return <Badge className="bg-amber-500 hover:bg-amber-600 text-white font-mono">{score}%</Badge>;
+        if (score >= 70) return <Badge className="bg-[#0B3A67] hover:bg-[#175C94] text-white font-mono">{score}%</Badge>;
         return <Badge variant="destructive" className="font-mono">{score}%</Badge>;
     };
 
@@ -283,7 +283,7 @@ export default function ScheduleReconciliation({
             case 'Manual_Mapped':
                 return <Badge className="bg-blue-600 text-white">Manual Match</Badge>;
             case 'Suggested':
-                return <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50">Suggested</Badge>;
+                return <Badge variant="outline" className="text-[#0B3A67] border-[#0B3A67]/30 bg-[#0B3A67]/5">Suggested</Badge>;
             case 'Unresolved':
                 return <Badge variant="destructive">Unresolved</Badge>;
             case 'Ignored':
@@ -355,12 +355,12 @@ export default function ScheduleReconciliation({
                         </CardContent>
                     </Card>
 
-                    <Card className="border-l-4 border-l-amber-500 shadow-sm">
+                    <Card className="border-l-4 border-l-[#0B3A67] shadow-sm">
                         <CardHeader className="p-4 pb-2">
                             <CardTitle className="text-xs font-semibold uppercase text-muted-foreground">Needs Human Review</CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold text-amber-600">{activeBatch?.needs_review_count ?? 0}</div>
+                            <div className="text-2xl font-bold text-[#0B3A67]">{activeBatch?.needs_review_count ?? 0}</div>
                             <p className="text-xs text-muted-foreground mt-1">Fuzzy matches or missing aliases</p>
                         </CardContent>
                     </Card>
@@ -580,14 +580,14 @@ export default function ScheduleReconciliation({
                                                     <TableCell className="text-center">
                                                         <div className="space-y-1 flex flex-col items-center">
                                                             {record.has_date_conflict ? (
-                                                                <Badge className="bg-amber-600 hover:bg-amber-700 text-white text-[10px] whitespace-normal text-center font-bold px-1.5 py-0.5 leading-tight">
+                                                                <Badge className="bg-[#8B1E3F] hover:bg-[#68152E] text-white text-[10px] whitespace-normal text-center font-bold px-1.5 py-0.5 leading-tight">
                                                                     Employment-Date Conflict / Requires Mapping Review
                                                                 </Badge>
                                                             ) : (
                                                                 getStatusBadge(record.resolution_status)
                                                             )}
                                                             {record.has_date_conflict && (
-                                                                <span className="text-[10px] text-amber-700 font-medium leading-none block">
+                                                                <span className="text-[10px] text-[#8B1E3F] font-medium leading-none block">
                                                                     Effective date mismatch
                                                                 </span>
                                                             )}
@@ -727,7 +727,7 @@ export default function ScheduleReconciliation({
                                             </TableCell>
                                             <TableCell className="text-center font-mono text-xs">{b.total_rows}</TableCell>
                                             <TableCell className="text-center font-mono text-xs text-emerald-600 font-bold">{b.approved_count}</TableCell>
-                                            <TableCell className="text-center font-mono text-xs text-amber-600">{b.needs_review_count}</TableCell>
+                                            <TableCell className="text-center font-mono text-xs text-[#0B3A67] font-semibold">{b.needs_review_count}</TableCell>
                                             <TableCell className="text-right">
                                                 <Button
                                                     size="sm"
@@ -775,9 +775,9 @@ export default function ScheduleReconciliation({
                             </div>
 
                             {selectedRecord.has_date_conflict && (
-                                <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs space-y-1 text-amber-900">
-                                    <div className="font-bold flex items-center gap-1.5 text-amber-800">
-                                        <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                                <div className="p-3 bg-[#8B1E3F]/10 border border-[#8B1E3F]/20 rounded-lg text-xs space-y-1 text-[#8B1E3F]">
+                                    <div className="font-bold flex items-center gap-1.5 text-[#8B1E3F]">
+                                        <AlertCircle className="h-4 w-4 text-[#8B1E3F] shrink-0" />
                                         Employment-Date Conflict / Requires Mapping Review
                                     </div>
                                     <p className="text-[11px] leading-relaxed">

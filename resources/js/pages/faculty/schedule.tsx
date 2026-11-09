@@ -205,68 +205,76 @@ export default function FacultySchedulePage({
             <Head title="My Class Schedule - Timetable & Load" />
 
             <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1550px] mx-auto">
-                {/* 1. Top Header & Action Controls */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card rounded-2xl border border-border p-6 shadow-2xs">
-                    <div>
-                        <div className="flex items-center gap-2.5">
-                            <h1 className="text-2xl font-black text-foreground tracking-tight">My Class Schedule</h1>
-                            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-[#0B3A67]/10 text-[#0B3A67] dark:text-blue-300 border border-[#0B3A67]/20">
-                                {academic_year} · {semester}
-                            </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Official verified class timetable for {faculty?.first_name} {faculty?.last_name} ({faculty?.program?.name || 'College of Information and Communications Technology'}).
-                        </p>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2.5">
-                        {/* Timetable vs List View Switcher */}
-                        <div className="flex items-center p-1 rounded-xl bg-muted/60 border border-border shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => setViewMode('timetable')}
-                                className={cn(
-                                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                                    viewMode === 'timetable'
-                                        ? "bg-background text-foreground shadow-xs font-extrabold"
-                                        : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                <TableIcon className="w-3.5 h-3.5 text-amber-500" />
-                                <span>Timetable View</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setViewMode('list')}
-                                className={cn(
-                                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                                    viewMode === 'list'
-                                        ? "bg-background text-foreground shadow-xs font-extrabold"
-                                        : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                <LayoutGrid className="w-3.5 h-3.5 text-primary" />
-                                <span>Card List</span>
-                            </button>
+                {/* 1. Top Header Banner with Deep Blue & Maroon gradient */}
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 mt-0.5 backdrop-blur-xs shadow-xs">
+                                <CalendarIcon className="w-6 h-6 stroke-[2.2]" />
+                            </div>
+                            <div>
+                                <div className="flex flex-wrap items-center gap-2.5">
+                                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs">My Class Schedule</h1>
+                                    <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-white/15 text-white border border-white/25 backdrop-blur-xs shadow-2xs">
+                                        {academic_year} · {semester}
+                                    </span>
+                                </div>
+                                <p className="text-xs sm:text-sm text-white/80 font-medium mt-1 max-w-3xl">
+                                    Official verified class timetable for {faculty?.first_name} {faculty?.last_name} ({faculty?.program?.name || 'College of Information and Digital Sciences'}).
+                                </p>
+                            </div>
                         </div>
 
-                        <Link
-                            href="/schedule/adjustments"
-                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors"
-                        >
-                            <CalendarIcon className="w-3.5 h-3.5" />
-                            <span>Request Swap</span>
-                        </Link>
+                        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                            {/* Timetable vs List View Switcher */}
+                            <div className="flex items-center p-1 rounded-xl bg-black/20 border border-white/15 backdrop-blur-xs shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('timetable')}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                                        viewMode === 'timetable'
+                                            ? "bg-white text-slate-900 shadow-xs font-extrabold"
+                                            : "text-white/80 hover:text-white"
+                                    )}
+                                >
+                                    <TableIcon className="w-3.5 h-3.5 text-[#0B3A67]" />
+                                    <span>Timetable</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('list')}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                                        viewMode === 'list'
+                                            ? "bg-white text-slate-900 shadow-xs font-extrabold"
+                                            : "text-white/80 hover:text-white"
+                                    )}
+                                >
+                                    <LayoutGrid className="w-3.5 h-3.5 text-[#8B1E3F]" />
+                                    <span>Card List</span>
+                                </button>
+                            </div>
 
-                        <Button
-                            variant="outline"
-                            onClick={handleExportPdf}
-                            disabled={isGeneratingPdf}
-                            className="gap-1.5 text-xs font-bold rounded-xl h-9 border-border hover:bg-muted"
-                        >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>{isGeneratingPdf ? 'Exporting PDF...' : 'Export to PDF / Print'}</span>
-                        </Button>
+                            <Link
+                                href="/schedule/adjustments"
+                                className="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 backdrop-blur-xs text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors"
+                            >
+                                <CalendarIcon className="w-3.5 h-3.5" />
+                                <span>Request Swap</span>
+                            </Link>
+
+                            <Button
+                                variant="outline"
+                                onClick={handleExportPdf}
+                                disabled={isGeneratingPdf}
+                                className="gap-1.5 text-xs font-bold rounded-xl h-9 bg-white/15 hover:bg-white/25 border-white/25 text-white hover:text-white shadow-2xs"
+                            >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>{isGeneratingPdf ? 'Exporting PDF...' : 'Export to PDF / Print'}</span>
+                            </Button>
+                        </div>
                     </div>
                 </div>
 

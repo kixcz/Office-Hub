@@ -320,8 +320,8 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
         }
         if (titleLower.includes('olympiad') || titleLower.includes('competition')) {
             return (
-                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-200/60 flex items-center justify-center shrink-0">
-                    <Trophy className="w-4 h-4 text-amber-500" />
+                <div className="w-8 h-8 rounded-lg bg-[#0B3A67]/10 text-[#0B3A67] border border-[#0B3A67]/20 flex items-center justify-center shrink-0">
+                    <Trophy className="w-4 h-4 text-[#0B3A67]" />
                 </div>
             );
         }
@@ -355,8 +355,8 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
         }
 
         return (
-            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-200/60 flex items-center justify-center shrink-0">
-                <CalendarDays className="w-4 h-4 text-amber-500" />
+            <div className="w-8 h-8 rounded-lg bg-[#0B3A67]/10 text-[#0B3A67] border border-[#0B3A67]/20 flex items-center justify-center shrink-0">
+                <CalendarDays className="w-4 h-4 text-[#0B3A67]" />
             </div>
         );
     };
@@ -369,8 +369,8 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                 {/* 1. HERO HEADER: Activities Management with Create Activity button */}
                 <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-13 h-13 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0 shadow-xs border border-amber-200/60">
-                            <CalendarDays className="w-7 h-7 text-amber-500" />
+                        <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-[#0B3A67] to-[#8B1E3F] text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <CalendarDays className="w-7 h-7 text-white" />
                         </div>
                         <div>
                             <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
@@ -384,7 +384,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
 
                     <Button
                         onClick={openCreateDialog}
-                        className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-semibold px-5 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+                        className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-semibold px-5 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
                     >
                         <Plus className="w-4 h-4 stroke-[2.5]" />
                         <span>Create Activity</span>
@@ -395,8 +395,8 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Card 1: Total Activities */}
                     <div className="bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 border border-amber-200/50 flex items-center justify-center shrink-0">
-                            <CalendarDays className="w-5 h-5 text-amber-500" />
+                        <div className="w-11 h-11 rounded-xl bg-[#0B3A67]/10 text-[#0B3A67] border border-[#0B3A67]/20 flex items-center justify-center shrink-0">
+                            <CalendarDays className="w-5 h-5 text-[#0B3A67]" />
                         </div>
                         <div>
                             <span className="text-xs text-slate-500 font-medium block">Total Activities</span>
@@ -473,7 +473,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                 setCurrentPage(1);
                             }}
                             placeholder="Search activities, venue, or keywords..."
-                            className="pl-9 h-9 text-xs rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-amber-400"
+                            className="pl-9 h-9 text-xs rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0B3A67]"
                         />
                     </div>
 
@@ -493,7 +493,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                             <DropdownMenuContent align="start" className="w-44 rounded-xl">
                                 <DropdownMenuItem
                                     onClick={() => { setCategoryFilter('All Categories'); setCurrentPage(1); }}
-                                    className={cn("text-xs cursor-pointer", categoryFilter === 'All Categories' && "font-bold text-amber-600")}
+                                    className={cn("text-xs cursor-pointer", categoryFilter === 'All Categories' && "font-bold text-[#0B3A67]")}
                                 >
                                     All Categories
                                 </DropdownMenuItem>
@@ -501,7 +501,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                     <DropdownMenuItem
                                         key={c}
                                         onClick={() => { setCategoryFilter(c); setCurrentPage(1); }}
-                                        className={cn("text-xs cursor-pointer", categoryFilter.toLowerCase() === c.toLowerCase() && "font-bold text-amber-600")}
+                                        className={cn("text-xs cursor-pointer", categoryFilter.toLowerCase() === c.toLowerCase() && "font-bold text-[#0B3A67]")}
                                     >
                                         {c}
                                     </DropdownMenuItem>
@@ -528,7 +528,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                     <DropdownMenuItem
                                         key={st}
                                         onClick={() => { setStatusFilter(st); setCurrentPage(1); }}
-                                        className={cn("text-xs cursor-pointer", statusFilter.toLowerCase() === st.toLowerCase() && "font-bold text-amber-600")}
+                                        className={cn("text-xs cursor-pointer", statusFilter.toLowerCase() === st.toLowerCase() && "font-bold text-[#0B3A67]")}
                                     >
                                         {st}
                                     </DropdownMenuItem>
@@ -553,13 +553,13 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                             <DropdownMenuContent align="start" className="w-48 rounded-xl max-h-60 overflow-y-auto">
                                 <DropdownMenuItem
                                     onClick={() => { setProgramFilter('All Programs'); setCurrentPage(1); }}
-                                    className={cn("text-xs cursor-pointer", programFilter === 'All Programs' && "font-bold text-amber-600")}
+                                    className={cn("text-xs cursor-pointer", programFilter === 'All Programs' && "font-bold text-[#0B3A67]")}
                                 >
                                     All Programs
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() => { setProgramFilter('General'); setCurrentPage(1); }}
-                                    className={cn("text-xs cursor-pointer", programFilter === 'General' && "font-bold text-amber-600")}
+                                    className={cn("text-xs cursor-pointer", programFilter === 'General' && "font-bold text-[#0B3A67]")}
                                 >
                                     General
                                 </DropdownMenuItem>
@@ -567,7 +567,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                     <DropdownMenuItem
                                         key={p.id}
                                         onClick={() => { setProgramFilter(p.code); setCurrentPage(1); }}
-                                        className={cn("text-xs cursor-pointer", programFilter === p.code && "font-bold text-amber-600")}
+                                        className={cn("text-xs cursor-pointer", programFilter === p.code && "font-bold text-[#0B3A67]")}
                                     >
                                         {p.code}
                                     </DropdownMenuItem>
@@ -590,8 +590,8 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                 <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] space-y-4">
                     {/* Bulk selection action toolbar */}
                     {selectedIds.length > 0 && (
-                        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-semibold animate-in fade-in duration-200">
-                            <span className="text-amber-700 dark:text-amber-400 font-bold">
+                        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#0B3A67]/10 border border-[#0B3A67]/20 text-xs font-semibold animate-in fade-in duration-200">
+                            <span className="text-[#0B3A67] dark:text-sky-300 font-bold">
                                 {selectedIds.length} activity/activities selected
                             </span>
                             <div className="flex items-center gap-2">
@@ -630,7 +630,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                                 if (el) el.indeterminate = isSomeSelected;
                                             }}
                                             onChange={handleToggleSelectAll}
-                                            className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 focus:ring-offset-0 cursor-pointer"
+                                            className="w-4 h-4 rounded border-slate-300 text-[#0B3A67] focus:ring-[#0B3A67] focus:ring-offset-0 cursor-pointer"
                                             title="Select all on this page"
                                         />
                                     </th>
@@ -684,14 +684,14 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                     paginatedActivities.map((activity) => {
                                         const isSelected = selectedIds.includes(activity.id);
                                         return (
-                                            <tr key={activity.id} className={cn("transition-colors group", isSelected ? "bg-amber-500/10 hover:bg-amber-500/15" : "hover:bg-slate-50/70")}>
+                                            <tr key={activity.id} className={cn("transition-colors group", isSelected ? "bg-[#0B3A67]/10 hover:bg-[#0B3A67]/15" : "hover:bg-slate-50/70")}>
                                                 {/* Checkbox Column */}
                                                 <td className="py-3.5 pl-2 pr-3 text-center">
                                                     <input
                                                         type="checkbox"
                                                         checked={isSelected}
                                                         onChange={() => handleToggleSelectOne(activity.id)}
-                                                        className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 focus:ring-offset-0 cursor-pointer"
+                                                        className="w-4 h-4 rounded border-slate-300 text-[#0B3A67] focus:ring-[#0B3A67] focus:ring-offset-0 cursor-pointer"
                                                     />
                                                 </td>
                                                 {/* Activity Column (Icon + Title + Subtitle) */}
@@ -743,10 +743,10 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                                     </span>
                                                 </td>
 
-                                                {/* Status Column (Amber Scheduled pill matching screenshot) */}
+                                                {/* Status Column */}
                                                 <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0B3A67]/10 text-[#0B3A67] border border-[#0B3A67]/20">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-[#0B3A67]" />
                                                         <span>{activity.status || 'Scheduled'}</span>
                                                     </span>
                                                 </td>
@@ -822,7 +822,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                     className={cn(
                                         "h-8 w-8 p-0 rounded-lg text-xs font-semibold border-slate-200",
                                         currentPage === page
-                                            ? "bg-amber-400 text-slate-950 border-amber-400 font-bold hover:bg-amber-500"
+                                            ? "bg-[#0B3A67] text-white border-[#0B3A67] font-bold hover:bg-[#175C94]"
                                             : "text-slate-600 hover:bg-slate-50"
                                     )}
                                 >
@@ -848,7 +848,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                     <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto rounded-2xl p-6">
                         <DialogHeader>
                             <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                <CalendarDays className="w-5 h-5 text-amber-500" />
+                                <CalendarDays className="w-5 h-5 text-[#0B3A67]" />
                                 {editingActivity ? 'Edit Activity' : 'Create New Activity'}
                             </DialogTitle>
                         </DialogHeader>
@@ -869,7 +869,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-semibold text-slate-700">Category *</Label>
                                 <select
-                                    className="w-full border border-slate-200 rounded-lg h-9 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                    className="w-full border border-slate-200 rounded-lg h-9 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0B3A67]"
                                     value={data.category}
                                     onChange={(e) => setData('category', e.target.value)}
                                     required
@@ -930,7 +930,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-semibold text-slate-700">Program</Label>
                                 <select
-                                    className="w-full border border-slate-200 rounded-lg h-9 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                    className="w-full border border-slate-200 rounded-lg h-9 text-xs px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0B3A67]"
                                     value={data.program_id}
                                     onChange={(e) => setData('program_id', e.target.value)}
                                 >
@@ -965,7 +965,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold rounded-lg text-xs"
+                                    className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-bold rounded-lg text-xs shadow-xs"
                                 >
                                     {editingActivity ? 'Update Activity' : 'Create Activity'}
                                 </Button>
@@ -979,7 +979,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                     <DialogContent className="sm:max-w-[500px] rounded-2xl p-6">
                         <DialogHeader>
                             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <CalendarDays className="w-5 h-5 text-amber-500" />
+                                <CalendarDays className="w-5 h-5 text-[#0B3A67]" />
                                 Activity Details
                             </DialogTitle>
                         </DialogHeader>
@@ -990,8 +990,8 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                     <h3 className="text-base font-bold text-slate-900">{viewingActivity.title}</h3>
                                     <div className="flex items-center gap-2 mt-2">
                                         {renderCategoryBadge(viewingActivity.category)}
-                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0B3A67]/10 text-[#0B3A67] border border-[#0B3A67]/20">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#0B3A67]" />
                                             <span>{viewingActivity.status}</span>
                                         </span>
                                     </div>
@@ -1043,7 +1043,7 @@ export default function ActivitiesIndex({ activities = [], programs = [] }: Prop
                                     </Button>
                                     <Button
                                         onClick={() => setViewingActivity(null)}
-                                        className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs rounded-xl"
+                                        className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-xs"
                                     >
                                         Close
                                     </Button>

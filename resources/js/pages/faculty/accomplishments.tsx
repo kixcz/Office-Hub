@@ -365,17 +365,18 @@ export default function FacultyAccomplishmentsPage({ faculty, accomplishments = 
             <Head title="My Accomplishments - Faculty Workspace" />
 
             <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1550px] mx-auto w-full">
-                {/* 1. TOP TITLE BANNER (Matching Screenshot) */}
-                <div className="bg-card rounded-2xl border border-border p-6 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#0B3A67]/10 border border-[#0B3A67]/20 text-[#0B3A67] dark:text-blue-400 flex items-center justify-center shrink-0 shadow-2xs">
+                {/* 1. TOP TITLE BANNER with Deep Blue & Maroon gradient */}
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                    <div className="flex items-start gap-4 relative z-10">
+                        <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 mt-0.5 backdrop-blur-xs shadow-xs">
                             <Trophy className="w-6 h-6" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-foreground tracking-tight">
+                            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs">
                                 My Accomplishments
                             </h1>
-                            <p className="text-xs text-muted-foreground mt-0.5">
+                            <p className="text-xs sm:text-sm text-white/80 font-medium mt-1">
                                 Document your achievements, certifications, research awards, publication milestones, and verified service accomplishments.
                             </p>
                         </div>
@@ -383,9 +384,9 @@ export default function FacultyAccomplishmentsPage({ faculty, accomplishments = 
 
                     <Button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 font-bold text-xs rounded-xl px-4 py-2.5 shadow-2xs cursor-pointer flex items-center gap-2 self-start sm:self-auto shrink-0"
+                        className="bg-white text-slate-900 hover:bg-white/90 font-bold text-xs rounded-xl px-4 py-2.5 shadow-md cursor-pointer flex items-center gap-2 self-start sm:self-auto shrink-0 relative z-10"
                     >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4 text-[#0B3A67]" />
                         <span>Record Accomplishment</span>
                     </Button>
                 </div>

@@ -73,13 +73,13 @@ export default function MasterDataAcademicPeriodsIndex({
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <span className="p-2 rounded-xl bg-amber-100 text-amber-700">
+                                <span className="p-2 rounded-xl bg-gradient-to-br from-[#0B3A67] to-[#8B1E3F] text-white">
                                     <Clock className="size-5" />
                                 </span>
                                 <h1 className="text-2xl font-bold text-gray-900">
                                     Academic Periods (Scheduling Context)
                                 </h1>
-                                <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
+                                <Badge className="bg-gradient-to-r from-[#0B3A67]/15 to-[#8B1E3F]/15 text-[#0B3A67] border-[#0B3A67]/30 text-xs font-semibold">
                                     Master Data 01
                                 </Badge>
                             </div>
@@ -99,10 +99,10 @@ export default function MasterDataAcademicPeriodsIndex({
 
                     {/* Active Period Highlight Card */}
                     {currentPeriod && (
-                        <div className="p-5 rounded-2xl border border-amber-200/90 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+                        <div className="p-5 rounded-2xl border border-[#0B3A67]/20 bg-gradient-to-r from-[#0B3A67]/10 via-[#175C94]/5 to-[#8B1E3F]/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
                             <div className="space-y-1">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#0B3A67]/10 text-[#0B3A67]">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#0B3A67] animate-pulse" />
                                     Active Solver Semester
                                 </span>
                                 <h2 className="text-xl font-extrabold text-slate-900">
@@ -118,7 +118,7 @@ export default function MasterDataAcademicPeriodsIndex({
                                     <span className="text-slate-400 block font-medium">Solver Status</span>
                                     <span className="font-bold text-emerald-700">Target Ready</span>
                                 </div>
-                                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs">
+                                <Button asChild className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-bold text-xs shadow-xs">
                                     <Link href="/schedule/generator">
                                         Open Workspace
                                     </Link>
@@ -169,7 +169,7 @@ export default function MasterDataAcademicPeriodsIndex({
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {filtered.map((period) => (
-                                        <tr key={period.id} className="hover:bg-amber-50/40 transition-colors">
+                                        <tr key={period.id} className="hover:bg-slate-50/80 transition-colors">
                                             <td className="py-3 px-4 font-bold text-gray-900">
                                                 {period.academic_year}
                                             </td>
@@ -185,7 +185,7 @@ export default function MasterDataAcademicPeriodsIndex({
                                                         period.status === 'Active'
                                                             ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                                                             : period.status === 'Draft'
-                                                              ? 'bg-amber-100 text-amber-800 border-amber-200'
+                                                              ? 'bg-slate-100 text-slate-800 border-slate-200'
                                                               : 'bg-gray-100 text-gray-600 border-gray-200'
                                                     }
                                                 >
@@ -194,8 +194,8 @@ export default function MasterDataAcademicPeriodsIndex({
                                             </td>
                                             <td className="py-3 px-4">
                                                 {period.is_current ? (
-                                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700">
-                                                        <Star className="size-3 fill-amber-500 text-amber-500" />
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0B3A67]">
+                                                        <Star className="size-3 fill-[#0B3A67] text-[#0B3A67]" />
                                                         Current Period
                                                     </span>
                                                 ) : (

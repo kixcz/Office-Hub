@@ -155,13 +155,13 @@ export function SchedulingWorkspaceLayout({ children, currentPeriod }: Schedulin
                 {/* Brand / Mini Sidebar Header */}
                 <div className="p-3.5 border-b border-slate-200 flex items-center justify-between gap-2 shrink-0 h-16">
                     <div className={cn('flex items-center gap-2.5 min-w-0', isCollapsed && 'justify-center w-full')}>
-                        <div className="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 shadow-xs font-black">
-                            <CalendarDays className="w-5 h-5 text-slate-950" />
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0B3A67] to-[#8B1E3F] text-white flex items-center justify-center shrink-0 shadow-xs font-black">
+                            <CalendarDays className="w-5 h-5 text-white" />
                         </div>
                         {!isCollapsed && (
                             <div className="min-w-0">
                                 <h2 className="text-xs font-black text-slate-900 tracking-tight leading-tight truncate">
-                                    Semester <span className="text-amber-500">Scheduling</span>
+                                    Semester <span className="bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] bg-clip-text text-transparent">Scheduling</span>
                                 </h2>
                                 <span className="text-[9px] font-bold tracking-wider text-slate-400 block uppercase">
                                     Workspace Navigation
@@ -191,7 +191,7 @@ export function SchedulingWorkspaceLayout({ children, currentPeriod }: Schedulin
                             title="Expand scheduling navigation"
                             className="w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors"
                         >
-                            <PanelLeft className="w-4 h-4 text-amber-500" />
+                            <PanelLeft className="w-4 h-4 text-[#0B3A67]" />
                         </button>
                     </div>
                 )}
@@ -209,7 +209,7 @@ export function SchedulingWorkspaceLayout({ children, currentPeriod }: Schedulin
                         <Link
                             href="/schedule/master-data/academic-periods"
                             preserveScroll
-                            className="block p-2.5 rounded-xl border border-amber-200/80 bg-amber-50/60 hover:bg-amber-100/50 transition-colors"
+                            className="block p-2.5 rounded-xl border border-[#0B3A67]/20 bg-gradient-to-r from-[#0B3A67]/5 via-[#175C94]/5 to-[#8B1E3F]/5 hover:border-[#0B3A67]/40 hover:bg-gradient-to-r hover:from-[#0B3A67]/10 hover:to-[#8B1E3F]/10 transition-all"
                         >
                             <div className="text-[10px] text-slate-500 font-medium leading-none">
                                 {activePeriod?.academic_year || 'AY 2026–2027'}
@@ -278,7 +278,7 @@ export function SchedulingWorkspaceLayout({ children, currentPeriod }: Schedulin
                                                     className={cn(
                                                         'flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all group',
                                                         isActive
-                                                            ? 'bg-amber-100/70 text-amber-950 font-bold border-l-3 border-amber-500 shadow-2xs'
+                                                            ? 'bg-gradient-to-r from-[#0B3A67] to-[#175C94] text-white font-bold border-l-3 border-[#8B1E3F] shadow-xs'
                                                             : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900',
                                                         isCollapsed && 'justify-center px-0'
                                                     )}
@@ -286,7 +286,7 @@ export function SchedulingWorkspaceLayout({ children, currentPeriod }: Schedulin
                                                     <item.icon
                                                         className={cn(
                                                             'w-4 h-4 shrink-0 transition-colors',
-                                                            isActive ? 'text-amber-600' : 'text-slate-400 group-hover:text-slate-700'
+                                                            isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-700'
                                                         )}
                                                     />
                                                     {!isCollapsed && (

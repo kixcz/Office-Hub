@@ -275,7 +275,7 @@ export default function ScheduleGeneratorDashboard({
                             className="text-xs font-semibold gap-1.5 h-9"
                             onClick={() => setActiveSection(activeSection === 'candidates' ? 'dashboard' : 'candidates')}
                         >
-                            <Sparkles className="size-3.5 text-amber-500" />
+                            <Sparkles className="size-3.5 text-[#0B3A67]" />
                             Candidate A/B/C Consultation
                             {candidates && candidates.length > 0 && (
                                 <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
@@ -389,7 +389,7 @@ export default function ScheduleGeneratorDashboard({
                                                         {c.assigned_faculty.name}
                                                     </div>
                                                 ) : (
-                                                    <span className="text-amber-600 font-medium italic">Unassigned (TBA)</span>
+                                                    <span className="text-[#8B1E3F] font-medium italic">Unassigned (TBA)</span>
                                                 )}
                                             </td>
                                             <td className="py-2.5 px-3">
@@ -426,13 +426,13 @@ export default function ScheduleGeneratorDashboard({
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
+                                    <Badge className="bg-gradient-to-r from-[#0B3A67]/15 to-[#8B1E3F]/15 text-[#0B3A67] border-[#0B3A67]/30 text-xs font-semibold">
                                         Multi-Criteria Pareto Alternatives
                                     </Badge>
                                     <span className="text-xs text-gray-500">OR-Tools CP-SAT Solver v9.15</span>
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900 mt-1 flex items-center gap-2">
-                                    <Sparkles className="size-5 text-amber-500" />
+                                    <Sparkles className="size-5 text-[#0B3A67]" />
                                     Timetable Candidates Comparison (A vs B vs C)
                                 </h2>
                                 <p className="text-xs text-gray-500 max-w-2xl mt-0.5">
@@ -553,7 +553,7 @@ export default function ScheduleGeneratorDashboard({
                                             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
                                                 <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
                                                     <span>Your Department Advisory:</span>
-                                                    <span className="text-amber-600 font-extrabold text-[9px] uppercase tracking-wider">
+                                                    <span className="text-[#0B3A67] font-extrabold text-[9px] uppercase tracking-wider">
                                                         Advisory Only
                                                     </span>
                                                 </div>
@@ -744,8 +744,8 @@ export default function ScheduleGeneratorDashboard({
                                         />
                                     </div>
 
-                                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
-                                        <Sparkles className="size-3.5 text-amber-600 inline mr-1" />
+                                    <div className="p-3 bg-[#0B3A67]/5 rounded-lg border border-[#0B3A67]/20 text-[11px] text-[#0B3A67] leading-relaxed">
+                                        <Sparkles className="size-3.5 text-[#0B3A67] inline mr-1" />
                                         <strong>Gemini Translation:</strong> Proposes soft constraint with weight 70 on Section tags [BSIT-4A, BSIS-4A] covering Friday 07:30–12:00. Requires Super Admin validation before active solving.
                                     </div>
 
@@ -1032,7 +1032,7 @@ export default function ScheduleGeneratorDashboard({
                                 </div>
 
                                 <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs space-y-2">
-                                    <div className="size-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                                    <div className="size-8 rounded-lg bg-[#0B3A67]/10 text-[#0B3A67] flex items-center justify-center">
                                         <Users className="size-4" />
                                     </div>
                                     <div>
@@ -1105,7 +1105,7 @@ export default function ScheduleGeneratorDashboard({
                                     </div>
 
                                     <div className="flex items-start gap-3">
-                                        <div className="p-2 rounded-xl bg-amber-50 text-amber-600 shrink-0">
+                                        <div className="p-2 rounded-xl bg-[#0B3A67]/10 text-[#0B3A67] shrink-0">
                                             <Building2 className="size-4" />
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -1207,7 +1207,7 @@ export default function ScheduleGeneratorDashboard({
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
+                                            <Badge className="bg-[#0B3A67]/10 text-[#0B3A67] border-[#0B3A67]/20 text-[10px]">
                                                 Pending
                                             </Badge>
                                             <span className="text-[10px] text-gray-400 block mt-0.5">—</span>

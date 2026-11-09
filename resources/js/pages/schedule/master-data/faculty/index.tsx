@@ -79,13 +79,13 @@ export default function MasterDataFacultyIndex({
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <span className="p-2 rounded-xl bg-amber-100 text-amber-700">
+                                <span className="p-2 rounded-xl bg-gradient-to-br from-[#0B3A67] to-[#8B1E3F] text-white">
                                     <Users className="size-5" />
                                 </span>
                                 <h1 className="text-2xl font-bold text-gray-900">
                                     Faculty &amp; Specialization Matrix
                                 </h1>
-                                <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
+                                <Badge className="bg-gradient-to-r from-[#0B3A67]/15 to-[#8B1E3F]/15 text-[#0B3A67] border-[#0B3A67]/30 text-xs font-semibold">
                                     Master Data 05
                                 </Badge>
                             </div>
@@ -170,7 +170,7 @@ export default function MasterDataFacultyIndex({
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {filtered.map((faculty) => (
-                                        <tr key={faculty.id} className="hover:bg-amber-50/40 transition-colors">
+                                        <tr key={faculty.id} className="hover:bg-slate-50/80 transition-colors">
                                             <td className="py-3 px-4 font-bold text-gray-900">
                                                 {faculty.title_name ? `${faculty.title_name} ` : ''}
                                                 {faculty.first_name} {faculty.last_name}

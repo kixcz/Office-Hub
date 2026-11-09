@@ -179,11 +179,11 @@ export default function AdjustmentsHub({
             <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
                 <div className="flex flex-col gap-6 p-6 font-['Poppins']">
                     {/* Header Banner */}
-                    <div className="relative overflow-hidden rounded-2xl border border-amber-200/50 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-6 dark:border-amber-900/30 dark:from-amber-950/20">
+                    <div className="relative overflow-hidden rounded-2xl border border-[#0B3A67]/20 bg-gradient-to-r from-[#0B3A67]/10 via-[#175C94]/5 to-[#8B1E3F]/10 p-6 dark:border-[#0B3A67]/30 dark:from-[#0B3A67]/20">
                         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <Badge className="bg-amber-600 text-white dark:bg-amber-500">Post-Publication Governance</Badge>
+                                    <Badge className="bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white">Post-Publication Governance</Badge>
                                     <span className="text-xs text-muted-foreground">Governed Schedule Lifecycle: Phase 18–30</span>
                                 </div>
                                 <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">
@@ -214,7 +214,7 @@ export default function AdjustmentsHub({
                                     </div>
                                 ) : (
                                     <Button
-                                        className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500"
+                                        className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white"
                                         onClick={() => handleToggleWindow('open')}
                                     >
                                         <Unlock className="mr-2 h-4 w-4" /> Open Adjustment Window
@@ -259,7 +259,7 @@ export default function AdjustmentsHub({
                                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                             }`}
                         >
-                            <Sparkles className="h-4 w-4 text-amber-500" />
+                            <Sparkles className="h-4 w-4 text-[#0B3A67]" />
                             Consolidated Batches & Gemini AI
                             {batches.length > 0 && (
                                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
@@ -305,13 +305,13 @@ export default function AdjustmentsHub({
                                     <p className="mt-2 text-2xl font-bold">{swapRequests.length}</p>
                                     <p className="text-[11px] text-muted-foreground">Logged during active window</p>
                                 </div>
-                                <div className="rounded-xl border border-amber-500/20 bg-amber-50/50 p-4 dark:bg-amber-950/20">
+                                <div className="rounded-xl border border-[#0B3A67]/20 bg-[#0B3A67]/5 p-4 dark:bg-[#0B3A67]/10">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-medium text-amber-800 dark:text-amber-300">Awaiting Consent</span>
-                                        <Clock className="h-4 w-4 text-amber-500" />
+                                        <span className="text-xs font-medium text-[#0B3A67] dark:text-sky-300">Awaiting Consent</span>
+                                        <Clock className="h-4 w-4 text-[#0B3A67]" />
                                     </div>
-                                    <p className="mt-2 text-2xl font-bold text-amber-900 dark:text-amber-200">{pendingConsentCount}</p>
-                                    <p className="text-[11px] text-amber-700/80 dark:text-amber-400">Explicit counterpart sign-off required</p>
+                                    <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{pendingConsentCount}</p>
+                                    <p className="text-[11px] text-[#0B3A67]/80 dark:text-sky-400">Explicit counterpart sign-off required</p>
                                 </div>
                                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-50/50 p-4 dark:bg-emerald-950/20">
                                     <div className="flex items-center justify-between">
@@ -372,7 +372,7 @@ export default function AdjustmentsHub({
                                                                     req.counterpart_consent === 'Accepted'
                                                                         ? 'bg-emerald-600 text-white'
                                                                         : req.counterpart_consent === 'Pending'
-                                                                        ? 'bg-amber-500 text-white'
+                                                                        ? 'bg-[#0B3A67] text-white'
                                                                         : 'bg-rose-500 text-white'
                                                                 }`}
                                                             >
@@ -466,7 +466,7 @@ export default function AdjustmentsHub({
                                 <Button
                                     onClick={handleConsolidateWithGemini}
                                     disabled={isConsolidating || acceptedCount === 0}
-                                    className="gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow hover:from-amber-600 hover:to-amber-700"
+                                    className="gap-2 bg-gradient-to-r from-[#0B3A67] to-[#175C94] text-white shadow hover:opacity-95"
                                 >
                                     <Sparkles className="h-4 w-4" />
                                     {isConsolidating ? 'Consolidating with Gemini...' : 'Consolidate Accepted Swaps into Batch'}
@@ -475,7 +475,7 @@ export default function AdjustmentsHub({
 
                             {batches.length === 0 ? (
                                 <div className="rounded-xl border border-dashed border-border/60 p-8 text-center text-muted-foreground">
-                                    <Sparkles className="mx-auto mb-2 h-8 w-8 text-amber-500/50" />
+                                    <Sparkles className="mx-auto mb-2 h-8 w-8 text-[#0B3A67]/50" />
                                     <p className="text-sm font-medium">No consolidated batches generated yet.</p>
                                     <p className="text-xs">Once faculty consent is granted, click "Consolidate Accepted Swaps" to run AI semantic grouping.</p>
                                 </div>
@@ -504,12 +504,12 @@ export default function AdjustmentsHub({
                                         </div>
 
                                         {batch.gemini_consolidation_summary && (
-                                            <div className="rounded-xl border border-amber-500/30 bg-amber-50/40 p-4 dark:bg-amber-950/20">
-                                                <div className="flex items-center gap-2 text-xs font-semibold text-amber-900 dark:text-amber-200">
-                                                    <Sparkles className="h-4 w-4 text-amber-500" />
+                                            <div className="rounded-xl border border-[#0B3A67]/20 bg-[#0B3A67]/5 p-4 dark:bg-[#0B3A67]/10">
+                                                <div className="flex items-center gap-2 text-xs font-semibold text-[#0B3A67] dark:text-sky-300">
+                                                    <Sparkles className="h-4 w-4 text-[#0B3A67]" />
                                                     Gemini Executive Interpretation & Bottleneck Analysis:
                                                 </div>
-                                                <p className="mt-1.5 text-xs text-amber-950/80 dark:text-amber-300 leading-relaxed">
+                                                <p className="mt-1.5 text-xs text-[#0B3A67]/80 dark:text-sky-300 leading-relaxed">
                                                     {batch.gemini_consolidation_summary}
                                                 </p>
                                             </div>

@@ -337,8 +337,8 @@ export default function MeetingsIndex({
                 {/* 1. TOP HERO BANNER: Meetings header + Schedule Meeting button */}
                 <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-13 h-13 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0 shadow-xs border border-amber-200/60">
-                            <CalendarDays className="w-7 h-7 text-amber-500" />
+                        <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-[#0B3A67] to-[#8B1E3F] text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <CalendarDays className="w-7 h-7 text-white" />
                         </div>
                         <div>
                             <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
@@ -352,7 +352,7 @@ export default function MeetingsIndex({
 
                     <Dialog open={isCreating} onOpenChange={setIsCreating}>
                         <DialogTrigger asChild>
-                            <Button className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-semibold px-5 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer">
+                            <Button className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-semibold px-5 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer">
                                 <Plus className="w-4 h-4 stroke-[2.5]" />
                                 <span>Schedule Meeting</span>
                             </Button>
@@ -360,7 +360,7 @@ export default function MeetingsIndex({
                         <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto rounded-2xl p-6">
                             <DialogHeader>
                                 <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                    <CalendarDays className="w-5 h-5 text-amber-500" />
+                                    <CalendarDays className="w-5 h-5 text-[#0B3A67]" />
                                     Schedule a Meeting
                                 </DialogTitle>
                             </DialogHeader>
@@ -407,7 +407,7 @@ export default function MeetingsIndex({
                                         <DropdownMenuTrigger asChild>
                                             <button
                                                 type="button"
-                                                className="w-full min-h-[36px] px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 flex items-center justify-between text-left gap-2 cursor-pointer"
+                                                className="w-full min-h-[36px] px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0B3A67] flex items-center justify-between text-left gap-2 cursor-pointer"
                                             >
                                                 <div className="flex flex-wrap items-center gap-1 overflow-hidden">
                                                     {data.program_ids.length === 0 ? (
@@ -418,7 +418,7 @@ export default function MeetingsIndex({
                                                             return (
                                                                 <span
                                                                     key={id}
-                                                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+                                                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-[#0B3A67]/10 text-[#0B3A67] border border-[#0B3A67]/20"
                                                                 >
                                                                     {prog?.code || prog?.name}
                                                                 </span>
@@ -447,7 +447,7 @@ export default function MeetingsIndex({
                                                 <div className={cn(
                                                     "w-4 h-4 rounded border flex items-center justify-center transition-colors",
                                                     data.program_ids.length === programs.length
-                                                        ? "bg-amber-400 border-amber-500 text-slate-950"
+                                                        ? "bg-[#0B3A67] border-[#0B3A67] text-white"
                                                         : "border-slate-300 bg-white"
                                                 )}>
                                                     {data.program_ids.length === programs.length && <Check className="w-3 h-3 stroke-[3]" />}
@@ -470,7 +470,7 @@ export default function MeetingsIndex({
                                                         }}
                                                         className={cn(
                                                             "px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors",
-                                                            isSelected ? "bg-amber-50/60 text-slate-900 font-medium" : "text-slate-700 hover:bg-slate-50"
+                                                            isSelected ? "bg-[#0B3A67]/10 text-slate-900 font-medium" : "text-slate-700 hover:bg-slate-50"
                                                         )}
                                                     >
                                                         <div className="flex flex-col min-w-0 pr-2">
@@ -480,7 +480,7 @@ export default function MeetingsIndex({
                                                         <div className={cn(
                                                             "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
                                                             isSelected
-                                                                ? "bg-amber-400 border-amber-500 text-slate-950"
+                                                                ? "bg-[#0B3A67] border-[#0B3A67] text-white"
                                                                 : "border-slate-300 bg-white"
                                                         )}>
                                                             {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
@@ -543,7 +543,7 @@ export default function MeetingsIndex({
                                     <Button
                                         type="submit"
                                         disabled={processing}
-                                        className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold rounded-lg text-xs"
+                                        className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-bold rounded-lg text-xs shadow-xs"
                                     >
                                         Create Meeting
                                     </Button>
@@ -558,8 +558,8 @@ export default function MeetingsIndex({
                     {/* Card 1: Total Meetings */}
                     <div className="bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] flex items-center justify-between">
                         <div className="flex items-center gap-3.5">
-                            <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 border border-amber-200/50 flex items-center justify-center shrink-0">
-                                <CalendarDays className="w-5 h-5 text-amber-500" />
+                            <div className="w-11 h-11 rounded-xl bg-[#0B3A67]/10 text-[#0B3A67] border border-[#0B3A67]/20 flex items-center justify-center shrink-0">
+                                <CalendarDays className="w-5 h-5 text-[#0B3A67]" />
                             </div>
                             <div>
                                 <span className="text-xs text-slate-500 font-medium block">Total Meetings</span>
@@ -571,9 +571,9 @@ export default function MeetingsIndex({
                         </div>
                         {/* Mini vertical bar indicator */}
                         <div className="flex items-end gap-0.5 h-6 opacity-75 self-center">
-                            <span className="w-1 h-3 bg-amber-400 rounded-full" />
-                            <span className="w-1 h-5 bg-amber-500 rounded-full" />
-                            <span className="w-1 h-4 bg-amber-400 rounded-full" />
+                            <span className="w-1 h-3 bg-[#0B3A67] rounded-full" />
+                            <span className="w-1 h-5 bg-[#175C94] rounded-full" />
+                            <span className="w-1 h-4 bg-[#8B1E3F] rounded-full" />
                         </div>
                     </div>
 
@@ -644,7 +644,7 @@ export default function MeetingsIndex({
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search meetings..."
-                                className="pl-9 h-9 text-xs rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-amber-400"
+                                className="pl-9 h-9 text-xs rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0B3A67]"
                             />
                         </div>
 
@@ -664,7 +664,7 @@ export default function MeetingsIndex({
                                     <DropdownMenuItem
                                         key={st}
                                         onClick={() => setStatusFilter(st)}
-                                        className={cn("text-xs cursor-pointer", statusFilter === st && "font-bold text-amber-600")}
+                                        className={cn("text-xs cursor-pointer", statusFilter === st && "font-bold text-[#0B3A67]")}
                                     >
                                         {st}
                                     </DropdownMenuItem>
@@ -686,7 +686,7 @@ export default function MeetingsIndex({
                             <DropdownMenuContent align="start" className="w-48 rounded-xl max-h-60 overflow-y-auto">
                                 <DropdownMenuItem
                                     onClick={() => setProgramFilter('All Programs')}
-                                    className={cn("text-xs cursor-pointer", programFilter === 'All Programs' && "font-bold text-amber-600")}
+                                    className={cn("text-xs cursor-pointer", programFilter === 'All Programs' && "font-bold text-[#0B3A67]")}
                                 >
                                     All Programs
                                 </DropdownMenuItem>
@@ -694,7 +694,7 @@ export default function MeetingsIndex({
                                     <DropdownMenuItem
                                         key={prog.id}
                                         onClick={() => setProgramFilter(prog.name)}
-                                        className={cn("text-xs cursor-pointer", programFilter === prog.name && "font-bold text-amber-600")}
+                                        className={cn("text-xs cursor-pointer", programFilter === prog.name && "font-bold text-[#0B3A67]")}
                                     >
                                         {prog.name}
                                     </DropdownMenuItem>
@@ -723,7 +723,7 @@ export default function MeetingsIndex({
                             <DropdownMenuContent align="start" className="w-48 rounded-xl max-h-60 overflow-y-auto">
                                 <DropdownMenuItem
                                     onClick={() => setVenueFilter('All Venues')}
-                                    className={cn("text-xs cursor-pointer", venueFilter === 'All Venues' && "font-bold text-amber-600")}
+                                    className={cn("text-xs cursor-pointer", venueFilter === 'All Venues' && "font-bold text-[#0B3A67]")}
                                 >
                                     All Venues
                                 </DropdownMenuItem>
@@ -731,7 +731,7 @@ export default function MeetingsIndex({
                                     <DropdownMenuItem
                                         key={vn}
                                         onClick={() => setVenueFilter(vn)}
-                                        className={cn("text-xs cursor-pointer", venueFilter === vn && "font-bold text-amber-600")}
+                                        className={cn("text-xs cursor-pointer", venueFilter === vn && "font-bold text-[#0B3A67]")}
                                     >
                                         {vn}
                                     </DropdownMenuItem>
@@ -819,8 +819,8 @@ export default function MeetingsIndex({
 
                             {/* Bulk selection action toolbar */}
                             {selectedIds.length > 0 && (
-                                <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-semibold animate-in fade-in duration-200">
-                                    <span className="text-amber-700 dark:text-amber-400 font-bold">
+                                <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[#0B3A67]/10 border border-[#0B3A67]/20 text-xs font-semibold animate-in fade-in duration-200">
+                                    <span className="text-[#0B3A67] dark:text-sky-300 font-bold">
                                         {selectedIds.length} meeting{selectedIds.length > 1 ? 's' : ''} selected
                                     </span>
                                     <Button
@@ -858,7 +858,7 @@ export default function MeetingsIndex({
                                                     if (el) el.indeterminate = isSomeSelected;
                                                 }}
                                                 onChange={handleToggleSelectAll}
-                                                className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 focus:ring-offset-0 cursor-pointer"
+                                                className="w-4 h-4 rounded border-slate-300 text-[#0B3A67] focus:ring-[#0B3A67] focus:ring-offset-0 cursor-pointer"
                                                 title="Select all"
                                             />
                                         </th>
@@ -928,14 +928,14 @@ export default function MeetingsIndex({
                                             const isSelected = selectedIds.includes(meeting.id);
 
                                             return (
-                                                <tr key={meeting.id} className={cn("transition-colors group", isSelected ? "bg-amber-500/10 hover:bg-amber-500/15" : "hover:bg-slate-50/70")}>
+                                                <tr key={meeting.id} className={cn("transition-colors group", isSelected ? "bg-[#0B3A67]/10 hover:bg-[#0B3A67]/15" : "hover:bg-slate-50/70")}>
                                                     {/* Checkbox column */}
                                                     <td className="py-3.5 pl-2 pr-3 text-center">
                                                         <input
                                                             type="checkbox"
                                                             checked={isSelected}
                                                             onChange={() => handleToggleSelectOne(meeting.id)}
-                                                            className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 focus:ring-offset-0 cursor-pointer"
+                                                            className="w-4 h-4 rounded border-slate-300 text-[#0B3A67] focus:ring-[#0B3A67] focus:ring-offset-0 cursor-pointer"
                                                         />
                                                     </td>
 
@@ -996,7 +996,7 @@ export default function MeetingsIndex({
                                                             className={cn(
                                                                 "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border",
                                                                 statusCat === 'Upcoming' && "bg-blue-50 text-blue-600 border-blue-200",
-                                                                statusCat === 'Today' && "bg-amber-50 text-amber-700 border-amber-200",
+                                                                statusCat === 'Today' && "bg-[#0B3A67]/10 text-[#0B3A67] border-[#0B3A67]/20",
                                                                 statusCat === 'Completed' && "bg-emerald-50 text-emerald-700 border-emerald-200"
                                                             )}
                                                         >
@@ -1040,8 +1040,8 @@ export default function MeetingsIndex({
                         {/* Header banner */}
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 border border-amber-200/60 flex items-center justify-center shrink-0">
-                                    <CalendarDays className="w-4 h-4 text-amber-500" />
+                                <div className="w-8 h-8 rounded-lg bg-[#0B3A67]/10 text-[#0B3A67] border border-[#0B3A67]/20 flex items-center justify-center shrink-0">
+                                    <CalendarDays className="w-4 h-4 text-[#0B3A67]" />
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-bold text-slate-900 leading-none">
@@ -1052,7 +1052,7 @@ export default function MeetingsIndex({
                                     </p>
                                 </div>
                             </div>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100/70 text-amber-800 border border-amber-200/70">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0B3A67]/10 text-[#0B3A67] border border-[#0B3A67]/20">
                                 {todayAgendaMeetings.length} meetings
                             </span>
                         </div>
@@ -1063,11 +1063,11 @@ export default function MeetingsIndex({
                                 <p className="text-xs text-slate-400 italic">No meetings scheduled for today.</p>
                             ) : (
                                 todayAgendaMeetings.map((agendaMeeting, idx) => {
-                                    // Bullet dot colors matching mockup: Red/Coral, Amber, Amber
+                                    // Bullet dot colors
                                     const dotColors = [
                                         'bg-rose-500 ring-rose-100',
-                                        'bg-amber-500 ring-amber-100',
-                                        'bg-amber-500 ring-amber-100',
+                                        'bg-[#0B3A67] ring-sky-100',
+                                        'bg-[#8B1E3F] ring-rose-100',
                                     ];
                                     const dotClass = dotColors[idx % dotColors.length];
 
@@ -1093,8 +1093,8 @@ export default function MeetingsIndex({
                                                     <h4 className="text-xs font-bold text-slate-900 truncate">
                                                         {agendaMeeting.title}
                                                     </h4>
-                                                    <div className="flex items-center gap-1 text-[11px] text-amber-600/90 font-medium mt-0.5">
-                                                        <MapPin className="w-3 h-3 text-amber-500 shrink-0" />
+                                                    <div className="flex items-center gap-1 text-[11px] text-[#0B3A67] font-medium mt-0.5">
+                                                        <MapPin className="w-3 h-3 text-[#0B3A67] shrink-0" />
                                                         <span className="truncate">{agendaMeeting.venue || 'No venue set'}</span>
                                                     </div>
                                                 </div>

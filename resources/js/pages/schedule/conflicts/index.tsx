@@ -102,8 +102,8 @@ export default function ConflictCenterIndex({
 
                     <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs">
                         <span className="text-xs text-gray-500 font-medium">Unassigned Courses</span>
-                        <div className="text-2xl font-bold text-amber-600 mt-1">{conflicts.length}</div>
-                        <span className="text-[11px] text-amber-700 mt-0.5 block">Requires faculty matching</span>
+                        <div className="text-2xl font-bold text-[#8B1E3F] mt-1">{conflicts.length}</div>
+                        <span className="text-[11px] text-[#8B1E3F]/80 mt-0.5 block">Requires faculty matching</span>
                     </div>
 
                     <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs">
@@ -156,7 +156,7 @@ export default function ConflictCenterIndex({
                                                 className={
                                                     c.severity === 'Blocking'
                                                         ? 'bg-red-100 text-red-800 border-red-200 text-[10px]'
-                                                        : 'bg-amber-100 text-amber-800 border-amber-200 text-[10px]'
+                                                        : 'bg-[#0B3A67]/10 text-[#0B3A67] border-[#0B3A67]/20 text-[10px]'
                                                 }
                                             >
                                                 {c.severity}

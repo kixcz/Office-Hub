@@ -419,38 +419,39 @@ export default function FacultySubmissionsPage({
             />
 
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
-                {/* 1. TOP MODULE HEADER WITH TWO ACTION BUTTONS (Exact match to screenshot banner) */}
-                <div className="relative rounded-2xl border border-border bg-card p-6 shadow-xs overflow-hidden">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+                {/* 1. TOP MODULE HEADER WITH TWO ACTION BUTTONS (Deep Blue & Maroon gradient) */}
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative z-10">
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-[#0B3A67]/10 text-[#0B3A67] dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs border border-[#0B3A67]/20">
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 mt-0.5 backdrop-blur-xs shadow-xs">
                                 <FileText className="w-6 h-6" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-black tracking-tight text-foreground">
+                                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white drop-shadow-xs">
                                     Submission Records
                                 </h1>
-                                <p className="text-sm text-muted-foreground font-medium mt-0.5">
+                                <p className="text-xs sm:text-sm text-white/80 font-medium mt-1">
                                     Track the review lifecycle of your uploaded compliance and academic documents.
                                 </p>
                             </div>
                         </div>
 
-                        {/* Top Right Action Buttons: "Submit Document" (amber filled) + "View Requirements" (outlined) */}
-                        <div className="flex items-center gap-3 w-full md:w-auto">
+                        {/* Top Right Action Buttons */}
+                        <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
                             <Button
                                 onClick={() => setIsUploadOpen(true)}
-                                className="h-10 px-5 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-2"
+                                className="h-10 px-5 rounded-xl bg-white text-slate-900 hover:bg-white/90 font-bold text-xs shadow-md cursor-pointer flex items-center gap-2"
                             >
-                                <Upload className="w-4 h-4" />
+                                <Upload className="w-4 h-4 text-[#0B3A67]" />
                                 <span>Submit Document</span>
                             </Button>
 
                             <Link
                                 href="/faculty/requirements"
-                                className="h-10 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-semibold text-xs shadow-xs flex items-center gap-2 transition-colors cursor-pointer"
+                                className="h-10 px-4 rounded-xl border border-white/25 bg-white/15 hover:bg-white/25 text-white font-semibold text-xs backdrop-blur-xs shadow-2xs flex items-center gap-2 transition-colors cursor-pointer"
                             >
-                                <FileCheck2 className="w-4 h-4 text-muted-foreground" />
+                                <FileCheck2 className="w-4 h-4 text-white/80" />
                                 <span>View Requirements</span>
                             </Link>
                         </div>

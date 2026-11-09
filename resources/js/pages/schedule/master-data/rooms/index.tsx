@@ -246,11 +246,11 @@ export default function MasterDataRoomsIndex({
             case 'In Use':
                 return <Badge className="bg-blue-50 text-blue-700 border-blue-200">In Use</Badge>;
             case 'Maintenance':
-                return <Badge className="bg-amber-50 text-amber-700 border-amber-200">Maintenance</Badge>;
+                return <Badge className="bg-[#0B3A67]/10 text-[#0B3A67] border-[#0B3A67]/20">Maintenance</Badge>;
             case 'Under Repair':
                 return <Badge className="bg-rose-50 text-rose-700 border-rose-200">Under Repair</Badge>;
             case 'Reserved':
-                return <Badge className="bg-purple-50 text-purple-700 border-purple-200">Reserved</Badge>;
+                return <Badge className="bg-[#8B1E3F]/10 text-[#8B1E3F] border-[#8B1E3F]/20">Reserved</Badge>;
             default:
                 return <Badge variant="outline">{status}</Badge>;
         }
@@ -261,7 +261,7 @@ export default function MasterDataRoomsIndex({
             case 'Laboratory':
                 return <Badge className="bg-blue-50 text-blue-700 border-blue-200">Laboratory</Badge>;
             case 'Lecture':
-                return <Badge className="bg-amber-50 text-amber-700 border-amber-200">Lecture Room</Badge>;
+                return <Badge className="bg-[#0B3A67]/10 text-[#0B3A67] border-[#0B3A67]/20">Lecture Room</Badge>;
             case 'Conference':
                 return <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200">Conference</Badge>;
             default:
@@ -279,7 +279,7 @@ export default function MasterDataRoomsIndex({
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <span className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600">
+                                <span className="p-2.5 rounded-xl bg-gradient-to-br from-[#0B3A67] to-[#8B1E3F] text-white">
                                     <Building2 className="size-6" />
                                 </span>
                                 <div>
@@ -287,7 +287,7 @@ export default function MasterDataRoomsIndex({
                                         <h1 className="text-2xl font-bold text-gray-900">
                                             Rooms &amp; Laboratories Inventory
                                         </h1>
-                                        <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
+                                        <Badge className="bg-gradient-to-r from-[#0B3A67]/15 to-[#8B1E3F]/15 text-[#0B3A67] border-[#0B3A67]/30 text-xs font-semibold">
                                             CIDS Facilities
                                         </Badge>
                                     </div>
@@ -312,7 +312,7 @@ export default function MasterDataRoomsIndex({
                             {/* Add New Room Button */}
                             <Button
                                 onClick={openAddModal}
-                                className="bg-amber-500 hover:bg-amber-600 text-gray-950 font-semibold text-xs gap-1.5 shadow-xs"
+                                className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-semibold text-xs gap-1.5 shadow-xs"
                             >
                                 <Plus className="size-4" />
                                 Add New Room
@@ -342,7 +342,7 @@ export default function MasterDataRoomsIndex({
                         </div>
                         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-1">
                             <span className="text-xs font-semibold text-gray-400 uppercase">Lecture Theaters &amp; Rooms</span>
-                            <div className="text-2xl font-black text-amber-600">
+                            <div className="text-2xl font-black text-[#8B1E3F]">
                                 {rooms.filter((r) => r.type === 'Lecture').length}
                             </div>
                             <span className="text-[11px] text-gray-500">General instructional classrooms</span>
@@ -428,7 +428,7 @@ export default function MasterDataRoomsIndex({
                                         </tr>
                                     ) : (
                                         filtered.map((room) => (
-                                            <tr key={room.id} className="hover:bg-amber-50/30 transition-colors">
+                                            <tr key={room.id} className="hover:bg-slate-50/80 transition-colors">
                                                 <td className="py-3 px-4">
                                                     <div className="flex items-center gap-2.5">
                                                         <span className="p-2 rounded-lg bg-gray-100 text-gray-600">
@@ -489,7 +489,7 @@ export default function MasterDataRoomsIndex({
                                                             size="sm"
                                                             variant="ghost"
                                                             onClick={() => openEditModal(room)}
-                                                            className="h-8 px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+                                                            className="h-8 px-2 text-[#0B3A67] hover:text-[#0B3A67] hover:bg-slate-100"
                                                             title="Edit Room"
                                                         >
                                                             <Edit3 className="size-3.5" />
@@ -521,7 +521,7 @@ export default function MasterDataRoomsIndex({
                     <DialogContent className="sm:max-w-md font-['Poppins']">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900">
-                                <Building2 className="size-5 text-amber-500" />
+                                <Building2 className="size-5 text-[#0B3A67]" />
                                 {editingRoom ? `Edit Room: ${editingRoom.room_name}` : 'Add New Room / Laboratory'}
                             </DialogTitle>
                             <DialogDescription className="text-xs text-gray-500">
@@ -647,7 +647,7 @@ export default function MasterDataRoomsIndex({
                                     type="submit"
                                     size="sm"
                                     disabled={roomForm.processing}
-                                    className="bg-amber-500 hover:bg-amber-600 text-gray-950 font-semibold text-xs"
+                                    className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-semibold text-xs shadow-xs"
                                 >
                                     {roomForm.processing ? 'Saving...' : editingRoom ? 'Save Changes' : 'Create Room'}
                                 </Button>
@@ -707,7 +707,7 @@ export default function MasterDataRoomsIndex({
                                         Report Room / Laboratory Problem
                                     </DialogTitle>
                                     <DialogDescription className="text-xs text-gray-500">
-                                        Forward incident or defective facility report directly to the <strong className="text-amber-700">Office of the Dean</strong>.
+                                        Forward incident or defective facility report directly to the <strong className="text-[#0B3A67]">Office of the Dean</strong>.
                                     </DialogDescription>
                                 </div>
                             </div>
@@ -775,9 +775,9 @@ export default function MasterDataRoomsIndex({
                                                         ? lvl === 'Critical'
                                                             ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
                                                             : lvl === 'High'
-                                                            ? 'bg-amber-500 text-gray-950 border-amber-500 shadow-xs'
+                                                            ? 'bg-[#8B1E3F] text-white border-[#8B1E3F] shadow-xs'
                                                             : lvl === 'Medium'
-                                                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                                            ? 'bg-[#0B3A67] text-white border-[#0B3A67] shadow-xs'
                                                             : 'bg-gray-800 text-white border-gray-800 shadow-xs'
                                                         : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                                                 }`}
@@ -830,8 +830,8 @@ export default function MasterDataRoomsIndex({
                                 </div>
                             </div>
 
-                            <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
-                                <ShieldAlert className="size-4 text-amber-600 shrink-0 mt-0.5" />
+                            <div className="bg-[#0B3A67]/5 p-3 rounded-xl border border-[#0B3A67]/20 text-[11px] text-[#0B3A67] flex items-start gap-2">
+                                <ShieldAlert className="size-4 text-[#0B3A67] shrink-0 mt-0.5" />
                                 <div>
                                     This report will be marked as <strong>Submitted to Dean</strong> and logged in the Super Admin Facility Reports module. Critical urgency issues automatically notify maintenance personnel.
                                 </div>

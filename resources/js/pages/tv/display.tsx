@@ -241,8 +241,8 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
             {/* Paused Floating Toast Notice */}
             {isPaused && (
                 <div className="pointer-events-none fixed top-16 left-1/2 z-50 -translate-x-1/2 transition-all">
-                    <div className="flex items-center gap-2 rounded-full bg-amber-500 text-slate-950 px-4 py-1.5 font-extrabold text-xs tracking-wider shadow-lg backdrop-blur-md border border-amber-400 animate-pulse">
-                        <Pause size={12} className="fill-current" />
+                    <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] text-white px-4 py-1.5 font-extrabold text-xs tracking-wider shadow-lg backdrop-blur-md border border-white/30 animate-pulse">
+                        <Pause size={12} className="fill-current text-white" />
                         <span>AUTO-ADVANCE PAUSED · PRESS SPACE TO RESUME</span>
                     </div>
                 </div>
@@ -280,14 +280,14 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
                 <footer className="z-30 flex shrink-0 items-center justify-between px-8 py-2.5 text-xs text-slate-500 dark:text-slate-400 border-t border-black/[0.04] dark:border-white/[0.05]">
                     <div className="flex items-center gap-2.5">
                         <span className="relative flex h-2.5 w-2.5">
-                            <span className={`absolute inline-flex h-full w-full rounded-full ${isPaused ? 'bg-amber-400 opacity-60' : 'animate-ping bg-amber-400 opacity-60'}`} />
-                            <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isPaused ? 'bg-amber-400' : 'bg-amber-500'}`} />
+                            <span className={`absolute inline-flex h-full w-full rounded-full ${isPaused ? 'bg-sky-400 opacity-60' : 'animate-ping bg-sky-400 opacity-60'}`} />
+                            <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isPaused ? 'bg-[#175C94]' : 'bg-[#0B3A67]'}`} />
                         </span>
                         <span>
                             Live display <strong className="font-semibold text-slate-800 dark:text-slate-200">CIDS OfficeHub</strong>
                         </span>
                         {isPaused && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#8B1E3F]/15 border border-[#8B1E3F]/40 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#8B1E3F] dark:text-rose-300">
                                 <Pause size={9} className="fill-current" />
                                 Paused
                             </span>
@@ -300,11 +300,11 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
                         <div className="flex gap-1.5" aria-hidden>
                             {activeSlides.map((_: any, i: number) => (
                                 <div key={i} className={`h-1.5 w-10 overflow-hidden rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}>
-                                    {i < safeIndex && <div className="h-full w-full bg-amber-400" />}
+                                    {i < safeIndex && <div className="h-full w-full bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F]" />}
                                     {i === safeIndex && (
                                         <div
                                             key={`${safeIndex}-${duration}`}
-                                            className="h-full bg-amber-400"
+                                            className="h-full bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F]"
                                             style={{
                                                 animation: `tv-fill ${duration}ms linear forwards`,
                                                 animationPlayState: isPaused ? 'paused' : 'running',
@@ -334,13 +334,13 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
                                 title={isPaused ? 'Resume auto-advance (Space or P)' : 'Pause auto-advance (Space or P)'}
                                 onClick={togglePause}
                                 className={`h-7 px-2.5 rounded-full flex items-center gap-1 text-[11px] font-bold cursor-pointer shadow-2xs transition-all active:scale-90 border ${isPaused
-                                    ? 'bg-amber-400 text-slate-950 border-amber-300 ring-2 ring-amber-400/40 animate-pulse'
+                                    ? 'bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] text-white border-white/30 ring-2 ring-sky-400/40 shadow-[0_0_12px_rgba(11,58,103,0.35)] animate-pulse'
                                     : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                                     }`}
                             >
                                 {isPaused ? (
                                     <>
-                                        <Play size={11} className="fill-current text-slate-950" />
+                                        <Play size={11} className="fill-current text-white" />
                                         <span>RESUME</span>
                                     </>
                                 ) : (
@@ -354,7 +354,7 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
                                 type="button"
                                 aria-label="Next slide"
                                 onClick={() => step(1)}
-                                className="h-7 w-7 rounded-full bg-[#1d4ed8] text-white flex items-center justify-center hover:bg-blue-700 shadow-2xs cursor-pointer transition-transform active:scale-90"
+                                className="h-7 w-7 rounded-full bg-gradient-to-r from-[#0B3A67] to-[#175C94] text-white flex items-center justify-center hover:opacity-90 shadow-2xs cursor-pointer transition-transform active:scale-90 border border-white/20"
                             >
                                 <ChevronRight size={16} />
                             </button>
@@ -404,8 +404,8 @@ const TONE_BOX: Record<Tone, Record<'light' | 'dark', string>> = {
         dark: 'bg-emerald-500/15 text-emerald-400',
     },
     purple: {
-        light: 'bg-purple-50 text-purple-600',
-        dark: 'bg-purple-500/15 text-purple-400',
+        light: 'bg-[#8B1E3F]/10 text-[#8B1E3F]',
+        dark: 'bg-[#8B1E3F]/20 text-rose-300',
     },
     sky: {
         light: 'bg-sky-50 text-sky-600',
@@ -425,7 +425,7 @@ const TONE_TEXT_COLOR: Record<Tone, string> = {
     red: 'text-rose-500',
     emerald: 'text-emerald-500',
     green: 'text-emerald-500',
-    purple: 'text-purple-500',
+    purple: 'text-[#8B1E3F] dark:text-rose-400',
     sky: 'text-sky-500',
     slate: 'text-slate-500',
 };
@@ -5152,27 +5152,28 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
             <div className={cn(
                 "relative rounded-2xl px-5 py-3 border shadow-xs overflow-hidden shrink-0 flex items-center justify-between",
                 isDark 
-                    ? "bg-[#101726]/90 border-white/10 text-white" 
-                    : "bg-gradient-to-r from-amber-50/70 via-white to-amber-50/50 border-amber-200/80 text-slate-900"
+                    ? "bg-gradient-to-r from-[#0B3A67]/80 via-[#175C94]/70 to-[#8B1E3F]/80 border-white/10 text-white" 
+                    : "bg-gradient-to-r from-[#0B3A67]/10 via-white to-[#8B1E3F]/10 border-[#0B3A67]/20 text-slate-900"
             )}>
                 {/* Left: Logos & OFFICE CLEANING SCHEDULES title */}
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 shrink-0">
+                        <img src="/Ascend.png" alt="Ascend" className="h-10 w-10 object-contain rounded-xl p-1 shadow-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10" />
                         <img src="/DSSC.jpg" alt="DSSC" className="h-10 w-10 object-contain rounded-full shadow-xs" />
                         <img src="/CIDS_Logo.png" alt="CIDS" className="h-10 w-10 object-contain rounded-full shadow-xs" />
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-amber-500 shrink-0" />
+                            <Sparkles className="w-5 h-5 text-[#175C94] dark:text-sky-400 shrink-0" />
                             <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white drop-shadow-xs">
                                 OFFICE CLEANING SCHEDULES
                             </h1>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[11px] font-black tracking-widest uppercase text-amber-700 dark:text-amber-400">
+                            <span className="text-[11px] font-black tracking-widest uppercase text-[#0B3A67] dark:text-sky-300">
                                 {subtitle}
                             </span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-amber-400/90 text-slate-950 font-black text-[9px] uppercase tracking-wider shadow-xs">
+                            <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white font-black text-[9px] uppercase tracking-wider shadow-xs">
                                 {scope_badge}
                             </span>
                         </div>
@@ -5181,16 +5182,16 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
 
                 {/* Right: Cheerful Banner & Cleaning Week */}
                 <div className="flex items-center gap-3">
-                    <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100/80 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/50 text-[10px] font-bold text-amber-900 dark:text-amber-200 shadow-2xs">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#0B3A67]/15 to-[#8B1E3F]/15 dark:bg-[#0B3A67]/30 border border-[#0B3A67]/20 dark:border-white/10 text-[10px] font-bold text-[#0B3A67] dark:text-sky-200 shadow-2xs">
+                        <Sparkles className="w-3.5 h-3.5 text-[#175C94] dark:text-sky-400" />
                         <span>Same Team, Cleaner Spaces!</span>
-                        <Heart className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                        <Heart className="w-3.5 h-3.5 text-[#8B1E3F] dark:text-rose-400 fill-[#8B1E3F] dark:fill-rose-400" />
                     </div>
                     <div className="text-right">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
                             Cleaning Week
                         </span>
-                        <span className="text-xs font-black text-amber-600 dark:text-amber-400 tabular-nums">
+                        <span className="text-xs font-black text-[#8B1E3F] dark:text-rose-400 tabular-nums">
                             {week_label}
                         </span>
                     </div>
@@ -5206,8 +5207,8 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                         ? "bg-[#131b2e] border-white/10" 
                         : "bg-white border-slate-200/90"
                 )}>
-                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0 shadow-xs">
-                        <Heart className="w-5 h-5 text-amber-600 dark:text-amber-400 fill-amber-500/20" />
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0B3A67]/20 to-[#8B1E3F]/20 flex items-center justify-center shrink-0 shadow-xs">
+                        <Heart className="w-5 h-5 text-[#8B1E3F] dark:text-rose-400 fill-[#8B1E3F]/20" />
                     </div>
                     <div className="min-w-0">
                         <p className="text-xs font-black tracking-tight text-slate-900 dark:text-white leading-tight">
@@ -5222,10 +5223,10 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                 {/* Right 4 Pillar Badges (8 cols) */}
                 <div className="col-span-8 grid grid-cols-4 gap-2">
                     {[
-                        { title: 'CLEAN WORKSPACE', icon: Sparkles, sub: 'Spotless Desks', color: 'text-amber-500' },
-                        { title: 'BETTER COLLABORATION', icon: Handshake, sub: 'Organized Labs', color: 'text-amber-600' },
+                        { title: 'CLEAN WORKSPACE', icon: Sparkles, sub: 'Spotless Desks', color: 'text-[#175C94]' },
+                        { title: 'BETTER COLLABORATION', icon: Handshake, sub: 'Organized Labs', color: 'text-[#0B3A67]' },
                         { title: 'HEALTHIER COMMUNITY', icon: Leaf, sub: 'Safe & Fresh', color: 'text-emerald-500' },
-                        { title: 'A STRONGER CIDS', icon: ShieldCheck, sub: 'Excellence', color: 'text-sky-500' },
+                        { title: 'A STRONGER CIDS', icon: ShieldCheck, sub: 'Excellence', color: 'text-[#8B1E3F]' },
                     ].map((pill, idx) => {
                         const IconComponent = pill.icon;
                         return (
@@ -5266,8 +5267,8 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                                 "flex flex-col rounded-2xl border transition-all duration-300 min-h-0 overflow-hidden shadow-sm",
                                 isToday
                                     ? isDark
-                                        ? "bg-amber-950/20 border-amber-400 ring-2 ring-amber-400/30 shadow-md"
-                                        : "bg-gradient-to-b from-amber-50/80 to-white border-amber-400 ring-2 ring-amber-400/40 shadow-md"
+                                        ? "bg-[#0B3A67]/20 border-[#175C94] ring-2 ring-sky-400/30 shadow-md"
+                                        : "bg-gradient-to-b from-[#0B3A67]/10 via-white to-[#8B1E3F]/10 border-[#0B3A67]/40 ring-2 ring-[#0B3A67]/20 shadow-md"
                                     : isDark
                                         ? "bg-[#131b2e] border-white/10"
                                         : "bg-white border-slate-200/90"
@@ -5277,10 +5278,10 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                             <div className={cn(
                                 "px-3 py-2 border-b flex items-center justify-between shrink-0",
                                 isToday
-                                    ? "bg-amber-400 text-slate-950 border-amber-500/30"
+                                    ? "bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white border-transparent"
                                     : isDark
                                         ? "bg-white/[0.04] border-white/10 text-white"
-                                        : "bg-amber-100/60 border-amber-200/70 text-slate-900"
+                                        : "bg-slate-100 border-slate-200/70 text-slate-900"
                             )}>
                                 <div>
                                     <div className="flex items-center gap-1.5">

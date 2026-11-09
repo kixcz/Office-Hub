@@ -64,13 +64,13 @@ export default function MasterDataProgramsIndex({
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <span className="p-2 rounded-xl bg-amber-100 text-amber-700">
+                                <span className="p-2 rounded-xl bg-gradient-to-br from-[#0B3A67] to-[#8B1E3F] text-white">
                                     <GraduationCap className="size-5" />
                                 </span>
                                 <h1 className="text-2xl font-bold text-gray-900">
                                     Programs &amp; Curriculum Demand
                                 </h1>
-                                <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
+                                <Badge className="bg-gradient-to-r from-[#0B3A67]/15 to-[#8B1E3F]/15 text-[#0B3A67] border-[#0B3A67]/30 text-xs font-semibold">
                                     Master Data 03
                                 </Badge>
                             </div>
@@ -93,10 +93,10 @@ export default function MasterDataProgramsIndex({
                         {programs.map((p) => (
                             <div
                                 key={p.id}
-                                className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs hover:shadow-sm hover:border-amber-300 transition-all space-y-3"
+                                className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs hover:shadow-sm hover:border-[#0B3A67]/40 transition-all space-y-3"
                             >
                                 <div className="flex items-center justify-between">
-                                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 font-black flex items-center justify-center text-sm">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0B3A67] to-[#175C94] text-white font-black flex items-center justify-center text-sm shadow-xs">
                                         {p.code}
                                     </div>
                                     <Badge variant="outline" className="text-emerald-700 bg-emerald-50 text-[10px]">
@@ -151,7 +151,7 @@ export default function MasterDataProgramsIndex({
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {filtered.map((item) => (
-                                        <tr key={item.id} className="hover:bg-amber-50/40 transition-colors">
+                                        <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                                             <td className="py-3 px-4 font-bold text-gray-900">
                                                 {item.code}
                                             </td>

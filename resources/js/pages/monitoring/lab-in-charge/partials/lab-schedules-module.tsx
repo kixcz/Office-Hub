@@ -614,95 +614,79 @@ export default function LabSchedulesModule({
 
     return (
         <div className="space-y-4">
-            {/* 1. MODULE-SPECIFIC HEADER (Amber Calendar Icon Box + "Lab Schedules" + Subtitle + View Switchers) */}
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card p-4 sm:p-5 rounded-2xl border shadow-xs">
-                <div className="flex items-center gap-3.5">
-                    <div className="h-12 w-12 rounded-2xl bg-amber-500 flex items-center justify-center text-slate-950 shadow-sm shrink-0">
+            {/* 1. MODULE-SPECIFIC HEADER with Deep Blue & Maroon gradient */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                <div className="flex items-center gap-4 relative z-10">
+                    <div className="h-12 w-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white backdrop-blur-xs shadow-xs shrink-0">
                         <CalendarRange className="h-6 w-6 stroke-[2.2]" />
                     </div>
                     <div className="space-y-0.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
-                                Lab Schedules
-                            </h1>
-                            
-                        </div>
-                        <p className="text-xs sm:text-sm text-muted-foreground">
+                        <h1 className="text-xl sm:text-3xl font-black tracking-tight text-white drop-shadow-xs">
+                            Lab Schedules
+                        </h1>
+                        <p className="text-xs sm:text-sm text-white/80 font-medium">
                             View expected classes, faculty assignments, and monitoring statuses across the semester.
                         </p>
-                       
                     </div>
                 </div>
 
-                    {/* View Switcher: Weekly (Default) · Today · Timeline · Table · Lab Comparison */}
-                    <div className="flex items-center gap-1.5 flex-wrap bg-muted/50 p-1 rounded-xl border border-border shadow-2xs self-start xl:self-auto">
-                        <button
-                            type="button"
-                            onClick={() => setViewMode('weekly')}
-                            className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-bold transition-all cursor-pointer",
-                                viewMode === 'weekly'
-                                    ? "bg-amber-400 text-slate-950 shadow-xs"
-                                    : "text-muted-foreground hover:text-foreground"
-                            )}
-                        >
-                            <Calendar className="w-3.5 h-3.5" />
-                            <span>Weekly View</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setViewMode('today')}
-                            className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-bold transition-all cursor-pointer",
-                                viewMode === 'today'
-                                    ? "bg-amber-400 text-slate-950 shadow-xs"
-                                    : "text-muted-foreground hover:text-foreground"
-                            )}
-                        >
-                            <CalendarDays className="w-3.5 h-3.5" />
-                            <span>Today View</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setViewMode('timeline')}
-                            className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-bold transition-all cursor-pointer",
-                                viewMode === 'timeline'
-                                    ? "bg-amber-400 text-slate-950 shadow-xs"
-                                    : "text-muted-foreground hover:text-foreground"
-                            )}
-                        >
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>Timeline</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setViewMode('table')}
-                            className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-bold transition-all cursor-pointer",
-                                viewMode === 'table'
-                                    ? "bg-amber-400 text-slate-950 shadow-xs"
-                                    : "text-muted-foreground hover:text-foreground"
-                            )}
-                        >
-                            <TableIcon className="w-3.5 h-3.5" />
-                            <span>Table View</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setViewMode('compare')}
-                            className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-bold transition-all cursor-pointer",
-                                viewMode === 'compare'
-                                    ? "bg-amber-400 text-slate-950 shadow-xs"
-                                    : "text-muted-foreground hover:text-foreground"
-                            )}
-                        >
-                            <Columns3 className="w-3.5 h-3.5" />
-                            <span>Lab Comparison</span>
-                        </button>
-                    </div>
+                {/* View Switcher: Weekly (Default) · Today · Timeline · Table · Lab Comparison */}
+                <div className="flex items-center gap-1.5 flex-wrap bg-black/20 p-1.5 rounded-xl border border-white/15 backdrop-blur-xs shadow-2xs self-start xl:self-auto relative z-10 shrink-0">
+                    <button
+                        type="button"
+                        onClick={() => setViewMode('weekly')}
+                        className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-bold transition-all cursor-pointer",
+                            viewMode === 'weekly'
+                                ? "bg-white text-slate-900 shadow-xs font-black"
+                                : "text-white/80 hover:text-white"
+                        )}
+                    >
+                        <Calendar className="w-3.5 h-3.5 text-[#0B3A67]" />
+                        <span>Weekly</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setViewMode('today')}
+                        className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-bold transition-all cursor-pointer",
+                            viewMode === 'today'
+                                ? "bg-white text-slate-900 shadow-xs font-black"
+                                : "text-white/80 hover:text-white"
+                        )}
+                    >
+                        <Clock className="w-3.5 h-3.5 text-[#0B3A67]" />
+                        <span>Today</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setViewMode('timeline')}
+                        className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-bold transition-all cursor-pointer",
+                            viewMode === 'timeline'
+                                ? "bg-white text-slate-900 shadow-xs font-black"
+                                : "text-white/80 hover:text-white"
+                        )}
+                    >
+                        <Layers className="w-3.5 h-3.5 text-[#0B3A67]" />
+                        <span>Timeline</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setViewMode('matrix')}
+                        className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-bold transition-all cursor-pointer",
+                            viewMode === 'matrix'
+                                ? "bg-white text-slate-900 shadow-xs font-black"
+                                : "text-white/80 hover:text-white"
+                        )}
+                    >
+                        <LayoutGrid className="w-3.5 h-3.5 text-[#8B1E3F]" />
+                        <span>Matrix</span>
+                    </button>
                 </div>
+            </div>
 
             {/* 2. COMPREHENSIVE FILTER BAR */}
             <div className="bg-card border rounded-2xl p-3.5 shadow-2xs space-y-3">

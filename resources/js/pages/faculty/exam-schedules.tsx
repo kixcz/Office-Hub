@@ -345,19 +345,20 @@ export default function FacultyExamSchedulesPage({
 
             <div className="w-full max-w-full min-w-0 p-4 md:p-6 lg:p-8 space-y-6">
                 {/* 1. Header Banner & Hero Info */}
-                <div className="relative overflow-hidden rounded-2xl border border-[#0B3A67]/20 dark:border-[#0B3A67]/40 bg-gradient-to-r from-[#0B3A67]/10 via-[#1F5D9B]/5 to-[#8B1E3F]/10 p-5 sm:p-6 shadow-xs w-full min-w-0">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white w-full min-w-0">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
                         <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2.5">
-                                <span className="p-2 rounded-xl bg-[#0B3A67]/15 text-[#0B3A67] dark:text-blue-300 border border-[#0B3A67]/30 shrink-0">
+                                <span className="p-2.5 rounded-xl bg-white/15 text-white border border-white/20 shrink-0 backdrop-blur-xs shadow-xs">
                                     <BookOpen className="w-5 h-5" />
                                 </span>
-                                <h1 className="text-2xl font-black text-foreground tracking-tight">My Exam Schedules</h1>
-                                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-50 dark:bg-blue-950/40 text-[#0B3A67] dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
+                                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs">My Exam Schedules</h1>
+                                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-white/15 text-white border border-white/25 backdrop-blur-xs shadow-2xs shrink-0">
                                     {currentPeriod?.name || '1st Semester AY 2026-2027'}
                                 </span>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-2 max-w-2xl">
+                            <p className="text-xs sm:text-sm text-white/80 font-medium mt-2 max-w-2xl leading-relaxed">
                                 Manage and schedule examination windows for your Lecture and Laboratory classes.
                                 All entries synchronize in real-time with the <strong>Super Admin Exam Monitoring Hub</strong>,
                                 <strong>Program Heads</strong>, and <strong>Room Utilization Analytics</strong>.
@@ -372,17 +373,17 @@ export default function FacultyExamSchedulesPage({
                                     }
                                     setIsCreateModalOpen(true);
                                 }}
-                                className="bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white font-bold shadow-md gap-2"
+                                className="bg-white text-slate-900 hover:bg-white/90 font-bold shadow-md gap-2 rounded-xl"
                             >
-                                <Plus className="w-4 h-4" />
-                                Add Exam Schedule
+                                <Plus className="w-4 h-4 text-[#0B3A67]" />
+                                <span>Add Exam Schedule</span>
                             </Button>
                         </div>
                     </div>
 
                     {/* KPI Quick Stats */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-5 border-t border-amber-200/40 dark:border-amber-900/40">
-                        <div className="bg-card/70 backdrop-blur-xs p-3 rounded-xl border border-border/60">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-5 border-t border-white/15 relative z-10">
+                        <div className="bg-white/10 backdrop-blur-xs p-3 rounded-xl border border-white/15 text-white">
                             <span className="text-[11px] font-semibold text-muted-foreground block">Total Exams</span>
                             <span className="text-xl font-black text-foreground">{stats.total}</span>
                         </div>

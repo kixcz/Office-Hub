@@ -1,6 +1,7 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Calendar, Clock as ClockIcon, MapPin, Megaphone, WifiOff, Sparkles, Pause, Play } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { type SharedData } from '@/types';
 
 interface Announcement {
     id: number;
@@ -30,9 +31,9 @@ const REFRESH_MS = 60_000; // data refresh
 const STALE_MS = 3 * 60_000; // show offline notice after this long without a sync
 
 const PRIORITY = {
-    high: { rank: 0, label: 'Urgent', bar: 'from-rose-500 to-red-600', chip: 'bg-rose-500/20 text-rose-300 border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.3)]' },
-    medium: { rank: 1, label: 'Important', bar: 'from-amber-400 to-orange-500', chip: 'bg-amber-500/20 text-amber-300 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.3)]' },
-    low: { rank: 2, label: 'General', bar: 'from-sky-400 to-blue-600', chip: 'bg-sky-500/20 text-sky-300 border-sky-500/30 shadow-[0_0_15px_rgba(14,165,233,0.3)]' },
+    high: { rank: 0, label: 'Urgent', bar: 'from-[#8B1E3F] to-rose-600', chip: 'bg-[#8B1E3F]/20 text-rose-300 border-[#8B1E3F]/30 shadow-[0_0_15px_rgba(139,30,63,0.3)]' },
+    medium: { rank: 1, label: 'Important', bar: 'from-[#175C94] to-[#0B3A67]', chip: 'bg-[#0B3A67]/20 text-sky-300 border-[#175C94]/30 shadow-[0_0_15px_rgba(23,92,148,0.3)]' },
+    low: { rank: 2, label: 'General', bar: 'from-[#0B3A67] to-slate-700', chip: 'bg-[#0B3A67]/15 text-slate-300 border-[#0B3A67]/30 shadow-[0_0_15px_rgba(11,58,103,0.2)]' },
 } as const;
 
 const getPriority = (p: string) => PRIORITY[p as keyof typeof PRIORITY] ?? PRIORITY.low;
@@ -117,12 +118,12 @@ function Announcements({ items }: { items: Announcement[] }) {
 
             <div className="flex items-center justify-between pb-2">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-indigo-500/20 text-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.2)] border border-indigo-500/30">
+                    <div className="p-3 rounded-2xl bg-[#0B3A67]/30 text-sky-400 shadow-[0_0_20px_rgba(11,58,103,0.3)] border border-[#175C94]/40">
                         <Megaphone className="h-8 w-8" />
                     </div>
                     <h2 className="text-4xl font-bold tracking-tight text-white drop-shadow-md">Notice Board</h2>
                     {isPaused && (
-                        <span className="flex items-center gap-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 text-xs font-bold uppercase tracking-wider animate-pulse">
+                        <span className="flex items-center gap-1.5 rounded-full bg-[#8B1E3F]/20 text-rose-300 border border-[#8B1E3F]/40 px-3 py-1 text-xs font-bold uppercase tracking-wider animate-pulse">
                             <Pause size={12} className="fill-current" />
                             Paused
                         </span>
@@ -135,12 +136,12 @@ function Announcements({ items }: { items: Announcement[] }) {
                             onClick={() => setIsPaused((prev) => !prev)}
                             className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer ${
                                 isPaused
-                                    ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.35)] animate-pulse'
+                                    ? 'bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] text-white border-white/30 shadow-[0_0_12px_rgba(11,58,103,0.35)] animate-pulse'
                                     : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
                             }`}
                             title={isPaused ? 'Resume auto-scroll (Space)' : 'Pause auto-scroll (Space)'}
                         >
-                            {isPaused ? <Play size={12} className="fill-current" /> : <Pause size={12} className="fill-current" />}
+                            {isPaused ? <Play size={12} className="fill-current text-white" /> : <Pause size={12} className="fill-current" />}
                             <span>{isPaused ? 'RESUME' : 'PAUSE'}</span>
                         </button>
 
@@ -149,14 +150,14 @@ function Announcements({ items }: { items: Announcement[] }) {
                                 <div key={i} className="h-2 w-16 overflow-hidden rounded-full bg-slate-800 border border-slate-700/50 shadow-inner">
                                     {i === current && (
                                         <div
-                                            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]"
+                                            className="h-full bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] shadow-[0_0_10px_rgba(11,58,103,0.8)]"
                                             style={{
                                                 animation: `tv-fill ${ROTATE_MS}ms linear forwards`,
                                                 animationPlayState: isPaused ? 'paused' : 'running',
                                             }}
                                         />
                                     )}
-                                    {i < current && <div className="h-full w-full bg-indigo-500/40" />}
+                                    {i < current && <div className="h-full w-full bg-[#0B3A67]/50" />}
                                 </div>
                             ))}
                         </div>
@@ -307,7 +308,47 @@ function Schedule({ meetings }: { meetings: Meeting[] }) {
 }
 
 export default function TvDisplay({ announcements, meetings }: Props) {
+    const page = usePage<SharedData>();
+    const { portal_context, active_branding } = page.props || {};
+
     const [lastSync, setLastSync] = useState(() => Date.now());
+
+    // Scope branding resolution
+    const activeAssignment = portal_context?.active_assignment;
+    const isCollegeScope = activeAssignment?.scope_type === 'College' ||
+        activeAssignment?.portal_type === 'college_admin' ||
+        activeAssignment?.portal_type === 'faculty' ||
+        activeAssignment?.portal_type === 'dean' ||
+        activeAssignment?.portal_type === 'program_head' ||
+        activeAssignment?.portal_type === 'lab_in_charge';
+
+    const brandLogo = active_branding?.logo_url || '/CIDS_Logo.png';
+
+    // Rotating logos state
+    const [logoIndex, setLogoIndex] = useState(0);
+
+    const logoList = useMemo(() => {
+        if (!isCollegeScope) {
+            return ['/Ascend.png', '/DSSC.jpg'];
+        }
+        const list = [];
+        if (brandLogo && brandLogo !== '/Ascend.png' && brandLogo !== '/DSSC.jpg') {
+            list.push(brandLogo);
+        }
+        list.push('/Ascend.png');
+        list.push('/DSSC.jpg');
+        return list;
+    }, [isCollegeScope, brandLogo]);
+
+    useEffect(() => {
+        if (logoList.length <= 1) return;
+        const interval = setInterval(() => {
+            setLogoIndex((prev) => (prev + 1) % logoList.length);
+        }, 3800);
+        return () => clearInterval(interval);
+    }, [logoList]);
+
+    const activeHeaderLogo = logoList[logoIndex] || brandLogo;
 
     // Scale the whole UI with screen width so 1080p and 4K TVs render the same layout.
     useEffect(() => {
@@ -331,23 +372,32 @@ export default function TvDisplay({ announcements, meetings }: Props) {
     }, []);
 
     return (
-        <div className="flex h-screen cursor-none flex-col overflow-hidden bg-slate-950 font-sans text-slate-100 selection:bg-indigo-500/30 relative z-0">
+        <div className="flex h-screen cursor-none flex-col overflow-hidden bg-slate-950 font-sans text-slate-100 selection:bg-[#0B3A67]/30 relative z-0">
             <Head title="CIDS TV Display" />
             
             {/* Ambient animated background */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-900/20 blur-[120px] mix-blend-screen" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-900/20 blur-[120px] mix-blend-screen" />
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#0B3A67]/25 blur-[120px] mix-blend-screen" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#8B1E3F]/25 blur-[120px] mix-blend-screen" />
             </div>
 
-            <header className="flex items-center justify-between px-10 py-8 border-b border-white/5 bg-slate-900/40 backdrop-blur-2xl shadow-2xl relative z-10">
+            <header className="flex items-center justify-between px-10 py-8 border-b border-white/10 bg-slate-900/60 backdrop-blur-2xl shadow-2xl relative z-10">
                 <div className="flex items-center gap-6">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-[0_0_30px_rgba(99,102,241,0.4)] border border-white/10">
-                        <span className="text-2xl font-black text-white tracking-wider">CIDS</span>
+                    <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-1 shadow-[0_0_30px_rgba(11,58,103,0.5)] border border-white/20 overflow-hidden shrink-0">
+                        <div className="h-full w-full rounded-[20px] bg-white/95 dark:bg-slate-900/90 p-2 flex items-center justify-center overflow-hidden">
+                            <img
+                                key={activeHeaderLogo}
+                                src={activeHeaderLogo}
+                                alt="TV Header Logo"
+                                className="h-full w-full object-contain animate-in fade-in zoom-in-95 duration-500"
+                            />
+                        </div>
                     </div>
                     <div className="flex flex-col justify-center">
-                        <h1 className="text-4xl leading-tight font-extrabold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">College of Informatics and Computing Sciences</h1>
-                        <p className="text-xl font-medium text-indigo-300/80 mt-1 uppercase tracking-widest">Office Information Display</p>
+                        <h1 className="text-4xl leading-tight font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-sky-200 bg-clip-text text-transparent">
+                            {active_branding?.scope_name || 'College of Information and Digital Sciences'}
+                        </h1>
+                        <p className="text-xl font-medium text-sky-300/80 mt-1 uppercase tracking-widest">Office Information Display</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-10">

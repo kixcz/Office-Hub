@@ -655,7 +655,7 @@ export default function AcademicCalendarImportIndex({
                                             onClick={() => {
                                                 router.get(`/schedule/calendar-import?batch_id=${b.id}`, {}, { preserveState: false });
                                             }}
-                                            className={cn('text-xs cursor-pointer py-2', b.id === currentBatch.id && 'font-bold text-amber-600 bg-amber-50')}
+                                            className={cn('text-xs cursor-pointer py-2', b.id === currentBatch.id && 'font-bold text-[#0B3A67] bg-[#0B3A67]/10')}
                                         >
                                             #{b.id} • {b.original_filename} ({b.detected_count} events)
                                         </DropdownMenuItem>
@@ -676,9 +676,9 @@ export default function AcademicCalendarImportIndex({
                                     preserveScroll: true,
                                 });
                             }}
-                            className="h-9 px-4 rounded-xl text-xs font-bold gap-2 border-amber-300 bg-amber-50/50 hover:bg-amber-100/60 text-[#ea580c] transition-all cursor-pointer shadow-xs"
+                            className="h-9 px-4 rounded-xl text-xs font-bold gap-2 border-[#0B3A67]/30 bg-[#0B3A67]/5 hover:bg-[#0B3A67]/10 text-[#0B3A67] transition-all cursor-pointer shadow-xs"
                         >
-                            <Sparkles className="w-4 h-4 text-[#f59e0b] fill-[#f59e0b]/20" />
+                            <Sparkles className="w-4 h-4 text-[#0B3A67] fill-[#0B3A67]/20" />
                             <span>Re-analyze with Gemini</span>
                         </Button>
                     )}
@@ -832,7 +832,7 @@ export default function AcademicCalendarImportIndex({
                                                         if (e.target.checked) handleSelectAllValid();
                                                         else handleClearSelection();
                                                     }}
-                                                    className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 cursor-pointer"
+                                                    className="w-4 h-4 rounded border-slate-300 text-[#0B3A67] focus:ring-[#0B3A67] cursor-pointer"
                                                 />
                                             </th>
                                             <th className="py-3.5 px-3 text-slate-600 font-semibold w-10">
@@ -926,7 +926,7 @@ export default function AcademicCalendarImportIndex({
                                                         key={ev.id}
                                                         className={cn(
                                                             'hover:bg-slate-50/80 transition-colors',
-                                                            isSelected && 'bg-amber-50/40'
+                                                            isSelected && 'bg-[#0B3A67]/5'
                                                         )}
                                                     >
                                                         {/* Checkbox */}
@@ -935,7 +935,7 @@ export default function AcademicCalendarImportIndex({
                                                                 type="checkbox"
                                                                 checked={isSelected}
                                                                 onChange={() => toggleSelectEvent(ev.id)}
-                                                                className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500 cursor-pointer"
+                                                                className="w-4 h-4 rounded border-slate-300 text-[#0B3A67] focus:ring-[#0B3A67] cursor-pointer"
                                                             />
                                                         </td>
 
@@ -1120,7 +1120,7 @@ export default function AcademicCalendarImportIndex({
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2 bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-xs">
                             <div className="flex items-center gap-3 pb-5 border-b border-border">
-                                <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                                <div className="p-2.5 rounded-xl bg-[#0B3A67]/10 text-[#0B3A67] dark:text-sky-300">
                                     <UploadCloud className="w-6 h-6" />
                                 </div>
                                 <div>
@@ -1208,10 +1208,10 @@ export default function AcademicCalendarImportIndex({
                                         className={cn(
                                             'border-2 border-dashed transition-all rounded-2xl p-6 sm:p-8 text-center',
                                             isDraggingOver
-                                                ? 'border-amber-500 bg-amber-500/10 scale-[1.01]'
+                                                ? 'border-[#0B3A67] bg-[#0B3A67]/10 scale-[1.01]'
                                                 : uploadData.calendar_file
                                                 ? 'border-emerald-500/50 bg-emerald-500/5'
-                                                : 'border-border/80 hover:border-amber-500/60 bg-muted/20'
+                                                : 'border-border/80 hover:border-[#0B3A67]/60 bg-muted/20'
                                         )}
                                     >
                                         <input
@@ -1253,7 +1253,7 @@ export default function AcademicCalendarImportIndex({
                                             </div>
                                         ) : (
                                             <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
-                                                <div className="p-3.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 mb-2">
+                                                <div className="p-3.5 rounded-2xl bg-[#0B3A67]/10 text-[#0B3A67] dark:text-sky-300 mb-2">
                                                     <UploadCloud className="w-7 h-7" />
                                                 </div>
                                                 <div className="text-sm font-bold text-foreground">
@@ -1272,7 +1272,7 @@ export default function AcademicCalendarImportIndex({
                                     <Button
                                         type="submit"
                                         disabled={isUploading || !uploadData.calendar_file}
-                                        className="w-full sm:w-auto h-11 px-8 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm gap-2"
+                                        className="w-full sm:w-auto h-11 px-8 rounded-xl bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-bold text-xs shadow-sm gap-2"
                                     >
                                         {isUploading ? (
                                             <>
@@ -1304,7 +1304,7 @@ export default function AcademicCalendarImportIndex({
 
                             <div className="p-6 rounded-3xl bg-card border border-border shadow-2xs">
                                 <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                                    <AlertTriangle className="w-4 h-4 text-[#8B1E3F]" />
                                     Ambiguity Detection Engine
                                 </h3>
                                 <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
@@ -1406,7 +1406,7 @@ export default function AcademicCalendarImportIndex({
                                             <td className="py-3 px-4 text-center font-bold">{b.detected_count}</td>
                                             <td className="py-3 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400">{b.approved_count}</td>
                                             <td className="py-3 px-4 text-center font-bold text-rose-600 dark:text-rose-400">{b.rejected_count}</td>
-                                            <td className="py-3 px-4 text-center font-bold text-amber-600 dark:text-amber-400">{b.needs_attention_count}</td>
+                                            <td className="py-3 px-4 text-center font-bold text-[#0B3A67] dark:text-sky-300">{b.needs_attention_count}</td>
                                             <td className="py-3 px-4 whitespace-nowrap">
                                                 {b.status === 'rolled_back' ? (
                                                     <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30">Rolled Back</Badge>
@@ -1571,7 +1571,7 @@ export default function AcademicCalendarImportIndex({
                                 </Button>
                                 <Button
                                     type="submit"
-                                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs gap-1.5"
+                                    className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-bold rounded-xl text-xs gap-1.5 shadow-xs"
                                 >
                                     <Save className="w-3.5 h-3.5" />
                                     <span>Save &amp; Mark Valid</span>

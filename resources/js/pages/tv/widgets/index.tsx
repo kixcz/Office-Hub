@@ -188,15 +188,15 @@ export default function TvWidgetLibraryPage({ categories }: Props) {
                     </div>
 
                     {/* QR Code Highlight Callout */}
-                    <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-500/10 via-amber-500/10 to-transparent border border-purple-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-[#0B3A67]/15 via-[#175C94]/10 to-[#8B1E3F]/15 border border-[#0B3A67]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/40 flex items-center justify-center shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0B3A67] to-[#8B1E3F] text-white border border-white/20 flex items-center justify-center shrink-0 shadow-xs">
                                 <QrCode className="w-5 h-5" />
                             </div>
                             <div>
                                 <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
                                     <span>Interactive QR Code Digital Access Widget</span>
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-300 font-bold uppercase">Featured</span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#8B1E3F]/20 text-[#8B1E3F] dark:text-rose-300 font-bold uppercase">Featured</span>
                                 </h4>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                     Allows viewers to scan the TV screen from across the room and open Faculty Schedules, Program Rosters, Survey Forms, or Detailed Announcements on their phones. Enforces minimum size and contrast standards.
@@ -210,7 +210,7 @@ export default function TvWidgetLibraryPage({ categories }: Props) {
                                 const qr = categories.flatMap(c => c.widgets).find(w => w.id === 'general_qr');
                                 if (qr) setSelectedWidget(qr);
                             }}
-                            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shrink-0 cursor-pointer"
+                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-90 text-white font-bold text-xs shrink-0 cursor-pointer shadow-xs border border-white/20"
                         >
                             Inspect QR Schema
                         </button>

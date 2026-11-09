@@ -142,10 +142,10 @@ export default function FacultyLoadingIndex({
                         <div className="text-2xl font-bold text-emerald-950 mt-1">{stats.normal}</div>
                         <span className="text-[11px] text-emerald-700 mt-0.5 block">Between 12 and 21 units</span>
                     </div>
-                    <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-200 shadow-2xs">
-                        <span className="text-xs text-amber-800 font-medium">Underloaded Faculty</span>
-                        <div className="text-2xl font-bold text-amber-950 mt-1">{stats.under}</div>
-                        <span className="text-[11px] text-amber-700 mt-0.5 block">Below 12 teaching units</span>
+                    <div className="bg-[#0B3A67]/5 p-4 rounded-xl border border-[#0B3A67]/20 shadow-2xs">
+                        <span className="text-xs text-[#0B3A67] font-medium">Underloaded Faculty</span>
+                        <div className="text-2xl font-bold text-slate-900 mt-1">{stats.under}</div>
+                        <span className="text-[11px] text-[#0B3A67]/80 mt-0.5 block">Below 12 teaching units</span>
                     </div>
                     <div className="bg-rose-50/60 p-4 rounded-xl border border-rose-200 shadow-2xs">
                         <span className="text-xs text-rose-800 font-medium">Overloaded Faculty</span>
@@ -246,7 +246,7 @@ export default function FacultyLoadingIndex({
                                                 </Badge>
                                             )}
                                             {faculty.load_status === 'underloaded' && (
-                                                <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
+                                                <Badge className="bg-[#0B3A67]/10 text-[#0B3A67] border-[#0B3A67]/20 text-[10px]">
                                                     Underloaded
                                                 </Badge>
                                             )}
@@ -329,7 +329,7 @@ export default function FacultyLoadingIndex({
                                         onClick={() => {
                                             alert(`Added workload review comment / flag for ${activeFacultyDetail.name}.`);
                                         }}
-                                        className="text-amber-700 border-amber-300 hover:bg-amber-50 text-xs font-semibold"
+                                        className="text-[#8B1E3F] border-[#8B1E3F]/30 hover:bg-[#8B1E3F]/5 text-xs font-semibold"
                                     >
                                         Flag Match / Reassignment
                                     </Button>

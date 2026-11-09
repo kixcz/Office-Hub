@@ -268,48 +268,51 @@ export default function FacultyMeetingsPage({
             <Head title="Meetings & Events - Faculty Workspace" />
 
             <div className="p-4 md:p-6 lg:p-7 space-y-6 max-w-[1600px] mx-auto text-foreground">
-                {/* 1. Header Banner */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-[#0B3A67]/10 text-[#0B3A67] dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5 border border-[#0B3A67]/20 shadow-2xs">
-                            <CalendarIcon className="w-6 h-6 stroke-[2.2]" />
+                {/* 1. Header Banner with Deep Blue & Maroon gradient */}
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 mt-0.5 backdrop-blur-xs shadow-xs">
+                                <CalendarIcon className="w-6 h-6 stroke-[2.2]" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white drop-shadow-xs flex items-center gap-2">
+                                    Meetings & Events
+                                </h1>
+                                <p className="text-xs sm:text-sm text-white/80 font-medium mt-1 max-w-3xl">
+                                    Track your personal meetings, college events, consultations, workshops, and academic activities in one organized workspace.
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-                                Meetings & Events
-                            </h1>
-                            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-                                Track your personal meetings, college events, consultations, workshops, and academic activities in one organized workspace.
-                            </p>
+
+                        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setIsAddEventOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white hover:bg-white/90 text-slate-900 text-xs md:text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer"
+                            >
+                                <Plus className="w-4 h-4 stroke-[2.5] text-[#0B3A67]" />
+                                <span>Add Personal Event</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleSyncCalendar}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 text-xs md:text-sm font-semibold backdrop-blur-xs shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                            >
+                                <RotateCw className="w-4 h-4 text-white/80" />
+                                <span>Sync Calendar</span>
+                            </button>
+
+                            <Link
+                                href="/faculty/calendar"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 text-xs md:text-sm font-semibold backdrop-blur-xs shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                            >
+                                <CalendarCheck className="w-4 h-4 text-white/80" />
+                                <span>Calendar View</span>
+                            </Link>
                         </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2.5">
-                        <button
-                            type="button"
-                            onClick={() => setIsAddEventOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] hover:opacity-95 text-white text-xs md:text-sm font-bold shadow-xs hover:shadow-md transition-all active:scale-[0.98]"
-                        >
-                            <Plus className="w-4 h-4 stroke-[2.5]" />
-                            <span>Add Personal Event</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={handleSyncCalendar}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-card hover:bg-muted/70 text-foreground border border-border text-xs md:text-sm font-semibold shadow-2xs hover:border-border/80 transition-all active:scale-[0.98]"
-                        >
-                            <RotateCw className="w-4 h-4 text-muted-foreground" />
-                            <span>Sync Calendar</span>
-                        </button>
-
-                        <Link
-                            href="/faculty/calendar"
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-card hover:bg-muted/70 text-foreground border border-border text-xs md:text-sm font-semibold shadow-2xs hover:border-border/80 transition-all active:scale-[0.98]"
-                        >
-                            <CalendarCheck className="w-4 h-4 text-muted-foreground" />
-                            <span>Calendar View</span>
-                        </Link>
                     </div>
                 </div>
 

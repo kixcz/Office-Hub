@@ -269,7 +269,7 @@ export default function ConsolidatedCalendarIndex({
             case 'examination':
                 return 'bg-emerald-500';
             default:
-                return 'bg-amber-500';
+                return 'bg-[#0B3A67]';
         }
     };
 
@@ -277,15 +277,15 @@ export default function ConsolidatedCalendarIndex({
     const getCardAccentBorder = (type: string) => {
         switch (type) {
             case 'activity':
-                return 'border-l-4 border-l-purple-500';
+                return 'border-l-4 border-l-[#8B1E3F]';
             case 'meeting':
-                return 'border-l-4 border-l-blue-500';
+                return 'border-l-4 border-l-[#0B3A67]';
             case 'deadline':
-                return 'border-l-4 border-l-amber-500';
+                return 'border-l-4 border-l-red-500';
             case 'examination':
                 return 'border-l-4 border-l-emerald-500';
             default:
-                return 'border-l-4 border-l-amber-500';
+                return 'border-l-4 border-l-[#0B3A67]';
         }
     };
 
@@ -293,15 +293,15 @@ export default function ConsolidatedCalendarIndex({
     const getTypeBadgeStyle = (type: string) => {
         switch (type) {
             case 'activity':
-                return 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/20';
+                return 'bg-[#8B1E3F]/15 text-[#8B1E3F] dark:text-[#8B1E3F] border-[#8B1E3F]/20';
             case 'meeting':
-                return 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/20';
+                return 'bg-[#0B3A67]/15 text-[#0B3A67] dark:text-sky-300 border-[#0B3A67]/20';
             case 'deadline':
                 return 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/20';
             case 'examination':
                 return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20';
             default:
-                return 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20';
+                return 'bg-[#0B3A67]/15 text-[#0B3A67] dark:text-sky-300 border-[#0B3A67]/20';
         }
     };
 

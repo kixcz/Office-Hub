@@ -256,7 +256,7 @@ export default function ScheduleReviewsIndex({
                                             className={
                                                 flag.severity === 'Blocking'
                                                     ? 'bg-red-100 text-red-800 border-red-200'
-                                                    : 'bg-amber-100 text-amber-800 border-amber-200'
+                                                    : 'bg-[#0B3A67]/10 text-[#0B3A67] border-[#0B3A67]/20'
                                             }
                                         >
                                             {flag.severity}
@@ -313,7 +313,7 @@ export default function ScheduleReviewsIndex({
                             <Button
                                 variant="outline"
                                 onClick={() => alert('Endorsed with advisory notes for Dean review.')}
-                                className="border-amber-300 text-amber-800 hover:bg-amber-50 text-xs font-semibold"
+                                className="border-[#0B3A67]/30 text-[#0B3A67] hover:bg-[#0B3A67]/5 text-xs font-semibold"
                             >
                                 Endorse with Comment
                             </Button>

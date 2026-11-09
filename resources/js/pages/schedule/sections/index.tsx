@@ -162,7 +162,7 @@ export default function SectionsOfferingsIndex({
                                         </td>
                                         <td className="py-3 px-4 text-center">
                                             {s.unassigned_count > 0 ? (
-                                                <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
+                                                <Badge className="bg-[#8B1E3F]/10 text-[#8B1E3F] border-[#8B1E3F]/20 text-[10px]">
                                                     {s.unassigned_count} unassigned
                                                 </Badge>
                                             ) : (
@@ -177,7 +177,7 @@ export default function SectionsOfferingsIndex({
                                                     <CheckCircle2 className="size-3.5" /> Scheduling Ready
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1 text-amber-600 font-bold text-[11px]">
+                                                <span className="inline-flex items-center gap-1 text-[#0B3A67] font-bold text-[11px]">
                                                     <AlertCircle className="size-3.5" /> Pending Faculty
                                                 </span>
                                             )}

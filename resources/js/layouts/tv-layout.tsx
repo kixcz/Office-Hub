@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Clock, Maximize2, Minimize2, Moon, Pause, Play, RefreshCw, Sun, Tv, ChevronDown } from 'lucide-react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
+import { type SharedData } from '@/types';
 
 export interface TvChannelItem {
     id: number;
@@ -45,9 +46,52 @@ export default function TvLayout({
     currentChannel = null,
     canSwitchChannels = true,
 }: TvLayoutProps) {
+    const page = usePage<SharedData>();
+    const { portal_context, active_branding } = page.props || {};
+
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isChannelMenuOpen, setIsChannelMenuOpen] = useState(false);
+
+    // Scope branding resolution
+    const activeAssignment = portal_context?.active_assignment;
+    const isCollegeScope = activeAssignment?.scope_type === 'College' ||
+        activeAssignment?.portal_type === 'college_admin' ||
+        activeAssignment?.portal_type === 'faculty' ||
+        activeAssignment?.portal_type === 'dean' ||
+        activeAssignment?.portal_type === 'program_head' ||
+        activeAssignment?.portal_type === 'lab_in_charge' ||
+        Boolean(currentChannel?.college_code || currentChannel?.college_name || collegeTitle);
+
+    const brandLogo = active_branding?.logo_url || '/CIDS_Logo.png';
+
+    // Rotating logos state
+    // Outside college: Ascend and DSSC
+    // College-wide: College logo, Ascend, DSSC
+    const [logoIndex, setLogoIndex] = useState(0);
+
+    const logoList = useMemo(() => {
+        if (!isCollegeScope) {
+            return ['/Ascend.png', '/DSSC.jpg'];
+        }
+        const list = [];
+        if (brandLogo && brandLogo !== '/Ascend.png' && brandLogo !== '/DSSC.jpg') {
+            list.push(brandLogo);
+        }
+        list.push('/Ascend.png');
+        list.push('/DSSC.jpg');
+        return list;
+    }, [isCollegeScope, brandLogo]);
+
+    useEffect(() => {
+        if (logoList.length <= 1) return;
+        const interval = setInterval(() => {
+            setLogoIndex((prev) => (prev + 1) % logoList.length);
+        }, 3800);
+        return () => clearInterval(interval);
+    }, [logoList]);
+
+    const activeHeaderLogo = logoList[logoIndex] || brandLogo;
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -106,23 +150,23 @@ export default function TvLayout({
             {/* Header - Styled precisely after reference images */}
             {showHeader && (
                 <header className="px-8 py-3.5 flex justify-between items-center z-40 shrink-0 sticky top-0 transition-colors border-b border-black/[0.04] dark:border-white/[0.05]">
-                    {/* Brand & Subtitle: Davao del Sur State College / CIDS Dual Emblems */}
+                    {/* Brand & Subtitle: Dynamic Scope-aware rotating Logo + Deep Blue & Maroon Identity */}
                     <div className="flex items-center gap-3.5">
                         <div className="flex items-center gap-2 shrink-0">
-                            <img
-                                src="/Ascend.png"
-                                alt="Ascend Logo"
-                                className="h-10 w-10 rounded-xl object-contain p-1 shadow-xs border border-[#A78BFA]/40 bg-white dark:bg-[#17152E]"
-                            />
-                            <img
-                                src="/DSSC.jpg"
-                                alt="DSSC Logo"
-                                className="h-10 w-10 rounded-full object-cover shadow-xs border border-black/10 dark:border-white/10 bg-white"
-                            />
+                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-0.5 shadow-md border border-white/20 flex items-center justify-center shrink-0 overflow-hidden">
+                                <div className="h-full w-full rounded-[10px] bg-white/95 dark:bg-slate-900/90 p-1 flex items-center justify-center overflow-hidden">
+                                    <img
+                                        key={activeHeaderLogo}
+                                        src={activeHeaderLogo}
+                                        alt="Portal Logo"
+                                        className="h-full w-full object-contain animate-in fade-in zoom-in-95 duration-500"
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <div className="flex flex-col">
                             <div className="flex items-center gap-2.5">
-                                <span className={`text-xs font-black tracking-wider uppercase ${isDark ? 'text-[#A78BFA]' : 'text-[#5B21B6]'}`}>
+                                <span className={`text-xs font-black tracking-wider uppercase ${isDark ? 'text-sky-300' : 'text-[#0B3A67]'}`}>
                                     DAVAO DEL SUR STATE COLLEGE · ASCEND
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/40 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
@@ -132,14 +176,14 @@ export default function TvLayout({
 
                                 {/* Current Channel Badge */}
                                 {currentChannel && (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[11px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-                                        <Tv size={11} className="text-amber-500" />
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0B3A67]/10 dark:bg-sky-500/15 border border-[#0B3A67]/30 dark:border-sky-500/30 px-2.5 py-0.5 text-[11px] font-black text-[#0B3A67] dark:text-sky-300 uppercase tracking-wider">
+                                        <Tv size={11} className="text-[#0B3A67] dark:text-sky-400" />
                                         CH {currentChannel.channel_number ? String(currentChannel.channel_number).padStart(2, '0') : '01'} · {currentChannel.college_code || 'CIDS'}
                                     </span>
                                 )}
 
                                 {isPaused && (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider animate-pulse shadow-xs">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#8B1E3F]/15 border border-[#8B1E3F]/40 px-2.5 py-0.5 text-xs font-black text-[#8B1E3F] dark:text-rose-300 uppercase tracking-wider animate-pulse shadow-xs">
                                         <Pause size={11} className="fill-current" />
                                         PAUSED
                                     </span>
@@ -154,7 +198,7 @@ export default function TvLayout({
                                 {title && (
                                     <>
                                         <span className="text-slate-300 dark:text-slate-600">|</span>
-                                        <span className={`text-xs font-semibold ${isDark ? 'text-amber-400' : 'text-amber-500'}`}>
+                                        <span className={`text-xs font-semibold ${isDark ? 'text-sky-300' : 'text-[#175C94]'}`}>
                                             {title}
                                         </span>
                                     </>
@@ -174,11 +218,11 @@ export default function TvLayout({
                                     title="Switch TV Channel (Institution Super Admin & VPAF remote)"
                                     className={`h-10 px-3.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 border text-xs font-extrabold ${
                                         isDark
-                                            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25'
-                                            : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                                            ? 'bg-gradient-to-r from-[#0B3A67]/40 to-[#8B1E3F]/40 text-white border-white/20 hover:border-white/40'
+                                            : 'bg-gradient-to-r from-[#0B3A67]/10 via-[#175C94]/10 to-[#8B1E3F]/10 text-[#0B3A67] border-[#0B3A67]/30 hover:border-[#0B3A67]/60'
                                     }`}
                                 >
-                                    <Tv size={15} className="text-amber-500" />
+                                    <Tv size={15} className="text-[#0B3A67] dark:text-sky-400" />
                                     <span>
                                         CH {currentChannel?.channel_number ?? 1}: {currentChannel?.college_code || currentChannel?.name || 'CIDS TV'}
                                     </span>
@@ -195,7 +239,7 @@ export default function TvLayout({
                                             isDark ? 'bg-[#0f172a] border-white/10 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
                                         }`}>
                                             <div className="px-3 py-2 border-b border-black/5 dark:border-white/5 mb-1">
-                                                <div className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center justify-between">
+                                                <div className="text-[10px] font-black uppercase tracking-wider text-[#175C94] dark:text-sky-400 flex items-center justify-between">
                                                     <span>Switch TV Channel</span>
                                                     <span>INSTITUTION / VPAF</span>
                                                 </div>
@@ -218,7 +262,7 @@ export default function TvLayout({
                                                             }}
                                                             className={`flex items-center justify-between px-3 py-2 rounded-xl text-left transition-all cursor-pointer ${
                                                                 isSelected
-                                                                    ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
+                                                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white font-bold shadow-xs'
                                                                     : isDark
                                                                     ? 'hover:bg-white/5 text-slate-200'
                                                                     : 'hover:bg-slate-100 text-slate-800'
@@ -228,12 +272,12 @@ export default function TvLayout({
                                                                 <span className="text-xs font-bold leading-tight">
                                                                     CH {chan.channel_number ? String(chan.channel_number).padStart(2, '0') : '01'} • {chan.name}
                                                                 </span>
-                                                                <span className={`text-[10px] ${isSelected ? 'text-slate-900/80 font-semibold' : 'text-slate-400'}`}>
+                                                                <span className={`text-[10px] ${isSelected ? 'text-white/80 font-semibold' : 'text-slate-400'}`}>
                                                                     {chan.college_name || chan.location || 'College Display'}
                                                                 </span>
                                                             </div>
                                                             {isSelected && (
-                                                                <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-slate-950/20 rounded-md">
+                                                                <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-black/30 rounded-md text-white">
                                                                     NOW
                                                                 </span>
                                                             )}
@@ -267,7 +311,7 @@ export default function TvLayout({
                             title={isPaused ? 'Resume auto-advance (Key: Space or P)' : 'Pause auto-advance (Key: Space or P)'}
                             className={`h-10 px-3.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 border text-xs font-extrabold ${
                                 isPaused
-                                    ? 'bg-amber-500 text-slate-950 border-amber-400 ring-2 ring-amber-400/40 shadow-[0_0_14px_rgba(245,158,11,0.35)] animate-pulse'
+                                    ? 'bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] text-white border-white/30 ring-2 ring-sky-400/40 shadow-[0_0_14px_rgba(11,58,103,0.35)] animate-pulse'
                                     : isDark
                                     ? 'bg-[#131b2e] text-slate-300 border-white/10 hover:bg-slate-800 hover:text-white'
                                     : 'bg-white text-slate-700 border-slate-200/80 hover:bg-slate-50 hover:text-slate-900'
@@ -275,7 +319,7 @@ export default function TvLayout({
                         >
                             {isPaused ? (
                                 <>
-                                    <Play size={16} className="fill-current text-slate-950" />
+                                    <Play size={16} className="fill-current text-white" />
                                     <span className="hidden sm:inline">RESUME</span>
                                 </>
                             ) : (
@@ -295,8 +339,8 @@ export default function TvLayout({
                             title={isDark ? 'Switch to Light Mode (Key: T)' : 'Switch to Dark Mode (Key: T)'}
                             className={`h-10 w-10 rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95 border ${
                                 isDark
-                                    ? 'bg-[#131b2e] text-amber-400 border-white/10 hover:bg-slate-800'
-                                    : 'bg-white text-slate-700 border-slate-200/80 hover:bg-slate-50 hover:text-amber-600'
+                                    ? 'bg-[#131b2e] text-sky-400 border-white/10 hover:bg-slate-800'
+                                    : 'bg-white text-slate-700 border-slate-200/80 hover:bg-slate-50 hover:text-[#0B3A67]'
                             }`}
                         >
                             {isDark ? <Sun size={18} /> : <Moon size={18} />}
@@ -321,11 +365,11 @@ export default function TvLayout({
                     <div className={`px-3.5 py-1.5 rounded-xl shadow-xs border flex items-center gap-2.5 ${
                         isDark ? 'bg-[#131b2e] border-white/10' : 'bg-white border-slate-200/80'
                     }`}>
-                        <div className="h-8 w-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-[#0B3A67]/10 dark:bg-sky-500/15 text-[#0B3A67] dark:text-sky-400 flex items-center justify-center shrink-0">
                             <Clock size={16} />
                         </div>
                         <div className="text-left flex flex-col justify-center">
-                            <div className="text-[10px] font-bold text-amber-500 uppercase tracking-wider leading-none">Internal View</div>
+                            <div className="text-[10px] font-bold text-[#8B1E3F] dark:text-rose-400 uppercase tracking-wider leading-none">Internal View</div>
                             <div className={`text-xs font-semibold mt-0.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                                 {currentTerm}
                             </div>
@@ -333,7 +377,7 @@ export default function TvLayout({
                                 <div className={`text-[10px] font-medium flex items-center gap-1 ${
                                     isDark ? 'text-slate-400' : 'text-slate-400'
                                 }`}>
-                                    <RefreshCw size={9} className="text-amber-500" /> {lastUpdated}
+                                    <RefreshCw size={9} className="text-[#175C94] dark:text-sky-400" /> {lastUpdated}
                                 </div>
                             )}
                         </div>

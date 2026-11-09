@@ -238,53 +238,54 @@ export default function FacultyResearchExtensionPage({
             <Head title="Research & Extension - Faculty Workspace" />
 
             <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1550px] mx-auto w-full">
-                {/* 1. TOP MODULE HEADER (Exact Match to Screenshot) */}
-                <div className="bg-card rounded-2xl border border-border p-6 shadow-2xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-2xs">
+                {/* 1. TOP MODULE HEADER with Deep Blue & Maroon gradient */}
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                    <div className="flex items-start gap-4 relative z-10">
+                        <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 mt-0.5 backdrop-blur-xs shadow-xs">
                             <FlaskConical className="w-6 h-6" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-foreground tracking-tight">
+                            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs">
                                 Research & Extension Engagements
                             </h1>
-                            <p className="text-xs text-muted-foreground mt-0.5">
+                            <p className="text-xs sm:text-sm text-white/80 font-medium mt-1">
                                 Document your institutional research outputs, community extension programs, verified roles, and milestones.
                             </p>
-                            <div className="mt-2">
-                                <span className="inline-flex items-center text-[11px] font-black tracking-wide text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 border border-sky-200/60 dark:border-sky-800/60 px-2.5 py-0.5 rounded-full">
+                            <div className="mt-2.5">
+                                <span className="inline-flex items-center text-[11px] font-bold tracking-wide text-white bg-white/15 border border-white/25 px-2.5 py-0.5 rounded-full backdrop-blur-xs shadow-2xs">
                                     AY 2026 - 2027 · 1st Semester
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                    <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto relative z-10 shrink-0">
                         <Button
                             onClick={() => setIsCreateResearchOpen(true)}
-                            className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl px-4 py-2.5 shadow-2xs cursor-pointer flex items-center gap-1.5"
+                            className="bg-white text-slate-900 hover:bg-white/90 font-bold text-xs rounded-xl px-4 py-2.5 shadow-md cursor-pointer flex items-center gap-1.5"
                         >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4 text-[#0B3A67]" />
                             <span>Add Research Project</span>
                         </Button>
 
                         <Button
                             onClick={() => setIsCreateExtensionOpen(true)}
                             variant="outline"
-                            className="font-bold text-xs rounded-xl px-4 py-2.5 shadow-2xs border-border hover:bg-muted cursor-pointer flex items-center gap-1.5"
+                            className="font-bold text-xs rounded-xl px-4 py-2.5 shadow-2xs bg-white/15 hover:bg-white/25 border-white/25 text-white cursor-pointer flex items-center gap-1.5 backdrop-blur-xs"
                         >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4 text-white/80" />
                             <span>Add Extension Activity</span>
                         </Button>
 
                         <Button
                             onClick={handleExport}
                             variant="outline"
-                            className="font-bold text-xs rounded-xl px-3.5 py-2.5 shadow-2xs border-border hover:bg-muted cursor-pointer flex items-center gap-1.5"
+                            className="font-bold text-xs rounded-xl px-3.5 py-2.5 shadow-2xs bg-white/15 hover:bg-white/25 border-white/25 text-white cursor-pointer flex items-center gap-1.5 backdrop-blur-xs"
                         >
                             <Download className="w-3.5 h-3.5" />
                             <span>Export</span>
-                            <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-0.5" />
+                            <ChevronDown className="w-3.5 h-3.5 opacity-80 ml-0.5" />
                         </Button>
                     </div>
                 </div>
