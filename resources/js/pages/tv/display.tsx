@@ -825,6 +825,7 @@ function Kpi({
     trend,
     tone = 'blue',
     accent = false,
+    gradient = false,
     isDark = false,
     className = '',
 }: {
@@ -835,15 +836,22 @@ function Kpi({
     trend?: { text: string; positive?: boolean };
     tone?: Tone;
     accent?: boolean;
+    gradient?: boolean;
     isDark?: boolean;
     className?: string;
 }) {
     const toneConfig = (tone && TONE_BOX[tone]) ? TONE_BOX[tone] : TONE_BOX.blue;
-    const boxColorClass = toneConfig[isDark ? 'dark' : 'light'] || TONE_BOX.blue[isDark ? 'dark' : 'light'];
+    const boxColorClass = gradient
+        ? 'bg-white/15 border border-white/30 text-white shadow-xs backdrop-blur-md'
+        : (toneConfig[isDark ? 'dark' : 'light'] || TONE_BOX.blue[isDark ? 'dark' : 'light']);
 
     return (
         <div
-            className={`rounded-2xl p-4 flex items-center justify-between gap-3 ${accent
+            className={`rounded-2xl p-4 flex items-center justify-between gap-3 relative overflow-hidden transition-all ${gradient
+                ? isDark
+                    ? 'bg-gradient-to-r from-[#072445]/90 via-[#0B3A67]/80 to-[#68152E]/70 border border-[#175C94]/60 text-white ring-1 ring-sky-400/20 shadow-md'
+                    : 'bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#8B1E3F] border border-[#175C94] text-white shadow-md'
+                : accent
                 ? isDark
                     ? 'bg-[#8B1E3F]/20 border border-[#8B1E3F]/40 text-white ring-1 ring-rose-500/20'
                     : 'bg-rose-50/80 border border-rose-200/90 text-slate-900 shadow-[0_2px_12px_rgba(139,30,63,0.06)]'
@@ -852,25 +860,28 @@ function Kpi({
                     : 'bg-white border border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
                 } ${className}`}
         >
+            {gradient && (
+                <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(circle_at_top_right,white,transparent_70%)]" />
+            )}
             <div className="flex items-center gap-3.5 min-w-0">
                 <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${boxColorClass}`}>
                     <Icon size={22} />
                 </div>
                 <div className="min-w-0">
-                    <p className={`text-xs font-semibold truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</p>
-                    <p className="text-3xl font-extrabold tracking-tight tabular-nums">{value}</p>
+                    <p className={`text-xs font-semibold truncate ${gradient ? 'text-sky-200 font-bold uppercase tracking-wider text-[11px]' : isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</p>
+                    <p className={`text-3xl font-extrabold tracking-tight tabular-nums ${gradient ? 'text-white' : ''}`}>{value}</p>
                     {trend ? (
-                        <p className={`mt-0.5 flex items-center gap-0.5 text-xs font-bold ${trend.positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        <p className={`mt-0.5 flex items-center gap-0.5 text-xs font-bold ${gradient ? 'text-cyan-300 font-extrabold' : trend.positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                             {trend.positive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
                             {trend.text}
                         </p>
                     ) : sub ? (
-                        <p className={`mt-0.5 text-xs truncate font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{sub}</p>
+                        <p className={`mt-0.5 text-xs truncate font-medium ${gradient ? 'text-white/80' : isDark ? 'text-slate-400' : 'text-slate-500'}`}>{sub}</p>
                     ) : null}
                 </div>
             </div>
-            <div className="shrink-0 opacity-70">
-                <MiniBars tone={tone} />
+            <div className={`shrink-0 ${gradient ? 'opacity-90 relative z-10 text-cyan-300' : 'opacity-70'}`}>
+                <MiniBars tone={gradient ? 'sky' : tone} />
             </div>
         </div>
     );
@@ -941,13 +952,12 @@ function SlideOne({ data, isDark = false }: any) {
     const upcoming = data.upcoming_meetings || [];
 
     return (
-        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
-            {/* Top Row KPIs */}
+        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4 font-['Poppins',sans-serif]">
+            {/* Top Row KPIs - Hero Card in Navy & Maroon Gradient */}
             <div className="grid grid-cols-4 gap-4 shrink-0">
                 <Kpi
                     icon={ShieldCheck}
-                    tone="amber"
-                    accent
+                    gradient
                     label="Compliance rate"
                     value={`${data.kpis.compliance_rate}%`}
                     trend={{ text: '12% vs. last week', positive: true }}
@@ -985,7 +995,7 @@ function SlideOne({ data, isDark = false }: any) {
                 <BentoTile
                     title="Announcements"
                     icon={Megaphone}
-                    iconTone="amber"
+                    iconTone="purple"
                     className="col-span-5 h-full min-h-0"
                     isDark={isDark}
                     aside={
@@ -997,27 +1007,32 @@ function SlideOne({ data, isDark = false }: any) {
                     {announcements.length > 0 ? (
                         <div className="space-y-3">
                             {announcements.map((a: any, idx: number) => {
-                                const tone: Tone = idx % 3 === 0 ? 'amber' : idx % 3 === 1 ? 'rose' : 'blue';
+                                const tone: Tone = idx % 3 === 0 ? 'purple' : idx % 3 === 1 ? 'rose' : 'blue';
                                 const tag = idx === 0 ? 'IMPORTANT' : idx === 1 ? 'URGENT' : 'REMINDER';
                                 return (
                                     <article
                                         key={a.id}
                                         className={`rounded-xl p-4 border transition-all ${idx === 0
-                                            ? isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50/60 border-amber-200/80'
+                                            ? isDark
+                                                ? 'bg-gradient-to-r from-[#072445]/80 via-[#0B3A67]/70 to-[#68152E]/60 border-[#175C94]/50 text-white ring-1 ring-sky-400/20'
+                                                : 'bg-gradient-to-r from-[#072445]/5 via-[#0B3A67]/5 to-[#8B1E3F]/10 border-rose-200/90'
                                             : idx === 1
                                                 ? isDark ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50/60 border-rose-200/80'
-                                                : isDark ? 'bg-sky-500/10 border-sky-500/20' : 'bg-sky-50/60 border-sky-200/80'
+                                                : isDark ? 'bg-[#0B3A67]/20 border-[#175C94]/30' : 'bg-sky-50/60 border-sky-200/80'
                                             }`}
                                     >
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="flex items-center gap-2.5">
-                                                <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${TONE_BOX[tone][isDark ? 'dark' : 'light']}`}>
+                                                <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${idx === 0
+                                                    ? 'bg-gradient-to-br from-[#072445] to-[#8B1E3F] text-white shadow-xs'
+                                                    : TONE_BOX[tone][isDark ? 'dark' : 'light']
+                                                }`}>
                                                     {idx === 0 ? <CalendarIcon size={16} /> : idx === 1 ? <FileText size={16} /> : <ShieldCheck size={16} />}
                                                 </div>
                                                 <h3 className="text-base font-bold text-slate-900 dark:text-white">{a.title}</h3>
                                             </div>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${idx === 0
-                                                ? 'bg-amber-200/80 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${idx === 0
+                                                ? 'bg-gradient-to-r from-[#072445] to-[#8B1E3F] text-white shadow-2xs'
                                                 : idx === 1
                                                     ? 'bg-rose-200/80 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
                                                     : 'bg-sky-200/80 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300'
@@ -1044,7 +1059,7 @@ function SlideOne({ data, isDark = false }: any) {
                     <BentoTile
                         title="Today's schedule"
                         icon={CalendarIcon}
-                        iconTone="amber"
+                        iconTone="blue"
                         className="flex-1 min-h-0"
                         isDark={isDark}
                         aside={
@@ -1057,7 +1072,7 @@ function SlideOne({ data, isDark = false }: any) {
                             <div className="space-y-2.5">
                                 {schedule.map((item: any, i: number) => (
                                     <div key={i} className="flex items-center gap-3.5 rounded-xl p-3 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
-                                        <div className="w-32 shrink-0 rounded-lg py-1.5 text-center text-xs font-bold tabular-nums bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
+                                        <div className="w-32 shrink-0 rounded-lg py-1.5 text-center text-xs font-bold tabular-nums bg-gradient-to-r from-[#072445]/15 to-[#8B1E3F]/15 text-[#072445] dark:text-sky-200 border border-[#175C94]/20">
                                             {item.time}
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -1083,7 +1098,7 @@ function SlideOne({ data, isDark = false }: any) {
                     <BentoTile
                         title="Next meetings"
                         icon={Clock}
-                        iconTone="amber"
+                        iconTone="purple"
                         className="flex-1 min-h-0"
                         isDark={isDark}
                         aside={
@@ -1097,7 +1112,7 @@ function SlideOne({ data, isDark = false }: any) {
                                 {upcoming.map((m: any) => (
                                     <div key={m.id} className="rounded-xl p-3 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5 flex flex-col justify-between">
                                         <div>
-                                            <p className="text-xs font-bold text-amber-600 dark:text-amber-400">{m.date}</p>
+                                            <p className="text-xs font-bold text-[#8B1E3F] dark:text-rose-300">{m.date}</p>
                                             <p className="mt-1 line-clamp-2 text-sm font-bold text-slate-900 dark:text-white">{m.title}</p>
                                         </div>
                                         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 truncate">{m.time}</p>
@@ -1120,23 +1135,43 @@ function SlideOne({ data, isDark = false }: any) {
     );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Slide 2 – Schedule & Meetings                                              */
-/* -------------------------------------------------------------------------- */
-
 function SlideTwo({ data, isDark = false }: any) {
     const meetings = data.upcoming_meetings || [];
     const deadlines = data.upcoming_deadlines || [];
 
     return (
-        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
+        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4 font-['Poppins',sans-serif]">
+            {/* Top Row KPIs - Hero Meetings Card in Navy & Maroon Gradient */}
             <div className="grid grid-cols-3 gap-4 shrink-0">
-                <Kpi icon={CalendarIcon} tone="amber" accent label="Meetings this week" value={data.kpis.meetings_this_week} isDark={isDark} />
-                <Kpi icon={Activity} tone="blue" label="Activities this week" value={data.kpis.activities_this_week} isDark={isDark} />
-                <Kpi icon={AlertTriangle} tone="rose" label="Deadlines this week" value={data.kpis.deadlines_this_week} isDark={isDark} />
+                <Kpi
+                    icon={CalendarIcon}
+                    gradient
+                    label="Meetings this week"
+                    value={data.kpis.meetings_this_week}
+                    sub="Scheduled college meetings"
+                    isDark={isDark}
+                />
+                <Kpi
+                    icon={Activity}
+                    tone="blue"
+                    label="Activities this week"
+                    value={data.kpis.activities_this_week}
+                    sub="Institutional events"
+                    isDark={isDark}
+                />
+                <Kpi
+                    icon={AlertTriangle}
+                    tone="rose"
+                    label="Deadlines this week"
+                    value={data.kpis.deadlines_this_week}
+                    sub="Academic & administrative tasks"
+                    isDark={isDark}
+                />
             </div>
 
+            {/* Bento Grid */}
             <div className="grid h-full min-h-0 grid-cols-12 gap-4">
+                {/* Weekly Calendar Column (Col 8) */}
                 <BentoTile title="This week" icon={CalendarIcon} iconTone="blue" className="col-span-8 h-full min-h-0" isDark={isDark}>
                     <div className="grid h-full min-h-0 grid-cols-5 gap-3">
                         {data.weekly_schedule.map((day: any, i: number) => {
@@ -1145,20 +1180,26 @@ function SlideTwo({ data, isDark = false }: any) {
                             return (
                                 <div
                                     key={i}
-                                    className={`flex h-full min-h-0 flex-col rounded-xl border ${day.is_today
-                                        ? 'border-amber-400 bg-amber-50/30 dark:bg-amber-500/10'
+                                    className={`flex h-full min-h-0 flex-col rounded-xl border transition-all ${day.is_today
+                                        ? isDark
+                                            ? 'border-[#8B1E3F]/80 bg-[#072445]/30 shadow-[0_4px_16px_rgba(7,36,69,0.35)] ring-1 ring-[#8B1E3F]/40'
+                                            : 'border-[#8B1E3F]/50 bg-rose-50/20 shadow-md ring-2 ring-[#8B1E3F]/20'
                                         : 'border-slate-200/80 dark:border-white/5 bg-slate-50/70 dark:bg-white/[0.02]'
                                         }`}
                                 >
-                                    <div className={`px-3 py-2 text-center rounded-t-xl ${day.is_today ? 'bg-amber-400 text-slate-950' : 'border-b border-slate-200/60 dark:border-white/5'}`}>
-                                        <p className="text-sm font-bold">{weekday}</p>
-                                        <p className={`text-[11px] font-medium ${day.is_today ? 'text-slate-900/80' : 'text-slate-500 dark:text-slate-400'}`}>{date}</p>
+                                    {/* Day Header Pill */}
+                                    <div className={`px-3 py-2 text-center rounded-t-xl transition-all ${day.is_today
+                                        ? 'bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#8B1E3F] text-white shadow-xs'
+                                        : 'border-b border-slate-200/60 dark:border-white/5'
+                                    }`}>
+                                        <p className="text-sm font-extrabold uppercase tracking-tight">{weekday}</p>
+                                        <p className={`text-[11px] font-semibold mt-0.5 ${day.is_today ? 'text-sky-200' : 'text-slate-500 dark:text-slate-400'}`}>{date}</p>
                                     </div>
                                     <div className="flex-1 min-h-0 overflow-y-auto tv-scrollbar p-2 space-y-2">
-                                        {items.length === 0 && <p className="pt-4 text-center text-xs text-slate-400">No events</p>}
+                                        {items.length === 0 && <p className="pt-4 text-center text-xs text-slate-400 font-medium">No events</p>}
                                         {items.map((item: any, j: number) => (
                                             <div key={j} className="rounded-lg p-2.5 bg-white dark:bg-[#131b2e] border border-slate-200/70 dark:border-white/5 shadow-2xs">
-                                                <p className="text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums">{item.time}</p>
+                                                <p className="text-xs font-bold text-[#175C94] dark:text-sky-300 tabular-nums">{item.time}</p>
                                                 <p className="mt-0.5 line-clamp-2 text-xs font-bold text-slate-800 dark:text-slate-200">{item.title}</p>
                                             </div>
                                         ))}
@@ -1169,12 +1210,13 @@ function SlideTwo({ data, isDark = false }: any) {
                     </div>
                 </BentoTile>
 
+                {/* Right Column: Upcoming Meetings & Deadlines (Col 4) */}
                 <div className="col-span-4 flex h-full min-h-0 flex-col gap-4">
                     <BentoTile title="Upcoming meetings" icon={Clock} iconTone="purple" className="flex-1 min-h-0" isDark={isDark}>
                         <div className="space-y-2.5">
                             {meetings.map((m: any) => (
                                 <div key={m.id} className="rounded-xl p-3 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
-                                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400">{m.date} · {m.time}</p>
+                                    <p className="text-xs font-bold text-[#8B1E3F] dark:text-rose-300">{m.date} · {m.time}</p>
                                     <p className="truncate text-sm font-bold text-slate-900 dark:text-white mt-0.5">{m.title}</p>
                                     <p className="truncate text-xs text-slate-500 dark:text-slate-400 mt-0.5">{m.venue}</p>
                                 </div>
@@ -1201,8 +1243,6 @@ function SlideTwo({ data, isDark = false }: any) {
     );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Slide 3 – Compliance Monitoring                                            */
 function SlideThree({ data, isDark = false }: any) {
     const rawSummary = data.compliance_summary || [];
     const pendingOutputs = data.pending_outputs || [];

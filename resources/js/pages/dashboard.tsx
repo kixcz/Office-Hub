@@ -24,7 +24,9 @@ import {
     Info,
     CalendarDays,
     Building2,
-    Target
+    Target,
+    Layers,
+    LayoutGrid
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -350,165 +352,195 @@ export default function SuperAdminDashboard({
             <Head title={`${dashboardTitle} - ${collegeCode} OfficeHub`} />
 
             <div className="p-4 md:p-6 lg:p-7 space-y-6 max-w-[1600px] mx-auto font-sans">
-                {/* 1. Header with Compact Persistent Filters Row (Deep Blue & Maroon gradient) */}
-                <div
-                    className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-7 shadow-lg text-white flex flex-col xl:flex-row xl:items-center justify-between gap-5"
-                >
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
-                    
-                    <div className="flex items-center gap-4 relative z-10">
-                        <div
-                            className="w-13 h-13 rounded-2xl bg-white/15 text-white flex items-center justify-center shrink-0 border border-white/20 overflow-hidden p-1.5 backdrop-blur-xs shadow-xs"
+                {/* 1. College Performance Dashboard Hero Banner (Matching DSSC Reference with Building DevCom background) */}
+                <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl text-white">
+                    {/* Background Layer: Building DevCom image with deep gradient scrim & architectural overlay */}
+                    <div className="absolute inset-0 z-0">
+                        <img
+                            src="/Building DevCom.jpg"
+                            alt="CIDS Building DevCom"
+                            className="w-full h-full object-cover object-center filter brightness-[0.9] contrast-[1.08]"
+                        />
+                        {/* Deep Navy/Slate to Maroon Gradient Scrim matching the reference image */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#031527]/95 via-[#072445]/90 via-55% to-[#1a3857]/50" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#020b16] via-transparent to-black/30" />
+                        
+                        {/* Elegant Maroon swoosh waves at bottom right matching reference */}
+                        <svg
+                            viewBox="0 0 1200 350"
+                            className="absolute -bottom-2 right-0 w-[55%] h-full pointer-events-none opacity-85 preserve-3d"
+                            fill="none"
+                            preserveAspectRatio="none"
                         >
-                            {activeCollege?.logo_url ? (
-                                <img src={activeCollege.logo_url} alt={collegeCode} className="w-full h-full object-contain drop-shadow-xs" />
-                            ) : (
-                                <TrendingUp className="w-6 h-6 text-white" />
-                            )}
-                        </div>
-                        <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight drop-shadow-xs">
-                                    {dashboardTitle}
-                                </h1>
-                                <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border backdrop-blur-xs shadow-2xs ${
-                                    isProgramHead
-                                        ? 'bg-blue-400/20 text-white border-blue-300/40'
-                                        : isDean
-                                        ? 'bg-rose-400/20 text-white border-rose-300/40'
-                                        : 'bg-white/20 text-white border-white/30'
-                                }`}>
-                                    {user_role}
-                                </span>
-                            </div>
-                            <p className="text-xs sm:text-sm text-white/80 font-medium mt-1 max-w-2xl leading-relaxed">
-                                {dashboardSubtitle}
-                            </p>
-                            {collegeBranding?.slogan && (
-                                <p
-                                    className="text-[11px] font-bold italic mt-1 text-white/90"
-                                >
-                                    &ldquo;{collegeBranding.slogan}&rdquo;
-                                </p>
-                            )}
-                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/15 text-white border border-white/25 backdrop-blur-xs shadow-2xs mt-2">
-                                <span>🎓 AY {academicYear} • {semester}</span>
-                                {program_code && (
-                                    <>
-                                        <span className="text-white/60">•</span>
-                                        <span className="text-white font-extrabold">{program_code}</span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
+                            <path
+                                d="M300,350 C500,260 700,160 1200,120 L1200,350 Z"
+                                fill="url(#maroon-wave-1)"
+                            />
+                            <path
+                                d="M150,350 C400,300 650,200 1200,160 L1200,350 Z"
+                                fill="url(#maroon-wave-2)"
+                                opacity="0.65"
+                            />
+                            <defs>
+                                <linearGradient id="maroon-wave-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#4A0E1F" stopOpacity="0.4" />
+                                    <stop offset="40%" stopColor="#68152E" stopOpacity="0.85" />
+                                    <stop offset="100%" stopColor="#8B1E3F" stopOpacity="0.95" />
+                                </linearGradient>
+                                <linearGradient id="maroon-wave-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#0B3A67" stopOpacity="0.2" />
+                                    <stop offset="60%" stopColor="#68152E" stopOpacity="0.7" />
+                                    <stop offset="100%" stopColor="#581024" stopOpacity="0.9" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
                     </div>
 
-                    {/* Filter Bar Controls */}
-                    <div className="flex flex-wrap items-center gap-3 relative z-10 shrink-0">
-                        {/* Academic Year */}
-                        <div className="flex flex-col text-[11px]">
-                            <span className="font-bold text-white/80 mb-1">Academic Year</span>
-                            <div className="relative">
-                                <select
-                                    value={academicYear}
-                                    onChange={(e) => handleAcademicYearChange(e.target.value)}
-                                    className="appearance-none bg-white text-slate-900 border-none text-xs font-bold rounded-xl pl-3 pr-8 py-2 shadow-md cursor-pointer focus:ring-2 focus:ring-white/40"
-                                >
-                                    {uniqueAcademicYears.map((ay) => (
-                                        <option key={ay} value={ay}>
-                                            {ay}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5 pointer-events-none" />
+                    {/* Content Layer */}
+                    <div className="relative z-10 p-6 md:p-8 lg:p-9 flex flex-col justify-between min-h-[300px] gap-6">
+                        {/* Top: Brand Logo & Title Header */}
+                        <div className="flex items-start gap-5 sm:gap-6 max-w-4xl">
+                            {/* Prominent Golden/College Logo in rounded frosted white box */}
+                            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-white p-2.5 shadow-xl border border-white/40 flex items-center justify-center shrink-0">
+                                <img
+                                    src={activeCollege?.logo_url || '/CIDS_Logo.png'}
+                                    alt={collegeCode}
+                                    className="w-full h-full object-contain drop-shadow-sm"
+                                />
+                            </div>
+
+                            {/* Headline & Subtitle */}
+                            <div className="min-w-0">
+                                <span className="text-xs sm:text-sm font-black tracking-widest uppercase text-sky-300 block">
+                                    {collegeCode}
+                                </span>
+                                <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight mt-0.5">
+                                    Performance Dashboard
+                                </h1>
+                                <div className="flex items-center gap-2 mt-1.5 text-xs sm:text-sm text-sky-100/90 font-medium">
+                                    <span className="w-2 h-2 rounded-full border border-sky-300/80 inline-block" />
+                                    <span>{activeCollege?.name || 'College of Information and Digital Sciences'}</span>
+                                </div>
+                                <p className="text-xs sm:text-[13px] text-white/80 font-normal mt-3 max-w-2xl leading-relaxed">
+                                    {dashboardSubtitle}
+                                </p>
                             </div>
                         </div>
 
-                        {/* Semester */}
-                        <div className="flex flex-col text-[11px]">
-                            <span className="font-bold text-white/80 mb-1">Semester</span>
-                            <div className="relative">
-                                <select
-                                    value={semester}
-                                    onChange={(e) => handleSemesterChange(e.target.value)}
-                                    className="appearance-none bg-white text-slate-900 border-none text-xs font-bold rounded-xl pl-3 pr-8 py-2 shadow-md cursor-pointer focus:ring-2 focus:ring-white/40"
-                                >
-                                    {(semestersForCurrentYear.length > 0 ? semestersForCurrentYear : ['1st Semester', '2nd Semester']).map((sem) => (
-                                        <option key={sem} value={sem}>
-                                            {sem}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5 pointer-events-none" />
-                            </div>
-                        </div>
+                        {/* Bottom: Modern Glassmorphic Persistent Filter Pill Bar */}
+                        <div className="rounded-2xl bg-black/35 backdrop-blur-md border border-white/15 p-3.5 sm:p-4 shadow-xl flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
+                                {/* Academic Year Filter Pill */}
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 transition-all text-xs">
+                                    <Calendar className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+                                    <span className="text-[11px] font-bold text-white/70">Academic Year</span>
+                                    <div className="relative">
+                                        <select
+                                            value={academicYear}
+                                            onChange={(e) => handleAcademicYearChange(e.target.value)}
+                                            aria-label="Filter by Academic Year"
+                                            className="appearance-none bg-white text-slate-900 border-none text-xs font-black rounded-lg pl-2.5 pr-6 py-1 shadow-xs cursor-pointer focus:ring-2 focus:ring-sky-400"
+                                        >
+                                            {uniqueAcademicYears.map((ay) => (
+                                                <option key={ay} value={ay}>
+                                                    {ay}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="w-3 h-3 text-slate-600 absolute right-1.5 top-2 pointer-events-none" />
+                                    </div>
+                                </div>
 
-                        {/* Program */}
-                        <div className="flex flex-col text-[11px]">
-                            <span className="font-bold text-white/80 mb-1">Program</span>
-                            <div className="relative">
-                                <select
-                                    value={programId}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setProgramId(val);
-                                        setFacultyId('all');
-                                        handleFilterChange({ program_id: val, faculty_id: 'all' });
-                                    }}
-                                    className="appearance-none bg-white text-slate-900 border-none text-xs font-bold rounded-xl pl-3 pr-8 py-2 shadow-md cursor-pointer focus:ring-2 focus:ring-white/40 max-w-[150px] truncate"
-                                >
-                                    <option value="all">All Programs</option>
-                                    {available_programs.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.code}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5 pointer-events-none" />
-                            </div>
-                        </div>
+                                {/* Semester Filter Pill */}
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 transition-all text-xs">
+                                    <Layers className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+                                    <span className="text-[11px] font-bold text-white/70">Semester</span>
+                                    <div className="relative">
+                                        <select
+                                            value={semester}
+                                            onChange={(e) => handleSemesterChange(e.target.value)}
+                                            aria-label="Filter by Semester"
+                                            className="appearance-none bg-white text-slate-900 border-none text-xs font-black rounded-lg pl-2.5 pr-6 py-1 shadow-xs cursor-pointer focus:ring-2 focus:ring-sky-400"
+                                        >
+                                            {(semestersForCurrentYear.length > 0 ? semestersForCurrentYear : ['1st Semester', '2nd Semester']).map((sem) => (
+                                                <option key={sem} value={sem}>
+                                                    {sem}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="w-3 h-3 text-slate-600 absolute right-1.5 top-2 pointer-events-none" />
+                                    </div>
+                                </div>
 
-                        {/* Faculty Filter */}
-                        <div className="flex flex-col text-[11px]">
-                            <span className="font-bold text-white/80 mb-1">Faculty</span>
-                            <div className="relative">
-                                <select
-                                    value={facultyId}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setFacultyId(val);
-                                        handleFilterChange({ faculty_id: val });
-                                    }}
-                                    className="appearance-none bg-white text-slate-900 border-none text-xs font-bold rounded-xl pl-3 pr-8 py-2 shadow-md cursor-pointer focus:ring-2 focus:ring-white/40 max-w-[150px] truncate"
-                                >
-                                    <option value="all">College-Wide</option>
-                                    {available_faculties.map((f) => (
-                                        <option key={f.id} value={f.id}>
-                                            {f.last_name}, {f.first_name[0]}.
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5 pointer-events-none" />
-                            </div>
-                        </div>
+                                {/* Program Filter Pill */}
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 transition-all text-xs">
+                                    <LayoutGrid className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+                                    <span className="text-[11px] font-bold text-white/70">Program</span>
+                                    <div className="relative">
+                                        <select
+                                            value={programId}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setProgramId(val);
+                                                setFacultyId('all');
+                                                handleFilterChange({ program_id: val, faculty_id: 'all' });
+                                            }}
+                                            aria-label="Filter by Program"
+                                            className="appearance-none bg-white text-slate-900 border-none text-xs font-black rounded-lg pl-2.5 pr-6 py-1 shadow-xs cursor-pointer focus:ring-2 focus:ring-sky-400 max-w-[140px] truncate"
+                                        >
+                                            <option value="all">All Programs</option>
+                                            {available_programs.map((p) => (
+                                                <option key={p.id} value={p.id}>
+                                                    {p.code}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="w-3 h-3 text-slate-600 absolute right-1.5 top-2 pointer-events-none" />
+                                    </div>
+                                </div>
 
-                        {/* Date Range Badge */}
-                        <div className="flex flex-col text-[11px]">
-                            <span className="font-bold text-white/80 mb-1">Reporting Date Range</span>
-                            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 border border-white/20 text-xs font-semibold text-white backdrop-blur-xs shadow-2xs">
-                                <CalendarDays className="w-3.5 h-3.5 text-white/80" />
-                                <span>{dateRange}</span>
-                            </div>
-                        </div>
+                                {/* Faculty Filter Pill */}
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 transition-all text-xs">
+                                    <Users className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+                                    <span className="text-[11px] font-bold text-white/70">Faculty</span>
+                                    <div className="relative">
+                                        <select
+                                            value={facultyId}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setFacultyId(val);
+                                                handleFilterChange({ faculty_id: val });
+                                            }}
+                                            aria-label="Filter by Faculty Member"
+                                            className="appearance-none bg-white text-slate-900 border-none text-xs font-black rounded-lg pl-2.5 pr-6 py-1 shadow-xs cursor-pointer focus:ring-2 focus:ring-sky-400 max-w-[140px] truncate"
+                                        >
+                                            <option value="all">College-Wide</option>
+                                            {available_faculties.map((f) => (
+                                                <option key={f.id} value={f.id}>
+                                                    {f.last_name}, {f.first_name[0]}.
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="w-3 h-3 text-slate-600 absolute right-1.5 top-2 pointer-events-none" />
+                                    </div>
+                                </div>
 
-                        {/* Generate Report Button */}
-                        <div className="flex flex-col text-[11px] self-end">
-                            <span className="invisible mb-1">Report</span>
+                                {/* Reporting Date Range Pill */}
+                                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/10 border border-white/20 text-xs font-bold text-white">
+                                    <CalendarDays className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+                                    <span className="text-[11px] font-semibold text-white/70">Reporting Date Range</span>
+                                    <span className="bg-white text-slate-900 px-2.5 py-0.5 rounded-lg text-xs font-black shadow-xs">
+                                        {dateRange}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Export Report Action Pill Button */}
                             <Link
                                 href="/performance/faculty/report"
-                                className="px-3.5 py-2 rounded-xl bg-white hover:bg-white/90 text-slate-900 font-bold text-xs flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
+                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#8B1E3F] to-[#68152E] hover:from-[#A02349] hover:to-[#7E1A38] text-white font-extrabold text-xs flex items-center gap-2 shadow-lg border border-white/25 active:scale-95 transition-all cursor-pointer shrink-0"
                             >
-                                <Download className="w-3.5 h-3.5 text-[#0B3A67]" />
+                                <Download className="w-3.5 h-3.5 text-rose-200" />
                                 <span>Export Report</span>
                             </Link>
                         </div>
