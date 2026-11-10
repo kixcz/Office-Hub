@@ -20,7 +20,9 @@ import {
     Info,
     ChevronDown,
     Building2,
-    Users
+    Users,
+    GraduationCap,
+    LayoutGrid
 } from 'lucide-react';
 
 interface Props {
@@ -153,67 +155,131 @@ export default function FacultyDashboard({
             <Head title={`Faculty Dashboard - ${collegeCode} OfficeHub`} />
 
             <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto font-sans">
-                {/* 1. Header Hero Banner themed with Ascend Deep Blue & Maroon gradient */}
+                {/* 1. Header Hero Banner precisely styled per reference */}
                 <div
-                    className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] p-6 md:p-8 shadow-lg text-white"
+                    className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#072445] via-[#0B3A67] via-50% to-[#581024] p-6 sm:p-7 md:p-8 shadow-xl text-white"
                 >
-                    {/* Decorative subtle background overlay / glow */}
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
+                    {/* Organic wavy decorative vector ribbons overlaying from Deep Blue to Maroon */}
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                        <svg
+                            viewBox="0 0 1440 320"
+                            className="absolute -right-20 -bottom-16 w-[70%] h-[160%] opacity-40 mix-blend-screen"
+                            fill="none"
+                            preserveAspectRatio="none"
+                        >
+                            <path
+                                d="M0,192 C320,240 640,64 960,128 C1280,192 1440,96 1440,96 L1440,320 L0,320 Z"
+                                fill="url(#hero-wave-1)"
+                            />
+                            <path
+                                d="M0,256 C400,160 800,288 1200,192 C1360,160 1440,128 1440,128 L1440,320 L0,320 Z"
+                                fill="url(#hero-wave-2)"
+                                opacity="0.6"
+                            />
+                            <defs>
+                                <linearGradient id="hero-wave-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#175C94" stopOpacity="0.4" />
+                                    <stop offset="60%" stopColor="#8B1E3F" stopOpacity="0.7" />
+                                    <stop offset="100%" stopColor="#68152E" stopOpacity="0.9" />
+                                </linearGradient>
+                                <linearGradient id="hero-wave-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#0B3A67" stopOpacity="0.2" />
+                                    <stop offset="100%" stopColor="#8B1E3F" stopOpacity="0.8" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#8B1E3F]/20 rounded-full blur-3xl pointer-events-none" />
+                    </div>
 
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-                        <div className="flex items-center gap-5">
-                            {/* Faculty Avatar with Deep Blue to Maroon Ring */}
-                            <div className="relative group shrink-0">
-                                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[#0B3A67] via-[#1F5D9B] to-[#8B1E3F] p-[3px] shadow-md">
-                                    <div className="w-full h-full rounded-[13px] bg-slate-900/60 overflow-hidden flex items-center justify-center text-xl sm:text-2xl font-black text-white backdrop-blur-xs">
+                    {/* Top Row: Workspace Pill (Left) & Academic Period Pill (Right) */}
+                    <div className="flex items-center justify-between relative z-10 mb-4 sm:mb-5">
+                        <div className="flex items-center gap-2.5">
+                            <LayoutGrid className="w-4 h-4 text-white/90" />
+                            <div className="h-3.5 w-px bg-white/30" />
+                            <span className="text-[11px] sm:text-xs font-black tracking-widest uppercase text-white/95">
+                                Faculty Workspace
+                            </span>
+                        </div>
+
+                        {/* Academic Year Pill Tag */}
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.08] hover:bg-white/[0.12] transition-colors border border-white/20 backdrop-blur-md shadow-xs text-xs font-bold text-white">
+                            <Calendar className="w-3.5 h-3.5 text-white/80" />
+                            <span>AY 2026–2027 • 1st Semester</span>
+                        </div>
+                    </div>
+
+                    {/* Main Row: Faculty Details (Left) + College Quote Card (Right) */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                        {/* Left Column: Avatar + Greeting + Name + Rank + Program */}
+                        <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+                            {/* Rounded Avatar with crisp white border and drop shadow */}
+                            <div className="relative shrink-0">
+                                <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl p-0.5 bg-white/90 shadow-xl overflow-hidden ring-2 ring-white/30">
+                                    <div className="w-full h-full rounded-[14px] bg-slate-900/40 overflow-hidden flex items-center justify-center text-2xl font-black text-white">
                                         {faculty?.photo_url ? (
-                                            <img src={faculty.photo_url} alt={faculty.full_name || auth.user.name} className="w-full h-full object-cover" />
+                                            <img
+                                                src={faculty.photo_url}
+                                                alt={faculty.full_name || auth.user.name}
+                                                className="w-full h-full object-cover"
+                                            />
                                         ) : (
                                             faculty ? `${faculty.first_name[0]}${faculty.last_name[0]}` : (auth.user?.name ? auth.user.name.slice(0, 2).toUpperCase() : 'FA')
                                         )}
                                     </div>
                                 </div>
                             </div>
-                            <div>
-                                <div className="text-xs font-bold text-white/80 uppercase tracking-wider">
+
+                            {/* Details text */}
+                            <div className="min-w-0">
+                                <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-white/80 block">
                                     {greeting}
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2.5 mt-0.5">
-                                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs">
-                                        {faculty?.title_name || (faculty ? `${faculty.academic_rank?.includes('Prof') ? 'Prof.' : 'Instr.'} ${faculty.first_name} ${faculty.last_name}` : auth.user.name)}
-                                    </h1>
-                                    <span
-                                        className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/15 text-white border border-white/25 backdrop-blur-xs shadow-2xs"
-                                    >
-                                        {faculty?.academic_rank || 'Faculty Member'}
+                                </span>
+                                <h1 className="text-2xl sm:text-3xl md:text-[34px] font-black text-white tracking-tight leading-none mt-1 truncate drop-shadow-xs">
+                                    {faculty?.title_name || (faculty ? `${faculty.academic_rank?.includes('Prof') ? 'Prof.' : 'Instr.'} ${faculty.first_name} ${faculty.last_name}` : auth.user.name)}
+                                </h1>
+
+                                <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                                    {/* Maroon Academic Rank Pill with GraduationCap Icon */}
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#8B1E3F]/80 text-white border border-rose-400/30 backdrop-blur-md shadow-xs">
+                                        <GraduationCap className="w-3.5 h-3.5 text-white shrink-0" />
+                                        <span>{faculty?.academic_rank || 'Assistant Professor I'}</span>
                                     </span>
-                                </div>
-                                <div className="text-xs font-semibold text-white/90 mt-1.5 flex flex-wrap items-center gap-2">
-                                    <span>{faculty?.program?.name || 'Bachelor of Science in Information Technology'}</span>
-                                    <span className="text-white/60">•</span>
-                                    <span>
-                                        {collegeName} ({collegeCode})
+
+                                    <div className="h-3 w-px bg-white/30 hidden sm:block" />
+
+                                    <span className="text-xs sm:text-[13px] font-semibold text-white/90 truncate">
+                                        {faculty?.program?.code || 'BSIT'} • {collegeName} ({collegeCode})
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Right side banner quote / photo background */}
-                        <div className="hidden lg:flex items-center gap-4 bg-white/10 backdrop-blur-md px-5 py-3 rounded-xl border border-white/20 text-right shadow-xs">
-                            {activeCollege?.logo_url && (
+                        {/* Right Column: College Logo + Quote Pill with Red Underline Accent */}
+                        <div className="hidden lg:flex items-center gap-4.5 pl-6 border-l border-white/15 shrink-0">
+                            {/* White rounded box for official College Crest */}
+                            <div className="w-16 h-16 rounded-2xl bg-white p-2 flex items-center justify-center shadow-lg shrink-0">
                                 <img
-                                    src={activeCollege.logo_url}
+                                    src={activeCollege?.logo_url || '/CIDS_Logo.png'}
                                     alt={collegeCode}
-                                    className="w-10 h-10 object-contain shrink-0 drop-shadow-xs"
+                                    className="w-full h-full object-contain drop-shadow-2xs"
+                                    onError={(e) => {
+                                        // Fallback if logo fails
+                                        (e.target as HTMLImageElement).src = '/CIDS_Logo.jpg';
+                                    }}
                                 />
-                            )}
-                            <div className="flex flex-col">
-                                <span className="text-xs font-bold italic text-white tracking-wide">
+                            </div>
+
+                            <div className="flex flex-col text-left max-w-xs">
+                                <span className="text-base font-extrabold italic text-white tracking-tight leading-snug">
                                     &ldquo;{collegeSlogan}&rdquo;
                                 </span>
-                                <span className="text-[10px] text-white/80 font-medium mt-0.5">
-                                    {collegeCode} Academic Excellence 2026–2027
-                                </span>
+                                <div className="mt-1.5 flex items-center gap-2">
+                                    <span className="text-xs font-bold text-white/80">
+                                        {collegeCode} Academic Excellence
+                                    </span>
+                                </div>
+                                {/* Red accent underline */}
+                                <div className="w-10 h-1 rounded-full bg-[#E11D48] mt-1.5 shadow-xs" />
                             </div>
                         </div>
                     </div>

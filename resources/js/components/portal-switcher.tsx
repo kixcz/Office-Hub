@@ -163,11 +163,11 @@ export function PortalSwitcher() {
 
                                 <div className="flex-1 min-w-0 space-y-0.5">
                                     <div className="flex items-center justify-between gap-1">
-                                        <span className="text-xs font-bold truncate">
+                                        <span className="text-xs font-bold truncate group-hover:text-[#0B3A67] dark:group-hover:text-[#93C5FD]">
                                             {assignment.display_label}
                                         </span>
                                         {isActive && (
-                                            <span className="flex items-center gap-1 text-[10px] font-extrabold text-primary shrink-0">
+                                            <span className="flex items-center gap-1 text-[10px] font-extrabold text-[#0B3A67] dark:text-[#93C5FD] shrink-0">
                                                 <Check className="w-3.5 h-3.5 stroke-[3]" /> Active
                                             </span>
                                         )}

@@ -260,10 +260,10 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                     setTvError(null);
                                     setIsTvCodeOpen(true);
                                 }}
-                                className="h-9 w-full border-slate-200 hover:border-[#1F5D9B] bg-white hover:bg-[#F8FAFC] dark:border-slate-700 dark:bg-[#1E293B] dark:hover:bg-[#334155] text-[#111827] dark:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-xs cursor-pointer shadow-2xs"
+                                className="h-9 w-full border-slate-200 hover:border-[#1F5D9B] bg-white hover:bg-[#F8FAFC] hover:text-[#0B3A67] dark:border-slate-700 dark:bg-[#1E293B] dark:hover:bg-[#334155] dark:hover:text-white text-[#111827] dark:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-xs cursor-pointer shadow-2xs"
                             >
                                 <Tv className="h-3.5 w-3.5 text-[#8B1E3F] dark:text-[#F43F5E]" />
-                                Enter TV Display Code
+                                <span>Enter TV Display Code</span>
                             </Button>
                         </form>
                     </div>

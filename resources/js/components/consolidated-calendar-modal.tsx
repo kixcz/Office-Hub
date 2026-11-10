@@ -46,16 +46,16 @@ const TYPE_COLORS: Record<string, { dot: string; border: string; badge: string; 
         text: 'text-red-600 dark:text-red-400',
     },
     meeting: {
-        dot: 'bg-blue-500',
-        border: 'border-l-blue-500',
-        badge: 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300',
-        text: 'text-blue-600 dark:text-blue-400',
+        dot: 'bg-[#175C94]',
+        border: 'border-l-[#175C94]',
+        badge: 'bg-[#175C94]/10 text-[#0B3A67] dark:bg-[#175C94]/20 dark:text-[#93C5FD]',
+        text: 'text-[#0B3A67] dark:text-[#93C5FD]',
     },
     activity: {
-        dot: 'bg-purple-500',
-        border: 'border-l-purple-500',
-        badge: 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300',
-        text: 'text-purple-600 dark:text-purple-400',
+        dot: 'bg-[#8B1E3F]',
+        border: 'border-l-[#8B1E3F]',
+        badge: 'bg-[#8B1E3F]/10 text-[#8B1E3F] dark:bg-[#8B1E3F]/20 dark:text-rose-300',
+        text: 'text-[#8B1E3F] dark:text-rose-300',
     },
     examination: {
         dot: 'bg-emerald-500',
@@ -64,10 +64,10 @@ const TYPE_COLORS: Record<string, { dot: string; border: string; badge: string; 
         text: 'text-emerald-600 dark:text-emerald-400',
     },
     others: {
-        dot: 'bg-amber-500',
-        border: 'border-l-amber-500',
-        badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300',
-        text: 'text-amber-600 dark:text-amber-400',
+        dot: 'bg-slate-500',
+        border: 'border-l-slate-500',
+        badge: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+        text: 'text-slate-600 dark:text-slate-400',
     },
 };
 
@@ -281,8 +281,8 @@ export function ConsolidatedCalendarModal({
                 {/* Modal Top Header */}
                 <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 flex items-center justify-center border border-amber-500/20 shadow-2xs shrink-0">
-                            <CalendarIcon className="w-5 h-5 text-amber-500" />
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0B3A67] via-[#175C94] to-[#8B1E3F] text-white flex items-center justify-center shadow-md shadow-[#0B3A67]/20 shrink-0">
+                            <CalendarIcon className="w-5 h-5 text-white" />
                         </div>
                         <div>
                             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -314,7 +314,7 @@ export function ConsolidatedCalendarModal({
                             <select
                                 value={selectedType}
                                 onChange={(e) => setSelectedType(e.target.value)}
-                                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-lg pl-8 pr-7 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs cursor-pointer"
+                                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-lg pl-8 pr-7 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#175C94] shadow-2xs cursor-pointer"
                             >
                                 <option value="all">All Event Types</option>
                                 <option value="deadline">Deadlines</option>
@@ -331,7 +331,7 @@ export function ConsolidatedCalendarModal({
                             <select
                                 value={selectedProgram}
                                 onChange={(e) => setSelectedProgram(e.target.value)}
-                                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-lg pl-8 pr-7 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs cursor-pointer"
+                                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-lg pl-8 pr-7 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#175C94] shadow-2xs cursor-pointer"
                             >
                                 <option value="all">All Programs</option>
                                 {programs.map((p) => (
@@ -346,7 +346,7 @@ export function ConsolidatedCalendarModal({
                             <select
                                 value={selectedVenue}
                                 onChange={(e) => setSelectedVenue(e.target.value)}
-                                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-lg pl-8 pr-7 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs cursor-pointer"
+                                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-lg pl-8 pr-7 py-2 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-[#175C94] shadow-2xs cursor-pointer"
                             >
                                 <option value="all">All Venues</option>
                                 {venues.map((v) => (
@@ -366,7 +366,7 @@ export function ConsolidatedCalendarModal({
                                 className={cn(
                                     "px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer",
                                     viewMode === 'month'
-                                        ? "bg-amber-500 text-white shadow-2xs"
+                                        ? "bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] text-white shadow-2xs"
                                         : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
                                 )}
                             >
@@ -378,7 +378,7 @@ export function ConsolidatedCalendarModal({
                                 className={cn(
                                     "px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer",
                                     viewMode === 'week'
-                                        ? "bg-amber-500 text-white shadow-2xs"
+                                        ? "bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] text-white shadow-2xs"
                                         : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
                                 )}
                             >
@@ -390,7 +390,7 @@ export function ConsolidatedCalendarModal({
                                 className={cn(
                                     "px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer",
                                     viewMode === 'agenda'
-                                        ? "bg-amber-500 text-white shadow-2xs"
+                                        ? "bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] text-white shadow-2xs"
                                         : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
                                 )}
                             >
@@ -462,7 +462,7 @@ export function ConsolidatedCalendarModal({
                                         className={cn(
                                             "min-h-[46px] sm:min-h-[52px] rounded-xl flex flex-col items-center justify-center p-1 transition-all cursor-pointer relative",
                                             isSelected 
-                                                ? "bg-amber-500 text-white font-extrabold shadow-md scale-102"
+                                                ? "bg-gradient-to-br from-[#0B3A67] via-[#175C94] to-[#8B1E3F] text-white font-extrabold shadow-md scale-102"
                                                 : cell.isCurrentMonth
                                                     ? "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80 font-medium"
                                                     : "text-slate-300 dark:text-slate-600 font-normal hover:bg-slate-50 dark:hover:bg-slate-800/30"
@@ -484,7 +484,7 @@ export function ConsolidatedCalendarModal({
                                                         "w-1.5 h-1.5 rounded-full",
                                                         isSelected 
                                                             ? "bg-white" 
-                                                            : TYPE_COLORS[ev.type]?.dot || 'bg-amber-500'
+                                                            : TYPE_COLORS[ev.type]?.dot || 'bg-[#175C94]'
                                                     )}
                                                 />
                                             ))}
@@ -507,11 +507,11 @@ export function ConsolidatedCalendarModal({
                                 <span>Deadline</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                                <span className="w-2 h-2 rounded-full bg-[#175C94]" />
                                 <span>Meeting</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-purple-500" />
+                                <span className="w-2 h-2 rounded-full bg-[#8B1E3F]" />
                                 <span>Activity</span>
                             </div>
                             <div className="flex items-center gap-1.5">
@@ -519,7 +519,7 @@ export function ConsolidatedCalendarModal({
                                 <span>Examination</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                <span className="w-2 h-2 rounded-full bg-slate-500" />
                                 <span>Others</span>
                             </div>
                         </div>
@@ -530,12 +530,12 @@ export function ConsolidatedCalendarModal({
                         {/* Day Header */}
                         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
                             <div className="flex items-center gap-2 min-w-0">
-                                <CalendarDays className="w-4 h-4 text-amber-500 shrink-0" />
+                                <CalendarDays className="w-4 h-4 text-[#8B1E3F] dark:text-rose-400 shrink-0" />
                                 <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
                                     Events on {formattedSelectedDate}
                                 </h3>
                             </div>
-                            <span className="bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/60 font-semibold px-2.5 py-0.5 rounded-full text-xs shrink-0">
+                            <span className="bg-[#175C94]/10 dark:bg-[#175C94]/20 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/30 font-semibold px-2.5 py-0.5 rounded-full text-xs shrink-0">
                                 {selectedDateEvents.length} event{selectedDateEvents.length !== 1 ? 's' : ''}
                             </span>
                         </div>

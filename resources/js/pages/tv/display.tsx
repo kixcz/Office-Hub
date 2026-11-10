@@ -10,9 +10,11 @@ import {
     BarChart2,
     Calendar,
     Calendar as CalendarIcon,
+     FlaskConical,
     CheckCircle2,
     ChevronLeft,
     MessageSquare,
+    Layers,
     ChevronRight,
     Building2,
     Clock,
@@ -277,90 +279,147 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
 
             {/* Footer - Styled precisely as in reference images */}
             {showFooter && (
-                <footer className="z-30 flex shrink-0 items-center justify-between px-8 py-2.5 text-xs text-slate-500 dark:text-slate-400 border-t border-black/[0.04] dark:border-white/[0.05]">
-                    <div className="flex items-center gap-2.5">
-                        <span className="relative flex h-2.5 w-2.5">
-                            <span className={`absolute inline-flex h-full w-full rounded-full ${isPaused ? 'bg-sky-400 opacity-60' : 'animate-ping bg-sky-400 opacity-60'}`} />
-                            <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isPaused ? 'bg-[#175C94]' : 'bg-[#0B3A67]'}`} />
-                        </span>
-                        <span>
-                            Live display <strong className="font-semibold text-slate-800 dark:text-slate-200">CIDS OfficeHub</strong>
-                        </span>
-                        {isPaused && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#8B1E3F]/15 border border-[#8B1E3F]/40 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#8B1E3F] dark:text-rose-300">
-                                <Pause size={9} className="fill-current" />
-                                Paused
-                            </span>
-                        )}
-                        <span className="text-slate-300 dark:text-slate-600">|</span>
-                        <span className="font-medium text-slate-600 dark:text-slate-300">{currentSlide?.title || currentSlide?.type}</span>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <div className="flex gap-1.5" aria-hidden>
-                            {activeSlides.map((_: any, i: number) => (
-                                <div key={i} className={`h-1.5 w-10 overflow-hidden rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}>
-                                    {i < safeIndex && <div className="h-full w-full bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F]" />}
-                                    {i === safeIndex && (
-                                        <div
-                                            key={`${safeIndex}-${duration}`}
-                                            className="h-full bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F]"
-                                            style={{
-                                                animation: `tv-fill ${duration}ms linear forwards`,
-                                                animationPlayState: isPaused ? 'paused' : 'running',
-                                            }}
-                                        />
-                                    )}
-                                </div>
-                            ))}
+                <div className="shrink-0 px-6 sm:px-8 pb-3.5 pt-1 z-30">
+                    <footer className="relative flex items-center justify-between px-5 sm:px-6 py-2.5 rounded-full bg-gradient-to-r from-[#051c37] via-[#0B3A67] via-45% to-[#581024] text-white/90 border border-white/20 shadow-[0_12px_32px_rgba(5,28,55,0.45),0_0_24px_rgba(23,92,148,0.25)] backdrop-blur-xl overflow-hidden">
+                        {/* Organic diagonal light sweep across pill with subtle glow */}
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-35 mix-blend-screen">
+                            <div className="absolute -inset-x-24 -top-16 h-32 bg-gradient-to-r from-transparent via-cyan-400/40 via-50% to-rose-400/40 blur-2xl transform -rotate-1" />
                         </div>
-                        <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
-                            {safeIndex + 1} / {count}
-                        </span>
 
-                        {/* Circular slide arrow buttons & Pause/Resume button matching design */}
-                        <div className="flex items-center gap-1.5 ml-1">
+                        {/* Left Section: Monitor Icon & Live display text with glowing pulse dot */}
+                        <div className="flex items-center gap-3 relative z-10 shrink-0">
+                            <div className="h-7 w-7 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-cyan-300 shadow-2xs">
+                                <Monitor size={15} />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400 shadow-[0_0_8px_#38bdf8]" />
+                                </span>
+                                <span className="text-xs text-white font-medium">
+                                    <strong className="font-extrabold text-white">Live display</strong> <span className="text-white/80 font-normal">CIDS OfficeHub</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Center Section: Glowing Capsule Progress Indicator Track (Clickable Oblong Loaders with Rich Hover Tooltip & Live Progress Bar) */}
+                        <div className="flex items-center justify-center flex-1 max-w-2xl px-6 relative z-10 overflow-visible">
+                            <div className="flex items-center gap-2 overflow-visible">
+                                {activeSlides.map((slideItem: any, i: number) => {
+                                    const isPassed = i < safeIndex;
+                                    const isCurrent = i === safeIndex;
+                                    const slideTitle = slideItem?.title || slideItem?.type || `Slide ${i + 1}`;
+
+                                    return (
+                                        <div key={i} className="relative group/loader flex items-center justify-center py-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => goToSlide(i)}
+                                                aria-label={`Jump to Slide ${i + 1}: ${slideTitle}`}
+                                                className={`relative h-2 rounded-full transition-all duration-300 overflow-hidden cursor-pointer p-0 border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 active:scale-95 hover:opacity-100 ${
+                                                    isCurrent
+                                                        ? 'w-12 sm:w-16 bg-white/25 ring-2 ring-white/60 shadow-[0_0_16px_rgba(255,255,255,0.7),0_0_24px_rgba(186,230,253,0.5)] cursor-default'
+                                                        : isPassed
+                                                        ? 'w-6 sm:w-7 bg-white shadow-[0_0_6px_rgba(255,255,255,0.4)] hover:bg-white/90 hover:scale-105'
+                                                        : 'w-6 sm:w-7 bg-white/25 hover:bg-white/50 hover:scale-105'
+                                                }`}
+                                            >
+                                                {/* Passed slides are fully filled */}
+                                                {isPassed && (
+                                                    <div className="h-full w-full bg-white rounded-full pointer-events-none" />
+                                                )}
+
+                                                {/* Current active slide: Animated Progress Bar filling from 0% to 100% based on duration */}
+                                                {isCurrent && (
+                                                    <div
+                                                        key={`${safeIndex}-${duration}`}
+                                                        className="h-full bg-gradient-to-r from-white via-cyan-100 to-white rounded-full shadow-[0_0_12px_#ffffff] pointer-events-none relative"
+                                                        style={{
+                                                            animation: `tv-fill ${duration}ms linear forwards`,
+                                                            animationPlayState: isPaused ? 'paused' : 'running',
+                                                        }}
+                                                    >
+                                                        {/* Leading radiant tip head */}
+                                                        <span className="absolute right-0 top-0 bottom-0 w-2 rounded-full bg-white shadow-[0_0_8px_#ffffff,0_0_12px_#38bdf8]" />
+                                                    </div>
+                                                )}
+                                            </button>
+
+                                            {/* Rich Animated Floating Tooltip on Hover */}
+                                            <div className="pointer-events-none absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 scale-95 group-hover/loader:opacity-100 group-hover/loader:scale-100 transition-all duration-200 z-50 flex flex-col items-center">
+                                                <div className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#68152E] text-white shadow-[0_10px_25px_rgba(0,0,0,0.5),0_0_15px_rgba(23,92,148,0.4)] border border-white/20 backdrop-blur-md whitespace-nowrap text-center">
+                                                    <div className="text-[9.5px] font-black uppercase tracking-wider text-cyan-300 flex items-center justify-center gap-1">
+                                                        <span>Slide {i + 1}</span>
+                                                        {isCurrent && <span className="text-[8.5px] px-1 py-0.2 rounded bg-cyan-400/20 text-cyan-200 font-bold">Active</span>}
+                                                    </div>
+                                                    <div className="text-xs font-bold text-white mt-0.5 max-w-[200px] truncate">
+                                                        {slideTitle}
+                                                    </div>
+                                                </div>
+                                                {/* Tooltip caret */}
+                                                <div className="w-2.5 h-2.5 -mt-1 rotate-45 bg-[#0B3A67] border-r border-b border-white/20" />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Right Section: Slide X of Y with Layers icon, Circular Arrows & Pause/Resume Pill */}
+                        <div className="flex items-center gap-3 relative z-10 shrink-0">
+                            <div className="h-4 w-px bg-white/20" />
+                            <div className="flex items-center gap-1.5 text-xs font-black text-white tracking-wide whitespace-nowrap">
+                                <Layers size={14} className="text-cyan-300 shrink-0" />
+                                <span>Slide <strong className="text-white">{safeIndex + 1}</strong> of {count}</span>
+                            </div>
+
+                            {/* Circular previous arrow */}
                             <button
                                 type="button"
                                 aria-label="Previous slide"
                                 onClick={() => step(-1)}
-                                className="h-7 w-7 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-white/10 flex items-center justify-center hover:bg-slate-50 text-slate-600 dark:text-slate-300 shadow-2xs cursor-pointer transition-transform active:scale-90"
+                                className="h-7 w-7 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center text-white shadow-2xs cursor-pointer transition-transform active:scale-90"
                             >
-                                <ChevronLeft size={16} />
+                                <ChevronLeft size={15} />
                             </button>
+
+                            {/* Pill-shaped PAUSED / RESUME button */}
                             <button
                                 type="button"
                                 aria-label={isPaused ? 'Resume auto-advance (Space or P)' : 'Pause auto-advance (Space or P)'}
                                 title={isPaused ? 'Resume auto-advance (Space or P)' : 'Pause auto-advance (Space or P)'}
                                 onClick={togglePause}
-                                className={`h-7 px-2.5 rounded-full flex items-center gap-1 text-[11px] font-bold cursor-pointer shadow-2xs transition-all active:scale-90 border ${isPaused
-                                    ? 'bg-gradient-to-r from-[#0B3A67] via-[#175C94] to-[#8B1E3F] text-white border-white/30 ring-2 ring-sky-400/40 shadow-[0_0_12px_rgba(11,58,103,0.35)] animate-pulse'
-                                    : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                    }`}
+                                className={`h-7 px-3.5 rounded-full flex items-center gap-1.5 text-[10.5px] font-black tracking-wider uppercase cursor-pointer transition-all active:scale-95 border ${
+                                    isPaused
+                                        ? 'bg-white text-[#581024] border-white shadow-[0_0_16px_rgba(255,255,255,0.7)] ring-2 ring-white/50'
+                                        : 'bg-white/15 hover:bg-white/25 border-white/20 text-white shadow-2xs'
+                                }`}
                             >
                                 {isPaused ? (
                                     <>
-                                        <Play size={11} className="fill-current text-white" />
-                                        <span>RESUME</span>
+                                        <Pause size={10} className="fill-current text-[#581024]" />
+                                        <span>PAUSED</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Pause size={11} className="fill-current" />
+                                        <Pause size={10} className="fill-current text-white" />
                                         <span>PAUSE</span>
                                     </>
                                 )}
                             </button>
+
+                            {/* Circular next arrow */}
                             <button
                                 type="button"
                                 aria-label="Next slide"
                                 onClick={() => step(1)}
-                                className="h-7 w-7 rounded-full bg-gradient-to-r from-[#0B3A67] to-[#175C94] text-white flex items-center justify-center hover:opacity-90 shadow-2xs cursor-pointer transition-transform active:scale-90 border border-white/20"
+                                className="h-7 w-7 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center text-white shadow-2xs cursor-pointer transition-transform active:scale-90"
                             >
-                                <ChevronRight size={16} />
+                                <ChevronRight size={15} />
                             </button>
                         </div>
-                    </div>
-                </footer>
+                    </footer>
+                </div>
             )}
             </TvLayout>
         </FacultyContext.Provider>
@@ -1562,6 +1621,12 @@ function SlideFour({ data, isDark = false }: any) {
         ? activeCategory.leaders
         : displayFaculty;
 
+    // Podium arrangement: Rank 2 (left), Rank 1 (center, elevated), Rank 3 (right)
+    const rank1 = currentLeaders[0];
+    const rank2 = currentLeaders[1];
+    const rank3 = currentLeaders[2];
+    const runnersUp = currentLeaders.slice(3, 5);
+
     return (
         <div className="flex h-full min-h-0 flex-1 flex-col gap-3.5">
             {/* Top Row: Top Program Hero + 2 Bento KPI Cards */}
@@ -1687,24 +1752,26 @@ function SlideFour({ data, isDark = false }: any) {
                 </div>
             </div>
 
-            {/* Bottom Row: Top Faculty (Left) & Recent Outputs / Highlights (Right) */}
+            {/* Bottom Row: Top Faculty Podium & Table (Left Col 7) & Recent Outputs / Highlights (Right Col 5) */}
             <div className="grid h-full min-h-0 flex-1 grid-cols-12 gap-3.5">
-                {/* Left Column (Col 7): Top Performing Faculty - Compacted row items */}
+                {/* Left Column (Col 7): Podium & Runner-Up Table */}
                 <div
-                    className={`col-span-7 h-full min-h-0 flex flex-col rounded-2xl p-4.5 border overflow-hidden ${isDark
-                        ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
-                        : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
-                        }`}
+                    className="col-span-7 h-full min-h-0 flex flex-col rounded-3xl bg-gradient-to-b from-[#072445] via-[#0B3A67] to-[#3B0A18] text-white p-5 border border-white/10 shadow-xl overflow-hidden relative"
                 >
-                    {/* Top Faculty Header with Category Tabs / Badges */}
-                    <div className="flex shrink-0 items-center justify-between pb-2.5 border-b border-slate-100 dark:border-white/5">
-                        <div className="flex items-center gap-2">
-                            <Trophy size={20} className="text-amber-500 shrink-0" />
+                    {/* Ambient glow in background */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#8B1E3F]/20 rounded-full blur-3xl pointer-events-none" />
+
+                    {/* Top Faculty Header with Category Tabs */}
+                    <div className="flex shrink-0 items-center justify-between pb-3 border-b border-white/10 relative z-10">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0 border border-white/20">
+                                <Trophy size={16} className="text-rose-300" />
+                            </div>
                             <div>
-                                <h2 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
+                                <h2 className="text-base font-black text-white leading-tight">
                                     {activeCategory.title}
                                 </h2>
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                                <p className="text-[11px] text-white/70 font-medium">
                                     {activeCategory.subtitle}
                                 </p>
                             </div>
@@ -1715,9 +1782,9 @@ function SlideFour({ data, isDark = false }: any) {
                                     key={cat.id}
                                     type="button"
                                     onClick={() => setSelectedCategoryIndex(idx)}
-                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${idx === activeIndex
-                                        ? 'bg-amber-400 text-slate-950 shadow-xs'
-                                        : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400'
+                                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${idx === activeIndex
+                                        ? 'bg-[#8B1E3F] text-white shadow-xs border border-rose-400/40 ring-2 ring-rose-400/20'
+                                        : 'bg-white/10 hover:bg-white/20 text-white/80 border border-white/10'
                                         }`}
                                 >
                                     {cat.id === 'on_time' ? 'On-Time' : cat.id === 'compliance' ? 'Compliance' : cat.id === 'improvement' ? 'Improvement' : 'Attendance'}
@@ -1726,107 +1793,209 @@ function SlideFour({ data, isDark = false }: any) {
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 mt-2.5 overflow-y-auto no-scrollbar">
-                        {currentLeaders.map((f: any, i: number) => {
-                            const rankBadges = [
-                                'bg-amber-400 text-slate-950 font-black',
-                                'bg-slate-200 text-slate-700 font-bold',
-                                'bg-[#d97706] text-white font-bold',
-                                'bg-slate-100 text-slate-600 font-semibold',
-                                'bg-slate-100 text-slate-600 font-semibold',
-                            ];
-                            const avatarBgs = [
-                                'bg-amber-50 text-amber-700 border-amber-200',
-                                'bg-slate-50 text-slate-700 border-slate-200',
-                                'bg-amber-50 text-amber-800 border-amber-300',
-                                'bg-slate-100 text-slate-600 border-slate-200',
-                                'bg-slate-100 text-slate-600 border-slate-200',
-                            ];
-                            const initials = f.initials || f.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('');
-                            return (
-                                <div
-                                    key={`${activeCategory.id}-${f.name}-${i}`}
-                                    className="flex items-center justify-between gap-3 p-2 px-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 hover:border-amber-400/30 transition-all"
-                                >
-                                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                                        {/* RANK / MEDALS FOR TOP 3 WITH MINIMAL ANIMATION & CONFETTI */}
-                                        <div className="w-7 h-7 flex items-center justify-center shrink-0">
-                                            {i === 0 ? (
-                                                /* 1ST PLACE - GOLD MEDAL WITH ANIMATION & CONFETTI */
-                                                <div className="relative flex items-center justify-center w-7 h-7">
-                                                    <span className="absolute w-1.5 h-1.5 rounded-full bg-amber-400 animate-confetti-1 pointer-events-none" />
-                                                    <span className="absolute w-1.5 h-1 rounded-sm bg-rose-400 animate-confetti-2 pointer-events-none" />
-                                                    <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-400 animate-confetti-3 pointer-events-none" />
-                                                    <span className="absolute w-1 h-1.5 rounded-sm bg-sky-400 animate-confetti-4 pointer-events-none" />
-                                                    <div
-                                                        title="Rank 1 - Gold Medal"
-                                                        className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 flex items-center justify-center shadow-md shadow-amber-500/30 border border-amber-200 animate-medal-bob"
-                                                    >
-                                                        <Medal size={14} className="stroke-[2.5] text-amber-950 drop-shadow-2xs" />
-                                                    </div>
-                                                </div>
-                                            ) : i === 1 ? (
-                                                /* 2ND PLACE - SILVER MEDAL WITH ANIMATION & CONFETTI */
-                                                <div className="relative flex items-center justify-center w-7 h-7">
-                                                    <span className="absolute w-1.5 h-1.5 rounded-full bg-slate-300 animate-confetti-1 pointer-events-none" />
-                                                    <span className="absolute w-1.5 h-1 rounded-sm bg-indigo-400 animate-confetti-2 pointer-events-none" />
-                                                    <span className="absolute w-1 h-1.5 rounded-sm bg-teal-300 animate-confetti-3 pointer-events-none" />
-                                                    <div
-                                                        title="Rank 2 - Silver Medal"
-                                                        className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-slate-100 via-slate-300 to-slate-400 text-slate-900 flex items-center justify-center shadow-md shadow-slate-400/25 border border-slate-200 animate-medal-bob"
-                                                        style={{ animationDelay: '0.4s' }}
-                                                    >
-                                                        <Medal size={14} className="stroke-[2.5] text-slate-800 drop-shadow-2xs" />
-                                                    </div>
-                                                </div>
-                                            ) : i === 2 ? (
-                                                /* 3RD PLACE - BRONZE MEDAL WITH ANIMATION & CONFETTI */
-                                                <div className="relative flex items-center justify-center w-7 h-7">
-                                                    <span className="absolute w-1.5 h-1.5 rounded-full bg-amber-600 animate-confetti-1 pointer-events-none" />
-                                                    <span className="absolute w-1 h-1.5 rounded-sm bg-orange-400 animate-confetti-2 pointer-events-none" />
-                                                    <div
-                                                        title="Rank 3 - Bronze Medal"
-                                                        className="relative z-10 w-6 h-6 rounded-full bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 text-amber-100 flex items-center justify-center shadow-md shadow-amber-800/30 border border-amber-600/80 animate-medal-bob"
-                                                        style={{ animationDelay: '0.8s' }}
-                                                    >
-                                                        <Medal size={14} className="stroke-[2.5] text-amber-100 drop-shadow-2xs" />
-                                                    </div>
-                                                </div>
+                    {/* Podium Stage for Top 3 with Laurel Wreaths and Visible Height Steps */}
+                    <div className="relative z-10 flex items-end justify-center gap-3 sm:gap-5 pt-8 pb-3 my-auto shrink-0">
+                        {/* Rank 2 (Left - Medium Step: 135px Base) */}
+                        {rank2 && (
+                            <div className="flex flex-col items-center w-36 sm:w-44 text-center">
+                                {/* Avatar with Silver Laurel Wreath */}
+                                <div className="relative mb-3 flex items-center justify-center">
+                                    <div className="absolute -inset-4 w-28 h-24 pointer-events-none z-10 flex items-center justify-center">
+                                        <svg viewBox="0 0 140 105" className="w-full h-full drop-shadow-[0_2px_8px_rgba(186,230,253,0.5)]" fill="none">
+                                            <path d="M36 86 C26 74 20 54 23 34 C25 24 30 14 36 6" stroke="#93C5FD" strokeWidth="2" strokeLinecap="round" />
+                                            <path d="M36 82 C29 82 26 76 30 72 C33 68 36 74 36 82 Z" fill="#BAE6FD" />
+                                            <path d="M29 70 C22 70 19 64 23 60 C26 56 30 62 29 70 Z" fill="#93C5FD" />
+                                            <path d="M24 56 C17 54 16 48 19 44 C22 40 26 46 24 56 Z" fill="#E0F2FE" />
+                                            <path d="M22 40 C16 36 16 30 21 26 C25 22 27 30 22 40 Z" fill="#BAE6FD" />
+                                            <path d="M25 24 C22 18 23 12 28 10 C32 8 33 16 25 24 Z" fill="#93C5FD" />
+                                            <path d="M104 86 C114 74 120 54 117 34 C115 24 110 14 104 6" stroke="#93C5FD" strokeWidth="2" strokeLinecap="round" />
+                                            <path d="M104 82 C111 82 114 76 110 72 C107 68 104 74 104 82 Z" fill="#BAE6FD" />
+                                            <path d="M111 70 C118 70 121 64 117 60 C114 56 110 62 111 70 Z" fill="#93C5FD" />
+                                            <path d="M116 56 C123 54 124 48 121 44 C118 40 114 46 116 56 Z" fill="#E0F2FE" />
+                                            <path d="M118 40 C124 36 124 30 119 26 C115 22 113 30 118 40 Z" fill="#BAE6FD" />
+                                            <path d="M115 24 C118 18 117 12 112 10 C108 8 107 16 115 24 Z" fill="#93C5FD" />
+                                        </svg>
+                                    </div>
+                                    <div className="w-16 h-16 rounded-full p-1 bg-gradient-to-b from-sky-200 via-sky-400 to-[#175C94] shadow-[0_0_15px_rgba(147,197,253,0.5)] relative z-0">
+                                        <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden flex items-center justify-center text-xs font-black text-white">
+                                            {rank2.photo_url ? (
+                                                <img src={rank2.photo_url} alt={rank2.name} className="w-full h-full object-cover" />
                                             ) : (
-                                                /* Regular rank number */
-                                                <span className={`h-6 w-6 rounded-md flex items-center justify-center text-xs ${rankBadges[i] || 'bg-slate-100 text-slate-600'}`}>
-                                                    {i + 1}
-                                                </span>
+                                                rank2.initials || 'JV'
                                             )}
                                         </div>
+                                    </div>
+                                </div>
 
-                                        <FacultyAvatarHover
-                                            facultyId={f.id}
-                                            name={f.name}
-                                            photoUrl={f.photo_url}
-                                            program={f.program}
-                                            initials={initials}
-                                            size="md"
-                                            isDark={isDark}
-                                        />
-                                        <div className="min-w-0 flex-1 pr-3">
-                                            <p className="truncate text-sm font-bold text-slate-900 dark:text-white leading-tight">{f.name}</p>
-                                            <p className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{f.program}</p>
-                                            <div className="w-full max-w-[260px] h-1.5 rounded-full bg-slate-200 dark:bg-white/10 mt-1 overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                                                    style={{ width: `${Math.min(100, Math.max(0, f.progress ?? f.on_time_rate ?? 0))}%` }}
-                                                />
-                                            </div>
+                                {/* Step Podium Block (Height: 135px - Middle Step) */}
+                                <div className="w-full h-[135px] rounded-2xl bg-gradient-to-b from-[#175C94] via-[#0B3A67] to-[#072445] p-3 text-white border-t-2 border-sky-300 border-x border-b border-sky-400/30 shadow-[0_8px_20px_rgba(11,58,103,0.5)] flex flex-col items-center justify-between">
+                                    <span className="text-xs font-black px-3 py-0.5 rounded-full bg-sky-200 text-[#072445] shadow-xs">
+                                        2
+                                    </span>
+                                    <div className="min-w-0 w-full my-auto">
+                                        <p className="text-xs sm:text-sm font-black truncate w-full">{rank2.name}</p>
+                                        <p className="text-[10px] font-bold text-sky-200 uppercase tracking-wider">{rank2.program}</p>
+                                    </div>
+                                    <div className="w-full px-2 py-0.5 rounded-lg bg-black/40 border border-white/10 text-[11px] font-black text-white">
+                                        {rank2.value || `${rank2.on_time_rate}%`} <span className="text-[9.5px] font-normal text-white/70">On-time rate</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Rank 1 (Center - Elevated Tallest Step: 175px Base) */}
+                        {rank1 && (
+                            <div className="flex flex-col items-center w-40 sm:w-52 text-center -mt-8 z-20">
+                                {/* Golden Crown & Avatar with Golden Laurel Wreath */}
+                                <div className="relative mb-3 flex items-center justify-center">
+                                    {/* Gold Laurel Wreath surrounding the avatar */}
+                                    <div className="absolute -inset-5 w-36 h-28 pointer-events-none z-10 flex items-center justify-center">
+                                        <svg viewBox="0 0 160 120" className="w-full h-full drop-shadow-[0_2px_12px_rgba(245,158,11,0.6)]" fill="none">
+                                            <path d="M42 98 C30 84 22 62 26 38 C28 26 34 16 42 8" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" />
+                                            <path d="M42 94 C34 94 30 88 34 84 C38 80 42 86 42 94 Z" fill="#FBBF24" />
+                                            <path d="M34 80 C26 80 22 74 26 70 C30 66 34 72 34 80 Z" fill="#F59E0B" />
+                                            <path d="M28 64 C20 62 18 54 22 50 C26 46 30 52 28 64 Z" fill="#FBBF24" />
+                                            <path d="M25 46 C18 42 18 34 24 30 C28 26 31 34 25 46 Z" fill="#F59E0B" />
+                                            <path d="M28 28 C24 22 26 14 32 12 C36 10 37 18 28 28 Z" fill="#FBBF24" />
+                                            <path d="M36 14 C34 8 38 2 44 2 C48 2 47 8 36 14 Z" fill="#FDE68A" />
+                                            <path d="M118 98 C130 84 138 62 134 38 C132 26 126 16 118 8" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" />
+                                            <path d="M118 94 C126 94 130 88 126 84 C122 80 118 86 118 94 Z" fill="#FBBF24" />
+                                            <path d="M126 80 C134 80 138 74 134 70 C130 66 126 72 126 80 Z" fill="#F59E0B" />
+                                            <path d="M132 64 C140 62 142 54 138 50 C134 46 130 52 132 64 Z" fill="#FBBF24" />
+                                            <path d="M135 46 C142 42 142 34 136 30 C132 26 129 34 135 46 Z" fill="#F59E0B" />
+                                            <path d="M132 28 C136 22 134 14 128 12 C124 10 123 18 132 28 Z" fill="#FBBF24" />
+                                            <path d="M124 14 C126 8 122 2 116 2 C112 2 113 8 124 14 Z" fill="#FDE68A" />
+                                        </svg>
+                                    </div>
+
+                                    {/* Floating Gold Crown above Wreath */}
+                                    <div className="absolute -top-7 z-20 text-amber-300 drop-shadow-[0_2px_8px_rgba(245,158,11,0.8)] animate-bounce duration-1000">
+                                        <svg viewBox="0 0 24 24" className="w-7 h-7 fill-amber-400 text-amber-300" stroke="currentColor" strokeWidth="1.5">
+                                            <path d="M2 18h20v2H2v-2zm1.5-1.5L2 6l5.5 5 4.5-8 4.5 8 5.5-5-1.5 10.5h-17z" />
+                                        </svg>
+                                    </div>
+
+                                    <div className="w-20 h-20 rounded-full p-1.5 bg-gradient-to-b from-amber-300 via-amber-500 to-[#8B1E3F] shadow-[0_0_25px_rgba(245,158,11,0.7)] ring-4 ring-amber-400/40 relative z-0">
+                                        <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden flex items-center justify-center text-sm font-black text-white">
+                                            {rank1.photo_url ? (
+                                                <img src={rank1.photo_url} alt={rank1.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                rank1.initials || 'AR'
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="text-right shrink-0">
-                                        <p className="text-sm font-black text-slate-900 dark:text-white tabular-nums leading-none">
-                                            {f.value ?? `${f.on_time_rate}%`}
-                                        </p>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                                            {f.subtext ?? 'on time'}
-                                        </p>
+                                </div>
+
+                                {/* Step Podium Block (Height: 175px - Tallest Step) */}
+                                <div className="w-full h-[175px] rounded-2xl bg-gradient-to-b from-[#8B1E3F] via-[#68152E] to-[#3B0A18] p-3.5 text-white border-t-2 border-amber-300 border-x border-b border-rose-400/50 shadow-[0_12px_28px_rgba(139,30,63,0.6)] flex flex-col items-center justify-between">
+                                    <span className="text-sm font-black px-3.5 py-0.5 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 text-slate-950 shadow-md">
+                                        1
+                                    </span>
+                                    <div className="min-w-0 w-full my-auto">
+                                        <p className="text-sm sm:text-base font-black truncate w-full">{rank1.name}</p>
+                                        <p className="text-[11px] font-bold text-amber-200 uppercase tracking-wider">{rank1.program}</p>
+                                    </div>
+                                    <div className="w-full px-2.5 py-1 rounded-lg bg-black/40 border border-white/20 text-xs font-black text-amber-300 shadow-inner">
+                                        {rank1.value || `${rank1.on_time_rate}%`} <span className="text-[10px] font-normal text-white/80">On-time rate</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Rank 3 (Right - Lowest Step: 95px Base) */}
+                        {rank3 && (
+                            <div className="flex flex-col items-center w-36 sm:w-44 text-center">
+                                {/* Avatar with Bronze Laurel Wreath */}
+                                <div className="relative mb-3 flex items-center justify-center">
+                                    <div className="absolute -inset-4 w-28 h-24 pointer-events-none z-10 flex items-center justify-center">
+                                        <svg viewBox="0 0 140 105" className="w-full h-full drop-shadow-[0_2px_8px_rgba(244,114,182,0.4)]" fill="none">
+                                            <path d="M36 86 C26 74 20 54 23 34 C25 24 30 14 36 6" stroke="#F43F5E" strokeWidth="2" strokeLinecap="round" />
+                                            <path d="M36 82 C29 82 26 76 30 72 C33 68 36 74 36 82 Z" fill="#FDA4AF" />
+                                            <path d="M29 70 C22 70 19 64 23 60 C26 56 30 62 29 70 Z" fill="#F43F5E" />
+                                            <path d="M24 56 C17 54 16 48 19 44 C22 40 26 46 24 56 Z" fill="#FECDD3" />
+                                            <path d="M22 40 C16 36 16 30 21 26 C25 22 27 30 22 40 Z" fill="#FDA4AF" />
+                                            <path d="M25 24 C22 18 23 12 28 10 C32 8 33 16 25 24 Z" fill="#F43F5E" />
+                                            <path d="M104 86 C114 74 120 54 117 34 C115 24 110 14 104 6" stroke="#F43F5E" strokeWidth="2" strokeLinecap="round" />
+                                            <path d="M104 82 C111 82 114 76 110 72 C107 68 104 74 104 82 Z" fill="#FDA4AF" />
+                                            <path d="M111 70 C118 70 121 64 117 60 C114 56 110 62 111 70 Z" fill="#F43F5E" />
+                                            <path d="M116 56 C123 54 124 48 121 44 C118 40 114 46 116 56 Z" fill="#FECDD3" />
+                                            <path d="M118 40 C124 36 124 30 119 26 C115 22 113 30 118 40 Z" fill="#FDA4AF" />
+                                            <path d="M115 24 C118 18 117 12 112 10 C108 8 107 16 115 24 Z" fill="#F43F5E" />
+                                        </svg>
+                                    </div>
+                                    <div className="w-16 h-16 rounded-full p-1 bg-gradient-to-b from-rose-300 via-rose-500 to-[#581024] shadow-[0_0_15px_rgba(244,63,94,0.4)] relative z-0">
+                                        <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden flex items-center justify-center text-xs font-black text-white">
+                                            {rank3.photo_url ? (
+                                                <img src={rank3.photo_url} alt={rank3.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                rank3.initials || 'CK'
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Step Podium Block (Height: 95px - Lowest Step) */}
+                                <div className="w-full h-[95px] rounded-2xl bg-gradient-to-b from-[#581024] via-[#400B1A] to-[#24050D] p-3 text-white border-t-2 border-rose-300 border-x border-b border-rose-400/30 shadow-[0_6px_16px_rgba(88,16,36,0.5)] flex flex-col items-center justify-between">
+                                    <span className="text-xs font-black px-3 py-0.5 rounded-full bg-rose-200 text-[#581024] shadow-xs">
+                                        3
+                                    </span>
+                                    <div className="min-w-0 w-full my-auto">
+                                        <p className="text-xs sm:text-sm font-black truncate w-full">{rank3.name}</p>
+                                        <p className="text-[10px] font-bold text-rose-300 uppercase tracking-wider">{rank3.program}</p>
+                                    </div>
+                                    <div className="w-full px-2 py-0.5 rounded-lg bg-black/40 border border-white/10 text-[11px] font-black text-white">
+                                        {rank3.value || `${rank3.on_time_rate}%`} <span className="text-[9.5px] font-normal text-white/70">On-time rate</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Table of Remaining Ranks (4, 5, etc.) */}
+                    <div className="mt-3 pt-3 border-t border-white/10 relative z-10 flex flex-col gap-2">
+                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-white/50 px-3">
+                            <div className="flex items-center gap-3">
+                                <span>#</span>
+                                <span>FACULTY MEMBER</span>
+                            </div>
+                            <div className="flex items-center gap-8">
+                                <span>PROGRAM</span>
+                                <span>ON-TIME RATE</span>
+                            </div>
+                        </div>
+
+                        {runnersUp.map((f: any, idx: number) => {
+                            const rankNum = idx + 4;
+                            return (
+                                <div
+                                    key={idx}
+                                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all text-xs"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <span className="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center font-bold text-white/80 shrink-0">
+                                            {rankNum}
+                                        </span>
+                                        <div className="w-7 h-7 rounded-full bg-white/20 overflow-hidden flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                                            {f.photo_url ? (
+                                                <img src={f.photo_url} alt={f.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                f.initials || 'FA'
+                                            )}
+                                        </div>
+                                        <span className="font-extrabold text-white truncate max-w-[150px]">{f.name}</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-8 shrink-0">
+                                        <span className="text-white/80 font-bold uppercase tracking-wider w-12 text-center">{f.program}</span>
+                                        <div className="flex items-center gap-2 w-28 justify-end">
+                                            <div className="w-16 h-1.5 rounded-full bg-white/20 overflow-hidden">
+                                                <div
+                                                    className="h-full bg-emerald-400 rounded-full"
+                                                    style={{ width: `${Math.min(100, f.progress ?? f.on_time_rate ?? 16.7)}%` }}
+                                                />
+                                            </div>
+                                            <span className="font-black text-white tabular-nums">{f.value || `${f.on_time_rate}%`}</span>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -1834,61 +2003,67 @@ function SlideFour({ data, isDark = false }: any) {
                     </div>
                 </div>
 
-                {/* Right Column (Col 5): Recent Outputs & Highlights - Compacted */}
+                {/* Right Column (Col 5): Recent Outputs & Highlights with Gradient Headers */}
                 <div className="col-span-5 flex h-full min-h-0 flex-col gap-3.5">
                     {/* Recent Outputs Status */}
                     <div
-                        className={`flex-1 min-h-0 flex flex-col rounded-2xl p-4 border overflow-hidden ${isDark
-                            ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
-                            : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                        className={`flex-1 min-h-0 flex flex-col rounded-3xl overflow-hidden shadow-md border ${isDark
+                            ? 'bg-[#0f172a] border-white/10 text-white shadow-none'
+                            : 'bg-white border-slate-200/90 text-slate-900'
                             }`}
                     >
-                        <div className="flex shrink-0 items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/5">
-                            <FileText size={18} className="text-amber-500 shrink-0" />
-                            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Recent Outputs Status</h2>
+                        {/* Gradient Header Banner */}
+                        <div className="px-5 py-3.5 bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#581024] text-white flex items-center justify-between shrink-0 shadow-xs">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0 border border-white/20 shadow-2xs">
+                                    <FileText size={16} />
+                                </div>
+                                <h2 className="text-base font-black tracking-tight text-white drop-shadow-xs">Recent Outputs Status</h2>
+                            </div>
                         </div>
-                        <div className="flex flex-col gap-2 mt-2">
-                            <div className="flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+
+                        <div className="p-4 sm:p-5 flex-1 min-h-0 overflow-y-auto tv-scrollbar pr-1 flex flex-col justify-center gap-2.5">
+                            <div className="flex items-center justify-between gap-2 p-2.5 px-3 rounded-2xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="h-7 w-7 rounded-lg bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                                        <FileText size={14} />
+                                    <div className="h-8 w-8 rounded-xl bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                                        <FileText size={15} />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="truncate text-xs font-bold text-slate-900 dark:text-white">TOS/TQ Submission</p>
+                                        <p className="truncate text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">TOS/TQ Submission</p>
                                         <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Deadline: Oct 10, 2026</p>
                                     </div>
                                 </div>
-                                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300 shrink-0">
+                                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300 border border-rose-200/60 shrink-0">
                                     3 pending
                                 </span>
                             </div>
 
-                            <div className="flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                            <div className="flex items-center justify-between gap-2 p-2.5 px-3 rounded-2xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="h-7 w-7 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                                        <Users size={14} />
+                                    <div className="h-8 w-8 rounded-xl bg-[#0B3A67]/10 dark:bg-[#0B3A67]/25 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center shrink-0">
+                                        <Users size={15} />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="truncate text-xs font-bold text-slate-900 dark:text-white">Faculty Workload</p>
+                                        <p className="truncate text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">Faculty Workload</p>
                                         <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Deadline: Oct 12, 2026</p>
                                     </div>
                                 </div>
-                                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 shrink-0">
+                                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-[#0B3A67]/10 text-[#0B3A67] dark:bg-[#0B3A67]/30 dark:text-[#93C5FD] border border-[#0B3A67]/20 shrink-0">
                                     2 pending
                                 </span>
                             </div>
 
-                            <div className="flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                            <div className="flex items-center justify-between gap-2 p-2.5 px-3 rounded-2xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="h-7 w-7 rounded-lg bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                                        <ShieldCheck size={14} />
+                                    <div className="h-8 w-8 rounded-xl bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                        <ShieldCheck size={15} />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="truncate text-xs font-bold text-slate-900 dark:text-white">Compliance Review</p>
+                                        <p className="truncate text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">Compliance Review</p>
                                         <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Deadline: Oct 15, 2026</p>
                                     </div>
                                 </div>
-                                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300 shrink-0">
+                                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300 border border-blue-200/60 shrink-0">
                                     In progress
                                 </span>
                             </div>
@@ -1897,42 +2072,48 @@ function SlideFour({ data, isDark = false }: any) {
 
                     {/* This Week's Highlights */}
                     <div
-                        className={`flex-1 min-h-0 flex flex-col rounded-2xl p-4 border overflow-hidden ${isDark
-                            ? 'bg-[#131b2e] border-white/10 text-white shadow-none'
-                            : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                        className={`flex-1 min-h-0 flex flex-col rounded-3xl overflow-hidden shadow-md border ${isDark
+                            ? 'bg-[#0f172a] border-white/10 text-white shadow-none'
+                            : 'bg-white border-slate-200/90 text-slate-900'
                             }`}
                     >
-                        <div className="flex shrink-0 items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/5">
-                            <Star size={18} className="text-amber-500 shrink-0" />
-                            <h2 className="text-sm font-bold text-slate-900 dark:text-white">This Week's Highlights</h2>
+                        {/* Gradient Header Banner */}
+                        <div className="px-5 py-3.5 bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#581024] text-white flex items-center justify-between shrink-0 shadow-xs">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0 border border-white/20 shadow-2xs">
+                                    <Star size={16} />
+                                </div>
+                                <h2 className="text-base font-black tracking-tight text-white drop-shadow-xs">This Week&apos;s Highlights</h2>
+                            </div>
                         </div>
-                        <div className="flex flex-col gap-2 mt-2">
-                            <div className="flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+
+                        <div className="p-4 sm:p-5 flex-1 min-h-0 overflow-y-auto tv-scrollbar pr-1 flex flex-col justify-center gap-2.5">
+                            <div className="flex items-center justify-between gap-2 p-2.5 px-3 rounded-2xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="h-7 w-7 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                        <TrendingUp size={14} />
+                                    <div className="h-8 w-8 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                        <TrendingUp size={15} />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">BSIT</p>
+                                        <p className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white leading-tight">BSIT</p>
                                         <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Highest improvement rate</p>
                                     </div>
                                 </div>
-                                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 px-2 py-0.5 rounded-md flex items-center gap-0.5">
+                                <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200/60 px-2.5 py-0.5 rounded-full flex items-center gap-0.5">
                                     <ArrowUpRight size={12} /> 12%
                                 </span>
                             </div>
 
-                            <div className="flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                            <div className="flex items-center justify-between gap-2 p-2.5 px-3 rounded-2xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="h-7 w-7 rounded-lg bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                                        <Users size={14} />
+                                    <div className="h-8 w-8 rounded-xl bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/25 text-[#8B1E3F] dark:text-rose-300 flex items-center justify-center shrink-0">
+                                        <Users size={15} />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">4 faculty members</p>
+                                        <p className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white leading-tight">4 faculty members</p>
                                         <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">with zero overdue items</p>
                                     </div>
                                 </div>
-                                <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/15 px-2 py-0.5 rounded-md">
+                                <span className="text-[11px] font-black text-[#8B1E3F] dark:text-rose-300 bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/20 border border-[#8B1E3F]/20 px-2.5 py-0.5 rounded-full">
                                     100%
                                 </span>
                             </div>
@@ -1959,88 +2140,221 @@ const ROOM_TONE: Record<string, Tone> = {
 function SlideFive({ data, isDark = false }: any) {
     const rooms = data?.facilities || [];
     const activeLabs = rooms.filter((r: any) => r.status === 'In Use' && r.instructor);
-    const day = data?.day || 'Today';
+    const day = data?.day || 'Tuesday';
     const overallPeak = data?.overall_peak || data?.kpis?.peak_hour || '10:00 AM – 1:00 PM';
 
     return (
-        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
-            <div className="grid grid-cols-4 gap-4 shrink-0">
-                <Kpi icon={Monitor} tone="amber" accent label="Rooms in use" value={data?.kpis?.in_use ?? 0} isDark={isDark} />
-                <Kpi icon={CheckCircle2} tone="emerald" label="Available rooms" value={data?.kpis?.available ?? 0} isDark={isDark} />
-                <Kpi icon={Flame} tone="orange" label={`Peak Lab Hours · ${day}`} value={overallPeak.split('(')[0].trim()} sub="Highest simultaneous lab usage" isDark={isDark} />
-                <Kpi icon={Users} tone="purple" label="Faculty in labs" value={activeLabs.length} isDark={isDark} />
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3 select-none overflow-hidden">
+            {/* 1. TOP ROW: 4 Clean White Squircle KPI Cards with Subtle Tint & Sparklines */}
+            <div className="grid grid-cols-4 gap-3.5 shrink-0">
+                {/* 1. Rooms in use */}
+                <div className="rounded-2xl p-3.5 sm:p-4 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="h-11 w-11 rounded-xl bg-[#0B3A67]/10 dark:bg-[#0B3A67]/25 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/20 flex items-center justify-center shrink-0">
+                            <Monitor size={20} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">Rooms in use</p>
+                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums leading-none mt-1">
+                                {data?.kpis?.in_use ?? 0}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="shrink-0 opacity-75">
+                        <MiniBars tone="blue" />
+                    </div>
+                </div>
+
+                {/* 2. Available rooms */}
+                <div className="rounded-2xl p-3.5 sm:p-4 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="h-11 w-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                            <CheckCircle2 size={20} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">Available rooms</p>
+                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums leading-none mt-1">
+                                {data?.kpis?.available ?? 0}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="shrink-0 opacity-75">
+                        <MiniBars tone="green" />
+                    </div>
+                </div>
+
+                {/* 3. Peak Lab Hours */}
+                <div className="rounded-2xl p-3.5 sm:p-4 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="h-11 w-11 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center shrink-0">
+                            <Flame size={20} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">
+                                Peak lab hours · {day}
+                            </p>
+                            <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none mt-1 truncate">
+                                {overallPeak.split('(')[0].trim()}
+                            </p>
+                            <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                                Highest simultaneous lab usage
+                            </p>
+                        </div>
+                    </div>
+                    <div className="shrink-0 opacity-75">
+                        <MiniBars tone="rose" />
+                    </div>
+                </div>
+
+                {/* 4. Faculty in labs */}
+                <div className="rounded-2xl p-3.5 sm:p-4 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="h-11 w-11 rounded-xl bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/20 text-[#8B1E3F] dark:text-rose-300 border border-[#8B1E3F]/25 flex items-center justify-center shrink-0">
+                            <Users size={20} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">Faculty in labs</p>
+                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums leading-none mt-1">
+                                {activeLabs.length}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="shrink-0 opacity-75">
+                        <MiniBars tone="purple" />
+                    </div>
+                </div>
             </div>
 
-            {/* Scrollable Bento Grid of Rooms */}
-            <div className="h-full min-h-0 flex-1 overflow-y-auto tv-scrollbar overscroll-contain p-1.5 pr-2">
-                <div className="grid grid-cols-4 gap-4 pb-4">
+            {/* 2. MAIN BENTO GRID: Classroom & Laboratory Cards */}
+            <div className="h-full min-h-0 flex-1 overflow-y-auto tv-scrollbar overscroll-contain pr-1 pb-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
                     {rooms.map((room: any) => {
-                        const tone = ROOM_TONE[room.status] ?? 'blue';
                         const isOccupied = room.status === 'In Use';
                         const expectedPeak = room.expected_peak_hours;
-                        const peakStatus = room.peak_status;
+                        const peakStatus = room.peak_status || (isOccupied ? 'Heavy Traffic' : 'Normal');
 
                         return (
                             <div
                                 key={room.id}
-                                className={`flex min-h-[195px] flex-col justify-between rounded-2xl p-4 transition-all border ${isOccupied
-                                    ? 'border-amber-400 bg-amber-500/[0.04] shadow-[0_0_0_1px_rgba(251,191,36,0.5),0_4px_16px_rgba(245,158,11,0.12)]'
-                                    : isDark
-                                        ? 'bg-[#131b2e] border-white/10'
-                                        : 'bg-white border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
-                                    }`}
+                                className={`rounded-2xl p-4 transition-all flex flex-col justify-between border relative overflow-hidden shadow-sm ${
+                                    isOccupied
+                                        ? isDark
+                                            ? 'bg-[#0f172a] border-l-4 border-l-[#175C94] border-t-white/10 border-r-white/10 border-b-white/10'
+                                            : 'bg-white border-l-4 border-l-[#0B3A67] border-t-slate-200/80 border-r-slate-200/80 border-b-slate-200/80'
+                                        : isDark
+                                            ? 'bg-[#0f172a] border-l-4 border-l-emerald-500 border-t-white/10 border-r-white/10 border-b-white/10'
+                                            : 'bg-white border-l-4 border-l-emerald-500 border-t-slate-200/80 border-r-slate-200/80 border-b-slate-200/80'
+                                }`}
                             >
-                                <div className="flex items-start justify-between gap-2.5">
+                                {/* Top Header: Room Name, Type, and Status Badge */}
+                                <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
-                                        <h3 className="truncate text-lg font-bold text-slate-900 dark:text-white">{room.room_name}</h3>
-                                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">{room.room_type}</p>
-                                    </div>
-                                    <Pill tone={tone} isDark={isDark}>
-                                        <span className={`h-1.5 w-1.5 rounded-full ${isOccupied ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-                                        {room.status}
-                                    </Pill>
-                                </div>
-
-                                {room.current_class ? (
-                                    <div className="mt-2 rounded-xl p-2.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
-                                        <div className="flex items-center gap-1.5">
-                                            <GraduationCap size={15} className="shrink-0 text-amber-500" />
-                                            <p className="line-clamp-1 text-sm font-bold text-slate-900 dark:text-white">{room.instructor || 'Instructor'}</p>
-                                        </div>
-                                        <p className="mt-0.5 line-clamp-1 text-xs font-semibold text-slate-700 dark:text-slate-300">{room.current_class}</p>
-                                        <p className="line-clamp-1 text-[11px] text-slate-500 dark:text-slate-400">{room.program || 'Section'}</p>
-                                        <p className="mt-1 text-xs font-bold tabular-nums text-amber-600 dark:text-amber-400">
-                                            {room.start_time?.substring(0, 5)} – {room.end_time?.substring(0, 5)}
+                                        <h3 className="truncate text-base font-black text-slate-900 dark:text-white tracking-tight">
+                                            {room.room_name}
+                                        </h3>
+                                        <p className="truncate text-xs font-medium text-slate-500 dark:text-slate-400">
+                                            {room.room_type || 'Laboratory'}
                                         </p>
                                     </div>
-                                ) : room.remarks ? (
-                                    <p className="mt-2 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{room.remarks}</p>
-                                ) : (
-                                    <div className="mt-2 flex flex-1 items-center justify-center rounded-xl p-2.5 text-center bg-slate-50 dark:bg-white/[0.03] text-slate-400">
-                                        <p className="text-xs">Ready for next session</p>
+                                    <div
+                                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black shrink-0 ${
+                                            isOccupied
+                                                ? 'bg-[#0B3A67]/10 dark:bg-[#0B3A67]/25 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/20'
+                                                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`h-1.5 w-1.5 rounded-full ${
+                                                isOccupied ? 'bg-[#0B3A67] dark:bg-[#93C5FD] animate-pulse' : 'bg-emerald-500'
+                                            }`}
+                                        />
+                                        <span>{room.status}</span>
                                     </div>
-                                )}
+                                </div>
 
-                                {/* Expected Peak Hours Widget based on today's schedule */}
-                                {expectedPeak && (
-                                    <div className="mt-2 rounded-lg px-2.5 py-1.5 bg-amber-500/10 dark:bg-amber-400/10 border border-amber-400/25 flex items-center justify-between text-[11px]">
-                                        <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold truncate">
-                                            <Flame size={12} className="shrink-0 text-amber-500" />
-                                            <span className="truncate">Peak: <strong className="font-bold">{expectedPeak}</strong></span>
+                                {/* Center: Class/Faculty Body or Empty State */}
+                                <div className="my-2.5">
+                                    {room.current_class ? (
+                                        <div className="flex items-start justify-between gap-2.5">
+                                            <div className="flex items-start gap-2.5 min-w-0">
+                                                <div className="mt-0.5 shrink-0">
+                                                    <FacultyAvatarHover
+                                                        facultyId={room.faculty_id}
+                                                        name={room.instructor}
+                                                        photoUrl={room.photo_url}
+                                                        program={room.program}
+                                                        size="sm"
+                                                        isDark={isDark}
+                                                    />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="line-clamp-1 text-xs font-black text-slate-900 dark:text-white">
+                                                        {room.instructor || 'Instructor'}
+                                                    </p>
+                                                    <p className="line-clamp-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 mt-0.5">
+                                                        {room.current_class}
+                                                    </p>
+                                                    <p className="line-clamp-1 text-[10.5px] font-medium text-slate-400 dark:text-slate-500">
+                                                        {room.program || 'Section'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="h-9 w-9 rounded-xl bg-slate-100/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 flex items-center justify-center text-slate-400 dark:text-slate-500 shrink-0">
+                                                <Monitor size={17} />
+                                            </div>
                                         </div>
-                                        {peakStatus && (
-                                            <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.2 rounded text-amber-700 dark:text-amber-400 bg-amber-400/20">
-                                                {peakStatus}
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
+                                    ) : room.remarks ? (
+                                        <div className="rounded-xl py-4 px-3 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 text-center">
+                                            <p className="line-clamp-2 text-xs font-medium text-slate-500 dark:text-slate-400">{room.remarks}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-xl py-3.5 px-3 bg-slate-50/70 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex flex-col items-center justify-center text-center">
+                                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-1">
+                                                <FlaskConical size={16} />
+                                            </div>
+                                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                                Ready for next session
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
 
-                                {room.next_schedule && (
-                                    <p className="mt-1.5 line-clamp-1 border-t border-slate-100 dark:border-white/5 pt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                                        <strong className="font-bold text-slate-800 dark:text-slate-200">Up next:</strong> {room.next_schedule}
-                                    </p>
-                                )}
+                                {/* Bottom Rows: Peak Traffic & Up Next Schedule */}
+                                <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-white/5 text-[11px]">
+                                    {/* Peak Hours Row */}
+                                    <div className="flex items-center justify-between gap-1.5">
+                                        <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 min-w-0">
+                                            <Clock size={12} className="shrink-0 text-slate-400" />
+                                            <span className="truncate">
+                                                Peak: <strong className="font-bold text-slate-800 dark:text-slate-200">{expectedPeak || '7:00 AM – 6:00 PM'}</strong>
+                                            </span>
+                                        </div>
+                                        <span
+                                            className={`px-2 py-0.5 rounded-md text-[9.5px] font-black shrink-0 uppercase tracking-tight ${
+                                                peakStatus === 'Heavy Traffic'
+                                                    ? 'bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/25 text-[#8B1E3F] dark:text-rose-300 border border-[#8B1E3F]/20'
+                                                    : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/10'
+                                            }`}
+                                        >
+                                            {peakStatus}
+                                        </span>
+                                    </div>
+
+                                    {/* Up Next Row */}
+                                    {room.next_schedule ? (
+                                        <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500 dark:text-slate-400 truncate">
+                                            <CalendarIcon size={12} className="shrink-0 text-slate-400" />
+                                            <span className="truncate">
+                                                <strong className="font-bold text-slate-700 dark:text-slate-300">Up next:</strong> {room.next_schedule}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1.5 text-[10.5px] text-slate-400 dark:text-slate-500 truncate">
+                                            <CalendarIcon size={12} className="shrink-0 text-slate-400" />
+                                            <span className="truncate">No further sessions today</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         );
                     })}
@@ -2050,8 +2364,6 @@ function SlideFive({ data, isDark = false }: any) {
     );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Slide 6 – Faculty Attendance Monitoring (High-Fidelity Match)               */
 /* -------------------------------------------------------------------------- */
 
 interface MonthlySnapshotRecord {
@@ -3492,7 +3804,7 @@ function SlideSeven({ data, isDark = false }: { data: any; isDark?: boolean }) {
         completed_classes: 0,
         active_instructors: 0,
     };
-    const day = data?.day || 'Today';
+    const day = data?.day || 'Tuesday';
     const currentTime = data?.current_time || '';
 
     const timetable = useMemo(
@@ -3506,199 +3818,296 @@ function SlideSeven({ data, isDark = false }: { data: any; isDark?: boolean }) {
     const ongoingClasses = useMemo(() => schedules.filter((s: any) => s.status === 'Ongoing'), [schedules]);
 
     return (
-        <div className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3.5 select-none overflow-hidden">
             {/* Top 4 KPI Cards */}
-            <div className="grid grid-cols-4 gap-4 shrink-0">
-                <Kpi
-                    icon={CalendarIcon}
-                    tone="blue"
-                    label={`Total classes · ${day}`}
-                    value={kpis.total_classes}
-                    sub={`${kpis.active_instructors} faculty teaching`}
-                    isDark={isDark}
-                />
-                <Kpi
-                    icon={Clock}
-                    tone="emerald"
-                    accent
-                    label="In session now"
-                    value={kpis.ongoing_classes}
-                    sub={currentTime ? `As of ${currentTime}` : undefined}
-                    isDark={isDark}
-                />
-                <Kpi
-                    icon={Timer}
-                    tone="amber"
-                    label="Upcoming today"
-                    value={kpis.upcoming_classes}
-                    sub="Next scheduled"
-                    isDark={isDark}
-                />
-                <Kpi
-                    icon={CheckCircle2}
-                    tone="purple"
-                    label="Completed"
-                    value={kpis.completed_classes}
-                    sub="Classes finished"
-                    isDark={isDark}
-                />
+            <div className="grid grid-cols-4 gap-3.5 shrink-0">
+                {/* 1. Total classes */}
+                <div className="rounded-2xl p-3.5 sm:p-4 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="h-11 w-11 rounded-xl bg-[#0B3A67]/10 dark:bg-[#0B3A67]/25 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/20 flex items-center justify-center shrink-0">
+                            <CalendarIcon size={20} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">
+                                Total classes · {day}
+                            </p>
+                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums leading-none mt-1">
+                                {kpis.total_classes}
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                                {kpis.active_instructors} faculty teaching
+                            </p>
+                        </div>
+                    </div>
+                    <div className="shrink-0 opacity-75">
+                        <MiniBars tone="blue" />
+                    </div>
+                </div>
+
+                {/* 2. In session now */}
+                <div className="rounded-2xl p-3.5 sm:p-4 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="h-11 w-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                            <Clock size={20} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">
+                                In session now
+                            </p>
+                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums leading-none mt-1">
+                                {kpis.ongoing_classes}
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                                {currentTime ? `As of ${currentTime}` : 'Live active classes'}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="shrink-0 opacity-75">
+                        <MiniBars tone="green" />
+                    </div>
+                </div>
+
+                {/* 3. Upcoming today */}
+                <div className="rounded-2xl p-3.5 sm:p-4 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="h-11 w-11 rounded-xl bg-[#0B3A67]/10 dark:bg-[#0B3A67]/25 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/20 flex items-center justify-center shrink-0">
+                            <Timer size={20} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">
+                                Upcoming today
+                            </p>
+                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums leading-none mt-1">
+                                {kpis.upcoming_classes}
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                                Next scheduled
+                            </p>
+                        </div>
+                    </div>
+                    <div className="shrink-0 opacity-75">
+                        <MiniBars tone="blue" />
+                    </div>
+                </div>
+
+                {/* 4. Completed */}
+                <div className="rounded-2xl p-3.5 sm:p-4 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="h-11 w-11 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center shrink-0">
+                            <CheckCircle2 size={20} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">
+                                Completed
+                            </p>
+                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums leading-none mt-1">
+                                {kpis.completed_classes}
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                                Classes finished
+                            </p>
+                        </div>
+                    </div>
+                    <div className="shrink-0 opacity-75">
+                        <MiniBars tone="rose" />
+                    </div>
+                </div>
             </div>
 
             {/* Bottom Row: In Session & Faculty Teaching (Left) + Full Timetable (Right) */}
-            <div className="grid h-full min-h-0 grid-cols-12 gap-4">
+            <div className="grid h-full min-h-0 flex-1 grid-cols-12 gap-3.5">
                 {/* Left Column: Ongoing & Faculty Groups */}
-                <div className="col-span-5 flex h-full min-h-0 flex-col gap-4">
-                    {/* In Session Card */}
-                    <div className={`h-[42%] min-h-0 flex flex-col rounded-2xl p-4 border overflow-hidden ${isDark ? 'bg-[#131b2e] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
-                        }`}>
-                        <div className="flex shrink-0 items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
+                <div className="col-span-5 flex h-full min-h-0 flex-col gap-3.5">
+                    {/* In Session Card (2-column grid of compact faculty cards) */}
+                    <div className={`flex-[1.1] min-h-0 flex flex-col rounded-2xl p-3.5 border overflow-hidden shadow-sm ${
+                        isDark ? 'bg-[#0f172a] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900'
+                    }`}>
+                        <div className="flex shrink-0 items-center justify-between pb-2.5 border-b border-slate-100 dark:border-white/10">
                             <div className="flex items-center gap-2">
-                                <div className="h-7 w-7 rounded-lg bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                    <Radio size={16} />
+                                <div className="h-7 w-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                                    <Radio size={15} />
                                 </div>
-                                <h3 className="text-base font-bold">In session now</h3>
+                                <h3 className="text-sm font-black tracking-tight">In session now</h3>
                             </div>
-                            <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
+                            <span className="flex items-center gap-1.5 text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
                                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 {ongoingClasses.length} Active
                             </span>
                         </div>
 
-                        {/* Scrollable list of in session classes */}
-                        <div className="mt-3 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1 space-y-2.5">
+                        {/* 2-Column Mini Cards List */}
+                        <div className="mt-2.5 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1">
                             {ongoingClasses.length === 0 ? (
                                 <div className="flex flex-1 h-full items-center justify-center text-center p-4 text-slate-400">
-                                    <p className="text-sm font-medium">No classes currently in session{currentTime ? ` at ${currentTime}` : ''}.</p>
+                                    <p className="text-xs font-medium">No classes currently in session{currentTime ? ` at ${currentTime}` : ''}.</p>
                                 </div>
                             ) : (
-                                ongoingClasses.map((item: any) => (
-                                    <div key={item.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            {item.instructor_photo ? (
-                                                <img
-                                                    src={item.instructor_photo}
-                                                    alt={item.instructor}
-                                                    className="h-8 w-8 rounded-full object-cover border border-emerald-500/40 shrink-0"
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {ongoingClasses.map((item: any) => (
+                                        <div
+                                            key={item.id}
+                                            className="p-2 rounded-xl bg-slate-50/70 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5 flex items-start gap-2 hover:border-[#175C94]/40 transition-all"
+                                        >
+                                            <div className="mt-0.5 shrink-0">
+                                                <FacultyAvatarHover
+                                                    facultyId={item.faculty_id}
+                                                    name={item.instructor}
+                                                    photoUrl={item.instructor_photo}
+                                                    program={item.program}
+                                                    size="sm"
+                                                    isDark={isDark}
                                                 />
-                                            ) : (
-                                                <div className="h-8 w-8 rounded-full bg-slate-200/80 dark:bg-white/10 flex items-center justify-center text-[11px] font-bold text-slate-600 dark:text-slate-300 shrink-0">
-                                                    {item.instructor ? item.instructor.split(' ').map((n: string) => n[0]).slice(0, 2).join('') : '?'}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center justify-between gap-1">
+                                                    <p className="truncate text-xs font-black text-slate-900 dark:text-white leading-tight">
+                                                        {item.instructor}
+                                                    </p>
+                                                    <span className="inline-flex items-center gap-1 text-[9.5px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-full shrink-0">
+                                                        <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+                                                        Ongoing
+                                                    </span>
                                                 </div>
-                                            )}
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{item.instructor}</p>
-                                                <p className="truncate text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                    <strong className="font-bold text-amber-600 dark:text-amber-400">{item.course_code}</strong>
-                                                    {item.course_title ? ` · ${item.course_title}` : ''}
+                                                <p className="truncate text-[10.5px] font-semibold text-slate-600 dark:text-slate-300 mt-0.5">
+                                                    <strong className="text-[#0B3A67] dark:text-[#93C5FD]">{item.course_code}</strong>
+                                                    {item.room_name ? ` · ${item.room_name}` : ''}
                                                     {item.section ? ` · ${item.section}` : ''}
+                                                </p>
+                                                <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1 mt-0.5 tabular-nums">
+                                                    <Clock size={10} className="shrink-0" />
+                                                    {item.start_time} – {item.end_time}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="shrink-0 text-right">
-                                            <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300">{item.room_name}</span>
-                                            <p className="text-[11px] font-semibold tabular-nums text-slate-500 dark:text-slate-400 mt-1">
-                                                {item.start_time} – {item.end_time}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))
+                                    ))}
+                                </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Faculty Teaching Card */}
-                    <div className={`flex-1 min-h-0 flex flex-col rounded-2xl p-4 border overflow-hidden ${isDark ? 'bg-[#131b2e] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
-                        }`}>
-                        <div className="flex shrink-0 items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
+                    {/* Faculty Teaching (Ranked / Numbered compact list) */}
+                    <div className={`flex-1 min-h-0 flex flex-col rounded-2xl p-3.5 border overflow-hidden shadow-sm ${
+                        isDark ? 'bg-[#0f172a] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900'
+                    }`}>
+                        <div className="flex shrink-0 items-center justify-between pb-2.5 border-b border-slate-100 dark:border-white/10">
                             <div className="flex items-center gap-2">
-                                <div className="h-7 w-7 rounded-lg bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                                    <Users size={16} />
+                                <div className="h-7 w-7 rounded-lg bg-[#0B3A67]/10 dark:bg-[#0B3A67]/25 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/20 flex items-center justify-center shrink-0">
+                                    <Users size={15} />
                                 </div>
-                                <h3 className="text-base font-bold">Faculty teaching · {day}</h3>
+                                <h3 className="text-sm font-black tracking-tight">Faculty teaching · {day}</h3>
                             </div>
-                            <span className="text-xs font-semibold text-slate-400">{facultyGroups.length} faculty</span>
+                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded-lg">
+                                {facultyGroups.length || kpis.active_instructors} faculty
+                            </span>
                         </div>
 
-                        {/* Scrollable list of faculty teaching */}
-                        <div className="mt-3 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1 space-y-2">
-                            {facultyGroups.map((group: any, idx: number) => (
-                                <div key={group.instructor || idx} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
-                                    <div className="flex items-center gap-2.5 min-w-0">
-                                        {group.instructor_photo ? (
-                                            <img
-                                                src={group.instructor_photo}
-                                                alt={group.instructor}
-                                                className="h-8 w-8 rounded-full object-cover border border-amber-400/40 shrink-0"
-                                            />
-                                        ) : (
-                                            <div className="h-8 w-8 rounded-full bg-slate-200/80 dark:bg-white/10 flex items-center justify-center text-[11px] font-bold text-slate-600 dark:text-slate-300 shrink-0">
-                                                {group.instructor ? group.instructor.split(' ').map((n: string) => n[0]).slice(0, 2).join('') : '?'}
-                                            </div>
-                                        )}
-                                        <div className="min-w-0">
-                                            <p className="flex items-center gap-1.5 truncate text-xs font-bold text-slate-900 dark:text-white">
-                                                {group.instructor}
-                                                {group.has_ongoing && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500" />}
-                                            </p>
-                                            <p className="truncate text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                {group.rooms.join(', ')}
-                                                {group.current_class ? ` · Now ${group.current_class.course_code}` : ''}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 tabular-nums">
-                                        {group.total_classes} classes
-                                    </span>
+                        {/* Ranked list of faculty */}
+                        <div className="mt-2.5 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1 divide-y divide-slate-100 dark:divide-white/5">
+                            {facultyGroups.length === 0 ? (
+                                <div className="flex flex-1 h-full items-center justify-center text-center p-4 text-slate-400">
+                                    <p className="text-xs font-medium">No faculty teaching data available for {day}.</p>
                                 </div>
-                            ))}
+                            ) : (
+                                facultyGroups.map((fg: any, idx: number) => {
+                                    const isCurrentlyLive = fg.schedules?.some((s: any) => s.status === 'Ongoing');
+                                    const firstSched = fg.schedules?.[0];
+                                    const schedSummary = firstSched
+                                        ? `${firstSched.course_code || ''} · ${firstSched.room_name || ''} · ${firstSched.section || ''}`
+                                        : '';
+
+                                    return (
+                                        <div
+                                            key={fg.instructor || idx}
+                                            className="py-1.5 px-1.5 flex items-center justify-between gap-2 hover:bg-slate-50/60 dark:hover:bg-white/[0.02] rounded-lg transition-colors"
+                                        >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className="w-4 text-center text-[11px] font-black text-slate-400 dark:text-slate-500 shrink-0">
+                                                    {idx + 1}
+                                                </span>
+                                                <FacultyAvatarHover
+                                                    facultyId={fg.faculty_id}
+                                                    name={fg.instructor}
+                                                    photoUrl={fg.instructor_photo}
+                                                    program={fg.program}
+                                                    size="sm"
+                                                    isDark={isDark}
+                                                />
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <p className="truncate text-xs font-black text-slate-900 dark:text-white leading-tight">
+                                                            {fg.instructor}
+                                                        </p>
+                                                        {isCurrentlyLive && (
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                                                        )}
+                                                    </div>
+                                                    {schedSummary && (
+                                                        <p className="truncate text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
+                                                            {schedSummary}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="shrink-0 text-right">
+                                                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded-md">
+                                                    {fg.class_count} {fg.class_count === 1 ? 'class' : 'classes'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* Right Column: Timetable Full Schedule (Scrollable with sticky header) */}
-                <div className={`col-span-7 h-full min-h-0 flex flex-col rounded-2xl p-5 border overflow-hidden ${isDark ? 'bg-[#131b2e] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
-                    }`}>
-                    <div className="flex shrink-0 items-center justify-between pb-3.5 border-b border-slate-100 dark:border-white/10">
-                        <div className="flex items-center gap-2.5">
-                            <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                                <Clock size={18} />
+                {/* Right Column: Full Timetable Schedule Table */}
+                <div className={`col-span-7 flex h-full min-h-0 flex-col rounded-2xl p-4 border overflow-hidden shadow-sm ${
+                    isDark ? 'bg-[#0f172a] border-white/10 text-white' : 'bg-white border-slate-200/80 text-slate-900'
+                }`}>
+                    <div className="flex shrink-0 items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
+                        <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-lg bg-[#0B3A67]/10 dark:bg-[#0B3A67]/25 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/20 flex items-center justify-center shrink-0">
+                                <Clock size={15} />
                             </div>
-                            <h2 className="text-lg font-bold tracking-tight">Timetable · {day}</h2>
+                            <h3 className="text-base font-black tracking-tight">Timetable · {day}</h3>
                         </div>
-                        <span className="text-xs font-bold px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300">
+                        <span className="text-xs font-black text-[#0B3A67] dark:text-[#93C5FD] bg-[#0B3A67]/10 dark:bg-[#0B3A67]/25 px-2.5 py-1 rounded-lg">
                             {timetable.length} sessions scheduled
                         </span>
                     </div>
 
-                    {/* Scrollable Container with sticky header */}
-                    <div className="mt-3 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1">
+                    <div className="mt-2.5 flex-1 min-h-0 overflow-y-auto tv-scrollbar overscroll-contain pr-1">
                         <table className="w-full border-collapse text-left">
-                            <thead className={`sticky top-0 z-20 backdrop-blur-md border-b text-xs font-bold uppercase tracking-wider ${isDark ? 'bg-[#131b2e]/95 border-white/10 text-slate-400' : 'bg-white/95 border-slate-200/80 text-slate-500'
-                                }`}>
+                            <thead className={`sticky top-0 z-10 text-[10.5px] font-black uppercase tracking-wider border-b ${
+                                isDark ? 'bg-[#0f172a] border-white/10 text-slate-400' : 'bg-white border-slate-100 text-slate-400'
+                            }`}>
                                 <tr>
-                                    <th className="py-2.5 pr-3 pl-1 font-bold">Time</th>
-                                    <th className="px-3 py-2.5 font-bold">Room</th>
-                                    <th className="px-3 py-2.5 font-bold">Instructor</th>
-                                    <th className="px-3 py-2.5 font-bold">Course / Section</th>
-                                    <th className="py-2.5 pl-3 pr-2 text-right font-bold">Status</th>
+                                    <th className="py-2 pr-3 pl-1">TIME</th>
+                                    <th className="px-3 py-2">ROOM</th>
+                                    <th className="px-3 py-2">INSTRUCTOR</th>
+                                    <th className="px-3 py-2">COURSE / SECTION</th>
+                                    <th className="py-2 pl-3 pr-2 text-right">STATUS</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-sm">
+                            <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-xs">
                                 {timetable.map((item: any) => {
                                     const isLive = item.status === 'Ongoing';
                                     const isDone = item.status === 'Completed';
                                     return (
                                         <tr
                                             key={item.id}
-                                            className={`transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.02] ${isDone ? 'opacity-50 text-slate-400' : ''
-                                                }`}
+                                            className={`transition-colors hover:bg-slate-50/60 dark:hover:bg-white/[0.02] ${
+                                                isDone ? 'opacity-40 text-slate-400' : ''
+                                            }`}
                                         >
-                                            <td className={`py-2.5 pr-3 pl-1 font-bold whitespace-nowrap tabular-nums text-xs ${isLive ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-slate-200'
-                                                }`}>
+                                            <td className={`py-2.5 pr-3 pl-1 font-bold whitespace-nowrap tabular-nums text-xs ${
+                                                isLive ? 'text-[#0B3A67] dark:text-sky-300 font-black' : 'text-slate-800 dark:text-slate-200'
+                                            }`}>
                                                 {item.start_time} – {item.end_time}
                                             </td>
                                             <td className="px-3 py-2.5 whitespace-nowrap">
-                                                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                                                <span className="font-bold text-slate-800 dark:text-slate-200 text-xs">
                                                     {item.room_name}
                                                 </span>
                                             </td>
@@ -3706,17 +4115,18 @@ function SlideSeven({ data, isDark = false }: { data: any; isDark?: boolean }) {
                                                 {item.instructor}
                                             </td>
                                             <td className="max-w-[15rem] truncate px-3 py-2.5 text-xs">
-                                                <span className="font-bold text-slate-800 dark:text-slate-200">{item.course_code}</span>
+                                                <strong className="font-black text-slate-800 dark:text-slate-200">{item.course_code}</strong>
                                                 {item.section ? <span className="text-slate-500 dark:text-slate-400"> · {item.section}</span> : null}
                                             </td>
-                                            <td className="py-2.5 pl-3 pr-2 text-right">
+                                            <td className="py-2.5 pl-3 pr-2 text-right whitespace-nowrap">
                                                 <span
-                                                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${isLive
-                                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
-                                                        : item.status === 'Upcoming'
-                                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
-                                                            : 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400'
-                                                        }`}
+                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black ${
+                                                        isLive
+                                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                                            : item.status === 'Upcoming'
+                                                                ? 'bg-[#0B3A67]/10 text-[#0B3A67] dark:bg-[#0B3A67]/30 dark:text-[#93C5FD] border border-[#175C94]/20'
+                                                                : 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400'
+                                                    }`}
                                                 >
                                                     {isLive && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />}
                                                     {item.status}
@@ -3741,8 +4151,6 @@ function SlideSeven({ data, isDark = false }: { data: any; isDark?: boolean }) {
     );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Slide 8 – Consolidated Calendar (Meetings, Activities & Exams)            */
 /* -------------------------------------------------------------------------- */
 
 function SlideEight({ data, isDark }: { data: any; isDark: boolean }) {
@@ -5123,7 +5531,7 @@ function SlideEleven({ data, isDark }: { data: any; isDark: boolean }) {
 /*  Slide 12: Faculty Cleaners Duty Schedule                                  */
 /* -------------------------------------------------------------------------- */
 
-function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
+function SlideTwelve({ data, globalData, isDark }: { data: any; globalData?: any; isDark: boolean }) {
     if (!data) {
         return (
             <div className="flex flex-1 items-center justify-center p-8 text-center text-slate-400">
@@ -5133,191 +5541,194 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
     }
 
     const {
-        title = 'OFFICE CLEANING SCHEDULE',
-        subtitle = 'FACULTY CLEANERS',
-        scope_badge = 'CIDS OFFICE AREAS ONLY',
-        motto_title = 'A Clean Office, A Brighter CIDS.',
-        motto_description = "LET'S KEEP OUR WORKPLACE CLEAN, ORGANIZED, AND WELCOMING FOR EVERYONE.",
-        week_label = 'OCT 19 - OCT 23, 2026',
+        title = 'OFFICE CLEANING SCHEDULES',
+        subtitle = 'FACULTY MEMBERS CLEANERS',
         days_data = [],
     } = data;
 
-    // Determine current day of week to highlight scheduled cleaners for today
-    // Javascript getDay(): 0 is Sunday, 1 is Monday, 2 is Tuesday, etc.
+    // Use KPIs from global slide7/slide1 or fallback to representative operational metrics
+    const kpis = globalData?.slide7?.kpis || globalData?.slide1?.kpis || {
+        total_classes: 50,
+        ongoing_classes: 7,
+        upcoming_classes: 36,
+        completed_classes: 7,
+    };
+    const currentDayName = globalData?.slide7?.day || 'Tuesday';
+
+    // Current day of week: 0 is Sun, 1 is Mon, 2 is Tue, 3 is Wed, 4 is Thu, 5 is Fri
     const currentDayOfWeek = new Date().getDay();
 
     return (
-        <div className="flex h-full min-h-0 flex-1 flex-col gap-2 select-none overflow-hidden font-['Poppins']">
-            {/* Top Header Card */}
-            <div className={cn(
-                "relative rounded-2xl px-5 py-3 border shadow-xs overflow-hidden shrink-0 flex items-center justify-between",
-                isDark 
-                    ? "bg-gradient-to-r from-[#0B3A67]/80 via-[#175C94]/70 to-[#8B1E3F]/80 border-white/10 text-white" 
-                    : "bg-gradient-to-r from-[#0B3A67]/10 via-white to-[#8B1E3F]/10 border-[#0B3A67]/20 text-slate-900"
-            )}>
-                {/* Left: Logos & OFFICE CLEANING SCHEDULES title */}
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        <img src="/Ascend.png" alt="Ascend" className="h-10 w-10 object-contain rounded-xl p-1 shadow-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10" />
-                        <img src="/DSSC.jpg" alt="DSSC" className="h-10 w-10 object-contain rounded-full shadow-xs" />
-                        <img src="/CIDS_Logo.png" alt="CIDS" className="h-10 w-10 object-contain rounded-full shadow-xs" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-[#175C94] dark:text-sky-400 shrink-0" />
-                            <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white drop-shadow-xs">
-                                OFFICE CLEANING SCHEDULES
-                            </h1>
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[11px] font-black tracking-widest uppercase text-[#0B3A67] dark:text-sky-300">
-                                {subtitle}
-                            </span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white font-black text-[9px] uppercase tracking-wider shadow-xs">
-                                {scope_badge}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right: Cheerful Banner & Cleaning Week */}
-                <div className="flex items-center gap-3">
-                    <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#0B3A67]/15 to-[#8B1E3F]/15 dark:bg-[#0B3A67]/30 border border-[#0B3A67]/20 dark:border-white/10 text-[10px] font-bold text-[#0B3A67] dark:text-sky-200 shadow-2xs">
-                        <Sparkles className="w-3.5 h-3.5 text-[#175C94] dark:text-sky-400" />
-                        <span>Same Team, Cleaner Spaces!</span>
-                        <Heart className="w-3.5 h-3.5 text-[#8B1E3F] dark:text-rose-400 fill-[#8B1E3F] dark:fill-rose-400" />
-                    </div>
-                    <div className="text-right">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-                            Cleaning Week
-                        </span>
-                        <span className="text-xs font-black text-[#8B1E3F] dark:text-rose-400 tabular-nums">
-                            {week_label}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Sub-Header: Mission Banner & 4 Pillars */}
-            <div className="grid grid-cols-12 gap-2 shrink-0">
-                {/* Left Motto Box (4 cols) */}
-                <div className={cn(
-                    "col-span-4 rounded-xl px-4 py-2 border shadow-2xs flex items-center gap-3",
-                    isDark 
-                        ? "bg-[#131b2e] border-white/10" 
-                        : "bg-white border-slate-200/90"
-                )}>
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0B3A67]/20 to-[#8B1E3F]/20 flex items-center justify-center shrink-0 shadow-xs">
-                        <Heart className="w-5 h-5 text-[#8B1E3F] dark:text-rose-400 fill-[#8B1E3F]/20" />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-xs font-black tracking-tight text-slate-900 dark:text-white leading-tight">
-                            {motto_title}
-                        </p>
-                        <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 uppercase tracking-wide">
-                            {motto_description}
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3 select-none overflow-hidden font-['Poppins',sans-serif]">
+            {/* 1. TOP HEADER & KPI METRICS ROW (Exact Reference Match) */}
+            <div className="grid grid-cols-12 gap-3.5 shrink-0 items-center">
+                {/* Left Title Card (Col 4) */}
+                <div className="col-span-12 lg:col-span-4 rounded-2xl px-5 py-3 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between">
+                    <div className="border-l-4 border-[#072445] dark:border-sky-400 pl-3">
+                        <h1 className="text-lg sm:text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white leading-tight">
+                            OFFICE CLEANING SCHEDULES
+                        </h1>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[#0B3A67] dark:text-sky-300 mt-0.5">
+                            {subtitle}
                         </p>
                     </div>
                 </div>
 
-                {/* Right 4 Pillar Badges (8 cols) */}
-                <div className="col-span-8 grid grid-cols-4 gap-2">
-                    {[
-                        { title: 'CLEAN WORKSPACE', icon: Sparkles, sub: 'Spotless Desks', color: 'text-[#175C94]' },
-                        { title: 'BETTER COLLABORATION', icon: Handshake, sub: 'Organized Labs', color: 'text-[#0B3A67]' },
-                        { title: 'HEALTHIER COMMUNITY', icon: Leaf, sub: 'Safe & Fresh', color: 'text-emerald-500' },
-                        { title: 'A STRONGER CIDS', icon: ShieldCheck, sub: 'Excellence', color: 'text-[#8B1E3F]' },
-                    ].map((pill, idx) => {
-                        const IconComponent = pill.icon;
-                        return (
-                            <div
-                                key={idx}
-                                className={cn(
-                                    "rounded-xl px-2 py-2 border shadow-2xs flex flex-col items-center justify-center text-center transition-all",
-                                    isDark 
-                                        ? "bg-[#131b2e] border-white/10" 
-                                        : "bg-white border-slate-200/80"
-                                )}
-                            >
-                                <IconComponent className={cn("w-4 h-4 mb-0.5", pill.color)} />
-                                <span className="text-[9px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 leading-tight">
-                                    {pill.title}
-                                </span>
-                                <span className="text-[8px] font-medium text-slate-400 dark:text-slate-500">
-                                    {pill.sub}
-                                </span>
+                {/* Right 4 KPI Metric Cards (Col 8) */}
+                <div className="col-span-12 lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {/* 1. Total classes */}
+                    <div className="rounded-2xl p-3 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="h-9 w-9 rounded-xl bg-[#0B3A67]/10 dark:bg-[#0B3A67]/25 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/20 flex items-center justify-center shrink-0">
+                                <Users size={18} />
                             </div>
-                        );
-                    })}
+                            <div className="min-w-0">
+                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none tabular-nums">
+                                    {kpis.total_classes ?? 50}
+                                </p>
+                                <p className="text-[9.5px] font-bold text-slate-400 dark:text-slate-500 mt-1 leading-tight truncate">
+                                    Total classes ({currentDayName})
+                                </p>
+                            </div>
+                        </div>
+                        <div className="shrink-0 opacity-70">
+                            <MiniBars tone="blue" />
+                        </div>
+                    </div>
+
+                    {/* 2. In session now */}
+                    <div className="rounded-2xl p-3 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="h-9 w-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center shrink-0">
+                                <Users size={18} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none tabular-nums">
+                                    {kpis.ongoing_classes ?? 7}
+                                </p>
+                                <p className="text-[9.5px] font-bold text-slate-400 dark:text-slate-500 mt-1 leading-tight truncate">
+                                    In session now
+                                </p>
+                            </div>
+                        </div>
+                        <div className="shrink-0 opacity-70">
+                            <MiniBars tone="rose" />
+                        </div>
+                    </div>
+
+                    {/* 3. Upcoming today */}
+                    <div className="rounded-2xl p-3 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="h-9 w-9 rounded-xl bg-[#0B3A67]/10 dark:bg-[#0B3A67]/25 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/20 flex items-center justify-center shrink-0">
+                                <CalendarIcon size={18} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none tabular-nums">
+                                    {kpis.upcoming_classes ?? 36}
+                                </p>
+                                <p className="text-[9.5px] font-bold text-slate-400 dark:text-slate-500 mt-1 leading-tight truncate">
+                                    Upcoming today
+                                </p>
+                            </div>
+                        </div>
+                        <div className="shrink-0 opacity-70">
+                            <MiniBars tone="blue" />
+                        </div>
+                    </div>
+
+                    {/* 4. Completed */}
+                    <div className="rounded-2xl p-3 bg-white dark:bg-[#131b2e] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="h-9 w-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center shrink-0">
+                                <CheckCircle2 size={18} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none tabular-nums">
+                                    {kpis.completed_classes ?? 7}
+                                </p>
+                                <p className="text-[9.5px] font-bold text-slate-400 dark:text-slate-500 mt-1 leading-tight truncate">
+                                    Completed
+                                </p>
+                            </div>
+                        </div>
+                        <div className="shrink-0 opacity-70">
+                            <MiniBars tone="rose" />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Main Daily Roster Columns (Monday - Friday) */}
-            <div className="grid grid-cols-5 gap-2.5 flex-1 min-h-0">
+            {/* 2. SUB-BAR: Section Header + "Same Team, Cleaner Spaces!" Badge */}
+            <div className="flex items-center justify-between px-1 shrink-0">
+                <div className="flex items-center gap-2">
+                    <CalendarIcon size={17} className="text-[#0B3A67] dark:text-sky-300" />
+                    <h2 className="text-sm sm:text-base font-black tracking-tight text-slate-900 dark:text-white uppercase">
+                        CLEANING SCHEDULE · <span className="text-[#0B3A67] dark:text-sky-300">FACULTY MEMBERS</span>
+                    </h2>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/10 border border-slate-200/80 dark:border-white/10 text-xs font-black text-slate-700 dark:text-slate-200">
+                    <Users size={14} className="text-[#0B3A67] dark:text-sky-300" />
+                    <span>Same Team, Cleaner Spaces!</span>
+                </div>
+            </div>
+
+            {/* 3. MAIN 5-DAY COLUMN ROSTER (Monday to Friday with Elevated Highlight on Today) */}
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 flex-1 min-h-0 items-stretch">
                 {days_data.map((dayItem: any, dayIdx: number) => {
-                    // Check if this card represents today's schedule
-                    // dayItem.day_number: 1 = Mon, 2 = Tue, 3 = Wed, 4 = Thu, 5 = Fri
-                    const isToday = dayItem.day_number === currentDayOfWeek;
+                    // Match today's column (day_number: 1 = Mon, 2 = Tue, etc.)
+                    const isToday = dayItem.day_number === (currentDayOfWeek === 0 ? 7 : currentDayOfWeek);
                     const cleaners = dayItem.cleaners || [];
 
                     return (
                         <div
                             key={dayIdx}
                             className={cn(
-                                "flex flex-col rounded-2xl border transition-all duration-300 min-h-0 overflow-hidden shadow-sm",
+                                "flex flex-col rounded-3xl border transition-all duration-300 min-h-0 overflow-hidden",
                                 isToday
-                                    ? isDark
-                                        ? "bg-[#0B3A67]/20 border-[#175C94] ring-2 ring-sky-400/30 shadow-md"
-                                        : "bg-gradient-to-b from-[#0B3A67]/10 via-white to-[#8B1E3F]/10 border-[#0B3A67]/40 ring-2 ring-[#0B3A67]/20 shadow-md"
-                                    : isDark
-                                        ? "bg-[#131b2e] border-white/10"
-                                        : "bg-white border-slate-200/90"
+                                    ? "bg-gradient-to-b from-[#8B1E3F]/[0.08] via-white to-[#8B1E3F]/[0.04] dark:bg-gradient-to-b dark:from-[#581024]/40 dark:via-[#131b2e] dark:to-[#131b2e] border-[#8B1E3F]/50 ring-2 ring-[#8B1E3F]/30 shadow-xl"
+                                    : "bg-white dark:bg-[#131b2e] border-slate-200/80 dark:border-white/10 shadow-sm"
                             )}
                         >
-                            {/* Day Header Banner */}
+                            {/* Column Header: Day, Date, and Cleaners Badge */}
                             <div className={cn(
-                                "px-3 py-2 border-b flex items-center justify-between shrink-0",
+                                "px-3.5 py-3 border-b flex items-start justify-between shrink-0",
                                 isToday
-                                    ? "bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white border-transparent"
-                                    : isDark
-                                        ? "bg-white/[0.04] border-white/10 text-white"
-                                        : "bg-slate-100 border-slate-200/70 text-slate-900"
+                                    ? "bg-gradient-to-r from-[#68152E] to-[#8B1E3F] text-white border-transparent"
+                                    : "bg-slate-50/70 dark:bg-white/[0.02] border-slate-100 dark:border-white/5 text-slate-900 dark:text-white"
                             )}>
                                 <div>
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-xs font-black uppercase tracking-wider">
+                                        <h3 className="text-xs sm:text-sm font-black uppercase tracking-tight">
                                             {dayItem.day}
-                                        </span>
+                                        </h3>
                                         {isToday && (
-                                            <span className="px-1.5 py-0.2 rounded-full bg-slate-950 text-amber-400 text-[8px] font-black uppercase tracking-widest animate-pulse">
+                                            <span className="px-2 py-0.2 rounded-full bg-white text-[#68152E] text-[8.5px] font-black uppercase tracking-wider shadow-xs">
                                                 TODAY
                                             </span>
                                         )}
                                     </div>
                                     <p className={cn(
-                                        "text-[9px] font-bold tracking-tight",
-                                        isToday ? "text-slate-900" : "text-slate-500 dark:text-slate-400"
+                                        "text-[10px] font-bold tracking-tight mt-0.5",
+                                        isToday ? "text-white/80" : "text-slate-400 dark:text-slate-500"
                                     )}>
-                                        {dayItem.date_label}
+                                        {dayItem.date_label || 'OCT 20, 2026'}
                                     </p>
                                 </div>
 
                                 <div className={cn(
-                                    "px-2 py-0.5 rounded-full flex items-center gap-1 text-[9px] font-black tracking-wide shadow-2xs",
+                                    "px-2 py-0.5 rounded-full flex items-center gap-1 text-[9.5px] font-black tracking-wide shrink-0",
                                     isToday
-                                        ? "bg-slate-950/20 text-slate-950"
-                                        : "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-                                    )}>
-                                    <Users size={10} />
-                                    <span>{cleaners.length} CLEANERS</span>
+                                        ? "bg-white/20 text-white border border-white/20"
+                                        : "bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300"
+                                )}>
+                                    <Users size={11} />
+                                    <span>CLEANERS</span>
                                 </div>
                             </div>
 
-                            {/* Cleaners List */}
-                            <div className="flex-1 p-2 space-y-1.5 overflow-y-auto no-scrollbar">
+                            {/* Cleaners List (with Rank Number and Hover Avatar) */}
+                            <div className="flex-1 p-2.5 space-y-1.5 overflow-y-auto tv-scrollbar pr-1">
                                 {cleaners.map((cleaner: any, cIdx: number) => {
-                                    const initials = cleaner.initials || cleaner.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'FC';
-
                                     return (
                                         <div
                                             key={cIdx}
@@ -5325,106 +5736,71 @@ function SlideTwelve({ data, isDark }: { data: any; isDark: boolean }) {
                                                 "p-1.5 rounded-xl border flex items-center gap-2 transition-all",
                                                 isToday
                                                     ? isDark
-                                                        ? "bg-amber-500/10 border-amber-500/30 text-white"
-                                                        : "bg-white border-amber-300 shadow-2xs text-slate-900"
+                                                        ? "bg-white/[0.04] border-white/10 hover:border-rose-400/50"
+                                                        : "bg-white border-rose-200/60 shadow-2xs hover:border-[#8B1E3F]/40"
                                                     : isDark
-                                                        ? "bg-white/[0.02] border-white/5 text-white"
-                                                        : "bg-slate-50/70 border-slate-100 text-slate-900"
+                                                        ? "bg-white/[0.02] border-white/5 hover:border-white/20"
+                                                        : "bg-slate-50/70 border-slate-100 hover:border-slate-300/80"
                                             )}
                                         >
-                                            {/* Numeric Index */}
-                                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 w-3 text-center shrink-0">
+                                            {/* Rank Number */}
+                                            <span className={cn(
+                                                "w-4 text-center text-xs font-black shrink-0",
+                                                isToday ? "text-[#8B1E3F] dark:text-rose-300" : "text-slate-400 dark:text-slate-500"
+                                            )}>
                                                 {cIdx + 1}
                                             </span>
 
-                                            {/* Faculty Avatar (With Profile Card on Hover) */}
+                                            {/* Faculty Profile Picture Avatar with Hover Card */}
                                             <FacultyAvatarHover
                                                 facultyId={cleaner.faculty_id}
                                                 name={cleaner.name}
                                                 photoUrl={cleaner.photo_url}
-                                                initials={initials}
-                                                size="md"
+                                                program={cleaner.program}
+                                                size="sm"
                                                 isDark={isDark}
-                                                customProfile={{
-                                                    academic_rank: cleaner.role || 'Faculty Member',
-                                                }}
                                             />
 
-                                            {/* Cleaner Name & Role */}
+                                            {/* Cleaner Name & Subtitle */}
                                             <div className="min-w-0 flex-1">
                                                 <p className={cn(
-                                                    "text-[10px] font-bold truncate leading-tight",
-                                                    isToday ? "text-slate-950 dark:text-amber-300 font-extrabold" : "text-slate-800 dark:text-slate-200"
+                                                    "text-xs font-black truncate leading-tight",
+                                                    isToday ? "text-[#68152E] dark:text-rose-200" : "text-slate-900 dark:text-white"
                                                 )}>
                                                     {cleaner.name}
                                                 </p>
-                                                <p className="text-[8px] font-semibold text-slate-400 dark:text-slate-500 leading-none mt-0.5">
+                                                <p className="text-[9.5px] font-semibold text-slate-400 dark:text-slate-500 leading-none mt-0.5">
                                                     {cleaner.role || 'Faculty Cleaner'}
                                                 </p>
                                             </div>
                                         </div>
                                     );
                                 })}
+
+                                {cleaners.length === 0 && (
+                                    <div className="py-6 text-center text-slate-400 text-xs font-medium">
+                                        No cleaners assigned
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Card Slogan Footer */}
+                            {/* Day Slogan Card Footer */}
                             <div className={cn(
-                                "px-2 py-1.5 border-t text-center shrink-0 flex items-center justify-center gap-1.5",
+                                "px-3 py-2 border-t text-center shrink-0 flex items-center justify-center gap-1.5",
                                 isToday
-                                    ? "bg-amber-400/20 border-amber-400/40 text-amber-900 dark:text-amber-300 font-black text-[9px]"
-                                    : "bg-slate-50/50 dark:bg-white/[0.02] border-slate-100 dark:border-white/5 text-slate-500 dark:text-slate-400 font-bold text-[8.5px]"
+                                    ? "bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/20 border-[#8B1E3F]/30 text-[#68152E] dark:text-rose-200 font-black text-[10.5px]"
+                                    : "bg-slate-50/80 dark:bg-white/[0.02] border-slate-100 dark:border-white/5 text-slate-700 dark:text-slate-300 font-bold text-[10px]"
                             )}>
-                                {dayIdx === 0 && <Brush className="w-3 h-3 text-amber-500" />}
-                                {dayIdx === 1 && <Trash2 className="w-3 h-3 text-amber-500" />}
-                                {dayIdx === 2 && <Sparkles className="w-3 h-3 text-amber-500" />}
-                                {dayIdx === 3 && <Heart className="w-3 h-3 text-amber-500" />}
-                                {dayIdx === 4 && <PartyPopper className="w-3 h-3 text-amber-500" />}
-                                <span className="italic">{dayItem.slogan || 'Keep it clean!'}</span>
+                                {dayIdx === 0 && <Sparkles size={13} className="text-[#175C94]" />}
+                                {dayIdx === 1 && <Trash2 size={13} className="text-[#8B1E3F] dark:text-rose-300" />}
+                                {dayIdx === 2 && <Sparkles size={13} className="text-cyan-500" />}
+                                {dayIdx === 3 && <Heart size={13} className="text-[#8B1E3F]" />}
+                                {dayIdx === 4 && <PartyPopper size={13} className="text-[#8B1E3F]" />}
+                                <span className="font-extrabold">{dayItem.slogan || (dayIdx === 0 ? 'Clean Monday!' : dayIdx === 1 ? 'Tidy Tuesday!' : dayIdx === 2 ? 'We keep it clean!' : dayIdx === 3 ? 'Almost there!' : 'Clean Friday! Great Job, CIDS!')}</span>
                             </div>
                         </div>
                     );
                 })}
-            </div>
-
-            {/* Bottom Slogan Bar */}
-            <div className={cn(
-                "rounded-xl px-5 py-1.5 border shadow-2xs flex items-center justify-between shrink-0",
-                isDark 
-                    ? "bg-[#0b101b] border-white/10 text-white" 
-                    : "bg-slate-950 text-white border-slate-900"
-            )}>
-                {/* Left Brand Badge */}
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5">
-                        <Building2 size={16} className="text-amber-400" />
-                        <span className="font-black text-xs tracking-wider text-amber-400">CIDS</span>
-                    </div>
-                    <div className="h-4 w-px bg-white/20" />
-                    <p className="text-[10px] font-black uppercase tracking-wider text-white">
-                        CLEAN SPACES SUPPORT BRIGHT MINDS.
-                    </p>
-                </div>
-
-                {/* Mid Values */}
-                <div className="hidden md:flex items-center gap-5 text-[9px] font-bold text-slate-300">
-                    <span className="flex items-center gap-1.5">
-                        <Briefcase className="w-3.5 h-3.5 text-amber-400" /> ORGANIZED OFFICE
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-amber-400" /> PRODUCTIVE PEOPLE
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <Sprout className="w-3.5 h-3.5 text-amber-400" /> HEALTHIER ENVIRONMENT
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <TrendingUp className="w-3.5 h-3.5 text-amber-400" /> A STRONGER CIDS
-                    </span>
-                </div>
-
-                {/* Right Motto */}
-                <div className="text-[9px] font-black tracking-widest text-amber-400 uppercase">
-                    DISCIPLINE · COLLABORATION · SERVICE
-                </div>
             </div>
         </div>
     );
