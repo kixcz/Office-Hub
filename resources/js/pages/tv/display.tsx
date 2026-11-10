@@ -109,9 +109,9 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
     const safeMarginClass = useMemo(() => {
         const margin = settings?.safe_area_margin;
         if (margin === 'none') return 'px-0 py-0';
-        if (margin === 'compact') return 'px-4 py-2';
-        if (margin === 'spacious') return 'px-12 py-6';
-        return 'px-8 pb-3'; // normal default
+        if (margin === 'compact') return 'px-4 pt-3 pb-2';
+        if (margin === 'spacious') return 'px-12 pt-6 pb-4';
+        return 'px-8 pt-4 pb-3'; // normal default with clean top gap below TV header
     }, [settings?.safe_area_margin]);
 
     const isPublicMode = settings?.audience_mode === 'public' || settings?.default_audience === 'Public';
@@ -161,6 +161,16 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
             const next = (indexRef.current + dir + len) % len;
             // No reload on every slide loop - avoids spamming server and prevents 504 gateway timeouts
             setIndex(next);
+            setFade(true);
+        }, FADE_MS);
+    }, []);
+
+    const goToSlide = useCallback((targetIndex: number) => {
+        const len = countRef.current;
+        if (len === 0 || targetIndex < 0 || targetIndex >= len || targetIndex === indexRef.current) return;
+        setFade(false);
+        window.setTimeout(() => {
+            setIndex(targetIndex);
             setFade(true);
         }, FADE_MS);
     }, []);
@@ -280,7 +290,7 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
             {/* Footer - Styled precisely as in reference images */}
             {showFooter && (
                 <div className="shrink-0 px-6 sm:px-8 pb-3.5 pt-1 z-30">
-                    <footer className="relative flex items-center justify-between px-5 sm:px-6 py-2.5 rounded-full bg-gradient-to-r from-[#051c37] via-[#0B3A67] via-45% to-[#581024] text-white/90 border border-white/20 shadow-[0_12px_32px_rgba(5,28,55,0.45),0_0_24px_rgba(23,92,148,0.25)] backdrop-blur-xl overflow-hidden">
+                    <footer className="relative flex items-center justify-between px-5 sm:px-6 py-2.5 rounded-full bg-gradient-to-r from-[#051c37] via-[#0B3A67] via-45% to-[#581024] text-white/90 border border-white/20 shadow-[0_12px_32px_rgba(5,28,55,0.45),0_0_24px_rgba(23,92,148,0.25)] backdrop-blur-xl overflow-visible">
                         {/* Organic diagonal light sweep across pill with subtle glow */}
                         <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-35 mix-blend-screen">
                             <div className="absolute -inset-x-24 -top-16 h-32 bg-gradient-to-r from-transparent via-cyan-400/40 via-50% to-rose-400/40 blur-2xl transform -rotate-1" />
@@ -311,17 +321,17 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
                                     const slideTitle = slideItem?.title || slideItem?.type || `Slide ${i + 1}`;
 
                                     return (
-                                        <div key={i} className="relative group/loader flex items-center justify-center py-2">
+                                        <div key={i} className="relative group/loader flex items-center justify-center py-2 px-1">
                                             <button
                                                 type="button"
                                                 onClick={() => goToSlide(i)}
                                                 aria-label={`Jump to Slide ${i + 1}: ${slideTitle}`}
-                                                className={`relative h-2 rounded-full transition-all duration-300 overflow-hidden cursor-pointer p-0 border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 active:scale-95 hover:opacity-100 ${
+                                                className={`relative h-2.5 rounded-full transition-all duration-300 overflow-hidden cursor-pointer p-0 border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 active:scale-95 hover:opacity-100 ${
                                                     isCurrent
-                                                        ? 'w-12 sm:w-16 bg-white/25 ring-2 ring-white/60 shadow-[0_0_16px_rgba(255,255,255,0.7),0_0_24px_rgba(186,230,253,0.5)] cursor-default'
+                                                        ? 'w-12 sm:w-16 bg-white/25 ring-2 ring-white/70 shadow-[0_0_16px_rgba(255,255,255,0.7),0_0_24px_rgba(186,230,253,0.5)] cursor-pointer'
                                                         : isPassed
-                                                        ? 'w-6 sm:w-7 bg-white shadow-[0_0_6px_rgba(255,255,255,0.4)] hover:bg-white/90 hover:scale-105'
-                                                        : 'w-6 sm:w-7 bg-white/25 hover:bg-white/50 hover:scale-105'
+                                                        ? 'w-6 sm:w-7 bg-white shadow-[0_0_6px_rgba(255,255,255,0.4)] hover:bg-white hover:scale-110 hover:shadow-[0_0_10px_rgba(255,255,255,0.8)]'
+                                                        : 'w-6 sm:w-7 bg-white/25 hover:bg-white/60 hover:scale-110 hover:shadow-[0_0_8px_rgba(255,255,255,0.4)]'
                                                 }`}
                                             >
                                                 {/* Passed slides are fully filled */}
@@ -835,8 +845,8 @@ function Kpi({
         <div
             className={`rounded-2xl p-4 flex items-center justify-between gap-3 ${accent
                 ? isDark
-                    ? 'bg-amber-500/15 border border-amber-500/30 text-white'
-                    : 'bg-amber-50/70 border border-amber-200/80 text-slate-900 shadow-[0_2px_12px_rgba(245,158,11,0.06)]'
+                    ? 'bg-[#8B1E3F]/20 border border-[#8B1E3F]/40 text-white ring-1 ring-rose-500/20'
+                    : 'bg-rose-50/80 border border-rose-200/90 text-slate-900 shadow-[0_2px_12px_rgba(139,30,63,0.06)]'
                 : isDark
                     ? 'bg-[#131b2e] border border-white/10 text-white shadow-none'
                     : 'bg-white border border-slate-200/80 text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
@@ -869,7 +879,7 @@ function Kpi({
 function BentoTile({
     title,
     icon: Icon,
-    iconTone = 'amber',
+    iconTone = 'blue',
     aside,
     className = '',
     bodyClassName = '',
@@ -1235,35 +1245,43 @@ function SlideThree({ data, isDark = false }: any) {
     const totalKeyCount = summary.filter((s: any) => s.total > 0).length || 4;
 
     return (
-        <div className="flex h-full min-h-0 flex-1 flex-col gap-4 select-none overflow-hidden">
-            {/* 1. TOP STATS ROW (3 Cards) */}
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-4 select-none overflow-hidden font-['Poppins',sans-serif]">
+            {/* 1. TOP STATS ROW (3 Cards) - Hero Institutional Navy & Maroon Gradient Card on Card 1 */}
             <div className="grid grid-cols-3 gap-4 shrink-0">
-                {/* Card 1: Compliance rate */}
-                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs flex items-center justify-between">
-                    <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-100/60 dark:border-amber-900/40 flex items-center justify-center shrink-0">
-                            <ShieldCheck className="w-6 h-6" />
+                {/* Card 1: Compliance rate (Primary Institutional Hero Gradient) */}
+                <div className={cn(
+                    "rounded-2xl p-4 shadow-sm flex items-center justify-between transition-all relative overflow-hidden border",
+                    isDark
+                        ? "bg-gradient-to-r from-[#072445]/90 via-[#0B3A67]/80 to-[#68152E]/70 border-[#175C94]/60 text-white ring-1 ring-sky-400/20"
+                        : "bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#8B1E3F] border-[#175C94] text-white shadow-md"
+                )}>
+                    {/* Organic glow overlay */}
+                    <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(circle_at_top_right,white,transparent_70%)]" />
+
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/30 text-white flex items-center justify-center shrink-0 backdrop-blur-md shadow-xs">
+                            <ShieldCheck className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block">Compliance rate</span>
-                            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none mt-1 block">
+                            <span className="text-xs font-bold text-sky-200 block uppercase tracking-wider">Compliance rate</span>
+                            <span className="text-3xl font-black text-white tracking-tight leading-none mt-1 block">
                                 {complianceRate}%
                             </span>
                         </div>
                     </div>
                     {/* Mini Sparkline / Trend bars */}
-                    <div className="flex items-end gap-1 h-8 opacity-80 pr-2">
-                        <span className="w-1.5 h-3 rounded-full bg-amber-400" />
-                        <span className="w-1.5 h-5 rounded-full bg-amber-400" />
-                        <span className="w-1.5 h-7 rounded-full bg-amber-400" />
-                        <span className="w-1.5 h-8 rounded-full bg-amber-400" />
+                    <div className="flex items-end gap-1 h-8 opacity-90 pr-2 relative z-10 text-cyan-300">
+                        <span className="w-1.5 h-3 rounded-full bg-cyan-300" />
+                        <span className="w-1.5 h-5 rounded-full bg-cyan-300" />
+                        <span className="w-1.5 h-7 rounded-full bg-white shadow-[0_0_8px_#38bdf8]" />
+                        <span className="w-1.5 h-8 rounded-full bg-white shadow-[0_0_8px_#38bdf8]" />
                     </div>
                 </div>
 
                 {/* Card 2: Pending outputs */}
                 <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs flex items-center justify-between">
                     <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-100/60 dark:border-blue-900/40 flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 rounded-2xl bg-[#072445]/10 dark:bg-[#175C94]/25 text-[#072445] dark:text-sky-300 border border-[#175C94]/20 flex items-center justify-center shrink-0">
                             <Clock className="w-6 h-6" />
                         </div>
                         <div>
@@ -1275,17 +1293,17 @@ function SlideThree({ data, isDark = false }: any) {
                     </div>
                     {/* Mini Sparkline */}
                     <div className="flex items-end gap-1 h-8 opacity-80 pr-2">
-                        <span className="w-1.5 h-3 rounded-full bg-blue-500" />
-                        <span className="w-1.5 h-4 rounded-full bg-blue-500" />
-                        <span className="w-1.5 h-7 rounded-full bg-blue-500" />
-                        <span className="w-1.5 h-8 rounded-full bg-blue-500" />
+                        <span className="w-1.5 h-3 rounded-full bg-[#175C94]" />
+                        <span className="w-1.5 h-4 rounded-full bg-[#175C94]" />
+                        <span className="w-1.5 h-7 rounded-full bg-[#0B3A67]" />
+                        <span className="w-1.5 h-8 rounded-full bg-[#072445] dark:bg-sky-400" />
                     </div>
                 </div>
 
                 {/* Card 3: Overdue outputs */}
                 <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs flex items-center justify-between">
                     <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-100/60 dark:border-rose-900/40 flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 rounded-2xl bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/25 text-[#8B1E3F] dark:text-rose-300 border border-[#8B1E3F]/20 flex items-center justify-center shrink-0">
                             <AlertTriangle className="w-6 h-6" />
                         </div>
                         <div>
@@ -1297,10 +1315,10 @@ function SlideThree({ data, isDark = false }: any) {
                     </div>
                     {/* Mini Sparkline */}
                     <div className="flex items-end gap-1 h-8 opacity-80 pr-2">
-                        <span className="w-1.5 h-4 rounded-full bg-rose-500" />
-                        <span className="w-1.5 h-6 rounded-full bg-rose-500" />
-                        <span className="w-1.5 h-8 rounded-full bg-rose-500" />
-                        <span className="w-1.5 h-7 rounded-full bg-rose-500" />
+                        <span className="w-1.5 h-4 rounded-full bg-[#8B1E3F]/50" />
+                        <span className="w-1.5 h-6 rounded-full bg-[#8B1E3F]/80" />
+                        <span className="w-1.5 h-8 rounded-full bg-[#8B1E3F]" />
+                        <span className="w-1.5 h-7 rounded-full bg-[#68152E] dark:bg-rose-400" />
                     </div>
                 </div>
             </div>
@@ -1314,8 +1332,8 @@ function SlideThree({ data, isDark = false }: any) {
                     {/* Header */}
                     <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center shrink-0">
-                                <FileText className="w-4 h-4" />
+                            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#072445] to-[#8B1E3F] text-white flex items-center justify-center shrink-0 shadow-xs">
+                                <FileText className="w-4 h-4 text-white" />
                             </div>
                             <div>
                                 <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight">
@@ -1358,7 +1376,11 @@ function SlideThree({ data, isDark = false }: any) {
                                         <div
                                             className={cn(
                                                 "h-full rounded-full transition-all duration-700",
-                                                isCompleted ? "bg-emerald-500" : (req.rate > 0 ? "bg-amber-400" : "bg-transparent")
+                                                isCompleted
+                                                    ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
+                                                    : (req.rate > 0
+                                                        ? "bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#8B1E3F]"
+                                                        : "bg-transparent")
                                             )}
                                             style={{ width: `${req.rate}%` }}
                                         />
@@ -1386,7 +1408,7 @@ function SlideThree({ data, isDark = false }: any) {
                     <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-2xs flex-1 min-h-0 flex flex-col overflow-hidden">
                         {/* Card Header */}
                         <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                            <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-xl bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/25 text-[#8B1E3F] dark:text-rose-300 border border-[#8B1E3F]/20 flex items-center justify-center shrink-0">
                                 <AlertTriangle className="w-4 h-4" />
                             </div>
                             <div>
@@ -1415,7 +1437,9 @@ function SlideThree({ data, isDark = false }: any) {
                                         </div>
                                         <span className={cn(
                                             "px-2 py-0.5 rounded text-[10px] font-bold shrink-0",
-                                            p.status === 'Overdue' ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900" : "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900"
+                                            p.status === 'Overdue'
+                                                ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900"
+                                                : "bg-[#072445]/10 dark:bg-[#175C94]/25 text-[#072445] dark:text-sky-300 border border-[#175C94]/20"
                                         )}>
                                             {p.status}
                                         </span>
@@ -1427,8 +1451,8 @@ function SlideThree({ data, isDark = false }: any) {
                                 {/* Big Circle Illustration matching mockup */}
                                 <div className="w-28 h-28 rounded-full bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center justify-center relative my-2">
                                     {/* Sparkle icons floating */}
-                                    <span className="absolute top-3 left-3 text-amber-400 font-black text-sm">✦</span>
-                                    <span className="absolute top-5 right-3 text-amber-400 font-black text-sm">✧</span>
+                                    <span className="absolute top-3 left-3 text-cyan-400 font-black text-sm">✦</span>
+                                    <span className="absolute top-5 right-3 text-rose-400 font-black text-sm">✧</span>
 
                                     <div className="w-14 h-18 rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 flex flex-col justify-center px-2 shadow-xs relative">
                                         <div className="w-5 h-1 bg-slate-300 dark:bg-slate-600 rounded mb-1.5" />
@@ -1454,7 +1478,7 @@ function SlideThree({ data, isDark = false }: any) {
                         {/* Bottom Mini Counters (Pending: 0, Overdue: 0) */}
                         <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                             <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40">
-                                <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                <div className="w-9 h-9 rounded-xl bg-[#072445]/10 dark:bg-[#175C94]/25 text-[#072445] dark:text-sky-300 border border-[#175C94]/20 flex items-center justify-center shrink-0">
                                     <Clock className="w-4 h-4" />
                                 </div>
                                 <div>
@@ -1466,7 +1490,7 @@ function SlideThree({ data, isDark = false }: any) {
                             </div>
 
                             <div className="flex items-center gap-3 p-3 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40">
-                                <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                                <div className="w-9 h-9 rounded-xl bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/25 text-[#8B1E3F] dark:text-rose-300 border border-[#8B1E3F]/20 flex items-center justify-center shrink-0">
                                     <AlertTriangle className="w-4 h-4" />
                                 </div>
                                 <div>
@@ -1482,8 +1506,8 @@ function SlideThree({ data, isDark = false }: any) {
                     {/* Bottom Card: Status Legend */}
                     <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-500 flex items-center justify-center shrink-0">
-                                <Lightbulb className="w-5 h-5 fill-amber-400 text-amber-500" />
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#072445] to-[#8B1E3F] text-white flex items-center justify-center shrink-0 shadow-xs">
+                                <Lightbulb className="w-5 h-5 text-white" />
                             </div>
                             <div>
                                 <h4 className="text-xs font-black text-slate-900 dark:text-white">Status Legend</h4>
@@ -1500,11 +1524,11 @@ function SlideThree({ data, isDark = false }: any) {
                                 <span>Completed (100%)</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600" />
-                                <span>In Progress</span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-[#072445] to-[#8B1E3F]" />
+                                <span>In Progress (Navy & Maroon)</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#8B1E3F]" />
                                 <span>Pending / Overdue</span>
                             </div>
                         </div>
@@ -1516,10 +1540,6 @@ function SlideThree({ data, isDark = false }: any) {
         </div>
     );
 }
-
-/* -------------------------------------------------------------------------- */
-/*  Slide 4 – Performance & Recognition (Reference Image 1)                    */
-/* -------------------------------------------------------------------------- */
 
 function SlideFour({ data, isDark = false }: any) {
     const programs = data?.top_programs || [];
@@ -6440,21 +6460,21 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
         <div className="flex h-full min-h-0 flex-1 flex-col gap-3.5 select-none overflow-hidden font-['Poppins',sans-serif]">
             {/* 1. Top Section: Header Hero Banner & 4 Stat Cards */}
             <div className="grid grid-cols-12 gap-3.5 shrink-0 items-stretch">
-                {/* Left Hero Yellow Banner */}
+                {/* Left Hero Institutional Banner */}
                 <div className={cn(
-                    "col-span-12 lg:col-span-6 rounded-2xl p-4 sm:p-5 flex items-center gap-4 border shadow-xs transition-colors",
+                    "col-span-12 lg:col-span-6 rounded-2xl p-4 sm:p-5 flex items-center gap-4 border shadow-xs transition-colors relative overflow-hidden",
                     isDark
-                        ? "bg-[#FFF9E6]/10 border-[#FACC15]/50 text-white ring-1 ring-[#FACC15]/20"
-                        : "bg-[#FFF9E6] border-[#FDE68A] text-slate-900"
+                        ? "bg-gradient-to-r from-[#072445]/90 via-[#0B3A67]/80 to-[#68152E]/70 border-[#175C94]/60 text-white ring-1 ring-sky-400/20"
+                        : "bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#8B1E3F] border-[#175C94] text-white shadow-md"
                 )}>
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#FACC15] flex items-center justify-center shrink-0 shadow-xs">
-                        <Plane className="w-7 h-7 sm:w-8 sm:h-8 text-slate-950 fill-slate-950 -rotate-45" />
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/15 border border-white/30 flex items-center justify-center shrink-0 shadow-xs backdrop-blur-md">
+                        <Plane className="w-7 h-7 sm:w-8 sm:h-8 text-white fill-white -rotate-45" />
                     </div>
                     <div className="min-w-0">
-                        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950 dark:text-white leading-none">
+                        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-none">
                             Traveling Now
                         </h2>
-                        <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 mt-1.5 leading-snug">
+                        <p className="text-xs sm:text-sm font-medium text-white/80 mt-1.5 leading-snug">
                             Faculty whose approved travel date range includes today are considered traveling; upcoming travels start soon.
                         </p>
                     </div>
@@ -6462,18 +6482,18 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
 
                 {/* Right 4 Stat Cards */}
                 <div className="col-span-12 lg:col-span-6 grid grid-cols-2 sm:grid-cols-4 gap-3 items-stretch">
-                    {/* Stat 1: Traveling Now (Highlighted Yellow) */}
+                    {/* Stat 1: Traveling Now (Highlighted Maroon) */}
                     <div className={cn(
                         "rounded-2xl p-3 border-2 flex items-center gap-3 shadow-xs",
                         isDark
-                            ? "bg-amber-950/40 border-[#FACC15] text-white ring-1 ring-yellow-400/20"
-                            : "bg-[#FFF9E6] border-[#FACC15] text-slate-950"
+                            ? "bg-gradient-to-br from-[#68152E]/60 to-[#072445]/60 border-[#8B1E3F] text-white ring-1 ring-rose-500/30"
+                            : "bg-rose-50/90 border-[#8B1E3F] text-slate-950"
                     )}>
-                        <div className="w-10 h-10 rounded-full bg-[#FACC15] flex items-center justify-center shrink-0 shadow-2xs">
-                            <Plane className="w-5 h-5 text-slate-950 fill-slate-950 -rotate-45" />
+                        <div className="w-10 h-10 rounded-full bg-[#8B1E3F] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                            <Plane className="w-5 h-5 text-white fill-white -rotate-45" />
                         </div>
                         <div className="min-w-0">
-                            <span className="text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-300 leading-tight block">
+                            <span className="text-[10px] sm:text-[11px] font-bold text-[#8B1E3F] dark:text-rose-300 leading-tight block">
                                 Traveling Now
                             </span>
                             <span className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white leading-none block mt-0.5">
@@ -6485,7 +6505,7 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
                     {/* Stat 2: Approved Orders This Month */}
                     <div className={cn(
                         "rounded-2xl p-3 border flex items-center gap-2.5 shadow-xs",
-                        isDark ? "bg-slate-900/90 border-[#FACC15]/40 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                        isDark ? "bg-slate-900/90 border-[#175C94]/40 text-white" : "bg-white border-slate-200/90 text-slate-900"
                     )}>
                         <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
                             <FileText className="w-4 h-4" />
@@ -6503,7 +6523,7 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
                     {/* Stat 3: Upcoming */}
                     <div className={cn(
                         "rounded-2xl p-3 border flex items-center gap-2.5 shadow-xs",
-                        isDark ? "bg-slate-900/90 border-[#FACC15]/40 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                        isDark ? "bg-slate-900/90 border-[#175C94]/40 text-white" : "bg-white border-slate-200/90 text-slate-900"
                     )}>
                         <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center shrink-0 text-sky-600 dark:text-sky-400">
                             <CalendarIcon className="w-4 h-4" />
@@ -6521,7 +6541,7 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
                     {/* Stat 4: Completed */}
                     <div className={cn(
                         "rounded-2xl p-3 border flex items-center gap-2.5 shadow-xs",
-                        isDark ? "bg-slate-900/90 border-[#FACC15]/40 text-white" : "bg-white border-slate-200/90 text-slate-900"
+                        isDark ? "bg-slate-900/90 border-[#175C94]/40 text-white" : "bg-white border-slate-200/90 text-slate-900"
                     )}>
                         <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
                             <CheckCircle2 className="w-4 h-4" />
@@ -6541,7 +6561,7 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
             {/* 2. Middle Row: 4 Traveling Now / Upcoming Faculty Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 shrink-0">
                 {featuredOrders.length === 0 ? (
-                    <div className="col-span-full py-8 px-4 rounded-2xl border border-dashed border-amber-300 dark:border-[#FACC15]/50 text-center text-slate-400 bg-white/50 dark:bg-slate-900/40">
+                    <div className="col-span-full py-8 px-4 rounded-2xl border border-dashed border-slate-300 dark:border-[#175C94]/50 text-center text-slate-400 bg-white/50 dark:bg-slate-900/40">
                         <p className="text-sm font-semibold">No faculty members currently traveling or scheduled today.</p>
                     </div>
                 ) : (
@@ -6554,7 +6574,7 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
                                 className={cn(
                                     "rounded-2xl border p-4 flex flex-col justify-between shadow-xs transition-colors relative overflow-hidden",
                                     isDark
-                                        ? "bg-slate-900/90 border-[#FACC15]/40 text-white ring-1 ring-[#FACC15]/10"
+                                        ? "bg-slate-900/90 border-[#175C94]/40 text-white ring-1 ring-[#175C94]/20"
                                         : "bg-white border-slate-200/90 text-slate-900"
                                 )}
                             >
@@ -6569,7 +6589,7 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
                                                     className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200 dark:border-slate-700"
                                                 />
                                             ) : (
-                                                <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-800 font-black text-sm flex items-center justify-center shrink-0">
+                                                <div className="w-10 h-10 rounded-full bg-[#072445]/10 dark:bg-[#175C94]/20 text-[#072445] dark:text-sky-300 font-black text-sm flex items-center justify-center shrink-0 border border-[#175C94]/20">
                                                     {f.faculty_name?.charAt(0) || 'F'}
                                                 </div>
                                             )}
@@ -6585,15 +6605,15 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
                                             </div>
                                         </div>
 
-                                        {/* Status Badge: Yellow Traveling Now or Sky Upcoming */}
+                                        {/* Status Badge: Maroon Traveling Now or Sky Upcoming */}
                                         {isCardUpcoming ? (
                                             <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700 flex items-center gap-1 shadow-2xs">
                                                 <CalendarIcon className="w-3 h-3 text-sky-600 dark:text-sky-400" />
                                                 Upcoming
                                             </span>
                                         ) : (
-                                            <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide bg-[#FACC15] text-slate-950 flex items-center gap-1 shadow-2xs">
-                                                <Plane className="w-3 h-3 fill-slate-950 -rotate-45" />
+                                            <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide bg-[#8B1E3F] text-white flex items-center gap-1 shadow-2xs">
+                                                <Plane className="w-3 h-3 fill-white -rotate-45" />
                                                 Traveling Now
                                             </span>
                                         )}
@@ -6601,7 +6621,7 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
 
                                     {/* Destination */}
                                     <div className="mt-3 flex items-start gap-2">
-                                        <MapPin className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0 mt-0.5" />
+                                        <MapPin className="w-3.5 h-3.5 text-[#8B1E3F] dark:text-rose-400 fill-[#8B1E3F] dark:fill-rose-400 shrink-0 mt-0.5" />
                                         <div className="min-w-0">
                                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">
                                                 DESTINATION
@@ -6614,7 +6634,7 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
 
                                     {/* Purpose / Activity */}
                                     <div className="mt-2.5 flex items-start gap-2">
-                                        <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                        <FileText className="w-3.5 h-3.5 text-[#175C94] dark:text-sky-400 shrink-0 mt-0.5" />
                                         <div className="min-w-0">
                                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">
                                                 PURPOSE / ACTIVITY
@@ -6627,7 +6647,7 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
 
                                     {/* Approved Dates */}
                                     <div className="mt-2.5 flex items-start gap-2">
-                                        <CalendarIcon className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                        <CalendarIcon className="w-3.5 h-3.5 text-[#0B3A67] dark:text-sky-300 shrink-0 mt-0.5" />
                                         <div className="min-w-0">
                                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">
                                                 APPROVED DATES
@@ -6647,16 +6667,16 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
                                             ? "bg-sky-950/40 border border-sky-500/30 text-sky-300"
                                             : "bg-sky-50 border border-sky-200 text-sky-900")
                                         : (isDark
-                                            ? "bg-amber-950/40 border border-[#FACC15]/30 text-amber-300"
-                                            : "bg-[#FFF9E6] border border-[#FDE68A] text-slate-900")
+                                            ? "bg-[#68152E]/30 border border-[#8B1E3F]/40 text-rose-200"
+                                            : "bg-rose-50/80 border border-rose-200 text-[#8B1E3F]")
                                 )}>
                                     <span className={cn(
                                         "flex items-center gap-1.5 font-black",
                                         isCardUpcoming
                                             ? "text-sky-700 dark:text-sky-300"
-                                            : "text-slate-950 dark:text-amber-300"
+                                            : "text-[#8B1E3F] dark:text-rose-200"
                                     )}>
-                                        <CalendarIcon className={cn("w-3.5 h-3.5", isCardUpcoming ? "text-sky-500" : "text-amber-500")} />
+                                        <CalendarIcon className={cn("w-3.5 h-3.5", isCardUpcoming ? "text-sky-500" : "text-[#8B1E3F] dark:text-rose-300")} />
                                         {typeof f.note === 'string'
                                             ? f.note.replace(/\b(\d+)\.\d+\b/g, (_, intPart) => intPart)
                                             : f.note}
@@ -6674,12 +6694,12 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
             {/* 3. Bottom Table Section: All Travel Orders */}
             <div className={cn(
                 "flex-1 min-h-0 rounded-2xl border p-4 flex flex-col justify-between shadow-xs overflow-hidden",
-                isDark ? "bg-slate-900/90 border-[#FACC15]/40 text-white ring-1 ring-[#FACC15]/10" : "bg-white border-slate-200/90 text-slate-900"
+                isDark ? "bg-slate-900/90 border-[#175C94]/40 text-white ring-1 ring-[#175C94]/20" : "bg-white border-slate-200/90 text-slate-900"
             )}>
                 {/* Table Header Row */}
                 <div className="flex items-center justify-between gap-4 mb-2.5 shrink-0">
                     <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-[#FACC15] flex items-center justify-center shrink-0 text-slate-950 font-black shadow-2xs">
+                        <div className="w-7 h-7 rounded-lg bg-[#072445] flex items-center justify-center shrink-0 text-white font-black shadow-2xs">
                             <ListTodo className="w-4 h-4" />
                         </div>
                         <div>
@@ -6764,8 +6784,8 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
                                         </td>
                                         <td className="py-2">
                                             {isNow && (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#FEF08A] text-slate-950 shadow-2xs">
-                                                    <Plane className="w-3 h-3 fill-slate-950 -rotate-45" />
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#8B1E3F] text-white shadow-2xs">
+                                                    <Plane className="w-3 h-3 fill-white -rotate-45" />
                                                     Traveling Now
                                                 </span>
                                             )}
@@ -6797,7 +6817,7 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
                 {/* Footer attribution line */}
                 <div className="pt-2 border-t flex items-center justify-between text-[11px] text-slate-400 shrink-0">
                     <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span className="w-2 h-2 rounded-full bg-[#175C94]" />
                         <span>All travel orders shown are officially approved and monitored by the college.</span>
                     </div>
                     <div>
