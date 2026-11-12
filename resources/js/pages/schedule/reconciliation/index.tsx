@@ -1,7 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { Head, router } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
 import { SchedulingWorkspaceLayout } from '@/components/scheduling-workspace-layout';
+import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Scheduling', href: '/schedule/generator' },
+    { title: 'Sync & Reconciliation', href: '/schedule/reconciliation' },
+];
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -294,11 +301,12 @@ export default function ScheduleReconciliation({
     };
 
     return (
-        <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Schedule Sync & Reconciliation" />
 
-            <div className="space-y-6">
-                {/* Header & Primary Actions */}
+            <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
+                <div className="space-y-6 p-6 font-['Poppins']">
+                    {/* Header & Primary Actions */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-5">
                     <div>
                         <div className="flex items-center gap-2">
@@ -888,6 +896,7 @@ export default function ScheduleReconciliation({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </SchedulingWorkspaceLayout>
+            </SchedulingWorkspaceLayout>
+        </AppLayout>
     );
 }

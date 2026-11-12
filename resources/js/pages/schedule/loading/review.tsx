@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
 import SchedulingWorkspaceLayout from '@/components/scheduling-workspace-layout';
+import { type BreadcrumbItem } from '@/types';
 import { 
     CheckSquare, 
     Layers, 
@@ -29,6 +31,12 @@ import {
     FileText,
     Eye
 } from 'lucide-react';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Scheduling', href: '/schedule/generator' },
+    { title: 'Faculty Loading', href: '/schedule/loading' },
+    { title: 'Loading Review', href: '/schedule/loading-review' },
+];
 
 interface ProgramSummary {
     id: number;
@@ -273,11 +281,12 @@ export default function LoadingReviewPage({
     };
 
     return (
-        <SchedulingWorkspaceLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Loading Review - Ascend" />
 
-            <div className="space-y-6 pb-12">
-                {/* Header Section */}
+            <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
+                <div className="space-y-6 p-6 font-['Poppins']">
+                    {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
@@ -1299,7 +1308,8 @@ export default function LoadingReviewPage({
                     </div>
                 </div>
             )}
-        </SchedulingWorkspaceLayout>
+            </SchedulingWorkspaceLayout>
+        </AppLayout>
     );
 }
 

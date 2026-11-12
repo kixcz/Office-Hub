@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
 import SchedulingWorkspaceLayout from '@/components/scheduling-workspace-layout';
+import { type BreadcrumbItem } from '@/types';
 import { 
     CalendarDays, 
     Lock, 
@@ -15,6 +17,12 @@ import {
     Eye,
     ChevronRight
 } from 'lucide-react';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Scheduling', href: '/schedule/generator' },
+    { title: 'Timetable Generation', href: '/schedule/timetable/generator' },
+    { title: 'Schedule Generator', href: '/schedule/timetable/generator' },
+];
 
 interface ScheduleGeneratorProps {
     currentPeriod: any;
@@ -53,11 +61,12 @@ export default function TimetableScheduleGeneratorPage({ currentPeriod, loadingG
     };
 
     return (
-        <SchedulingWorkspaceLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Schedule Generator - Timetable Generation" />
 
-            <div className="space-y-6 pb-12">
-                {/* Permanent Faculty Loading Status Banner */}
+            <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
+                <div className="space-y-6 p-6 font-['Poppins']">
+                    {/* Permanent Faculty Loading Status Banner */}
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-rose-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
@@ -285,8 +294,9 @@ export default function TimetableScheduleGeneratorPage({ currentPeriod, loadingG
                         </div>
                     </div>
                 </div>
-            </div>
-        </SchedulingWorkspaceLayout>
+                </div>
+            </SchedulingWorkspaceLayout>
+        </AppLayout>
     );
 }
 

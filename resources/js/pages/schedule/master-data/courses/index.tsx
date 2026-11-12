@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Head } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
 import SchedulingWorkspaceLayout from '@/components/scheduling-workspace-layout';
+import { type BreadcrumbItem } from '@/types';
 import { 
     BookOpen, 
     Upload, 
@@ -15,6 +17,12 @@ import {
     ShieldCheck,
     Clock
 } from 'lucide-react';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Scheduling', href: '/schedule/generator' },
+    { title: 'Master Data', href: '/schedule/master-data/courses' },
+    { title: 'Courses', href: '/schedule/master-data/courses' },
+];
 
 interface CourseItem {
     id: number;
@@ -63,11 +71,12 @@ export default function CoursesCatalogPage({ currentPeriod, courses }: CoursesCa
     const distinctPrograms = Array.from(new Set(courses.map((c) => c.program_code)));
 
     return (
-        <SchedulingWorkspaceLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Courses Catalog - Master Data" />
 
-            <div className="space-y-6 pb-12">
-                {/* Header Section */}
+            <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
+                <div className="space-y-6 p-6 font-['Poppins']">
+                    {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-900 to-rose-950 border border-rose-900/30 flex items-center justify-center text-rose-200 shadow-sm">
@@ -334,8 +343,9 @@ export default function CoursesCatalogPage({ currentPeriod, courses }: CoursesCa
                         </div>
                     )}
                 </div>
-            </div>
-        </SchedulingWorkspaceLayout>
+                </div>
+            </SchedulingWorkspaceLayout>
+        </AppLayout>
     );
 }
 
