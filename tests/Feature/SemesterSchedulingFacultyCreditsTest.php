@@ -130,3 +130,4 @@ test('college admin can view faculty credits page and create, update, delete cre
     $period->refresh();
     expect($period->planning_rules_version)->toBe('Version 3');
 });
+
