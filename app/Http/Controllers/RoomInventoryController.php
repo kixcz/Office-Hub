@@ -226,6 +226,21 @@ class RoomInventoryController extends Controller
             $validated['operating_hours'] = '7:00 AM - 7:00 PM';
         }
 
+        // Automatically assign college_id for college-scoped users if not provided
+        $user = $request->user();
+        if (empty($validated['college_id']) && $user) {
+            $portalService = app(PortalContextService::class);
+            $activeAssignment = $portalService->getActiveAssignment($user, $request);
+            $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+            $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+            if ($activeScopeType === 'college' && $activeScopeId) {
+                $validated['college_id'] = $activeScopeId;
+            } else {
+                $validated['college_id'] = $user->resolveActiveCollege()?->id;
+            }
+        }
+
         Room::create($validated);
 
         return redirect()->back()->with('success', "Facility '{$validated['room_name']}' created successfully.");

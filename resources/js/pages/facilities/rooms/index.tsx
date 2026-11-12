@@ -54,7 +54,7 @@ import {
 } from '@/components/ui/dialog';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Super Admin', href: '/dashboard' },
+    { title: 'Dashboard', href: '/dashboard' },
     { title: 'Laboratory & Facilities', href: '/facilities/rooms' },
     { title: 'Rooms & Laboratories', href: '/facilities/rooms' },
 ];

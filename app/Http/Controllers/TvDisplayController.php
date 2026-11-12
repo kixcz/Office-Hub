@@ -55,11 +55,11 @@ class TvDisplayController extends Controller
         $displayKey = $device ? (string) $device->id : ($displayId ?: 'default');
         $tz = config('services.room_schedule.timezone', 'Asia/Manila');
         $today = Carbon::now($tz)->toDateString();
-        $cacheKey = 'tv_display_payload_v2_'.$displayKey.'_'.$today;
+        $cacheKey = 'tv_display_payload_v3_'.$displayKey.'_'.$today;
 
-        // Cache the entire display payload for 5 minutes (invalidates automatically across midnight)
+        // Cache the entire display payload for 60 seconds (keeps TV in sync with latest locator slips & travel orders)
         try {
-            $payload = Cache::remember($cacheKey, 300, function () use ($device, $displayId) {
+            $payload = Cache::remember($cacheKey, 60, function () use ($device, $displayId) {
                 return $this->buildTvPayload($device, $displayId);
             });
         } catch (\Throwable $e) {
@@ -90,10 +90,10 @@ class TvDisplayController extends Controller
         $displayKey = $device ? (string) $device->id : ($displayId ?: 'default');
         $tz = config('services.room_schedule.timezone', 'Asia/Manila');
         $today = Carbon::now($tz)->toDateString();
-        $cacheKey = 'tv_display_payload_v2_'.$displayKey.'_'.$today;
+        $cacheKey = 'tv_display_payload_v3_'.$displayKey.'_'.$today;
 
         try {
-            $payload = Cache::remember($cacheKey, 300, function () use ($device, $displayId) {
+            $payload = Cache::remember($cacheKey, 60, function () use ($device, $displayId) {
                 return $this->buildTvPayload($device, $displayId);
             });
         } catch (\Throwable $e) {
@@ -1595,6 +1595,7 @@ class TvDisplayController extends Controller
                     })->count();
 
                     return [
+                        'last_updated' => $today->format('M d, Y').' • '.$now->format('h:i A'),
                         'month_label' => $now->format('F Y'),
                         'month_short' => $now->format('M Y'),
                         'today_date' => $today->format('M d, Y'),

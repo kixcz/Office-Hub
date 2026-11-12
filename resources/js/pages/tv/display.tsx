@@ -175,9 +175,9 @@ export default function TvDisplay({ slides, data, current_term, settings, channe
         }, FADE_MS);
     }, []);
 
-    // Relaxed 5-minute background refresh to fetch fresh data without blocking or rapid reloading
+    // 60-second background refresh to fetch fresh locator slips, travel orders, and slide data
     useEffect(() => {
-        const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+        const REFRESH_INTERVAL_MS = 60 * 1000; // 60 seconds
         const interval = window.setInterval(() => {
             router.reload({
                 only: ['settings', 'slides', 'data'],
@@ -6860,8 +6860,13 @@ function SlideFourteen({ data, isDark }: { data: any; isDark: boolean }) {
                         <span className="w-2 h-2 rounded-full bg-[#175C94]" />
                         <span>All travel orders shown are officially approved and monitored by the college.</span>
                     </div>
-                    <div>
-                        CIDS OfficeHub | College of Information and Digital Sciences
+                    <div className="flex items-center gap-3">
+                        {data?.last_updated && (
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                Synced: {data.last_updated}
+                            </span>
+                        )}
+                        <span>CIDS OfficeHub | College of Information and Digital Sciences</span>
                     </div>
                 </div>
             </div>
