@@ -14,6 +14,8 @@ class TravelOrder extends Model
         'tracking_number',
         'faculty_id',
         'faculty_name',
+        'created_by_user_id',
+        'created_by_name',
         'destination',
         'purpose',
         'start_date',
@@ -43,5 +45,10 @@ class TravelOrder extends Model
     public function faculty(): BelongsTo
     {
         return $this->belongsTo(Faculty::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 }

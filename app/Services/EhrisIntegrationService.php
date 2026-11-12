@@ -438,11 +438,19 @@ class EhrisIntegrationService
                     }
                 }
 
+                $creatorName = null;
+                if (! empty($item['applicant']['name'])) {
+                    $creatorName = $item['applicant']['name'];
+                } elseif (! empty($item['created_by']['name'])) {
+                    $creatorName = $item['created_by']['name'];
+                }
+
                 TravelOrder::updateOrCreate(
                     ['tracking_number' => $trackingNumber],
                     [
                         'faculty_id' => $faculty->id,
                         'faculty_name' => $faculty->first_name.' '.$faculty->last_name,
+                        'created_by_name' => $creatorName ?: ($faculty->first_name.' '.$faculty->last_name),
                         'destination' => $item['destination'] ?? 'Official Destination',
                         'purpose' => $item['purpose'] ?? 'Official College Business',
                         'start_date' => $startDate,

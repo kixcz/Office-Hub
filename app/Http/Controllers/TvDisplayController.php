@@ -1561,6 +1561,7 @@ class TvDisplayController extends Controller
                                 'note' => $note,
                                 'travel_type' => $t->travel_type,
                                 'with_per_diem' => (bool) $t->with_per_diem,
+                                'created_by_name' => $t->created_by_name ?: ($t->creator?->name ?? $t->faculty_name),
                                 'approver_name' => $t->approver_name,
                             ];
                         });

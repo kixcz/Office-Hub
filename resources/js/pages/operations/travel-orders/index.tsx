@@ -63,6 +63,9 @@ interface TravelOrder {
     status: 'Approved' | 'In Progress' | 'Completed' | 'Cancelled';
     with_per_diem: boolean;
     estimated_budget: string;
+    created_by_user_id?: number | null;
+    created_by_name?: string | null;
+    is_filed_by_other?: boolean;
     approver_name?: string;
     approver_role?: string;
     remarks?: string;
@@ -109,6 +112,7 @@ export default function TravelOrdersIndex({ travelOrders = [], faculties = [], m
     // Create Travel Order Form
     const { data, setData, post, processing, reset, errors } = useForm({
         faculty_id: faculties.length > 0 ? String(faculties[0].id) : '',
+        created_by_name: '',
         destination: '',
         purpose: '',
         start_date: new Date().toISOString().split('T')[0],
@@ -461,9 +465,16 @@ export default function TravelOrdersIndex({ travelOrders = [], faculties = [], m
                                                         >
                                                             {to.faculty_name}
                                                         </button>
-                                                        <span className="text-[10px] text-zinc-400">
-                                                            {to.program_code} • {to.faculty_code}
-                                                        </span>
+                                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                                            <span className="text-[10px] text-zinc-400">
+                                                                {to.program_code} • {to.faculty_code}
+                                                            </span>
+                                                            {to.created_by_name && to.created_by_name !== to.faculty_name && (
+                                                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9.5px] font-medium bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800" title={`Filed on behalf by: ${to.created_by_name}`}>
+                                                                    Filed by: {to.created_by_name}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -568,7 +579,7 @@ export default function TravelOrdersIndex({ travelOrders = [], faculties = [], m
                             {/* Faculty Select from Directory */}
                             <div className="flex flex-col gap-1.5">
                                 <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                                    Faculty Member (From College Directory) *
+                                    Traveling Faculty Member (Person Traveling) *
                                 </Label>
                                 <select
                                     value={data.faculty_id}
@@ -582,6 +593,27 @@ export default function TravelOrdersIndex({ travelOrders = [], faculties = [], m
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+
+                            {/* Filed By / Requester Name (When created by another employee) */}
+                            <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Filed By (Requester / Creator)
+                                    </Label>
+                                    <span className="text-[10px] text-zinc-400">
+                                        Leave blank if self-filed
+                                    </span>
+                                </div>
+                                <Input
+                                    placeholder="Enter your name or employee role (e.g. Secretary / Administrative Aide)"
+                                    value={data.created_by_name}
+                                    onChange={(e) => setData('created_by_name', e.target.value)}
+                                    className="rounded-xl text-xs"
+                                />
+                                <p className="text-[10.5px] text-zinc-400">
+                                    Specify who is preparing this travel order if filing on behalf of another faculty member.
+                                </p>
                             </div>
 
                             {/* Destination */}
@@ -748,6 +780,36 @@ export default function TravelOrdersIndex({ travelOrders = [], faculties = [], m
                                             <p className="text-zinc-500 text-[11px]">
                                                 {selectedOrder.with_per_diem ? 'With Per Diem Allowance' : 'Without Per Diem'}
                                             </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Creator / Requester vs Traveler comparison */}
+                                    <div className="p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] text-blue-700 dark:text-blue-300 font-bold uppercase block">
+                                                Filing Details
+                                            </span>
+                                            {selectedOrder.created_by_name && selectedOrder.created_by_name !== selectedOrder.faculty_name ? (
+                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200">
+                                                    Prepared by Another Employee
+                                                </span>
+                                            ) : (
+                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium text-slate-500">
+                                                    Self-Filed
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 mt-2">
+                                            <div>
+                                                <span className="text-[10px] text-zinc-400 block font-medium">Traveling Personnel:</span>
+                                                <p className="font-bold text-zinc-800 dark:text-zinc-200">{selectedOrder.faculty_name}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-zinc-400 block font-medium">Filed By / Requester:</span>
+                                                <p className="font-bold text-zinc-800 dark:text-zinc-200">
+                                                    {selectedOrder.created_by_name || selectedOrder.faculty_name}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
 

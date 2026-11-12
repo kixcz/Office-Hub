@@ -32,6 +32,7 @@ class TravelOrderController extends Controller
         $query = TravelOrder::with([
             'faculty:id,first_name,last_name,faculty_id,program_id,profile_picture',
             'faculty.program:id,code',
+            'creator:id,name,email',
         ])
             ->orderBy('start_date', 'desc')
             ->orderBy('created_at', 'desc');
@@ -82,6 +83,9 @@ class TravelOrderController extends Controller
                 'status' => $to->status,
                 'with_per_diem' => (bool) $to->with_per_diem,
                 'estimated_budget' => number_format((float) $to->estimated_budget, 2),
+                'created_by_user_id' => $to->created_by_user_id,
+                'created_by_name' => $to->created_by_name ?: ($to->creator?->name ?? 'Self / Direct Applicant'),
+                'is_filed_by_other' => (bool) ($to->created_by_name && $to->created_by_name !== ($to->faculty ? ($to->faculty->first_name.' '.$to->faculty->last_name) : $to->faculty_name)),
                 'approver_name' => $to->approver_name,
                 'approver_role' => $to->approver_role,
                 'remarks' => $to->remarks,
@@ -131,6 +135,7 @@ class TravelOrderController extends Controller
     {
         $validated = $request->validate([
             'faculty_id' => 'required|exists:faculties,id',
+            'created_by_name' => 'nullable|string|max:255',
             'destination' => 'required|string|max:255',
             'purpose' => 'required|string',
             'start_date' => 'required|date',
@@ -146,10 +151,17 @@ class TravelOrderController extends Controller
         $count = TravelOrder::whereYear('created_at', date('Y'))->count() + 1;
         $trackingNumber = 'TO-'.date('Y').'-'.str_pad((string) $count, 4, '0', STR_PAD_LEFT);
 
+        $currentUser = $request->user();
+        $creatorName = ! empty($validated['created_by_name'])
+            ? trim($validated['created_by_name'])
+            : ($currentUser?->name ?? 'College Staff / Admin');
+
         TravelOrder::create([
             'tracking_number' => $trackingNumber,
             'faculty_id' => $faculty->id,
             'faculty_name' => $faculty->first_name.' '.$faculty->last_name,
+            'created_by_user_id' => $currentUser?->id,
+            'created_by_name' => $creatorName,
             'destination' => $validated['destination'],
             'purpose' => $validated['purpose'],
             'start_date' => $validated['start_date'],
@@ -158,7 +170,7 @@ class TravelOrderController extends Controller
             'with_per_diem' => $validated['with_per_diem'] ?? false,
             'estimated_budget' => $validated['estimated_budget'] ?? 0,
             'status' => 'Approved',
-            'approver_name' => $request->user()?->name ?? 'Dr. Eleanor Vance (College Dean)',
+            'approver_name' => $currentUser?->name ?? 'Dr. Eleanor Vance (College Dean)',
             'approver_role' => 'College Dean',
             'approved_at' => now(),
             'remarks' => $validated['remarks'] ?? 'Filed via OfficeHub Faculty Operations',
