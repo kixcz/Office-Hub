@@ -225,14 +225,31 @@ export default function LoadingGeneratorPage({
         });
     }, [activeCandidate, facultyPool, searchQuery, selectedProgram, selectedStatus]);
 
+    const getCsrfToken = (): string => {
+        const metaTag = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null;
+        if (metaTag?.content) {
+            return metaTag.content;
+        }
+
+        const match = document.cookie.match(new RegExp('(^|;\\s*)(XSRF-TOKEN)=([^;]*)'));
+        return match ? decodeURIComponent(match[3]) : '';
+    };
+
     const handleGenerate = () => {
         setIsGenerating(true);
+        const csrfToken = getCsrfToken();
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        };
+        if (csrfToken) {
+            headers['X-CSRF-TOKEN'] = csrfToken;
+            headers['X-XSRF-TOKEN'] = csrfToken;
+        }
+
         fetch('/schedule/loading-generator/run', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
-            },
+            headers,
             body: JSON.stringify({
                 weights: {
                     historical: useHistoricalData ? 30 : 15,
@@ -247,13 +264,22 @@ export default function LoadingGeneratorPage({
                 },
             }),
         })
-            .then((res) => res.json())
+            .then(async (res) => {
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`Server returned HTTP ${res.status}: ${text.slice(0, 120)}`);
+                }
+                return res.json();
+            })
             .then((data) => {
                 if (data.status === 'success' && data.candidates) {
                     setCandidates(data.candidates);
                     setSelectedCandidateCode(data.candidates[0]?.code || 'Candidate A');
                     setShowCandidatesSection(true);
                 }
+            })
+            .catch((err) => {
+                console.error('Failed to generate loading candidates:', err);
             })
             .finally(() => {
                 setIsGenerating(false);
