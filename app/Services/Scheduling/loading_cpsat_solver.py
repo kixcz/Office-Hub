@@ -111,7 +111,7 @@ def solve_loading(data):
 
     # SOLVE
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = 10.0
+    solver.parameters.max_time_in_seconds = 2.5
     solver.parameters.num_workers = 4
     status = solver.Solve(model)
 
@@ -187,6 +187,8 @@ def solve_loading(data):
 if __name__ == '__main__':
     try:
         raw_input = sys.stdin.read()
+        if raw_input.startswith('\ufeff'):
+            raw_input = raw_input[1:]
         if not raw_input.strip():
             print(json.dumps({'status': 'error', 'message': 'No input provided to solver'}))
             sys.exit(0)

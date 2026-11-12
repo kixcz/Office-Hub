@@ -621,9 +621,15 @@ class SemesterScheduleController extends Controller
             'readiness_percent' => 96.5,
         ];
 
-        // Generate Candidates A, B, C via OR-Tools CP-SAT (sample slice for performance)
+        // Generate Candidates A, B, C via fast deterministic preview for instant page load (<100ms)
         $sampleOfferings = array_slice($offerings, 0, 30);
-        $candidates = $optimizationService->generateCandidatesWithCpSat($facultyPool, $sampleOfferings, $matrixData['matrix']);
+        $candidates = $optimizationService->generateCandidatesWithCpSat(
+            $facultyPool,
+            $sampleOfferings,
+            $matrixData['matrix'],
+            [],
+            false
+        );
 
         return Inertia::render('schedule/loading/generator', [
             'currentPeriod' => $currentPeriod,

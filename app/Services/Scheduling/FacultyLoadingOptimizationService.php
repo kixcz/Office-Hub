@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Faculty;
 use App\Models\RoomSchedule;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\Process\Process;
 
 class FacultyLoadingOptimizationService
 {
@@ -143,8 +144,13 @@ class FacultyLoadingOptimizationService
         array $facultyPool,
         array $offerings,
         array $suitabilityMatrix,
-        array $configuredWeights = []
+        array $configuredWeights = [],
+        bool $usePython = true
     ): array {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(180);
+        }
+
         $strategies = [
             [
                 'code' => 'Candidate A',
@@ -169,17 +175,21 @@ class FacultyLoadingOptimizationService
         $candidates = [];
 
         foreach ($strategies as $strat) {
-            $payload = [
-                'faculty_pool' => $facultyPool,
-                'offerings' => $offerings,
-                'suitability_matrix' => $suitabilityMatrix,
-                'options' => [
-                    'strategy' => $strat['strategy'],
-                    'weights' => $configuredWeights,
-                ],
-            ];
+            $result = null;
 
-            $result = $this->executeCpSatPython($payload);
+            if ($usePython) {
+                $payload = [
+                    'faculty_pool' => $facultyPool,
+                    'offerings' => $offerings,
+                    'suitability_matrix' => $suitabilityMatrix,
+                    'options' => [
+                        'strategy' => $strat['strategy'],
+                        'weights' => $configuredWeights,
+                    ],
+                ];
+
+                $result = $this->executeCpSatPython($payload);
+            }
 
             if ($result && ($result['status'] ?? '') === 'success') {
                 $candidates[] = [
@@ -204,7 +214,7 @@ class FacultyLoadingOptimizationService
     }
 
     /**
-     * Execute Python CP-SAT script via subprocess pipes.
+     * Execute Python CP-SAT script via Symfony Process with strict timeout and pipe safety.
      */
     private function executeCpSatPython(array $payload): ?array
     {
@@ -213,37 +223,26 @@ class FacultyLoadingOptimizationService
             return null;
         }
 
-        $descriptorSpec = [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ];
+        try {
+            $process = new Process(['python', $scriptPath]);
+            $process->setInput(json_encode($payload));
+            $process->setTimeout(8);
+            $process->run();
 
-        $process = proc_open('python "'.addslashes($scriptPath).'"', $descriptorSpec, $pipes);
-
-        if (! is_resource($process)) {
-            return null;
-        }
-
-        fwrite($pipes[0], json_encode($payload));
-        fclose($pipes[0]);
-
-        $stdout = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-
-        $stderr = stream_get_contents($pipes[2]);
-        fclose($pipes[2]);
-
-        $returnCode = proc_close($process);
-
-        if ($returnCode === 0 && ! empty(trim($stdout))) {
-            $decoded = json_decode($stdout, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $decoded;
+            if ($process->isSuccessful()) {
+                $stdout = trim($process->getOutput());
+                if (! empty($stdout)) {
+                    $decoded = json_decode($stdout, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        return $decoded;
+                    }
+                }
+            } else {
+                Log::warning('CP-SAT python runner failed: '.$process->getErrorOutput());
             }
+        } catch (\Throwable $e) {
+            Log::warning('CP-SAT python execution error: '.$e->getMessage());
         }
-
-        Log::warning('CP-SAT python runner output: '.$stderr);
 
         return null;
     }
