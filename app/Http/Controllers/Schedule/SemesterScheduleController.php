@@ -44,6 +44,17 @@ class SemesterScheduleController extends Controller
      */
     private function resolveScopeCollegeId(Request $request): ?int
     {
+        if ($request->has('college_id') && is_numeric($request->input('college_id'))) {
+            return (int) $request->input('college_id');
+        }
+
+        if ($request->has('college')) {
+            $college = College::where('code', $request->input('college'))->first();
+            if ($college) {
+                return $college->id;
+            }
+        }
+
         $user = $request->user();
         if (! $user) {
             return null;
@@ -587,7 +598,7 @@ class SemesterScheduleController extends Controller
                 'hours_per_week' => 3.0,
                 'current_faculty_id' => $s->faculty_id,
                 'instructor' => $s->instructor,
-                'program_code' => str_contains($s->section ?? '', 'IS') ? 'BSIS' : (str_contains($s->section ?? '', 'DIT') ? 'DIT' : 'BSIT'),
+                'program_code' => ! empty($s->section) ? explode(' ', trim($s->section))[0] : 'General',
             ];
         })->toArray();
 
@@ -663,12 +674,18 @@ class SemesterScheduleController extends Controller
             $this->applyScheduleCollegeScope($schedulesQuery, $scopeCollegeId);
         }
         $offerings = $schedulesQuery->take(30)->get()->map(function ($s) {
+            $isLab = str_contains(strtolower($s->room_name ?? ''), 'lab') || str_contains(strtolower($s->room_name ?? ''), 'clr');
+
             return [
                 'id' => $s->id,
                 'course_code' => $s->course_code,
                 'course_title' => $s->course_title,
                 'section' => $s->section,
+                'room_name' => $s->room_name,
+                'is_lab' => $isLab,
                 'units' => 3.0,
+                'hours_per_week' => 3.0,
+                'program_code' => ! empty($s->section) ? explode(' ', trim($s->section))[0] : 'General',
             ];
         })->toArray();
 
