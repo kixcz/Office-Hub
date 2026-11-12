@@ -226,6 +226,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('generator/assign-faculty', [SemesterScheduleController::class, 'assignFaculty'])->name('generator.assign-faculty');
         Route::get('sections', [SemesterScheduleController::class, 'sectionsOfferings'])->name('sections');
         Route::get('loading', [SemesterScheduleController::class, 'facultyLoading'])->name('loading');
+        Route::get('credits', [SemesterScheduleController::class, 'facultyCredits'])->name('credits');
+        Route::post('credits', [SemesterScheduleController::class, 'storeFacultyCredit'])->name('credits.store');
+        Route::put('credits/{credit}', [SemesterScheduleController::class, 'updateFacultyCredit'])->name('credits.update');
+        Route::delete('credits/{credit}', [SemesterScheduleController::class, 'destroyFacultyCredit'])->name('credits.destroy');
         Route::get('loading-generator', [SemesterScheduleController::class, 'loadingGenerator'])->name('loading-generator');
         Route::post('loading-generator/run', [SemesterScheduleController::class, 'runLoadingSolver'])->name('loading-generator.run');
         Route::post('loading-generator/apply', [SemesterScheduleController::class, 'applyLoadingCandidate'])->name('loading-generator.apply');
@@ -236,6 +240,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('loading-review/resolve-flag', [SemesterScheduleController::class, 'resolveLoadingFlag'])->name('loading-review.resolve-flag');
         Route::post('loading-review/dean-decision', [SemesterScheduleController::class, 'deanLoadingDecision'])->name('loading-review.dean-decision');
         Route::get('policies', [SemesterScheduleController::class, 'loadPolicies'])->name('policies');
+        Route::post('policies/update', [SemesterScheduleController::class, 'updateLoadPolicies'])->name('policies.update');
         // Timetable Generation with Loading Gating & Locked Version Source
         Route::prefix('timetable')->name('timetable.')->group(function () {
             Route::get('constraints', [SemesterScheduleController::class, 'timetableConstraints'])->name('constraints');

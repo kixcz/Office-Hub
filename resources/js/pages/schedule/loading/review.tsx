@@ -3,34 +3,40 @@ import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import SchedulingWorkspaceLayout from '@/components/scheduling-workspace-layout';
 import { type BreadcrumbItem } from '@/types';
-import { 
-    CheckSquare, 
-    Layers, 
-    Users, 
-    Building2, 
-    AlertTriangle, 
-    CheckCircle2, 
-    Clock, 
-    ArrowRight, 
-    ChevronRight, 
-    Search, 
-    Filter, 
-    Download, 
-    Flag, 
-    MessageSquare, 
-    History, 
-    Paperclip, 
-    PieChart, 
-    ShieldCheck, 
-    Send, 
-    Check, 
-    X, 
+import {
+    CheckSquare,
+    Layers,
+    Users,
+    Building2,
+    AlertTriangle,
+    CheckCircle2,
+    Clock,
+    ArrowRight,
+    ChevronRight,
+    Search,
+    Filter,
+    Download,
+    Flag,
+    MessageSquare,
+    History,
+    PieChart,
+    ShieldCheck,
+    Send,
+    Check,
+    X,
     Sparkles,
     UserCheck,
     RotateCcw,
     FileText,
-    Eye
+    Eye,
+    Calendar,
+    Lock,
+    Unlock,
+    BookOpen,
+    ExternalLink,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Scheduling', href: '/schedule/generator' },
@@ -113,6 +119,20 @@ interface AuditLogItem {
     created_at: string;
 }
 
+interface ChangeRequest {
+    id: number;
+    requester: string;
+    requester_program: string;
+    target_faculty: string;
+    offering_course: string;
+    offering_section: string;
+    target_course: string;
+    target_section: string;
+    reason: string;
+    status: 'Pending' | 'For Approval' | 'Approved' | 'Declined';
+    days_ago: string;
+}
+
 interface LoadingReviewProps {
     currentPeriod: any;
     academicPeriods: any[];
@@ -146,1170 +166,710 @@ interface LoadingReviewProps {
 
 export default function LoadingReviewPage({
     currentPeriod,
+    academicPeriods = [],
     college,
-    currentWorkflowStage,
+    currentWorkflowStage = 'faculty_review',
     summary,
-    programs,
-    facultyLoads,
-    flags,
+    programs = [],
+    facultyLoads = [],
+    flags = [],
     collegeReview,
-    auditHistory,
+    auditHistory = [],
 }: LoadingReviewProps) {
-    // Top Navigation Tabs
-    const [activePerspective, setActivePerspective] = useState<'program' | 'dean'>('program');
-    const [selectedProgramId, setSelectedProgramId] = useState<number>(programs[0]?.id || 1);
-    const [searchProgram, setSearchProgram] = useState('');
+    // Modals & Drawers state
+    const [showWorkflowModal, setShowWorkflowModal] = useState(false);
+    const [showFacultyLoadingModal, setShowFacultyLoadingModal] = useState(false);
+    const [showChangeRequestsModal, setShowChangeRequestsModal] = useState(false);
+    const [inspectedFaculty, setInspectedFaculty] = useState<FacultyLoadItem | null>(facultyLoads[0] || null);
 
-    // Detail Panel Tabs
-    const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'faculty' | 'flags' | 'comments' | 'attachments' | 'history'>('overview');
+    // Course Change Requests mock data matching the screenshot ("5 (2 Pending, 3 For Approval)")
+    const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([
+        {
+            id: 1,
+            requester: 'Prof. J. Dela Cruz',
+            requester_program: 'DIT Program',
+            target_faculty: 'Prof. K. Panaligan',
+            offering_course: 'ITEL 601 (AI)',
+            offering_section: 'DIT 3B',
+            target_course: 'CS 612 (Prog II)',
+            target_section: 'BSIT 2A',
+            reason: 'Direct specialization alignment in Machine Learning',
+            status: 'For Approval',
+            days_ago: '1 day ago',
+        },
+        {
+            id: 2,
+            requester: 'Prof. M. Ramos',
+            requester_program: 'BSIS Program',
+            target_faculty: 'Prof. A. Torres',
+            offering_course: 'ISEL 601 (Data Viz)',
+            offering_section: 'BSIS 3A',
+            target_course: 'IT 635 (Prototyping)',
+            target_section: 'BSIT 1A',
+            reason: 'Mutual consent swap due to lab software readiness',
+            status: 'For Approval',
+            days_ago: '2 days ago',
+        },
+        {
+            id: 3,
+            requester: 'Prof. Domingo Origines',
+            requester_program: 'BSIT Program',
+            target_faculty: 'Prof. Jean Nikolai Roxas',
+            offering_course: 'CS 121 (Prog II)',
+            offering_section: 'BSCS 1B',
+            target_course: 'IT 111 (Intro Computing)',
+            target_section: 'BSIT 1C',
+            reason: 'Administrative schedule deconfliction for College Dean',
+            status: 'For Approval',
+            days_ago: '2 days ago',
+        },
+        {
+            id: 4,
+            requester: 'Prof. Rhea Mae Perito',
+            requester_program: 'BSIS Program',
+            target_faculty: 'Prof. Carlos Mendoza',
+            offering_course: 'ISEL 602 (Enterprise Sec)',
+            offering_section: 'BSIS 4A',
+            target_course: 'ITEL 604 (Integrative Prog)',
+            target_section: 'DIT 4A',
+            reason: 'Specialization matching for senior network security project',
+            status: 'Pending',
+            days_ago: '3 hours ago',
+        },
+        {
+            id: 5,
+            requester: 'Prof. Carlos Mendoza',
+            requester_program: 'BSDS Program',
+            target_faculty: 'Prof. J. Dela Cruz',
+            offering_course: 'MATH 101 (Modern World)',
+            offering_section: 'BSDS 1A',
+            target_course: 'GE 101 (Understanding Self)',
+            target_section: 'BSIT 1B',
+            reason: 'Faculty mutual agreement on foundation courses',
+            status: 'Pending',
+            days_ago: '5 hours ago',
+        },
+    ]);
 
-    // Faculty Filter
-    const [facultySearch, setFacultySearch] = useState('');
-    const [facultyStatusFilter, setFacultyStatusFilter] = useState('All');
-
-    // Selected Faculty for Side Inspection Drawer
-    const [inspectedFaculty, setInspectedFaculty] = useState<FacultyLoadItem | null>(null);
-
-    // Modals & Action States
-    const [showFlagModal, setShowFlagModal] = useState(false);
-    const [flagData, setFlagData] = useState({
-        program_id: selectedProgramId,
-        faculty_id: '',
-        flag_type: 'Specialization Mismatch',
-        severity: 'Needs Attention',
-        comment: '',
-        suggested_action: '',
-    });
-
-    const [showResolveModal, setShowResolveModal] = useState(false);
-    const [resolvingFlagId, setResolvingFlagId] = useState<number | null>(null);
-    const [resolutionNotes, setResolutionNotes] = useState('');
-
-    const [endorsementNotes, setEndorsementNotes] = useState('');
-    const [showEndorseModal, setShowEndorseModal] = useState(false);
-    const [showRevisionModal, setShowRevisionModal] = useState(false);
-    const [revisionReason, setRevisionReason] = useState('');
-
-    // Current Selected Program Data
-    const selectedProg = programs.find((p) => p.id === selectedProgramId) || programs[0];
-    const filteredProgramFaculty = facultyLoads.filter((f) => {
-        const matchesProg = f.program_id === selectedProgramId;
-        const matchesSearch = f.name.toLowerCase().includes(facultySearch.toLowerCase()) || 
-                              f.specialization.toLowerCase().includes(facultySearch.toLowerCase());
-        const matchesStatus = facultyStatusFilter === 'All' || f.status === facultyStatusFilter;
-        return matchesProg && matchesSearch && matchesStatus;
-    });
-
-    const filteredProgramFlags = flags.filter((fl) => fl.program_id === selectedProgramId);
-
-    // Handle Endorsement to Dean
-    const handleEndorseToDean = () => {
-        if (!selectedProg) return;
-        router.post(route('schedule.loading-review.endorse-program'), {
-            program_id: selectedProg.id,
-            notes: endorsementNotes,
-        }, {
-            onSuccess: () => {
-                setShowEndorseModal(false);
-                setEndorsementNotes('');
-            }
-        });
+    const handleApproveRequest = (id: number) => {
+        setChangeRequests((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, status: 'Approved' } : r))
+        );
     };
 
-    // Handle Program Revision Request
-    const handleRequestRevision = () => {
-        if (!selectedProg || !revisionReason.trim()) return;
-        router.post(route('schedule.loading-review.request-revision'), {
-            program_id: selectedProg.id,
-            reason: revisionReason,
-        }, {
-            onSuccess: () => {
-                setShowRevisionModal(false);
-                setRevisionReason('');
-            }
-        });
+    const handleDeclineRequest = (id: number) => {
+        setChangeRequests((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, status: 'Declined' } : r))
+        );
     };
 
-    // Handle Dean Decision
-    const handleDeanDecision = (decision: 'Approve' | 'Request Revision' | 'Return to Program', targetProgId?: number) => {
-        router.post(route('schedule.loading-review.dean-decision'), {
-            decision,
-            notes: endorsementNotes || 'Dean reviewed and committed.',
-            program_id: targetProgId,
-        }, {
-            onSuccess: () => {
-                setEndorsementNotes('');
-            }
-        });
-    };
-
-    // Handle Flag Creation
-    const handleSubmitFlag = (e: React.FormEvent) => {
-        e.preventDefault();
-        router.post(route('schedule.loading-review.flag'), {
-            ...flagData,
-            program_id: selectedProg?.id,
-        }, {
-            onSuccess: () => {
-                setShowFlagModal(false);
-                setFlagData({
-                    program_id: selectedProg?.id || 1,
-                    faculty_id: '',
-                    flag_type: 'Specialization Mismatch',
-                    severity: 'Needs Attention',
-                    comment: '',
-                    suggested_action: '',
-                });
-            }
-        });
-    };
-
-    // Handle Flag Resolution
-    const handleResolveFlag = () => {
-        if (!resolvingFlagId || !resolutionNotes.trim()) return;
-        router.post(route('schedule.loading-review.resolve-flag'), {
-            flag_id: resolvingFlagId,
-            status: 'Resolved',
-            resolution_notes: resolutionNotes,
-        }, {
-            onSuccess: () => {
-                setShowResolveModal(false);
-                setResolvingFlagId(null);
-                setResolutionNotes('');
-            }
-        });
+    const handleLockLoading = () => {
+        if (confirm('Lock Faculty Loading? This will finalize all assignments and unlock Timetable Generation (CP-SAT).')) {
+            router.post('/schedule/timetable/lock-loading', {}, {
+                onSuccess: () => alert('Faculty loading has been locked successfully! Timetable generation is now unlocked.'),
+            });
+        }
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Loading Review - Ascend" />
-
-            <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
-                <div className="space-y-6 p-6 font-['Poppins']">
-                    {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
-                            <CheckSquare className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Loading Review</h1>
-                            <p className="text-xs text-slate-500 font-medium">
-                                Review and approve faculty loading before schedule generation. Loading undergoes Program Head review per program and subsequent Dean review for final endorsement.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Workflow Progress Tracker */}
-                    <div className="bg-white border border-slate-200/80 rounded-2xl p-2.5 px-4 flex items-center gap-4 shadow-xs">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Workflow</span>
-                        <div className="flex items-center gap-2 text-xs">
-                            <div className="flex items-center gap-1.5 font-medium text-slate-400">
-                                <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-[10px]">1</div>
-                                <span>Generated (CP-SAT)</span>
-                            </div>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-                            <div className={`flex items-center gap-1.5 font-bold ${currentWorkflowStage === 'Program Review' ? 'text-indigo-600 bg-indigo-50/80 px-2.5 py-1 rounded-full' : 'text-slate-500'}`}>
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] ${currentWorkflowStage === 'Program Review' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'}`}>2</div>
-                                <span>Program Review</span>
-                            </div>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-                            <div className={`flex items-center gap-1.5 font-bold ${currentWorkflowStage === 'Dean Review' ? 'text-indigo-600 bg-indigo-50/80 px-2.5 py-1 rounded-full' : 'text-slate-400'}`}>
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] ${currentWorkflowStage === 'Dean Review' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>3</div>
-                                <span>Dean Review</span>
-                            </div>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-                            <div className={`flex items-center gap-1.5 font-bold ${currentWorkflowStage === 'Approved' ? 'text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full' : 'text-slate-400'}`}>
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] ${currentWorkflowStage === 'Approved' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-400'}`}>4</div>
-                                <span>Approved</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 6 Top Metric Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                            <Layers className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="text-xl font-bold text-slate-900">{summary.total_programs}</div>
-                            <div className="text-[11px] font-medium text-slate-500">Programs</div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                            <Users className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="text-xl font-bold text-slate-900">{summary.total_faculty}</div>
-                            <div className="text-[11px] font-medium text-slate-500">Total Faculty</div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                            <Clock className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="text-xl font-bold text-slate-900">{summary.for_program_review}</div>
-                            <div className="text-[11px] font-medium text-slate-500">For Program Review</div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                            <Building2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="text-xl font-bold text-slate-900">{summary.for_dean_review}</div>
-                            <div className="text-[11px] font-medium text-slate-500">For Dean Review</div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="text-xl font-bold text-slate-900">{summary.completed_reviews}</div>
-                            <div className="text-[11px] font-medium text-slate-500">Reviewed / Completed</div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                            <AlertTriangle className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="text-xl font-bold text-slate-900">{summary.with_issues}</div>
-                            <div className="text-[11px] font-medium text-slate-500">With Issues / Returns</div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Perspective Switcher & Action Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center p-1 bg-slate-100/80 rounded-xl border border-slate-200 w-fit">
-                        <button
-                            type="button"
-                            onClick={() => setActivePerspective('program')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                                activePerspective === 'program'
-                                    ? 'bg-slate-900 text-white shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                        >
-                            <Users className="w-4 h-4" />
-                            <span>Program Review (Program Heads)</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setActivePerspective('dean')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                                activePerspective === 'dean'
-                                    ? 'bg-slate-900 text-white shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                        >
-                            <Building2 className="w-4 h-4" />
-                            <span>Dean Review (College Consolidated)</span>
-                            {summary.for_dean_review > 0 && (
-                                <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-indigo-500 text-white font-bold">
-                                    {summary.for_dean_review}
-                                </span>
-                            )}
-                        </button>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setShowFlagModal(true)}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-xs"
-                        >
-                            <Flag className="w-3.5 h-3.5 text-rose-500" />
-                            <span>Flag Loading Issue</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => window.print()}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-xs"
-                        >
-                            <Download className="w-3.5 h-3.5 text-slate-500" />
-                            <span>Export Report</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Perspective View: Program Review vs Dean Consolidated Review */}
-                {activePerspective === 'program' ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                        {/* Left Sidebar: Program Submissions List */}
-                        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 space-y-4">
-                            <div className="flex items-center justify-between">
+            <Head title="Loading Review - Semester Scheduling" />
+            <SchedulingWorkspaceLayout
+                currentPeriod={currentPeriod}
+                academicPeriods={academicPeriods}
+                title="Loading Review"
+                subtitle="Review, approve, and finalize the faculty loading before timetable generation."
+            >
+                <div className="space-y-6">
+                    {/* Header Card (Bottom-Right Quadrant Match) */}
+                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div className="flex items-center gap-3.5">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#8B1E3F] to-[#60122B] text-white shadow-md shadow-[#8B1E3F]/20">
+                                    <CheckSquare className="h-5 w-5" />
+                                </div>
                                 <div>
-                                    <h3 className="text-sm font-bold text-slate-900">Program Loading Submissions</h3>
-                                    <p className="text-[11px] text-slate-500">Review faculty load per program and take action.</p>
+                                    <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                                        Loading Review
+                                    </h1>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Review, approve, and finalize the faculty loading before timetable generation.
+                                    </p>
                                 </div>
                             </div>
 
-                            <div className="relative">
-                                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input
-                                    type="text"
-                                    value={searchProgram}
-                                    onChange={(e) => setSearchProgram(e.target.value)}
-                                    placeholder="Search program..."
-                                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                {programs
-                                    .filter((p) => p.code.toLowerCase().includes(searchProgram.toLowerCase()) || p.name.toLowerCase().includes(searchProgram.toLowerCase()))
-                                    .map((prog) => {
-                                        const isSelected = prog.id === selectedProgramId;
-                                        return (
-                                            <div
-                                                key={prog.id}
-                                                onClick={() => setSelectedProgramId(prog.id)}
-                                                className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
-                                                    isSelected
-                                                        ? 'bg-gradient-to-r from-slate-900 to-indigo-950 text-white border-transparent shadow-md'
-                                                        : 'bg-white hover:bg-slate-50/80 border-slate-200/80 text-slate-800'
-                                                }`}
-                                            >
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-sm tracking-tight">{prog.code}</span>
-                                                            <span
-                                                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                                                    prog.status === 'Completed' || prog.status === 'Endorsed'
-                                                                        ? isSelected ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                                        : prog.status === 'Revision Required'
-                                                                        ? isSelected ? 'bg-rose-500/20 text-rose-200 border border-rose-400/30' : 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                                        : isSelected ? 'bg-amber-500/20 text-amber-200 border border-amber-400/30' : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                                }`}
-                                                            >
-                                                                {prog.status === 'Completed' ? 'Program Review Completed' : prog.status === 'Revision Required' ? 'Revision Required' : 'For Program Review'}
-                                                            </span>
-                                                        </div>
-                                                        <p className={`text-[11px] line-clamp-1 mt-0.5 ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
-                                                            {prog.name}
-                                                        </p>
-                                                    </div>
-                                                    <ChevronRight className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-300' : 'text-slate-400'}`} />
-                                                </div>
-
-                                                <div className={`mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] ${isSelected ? 'border-white/10 text-slate-300' : 'border-slate-100 text-slate-500'}`}>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Users className="w-3.5 h-3.5" />
-                                                        <span>{prog.faculty_count} Faculty</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <AlertTriangle className={`w-3.5 h-3.5 ${prog.unresolved_issues > 0 ? (isSelected ? 'text-rose-400' : 'text-rose-500') : (isSelected ? 'text-slate-400' : 'text-slate-400')}`} />
-                                                        <span>{prog.unresolved_issues} Conflicts</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 font-semibold">
-                                                        <span className={isSelected ? 'text-emerald-300' : 'text-emerald-600'}>
-                                                            {prog.load_balance_percent}% Balance
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                            </div>
-                        </div>
-
-                        {/* Right Content Area: Program Review Workspace */}
-                        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-6">
-                            {/* Header for Selected Program */}
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
-                                        {selectedProg?.code}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <h2 className="text-lg font-bold text-slate-900">{selectedProg?.code} - Faculty Loading Review</h2>
-                                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                                selectedProg?.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                                            }`}>
-                                                {selectedProg?.status}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-slate-500">
-                                            {selectedProg?.name} • AY {currentPeriod?.academic_year || '2026-2027'}, {currentPeriod?.semester || '1st Semester'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowFlagModal(true)}
-                                        className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5"
-                                    >
-                                        <Flag className="w-3.5 h-3.5 text-rose-500" />
-                                        <span>Add Flag</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Program Sub-Tabs: Overview, Faculty Loads, Issues & Flags, Comments, Attachments, History */}
-                            <div className="flex items-center gap-1 border-b border-slate-200 text-xs font-semibold text-slate-600">
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveDetailTab('overview')}
-                                    className={`px-3.5 py-2.5 border-b-2 -mb-px flex items-center gap-1.5 ${
-                                        activeDetailTab === 'overview'
-                                            ? 'border-indigo-600 text-indigo-600 font-bold'
-                                            : 'border-transparent hover:text-slate-900'
-                                    }`}
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowWorkflowModal(true)}
+                                    className="gap-2 border-slate-200 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200"
                                 >
-                                    <PieChart className="w-3.5 h-3.5" />
-                                    <span>Overview</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveDetailTab('faculty')}
-                                    className={`px-3.5 py-2.5 border-b-2 -mb-px flex items-center gap-1.5 ${
-                                        activeDetailTab === 'faculty'
-                                            ? 'border-indigo-600 text-indigo-600 font-bold'
-                                            : 'border-transparent hover:text-slate-900'
-                                    }`}
-                                >
-                                    <Users className="w-3.5 h-3.5" />
-                                    <span>Faculty Loads ({filteredProgramFaculty.length})</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveDetailTab('flags')}
-                                    className={`px-3.5 py-2.5 border-b-2 -mb-px flex items-center gap-1.5 ${
-                                        activeDetailTab === 'flags'
-                                            ? 'border-indigo-600 text-indigo-600 font-bold'
-                                            : 'border-transparent hover:text-slate-900'
-                                    }`}
-                                >
-                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                                    <span>Issues & Flags ({filteredProgramFlags.length})</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveDetailTab('history')}
-                                    className={`px-3.5 py-2.5 border-b-2 -mb-px flex items-center gap-1.5 ${
-                                        activeDetailTab === 'history'
-                                            ? 'border-indigo-600 text-indigo-600 font-bold'
-                                            : 'border-transparent hover:text-slate-900'
-                                    }`}
-                                >
-                                    <History className="w-3.5 h-3.5" />
-                                    <span>Audit History</span>
-                                </button>
+                                    <Eye className="h-3.5 w-3.5" />
+                                    View Workflow
+                                </Button>
                             </div>
-
-                            {/* Tab 1: Overview */}
-                            {activeDetailTab === 'overview' && (
-                                <div className="space-y-6">
-                                    {/* 4 Stat Boxes */}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                                            <div className="text-[11px] font-medium text-slate-500">Program Faculty</div>
-                                            <div className="text-xl font-bold text-slate-900 mt-1">{selectedProg?.faculty_count}</div>
-                                            <div className="text-[10px] text-slate-400 mt-0.5">Assigned to {selectedProg?.code}</div>
-                                        </div>
-                                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                                            <div className="text-[11px] font-medium text-slate-500">Total Load</div>
-                                            <div className="text-xl font-bold text-slate-900 mt-1">{selectedProg?.total_load.toFixed(1)} hrs/wk</div>
-                                            <div className="text-[10px] text-slate-400 mt-0.5">Curriculum demand</div>
-                                        </div>
-                                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                                            <div className="text-[11px] font-medium text-slate-500">Avg Faculty Load</div>
-                                            <div className="text-xl font-bold text-slate-900 mt-1">{selectedProg?.avg_load.toFixed(1)} hrs/wk</div>
-                                            <div className="text-[10px] text-slate-400 mt-0.5">Target: 12.0 hrs/wk</div>
-                                        </div>
-                                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                                            <div className="text-[11px] font-medium text-slate-500">Load Balance</div>
-                                            <div className="text-xl font-bold text-emerald-600 mt-1">{selectedProg?.load_balance_percent}%</div>
-                                            <div className="text-[10px] text-slate-400 mt-0.5">High optimization fit</div>
-                                        </div>
-                                    </div>
-
-                                    {/* Distribution & Compliance */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
-                                            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Load Distribution</h4>
-                                            <div className="space-y-2 text-xs">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="flex items-center gap-2">
-                                                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
-                                                        Within Target (9 – 15 hrs)
-                                                    </span>
-                                                    <span className="font-bold text-slate-700">{selectedProg?.distribution.within_target} faculty</span>
-                                                </div>
-                                                <div className="flex items-center justify-between">
-                                                    <span className="flex items-center gap-2">
-                                                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                                                        Underload (&lt; 9 hrs)
-                                                    </span>
-                                                    <span className="font-bold text-amber-600">{selectedProg?.distribution.underload} faculty</span>
-                                                </div>
-                                                <div className="flex items-center justify-between">
-                                                    <span className="flex items-center gap-2">
-                                                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                                                        Overload (&gt; 15 hrs)
-                                                    </span>
-                                                    <span className="font-bold text-rose-600">{selectedProg?.distribution.overload} faculty</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
-                                            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Compliance Checks</h4>
-                                            <div className="space-y-2 text-xs">
-                                                <div className="flex items-center gap-2 text-emerald-700">
-                                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                                    <span>Within allowable load range (9 - 15 hrs/wk)</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-emerald-700">
-                                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                                    <span>No faculty schedule overlap conflicts</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-emerald-700">
-                                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                                    <span>All required {selectedProg?.code} core courses assigned</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Action Bar for Program Head */}
-                                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                        <div>
-                                            <div className="text-xs font-bold text-slate-800">Program Head Governance Review</div>
-                                            <p className="text-[11px] text-slate-500">
-                                                As Program Head, review the generated loading, flag or resolve any issues, and endorse to Dean for college consolidation.
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowRevisionModal(true)}
-                                                className="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 flex items-center gap-1.5"
-                                            >
-                                                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                                                <span>Request Revision</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowEndorseModal(true)}
-                                                className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 flex items-center gap-1.5 shadow-xs"
-                                            >
-                                                <span>Endorse to Dean</span>
-                                                <ArrowRight className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Tab 2: Faculty Loads Table */}
-                            {activeDetailTab === 'faculty' && (
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="relative flex-1 max-w-sm">
-                                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                                            <input
-                                                type="text"
-                                                value={facultySearch}
-                                                onChange={(e) => setFacultySearch(e.target.value)}
-                                                placeholder="Filter faculty..."
-                                                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none"
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <select
-                                                value={facultyStatusFilter}
-                                                onChange={(e) => setFacultyStatusFilter(e.target.value)}
-                                                className="px-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white"
-                                            >
-                                                <option value="All">All Statuses</option>
-                                                <option value="Balanced">Balanced</option>
-                                                <option value="Underloaded">Underloaded</option>
-                                                <option value="Overloaded">Overloaded</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="overflow-x-auto rounded-xl border border-slate-200/80">
-                                        <table className="w-full text-left text-xs">
-                                            <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200/80">
-                                                <tr>
-                                                    <th className="py-2.5 px-3">Faculty</th>
-                                                    <th className="py-2.5 px-3">Designation</th>
-                                                    <th className="py-2.5 px-3 text-center">Assigned Load</th>
-                                                    <th className="py-2.5 px-3 text-center">Target Load</th>
-                                                    <th className="py-2.5 px-3 text-center">Preps</th>
-                                                    <th className="py-2.5 px-3 text-center">Match</th>
-                                                    <th className="py-2.5 px-3 text-center">Status</th>
-                                                    <th className="py-2.5 px-3 text-right">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {filteredProgramFaculty.map((f) => (
-                                                    <tr key={f.id} className="hover:bg-slate-50/60 transition-colors">
-                                                        <td className="py-2.5 px-3">
-                                                            <div className="font-bold text-slate-800">{f.name}</div>
-                                                            <div className="text-[10px] text-slate-400">{f.specialization}</div>
-                                                        </td>
-                                                        <td className="py-2.5 px-3 text-slate-600">
-                                                            <span className="px-2 py-0.5 rounded-md text-[10px] bg-slate-100 font-medium">
-                                                                {f.designation}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-2.5 px-3 text-center font-bold text-slate-800">
-                                                            {f.assigned_load.toFixed(1)} hrs
-                                                        </td>
-                                                        <td className="py-2.5 px-3 text-center text-slate-500">
-                                                            {f.target_load.toFixed(1)} hrs
-                                                        </td>
-                                                        <td className="py-2.5 px-3 text-center text-slate-700">
-                                                            {f.preparations}
-                                                        </td>
-                                                        <td className="py-2.5 px-3 text-center">
-                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                                {f.course_match}%
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-2.5 px-3 text-center">
-                                                            <span
-                                                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                                                    f.status === 'Balanced'
-                                                                        ? 'bg-emerald-50 text-emerald-700'
-                                                                        : f.status === 'Overloaded'
-                                                                        ? 'bg-rose-50 text-rose-700'
-                                                                        : 'bg-amber-50 text-amber-700'
-                                                                }`}
-                                                            >
-                                                                {f.status}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-2.5 px-3 text-right">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setInspectedFaculty(f)}
-                                                                className="px-2 py-1 rounded-md text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 border border-indigo-200 inline-flex items-center gap-1"
-                                                            >
-                                                                <Eye className="w-3 h-3" />
-                                                                <span>Inspect</span>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Tab 3: Issues & Flags */}
-                            {activeDetailTab === 'flags' && (
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                            Program Loading Flags ({filteredProgramFlags.length})
-                                        </h4>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowFlagModal(true)}
-                                            className="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 flex items-center gap-1.5"
-                                        >
-                                            <Flag className="w-3.5 h-3.5" />
-                                            <span>Add New Flag</span>
-                                        </button>
-                                    </div>
-
-                                    {filteredProgramFlags.length === 0 ? (
-                                        <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                            <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                                            <p className="text-xs font-semibold text-slate-700">No active flags for {selectedProg?.code}</p>
-                                            <p className="text-[11px] text-slate-400">All faculty loads meet specialization and load policy rules.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {filteredProgramFlags.map((fl) => (
-                                                <div key={fl.id} className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                                                {fl.flag_type}
-                                                            </span>
-                                                            <span className="text-xs font-bold text-slate-800">
-                                                                {fl.faculty_name ? `Target: ${fl.faculty_name}` : 'General Program Flag'}
-                                                            </span>
-                                                        </div>
-                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                                            fl.status === 'Resolved' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                                                        }`}>
-                                                            {fl.status}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs text-slate-600">{fl.comment}</p>
-                                                    {fl.suggested_action && (
-                                                        <div className="p-2 rounded-lg bg-indigo-50/50 border border-indigo-100 text-[11px] text-indigo-900 flex items-center gap-1.5">
-                                                            <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                                                            <span>Suggested Action: {fl.suggested_action}</span>
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-100">
-                                                        <span>Logged by {fl.reviewer_name} • {fl.created_at}</span>
-                                                        {fl.status !== 'Resolved' && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setResolvingFlagId(fl.id);
-                                                                    setShowResolveModal(true);
-                                                                }}
-                                                                className="font-bold text-indigo-600 hover:text-indigo-800"
-                                                            >
-                                                                Resolve Flag →
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Tab 4: Audit History */}
-                            {activeDetailTab === 'history' && (
-                                <div className="space-y-3">
-                                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                        Loading Governance Audit Trail
-                                    </h4>
-                                    <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
-                                        {auditHistory.map((log) => (
-                                            <div key={log.id} className="p-3.5 text-xs flex items-start justify-between gap-4 bg-white hover:bg-slate-50/60">
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-bold text-slate-800">{log.action}</span>
-                                                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 font-semibold">
-                                                            {log.program_code}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-slate-500 mt-0.5">{log.details}</p>
-                                                </div>
-                                                <div className="text-right text-[10px] text-slate-400 shrink-0">
-                                                    <div>{log.user_name}</div>
-                                                    <div>{log.created_at}</div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </div>
-                ) : (
-                    /* Perspective View: Dean Review (College Consolidated) */
-                    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-6">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-lg font-bold text-slate-900">College Consolidated Loading Plan Review</h2>
-                                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                        collegeReview?.status === 'Approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-purple-50 text-purple-700'
-                                    }`}>
-                                        Dean Review Stage ({collegeReview?.status || 'Pending'})
+
+                    {/* Linear Progress Step Pipeline Tracker (1 -> 2 -> 3 -> 4 -> 5 -> 6) */}
+                    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex min-w-[760px] items-center justify-between">
+                            {/* Step 1: Generated v3 */}
+                            <div className="flex items-center gap-2.5">
+                                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs">
+                                    <Check className="h-4 w-4" />
+                                </span>
+                                <div>
+                                    <div className="text-xs font-bold text-slate-900 dark:text-white">
+                                        1. Generated
+                                    </div>
+                                    <div className="text-[10px] text-emerald-600 font-medium">v3 Ready</div>
+                                </div>
+                            </div>
+
+                            <div className="h-0.5 w-8 bg-emerald-500" />
+
+                            {/* Step 2: Program Review Completed */}
+                            <div className="flex items-center gap-2.5">
+                                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs">
+                                    <Check className="h-4 w-4" />
+                                </span>
+                                <div>
+                                    <div className="text-xs font-bold text-slate-900 dark:text-white">
+                                        2. Program Review
+                                    </div>
+                                    <div className="text-[10px] text-emerald-600 font-medium">Completed</div>
+                                </div>
+                            </div>
+
+                            <div className="h-0.5 w-8 bg-emerald-500" />
+
+                            {/* Step 3: Dean Review Completed */}
+                            <div className="flex items-center gap-2.5">
+                                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs">
+                                    <Check className="h-4 w-4" />
+                                </span>
+                                <div>
+                                    <div className="text-xs font-bold text-slate-900 dark:text-white">
+                                        3. Dean Review
+                                    </div>
+                                    <div className="text-[10px] text-emerald-600 font-medium">Completed</div>
+                                </div>
+                            </div>
+
+                            <div className="h-0.5 w-8 bg-[#8B1E3F]" />
+
+                            {/* Step 4: Faculty Review In Progress */}
+                            <div className="flex items-center gap-2.5">
+                                <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-[#8B1E3F] text-xs font-bold text-white shadow-sm shadow-[#8B1E3F]/30 ring-4 ring-[#8B1E3F]/20">
+                                    4
+                                </span>
+                                <div>
+                                    <div className="text-xs font-bold text-[#8B1E3F] dark:text-rose-400">
+                                        4. Faculty Review
+                                    </div>
+                                    <div className="text-[10px] font-semibold text-rose-600">In Progress</div>
+                                </div>
+                            </div>
+
+                            <div className="h-0.5 w-8 bg-slate-200 dark:bg-slate-700" />
+
+                            {/* Step 5: Final Validation Pending */}
+                            <div className="flex items-center gap-2.5 opacity-60">
+                                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                    5
+                                </span>
+                                <div>
+                                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        5. Final Validation
+                                    </div>
+                                    <div className="text-[10px] text-slate-400">Pending</div>
+                                </div>
+                            </div>
+
+                            <div className="h-0.5 w-8 bg-slate-200 dark:bg-slate-700" />
+
+                            {/* Step 6: Locked Pending */}
+                            <div className="flex items-center gap-2.5 opacity-60">
+                                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                    6
+                                </span>
+                                <div>
+                                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        6. Locked
+                                    </div>
+                                    <div className="text-[10px] text-slate-400">Pending</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Two Main Columns Grid (Matching Quadrant) */}
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                        {/* Left Column: Faculty Loading Overview & Review Details */}
+                        <div className="space-y-6">
+                            {/* Card 1: Faculty Loading Overview */}
+                            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+                                    <div className="flex items-center gap-2">
+                                        <PieChart className="h-4 w-4 text-[#8B1E3F]" />
+                                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                            Faculty Loading Overview
+                                        </h3>
+                                    </div>
+                                    <span className="text-[11px] text-slate-400">
+                                        AY 2026 - 2027, 1st Semester - Version 3
                                     </span>
                                 </div>
-                                <p className="text-xs text-slate-500">
-                                    {college?.name} • Consolidated loading governance across all {programs.length} programs.
-                                </p>
+
+                                <div className="mt-4 grid grid-cols-4 gap-3 text-center">
+                                    <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
+                                        <div className="flex justify-center text-blue-600">
+                                            <Users className="h-4 w-4" />
+                                        </div>
+                                        <div className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                                            {summary?.total_faculty || 124}
+                                        </div>
+                                        <div className="text-[10px] text-slate-500">Faculty</div>
+                                    </div>
+
+                                    <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
+                                        <div className="flex justify-center text-amber-600">
+                                            <BookOpen className="h-4 w-4" />
+                                        </div>
+                                        <div className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                                            326
+                                        </div>
+                                        <div className="text-[10px] text-slate-500">Assignments</div>
+                                    </div>
+
+                                    <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
+                                        <div className="flex justify-center text-orange-600">
+                                            <Clock className="h-4 w-4" />
+                                        </div>
+                                        <div className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                                            12.0 hrs
+                                        </div>
+                                        <div className="text-[10px] text-slate-500">Avg. Load</div>
+                                    </div>
+
+                                    <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
+                                        <div className="flex justify-center text-emerald-600">
+                                            <CheckCircle2 className="h-4 w-4" />
+                                        </div>
+                                        <div className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                                            0
+                                        </div>
+                                        <div className="text-[10px] text-slate-500">Unassigned</div>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Dean Decision Actions */}
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => handleDeanDecision('Request Revision')}
-                                    className="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 flex items-center gap-1.5"
-                                >
-                                    <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                                    <span>Request Revision</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleDeanDecision('Approve')}
-                                    className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 flex items-center gap-1.5 shadow-xs"
-                                >
-                                    <Check className="w-3.5 h-3.5" />
-                                    <span>Approve & Finalize College Loading</span>
-                                </button>
+                            {/* Card 2: Review Details */}
+                            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                                    <Clock className="h-4 w-4 text-[#8B1E3F]" />
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                        Review Details
+                                    </h3>
+                                </div>
+
+                                <div className="mt-4 divide-y divide-slate-100 text-xs dark:divide-slate-800">
+                                    <div className="flex items-center justify-between py-2.5">
+                                        <span className="text-slate-500">Current Status</span>
+                                        <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                            Faculty Review (Published)
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between py-2.5">
+                                        <span className="text-slate-500">Review Window</span>
+                                        <span className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
+                                            <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                                            Nov 13 - Nov 16, 2026 (3 days remaining)
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between py-2.5">
+                                        <span className="text-slate-500">Course Change Requests</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                                5 (2 Pending, 3 For Approval)
+                                            </span>
+                                            <button
+                                                onClick={() => setShowChangeRequestsModal(true)}
+                                                className="text-[11px] font-semibold text-[#8B1E3F] hover:underline dark:text-rose-400"
+                                            >
+                                                View Requests
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between py-2.5">
+                                        <span className="text-slate-500">Next Action</span>
+                                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                            Validate requests and lock loading
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Program Readiness Grid */}
-                        <div className="space-y-3">
-                            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                Program Endorsement Readiness
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {programs.map((prog) => (
-                                    <div key={prog.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="font-bold text-sm text-slate-900">{prog.code}</div>
-                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                                prog.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                                            }`}>
-                                                {prog.status}
-                                            </span>
+                        {/* Right Column: Workflow Actions & Timeline */}
+                        <div className="space-y-6">
+                            {/* Card 1: Workflow Actions */}
+                            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                                    <ShieldCheck className="h-4 w-4 text-[#8B1E3F]" />
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                        Workflow Actions
+                                    </h3>
+                                </div>
+
+                                <div className="mt-4 space-y-3">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowFacultyLoadingModal(true)}
+                                        className="w-full justify-center gap-2 border-slate-200 py-2.5 text-xs font-semibold text-slate-700 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200"
+                                    >
+                                        <Eye className="h-3.5 w-3.5" />
+                                        View Faculty Loading
+                                    </Button>
+
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowChangeRequestsModal(true)}
+                                        className="w-full justify-center gap-2 border-slate-200 py-2.5 text-xs font-semibold text-slate-700 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200"
+                                    >
+                                        <MessageSquare className="h-3.5 w-3.5" />
+                                        Review Change Requests (5)
+                                    </Button>
+
+                                    <div className="pt-1">
+                                        <Button
+                                            onClick={handleLockLoading}
+                                            className="w-full justify-center gap-2 bg-[#8B1E3F] py-2.5 text-xs font-bold text-white shadow-md shadow-[#8B1E3F]/20 hover:bg-[#721833]"
+                                        >
+                                            <Lock className="h-3.5 w-3.5" />
+                                            Lock Loading
+                                        </Button>
+                                        <div className="mt-1 text-center text-[10px] text-slate-400">
+                                            (After all requests are resolved)
                                         </div>
-                                        <div className="text-xs text-slate-600 space-y-1">
-                                            <div className="flex justify-between">
-                                                <span>Program Head:</span>
-                                                <span className="font-semibold text-slate-800">{prog.program_head}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>Total Faculty:</span>
-                                                <span className="font-semibold text-slate-800">{prog.faculty_count}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>Open Conflicts:</span>
-                                                <span className={`font-semibold ${prog.unresolved_issues > 0 ? 'text-rose-600' : 'text-slate-800'}`}>
-                                                    {prog.unresolved_issues}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        {prog.status === 'Completed' && (
-                                            <div className="text-[11px] text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
-                                                ✓ Endorsed to Dean on {prog.endorsed_at || 'Recently'}
-                                            </div>
-                                        )}
-                                        {prog.status !== 'Completed' && (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleDeanDecision('Return to Program', prog.id)}
-                                                className="w-full py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-100"
-                                            >
-                                                Return to Program Head
-                                            </button>
-                                        )}
                                     </div>
-                                ))}
+                                </div>
+                            </div>
+
+                            {/* Card 2: Timeline */}
+                            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                                    <History className="h-4 w-4 text-[#8B1E3F]" />
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                        Timeline
+                                    </h3>
+                                </div>
+
+                                <div className="mt-4 space-y-3 text-xs">
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40">
+                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="font-semibold text-slate-900 dark:text-white">Generated</div>
+                                            <div className="text-[11px] text-slate-400">Nov 10, 2026 - 09:14 AM</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40">
+                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="font-semibold text-slate-900 dark:text-white">
+                                                Program Review Completed
+                                            </div>
+                                            <div className="text-[11px] text-slate-400">Nov 11, 2026 - 04:20 PM</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40">
+                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="font-semibold text-slate-900 dark:text-white">
+                                                Dean Review Completed
+                                            </div>
+                                            <div className="text-[11px] text-slate-400">Nov 12, 2026 - 10:35 AM</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-50 text-[#8B1E3F] dark:bg-[#8B1E3F]/20 dark:text-rose-400">
+                                            <span className="h-2 w-2 rounded-full bg-[#8B1E3F]" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="font-semibold text-slate-900 dark:text-white">
+                                                Faculty Review (In Progress)
+                                            </div>
+                                            <div className="text-[11px] text-slate-400">Nov 13 - 16, 2026</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Modal 1: Workflow Overview Modal */}
+                {showWorkflowModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                        <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                    <Eye className="h-4 w-4 text-[#8B1E3F]" />
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                        Faculty Loading Governance Workflow
+                                    </h3>
+                                </div>
+                                <button
+                                    onClick={() => setShowWorkflowModal(false)}
+                                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+
+                            <div className="mt-4 space-y-4 text-xs text-slate-600 dark:text-slate-400">
+                                <p>
+                                    The loading governance process enforces institutional checks and balances before any timetable generation can proceed:
+                                </p>
+                                <div className="space-y-2 rounded-lg bg-slate-50 p-4 dark:bg-slate-800/60">
+                                    <div className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
+                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] dark:bg-slate-700">1</span>
+                                        Loading Generator produces candidate scenarios with CP-SAT solver
+                                    </div>
+                                    <div className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
+                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] dark:bg-slate-700">2</span>
+                                        Program Heads review department-specific courses and faculty workloads
+                                    </div>
+                                    <div className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
+                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] dark:bg-slate-700">3</span>
+                                        College Dean reviews consolidated college plan and approves for publication
+                                    </div>
+                                    <div className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
+                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#8B1E3F] text-[10px] text-white">4</span>
+                                        Faculty Review Window allows peer-to-peer course change requests
+                                    </div>
+                                    <div className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
+                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] dark:bg-slate-700">5</span>
+                                        Final Validation resolves any pending requests
+                                    </div>
+                                    <div className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
+                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] dark:bg-slate-700">6</span>
+                                        Locking Loading unlocks Timetable Constraints & CP-SAT Schedule Generator
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-5 flex justify-end border-t border-slate-100 pt-3 dark:border-slate-800">
+                                <Button
+                                    size="sm"
+                                    onClick={() => setShowWorkflowModal(false)}
+                                    className="bg-[#8B1E3F] text-xs text-white hover:bg-[#721833]"
+                                >
+                                    Close
+                                </Button>
                             </div>
                         </div>
                     </div>
                 )}
-            </div>
 
-            {/* Side Inspection Drawer for Faculty Load Detail & Assignment Flagging */}
-            {inspectedFaculty && (
-                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex justify-end">
-                    <div className="w-full max-w-lg bg-white h-full shadow-2xl p-6 overflow-y-auto space-y-6">
-                        <div className="flex items-start justify-between pb-4 border-b border-slate-100">
-                            <div>
-                                <h3 className="text-base font-bold text-slate-900">{inspectedFaculty.name}</h3>
-                                <p className="text-xs text-slate-500">
-                                    {inspectedFaculty.program_code} • {inspectedFaculty.designation} • {inspectedFaculty.specialization}
-                                </p>
+                {/* Modal 2: View Faculty Loading Modal */}
+                {showFacultyLoadingModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                        <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                        Official Faculty Loading (AY 2026 - 2027, 1st Sem)
+                                    </h3>
+                                    <p className="text-xs text-slate-500">
+                                        Showing all assigned courses, workload credit breakdowns, and status.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowFacultyLoadingModal(false)}
+                                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setInspectedFaculty(null)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+
+                            <div className="mt-4 overflow-x-auto">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400">
+                                        <tr>
+                                            <th className="px-3 py-2.5 font-semibold">Faculty</th>
+                                            <th className="px-3 py-2.5 font-semibold">Program</th>
+                                            <th className="px-3 py-2.5 font-semibold">Designation</th>
+                                            <th className="px-3 py-2.5 font-semibold">Assigned Load</th>
+                                            <th className="px-3 py-2.5 font-semibold">Target Load</th>
+                                            <th className="px-3 py-2.5 font-semibold">Preps</th>
+                                            <th className="px-3 py-2.5 font-semibold">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        {facultyLoads.slice(0, 15).map((f) => (
+                                            <tr key={f.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                                <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-white">
+                                                    {f.name}
+                                                </td>
+                                                <td className="px-3 py-2.5 text-slate-500">{f.program_code}</td>
+                                                <td className="px-3 py-2.5 text-slate-600">
+                                                    <Badge variant="outline" className="text-[10px]">
+                                                        {f.designation}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-3 py-2.5 font-bold text-slate-900 dark:text-white">
+                                                    {Number(f.assigned_load).toFixed(1)} hrs/wk
+                                                </td>
+                                                <td className="px-3 py-2.5 text-slate-500">
+                                                    {Number(f.target_load).toFixed(1)} hrs/wk
+                                                </td>
+                                                <td className="px-3 py-2.5">{f.preparations}</td>
+                                                <td className="px-3 py-2.5">
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                                                        <CheckCircle2 className="h-3 w-3" />
+                                                        {f.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="mt-5 flex justify-end border-t border-slate-100 pt-3 dark:border-slate-800">
+                                <Button
+                                    size="sm"
+                                    onClick={() => setShowFacultyLoadingModal(false)}
+                                    className="bg-[#8B1E3F] text-xs text-white hover:bg-[#721833]"
+                                >
+                                    Close
+                                </Button>
+                            </div>
                         </div>
+                    </div>
+                )}
 
-                        {/* Load Metrics */}
-                        <div className="grid grid-cols-3 gap-2">
-                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
-                                <div className="text-[10px] text-slate-500">Assigned Load</div>
-                                <div className="text-base font-bold text-slate-900 mt-0.5">{inspectedFaculty.assigned_load.toFixed(1)} hrs</div>
-                            </div>
-                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
-                                <div className="text-[10px] text-slate-500">Target Load</div>
-                                <div className="text-base font-bold text-slate-900 mt-0.5">{inspectedFaculty.target_load.toFixed(1)} hrs</div>
-                            </div>
-                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
-                                <div className="text-[10px] text-slate-500">Course Match</div>
-                                <div className="text-base font-bold text-emerald-600 mt-0.5">{inspectedFaculty.course_match}%</div>
-                            </div>
-                        </div>
-
-                        {/* Assigned Course Offerings */}
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                    Assigned Course Offerings ({inspectedFaculty.assigned_courses.length})
-                                </h4>
+                {/* Modal 3: Review Change Requests Modal */}
+                {showChangeRequestsModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                        <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                    <MessageSquare className="h-4 w-4 text-[#8B1E3F]" />
+                                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                        Faculty-to-Faculty Course Change Requests
+                                    </h3>
+                                </div>
+                                <button
+                                    onClick={() => setShowChangeRequestsModal(false)}
+                                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
                             </div>
 
-                            <div className="space-y-2">
-                                {inspectedFaculty.assigned_courses.map((c) => (
-                                    <div key={c.id} className="p-3 rounded-xl border border-slate-200 bg-white space-y-1">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-xs text-slate-900">{c.course_code} - {c.course_title}</span>
-                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">{c.type}</span>
+                            <div className="mt-4 space-y-3">
+                                {changeRequests.map((req) => (
+                                    <div
+                                        key={req.id}
+                                        className="rounded-xl border border-slate-200 bg-white p-4 text-xs shadow-2xs dark:border-slate-800 dark:bg-slate-800/60"
+                                    >
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-slate-900 dark:text-white">
+                                                    {req.requester}
+                                                </span>
+                                                <span className="text-slate-400">⇄</span>
+                                                <span className="font-bold text-slate-900 dark:text-white">
+                                                    {req.target_faculty}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] text-slate-400">{req.days_ago}</span>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={
+                                                        req.status === 'Approved'
+                                                            ? 'bg-emerald-50 text-emerald-700'
+                                                            : req.status === 'Declined'
+                                                              ? 'bg-rose-50 text-rose-700'
+                                                              : 'bg-amber-50 text-amber-700'
+                                                    }
+                                                >
+                                                    {req.status}
+                                                </Badge>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center justify-between text-[11px] text-slate-500">
-                                            <span>Section: {c.section}</span>
-                                            <span>{c.units} units ({c.hours} hrs/wk)</span>
+
+                                        <div className="mt-2.5 rounded-lg bg-slate-50 p-2.5 text-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
+                                            <div className="font-semibold text-slate-800 dark:text-slate-200">
+                                                Proposed Course Swap:
+                                            </div>
+                                            <div className="mt-1 flex items-center gap-2 text-[11px]">
+                                                <span className="rounded bg-white px-2 py-0.5 border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
+                                                    {req.offering_course} ({req.offering_section})
+                                                </span>
+                                                <ArrowRight className="h-3 w-3 text-slate-400" />
+                                                <span className="rounded bg-white px-2 py-0.5 border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
+                                                    {req.target_course} ({req.target_section})
+                                                </span>
+                                            </div>
+                                            <div className="mt-1.5 text-[11px] text-slate-500">
+                                                Reason: {req.reason}
+                                            </div>
                                         </div>
+
+                                        {req.status !== 'Approved' && req.status !== 'Declined' && (
+                                            <div className="mt-3 flex items-center justify-end gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleDeclineRequest(req.id)}
+                                                    className="h-7 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                                                >
+                                                    Decline
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleApproveRequest(req.id)}
+                                                    className="h-7 bg-[#8B1E3F] text-xs font-semibold text-white hover:bg-[#721833]"
+                                                >
+                                                    Approve Swap
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
-                        </div>
 
-                        {/* Quick Flag Button */}
-                        <div className="pt-4 border-t border-slate-100">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setFlagData((prev) => ({
-                                        ...prev,
-                                        faculty_id: String(inspectedFaculty.id),
-                                    }));
-                                    setShowFlagModal(true);
-                                }}
-                                className="w-full py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 text-xs font-semibold hover:bg-rose-100 flex items-center justify-center gap-1.5"
-                            >
-                                <Flag className="w-3.5 h-3.5 text-rose-600" />
-                                <span>Flag Assignment Issue for {inspectedFaculty.name}</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Flag Modal */}
-            {showFlagModal && (
-                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <Flag className="w-4 h-4 text-rose-600" />
-                                <span>Flag Loading Issue</span>
-                            </h3>
-                            <button type="button" onClick={() => setShowFlagModal(false)} className="text-slate-400 hover:text-slate-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmitFlag} className="space-y-3 text-xs">
-                            <div>
-                                <label className="font-semibold text-slate-700">Flag Type</label>
-                                <select
-                                    value={flagData.flag_type}
-                                    onChange={(e) => setFlagData({ ...flagData, flag_type: e.target.value })}
-                                    className="w-full mt-1 p-2 border border-slate-200 rounded-xl"
+                            <div className="mt-5 flex justify-end border-t border-slate-100 pt-3 dark:border-slate-800">
+                                <Button
+                                    size="sm"
+                                    onClick={() => setShowChangeRequestsModal(false)}
+                                    className="bg-[#8B1E3F] text-xs text-white hover:bg-[#721833]"
                                 >
-                                    <option value="Specialization Mismatch">Specialization Mismatch</option>
-                                    <option value="Overload">Overload (&gt; 15 hrs)</option>
-                                    <option value="Underload">Underload (&lt; 9 hrs)</option>
-                                    <option value="Excessive Preparations">Excessive Preparations (&gt; 4 preps)</option>
-                                    <option value="Preference Conflict">Preference Conflict</option>
-                                    <option value="Historical Mismatch">Historical Mismatch</option>
-                                    <option value="Manual Reassignment">Manual Reassignment Request</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="font-semibold text-slate-700">Severity</label>
-                                <select
-                                    value={flagData.severity}
-                                    onChange={(e) => setFlagData({ ...flagData, severity: e.target.value })}
-                                    className="w-full mt-1 p-2 border border-slate-200 rounded-xl"
-                                >
-                                    <option value="Advisory">Advisory</option>
-                                    <option value="Needs Attention">Needs Attention</option>
-                                    <option value="Blocking">Blocking</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="font-semibold text-slate-700">Comment / Rationale</label>
-                                <textarea
-                                    rows={3}
-                                    value={flagData.comment}
-                                    onChange={(e) => setFlagData({ ...flagData, comment: e.target.value })}
-                                    placeholder="Explain why this loading assignment is being flagged..."
-                                    required
-                                    className="w-full mt-1 p-2 border border-slate-200 rounded-xl"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="font-semibold text-slate-700">Suggested Action (Optional)</label>
-                                <input
-                                    type="text"
-                                    value={flagData.suggested_action}
-                                    onChange={(e) => setFlagData({ ...flagData, suggested_action: e.target.value })}
-                                    placeholder="e.g. Reassign CS 612 to Dr. Ramos"
-                                    className="w-full mt-1 p-2 border border-slate-200 rounded-xl"
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowFlagModal(false)}
-                                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800"
-                                >
-                                    Submit Flag
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Resolve Flag Modal */}
-            {showResolveModal && (
-                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-base font-bold text-slate-900">Resolve Loading Flag</h3>
-                            <button type="button" onClick={() => setShowResolveModal(false)} className="text-slate-400 hover:text-slate-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-3 text-xs">
-                            <label className="font-semibold text-slate-700">Resolution Notes</label>
-                            <textarea
-                                rows={3}
-                                value={resolutionNotes}
-                                onChange={(e) => setResolutionNotes(e.target.value)}
-                                placeholder="State how the flag was resolved or why it is accepted..."
-                                className="w-full p-2 border border-slate-200 rounded-xl"
-                            />
-
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowResolveModal(false)}
-                                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleResolveFlag}
-                                    className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
-                                >
-                                    Confirm Resolution
-                                </button>
+                                    Close
+                                </Button>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Endorse Modal */}
-            {showEndorseModal && (
-                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-base font-bold text-slate-900">Endorse Program Loading to Dean</h3>
-                            <button type="button" onClick={() => setShowEndorseModal(false)} className="text-slate-400 hover:text-slate-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-3 text-xs">
-                            <p className="text-slate-600">
-                                You are about to endorse the faculty loading for <strong>{selectedProg?.code}</strong> to the College Dean for college-wide consolidation.
-                            </p>
-                            <label className="font-semibold text-slate-700">Endorsement Remarks (Optional)</label>
-                            <textarea
-                                rows={3}
-                                value={endorsementNotes}
-                                onChange={(e) => setEndorsementNotes(e.target.value)}
-                                placeholder="Add notes regarding workload balance or special allocations..."
-                                className="w-full p-2 border border-slate-200 rounded-xl"
-                            />
-
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowEndorseModal(false)}
-                                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleEndorseToDean}
-                                    className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 flex items-center gap-1.5"
-                                >
-                                    <Send className="w-3.5 h-3.5" />
-                                    <span>Endorse to Dean</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Revision Modal */}
-            {showRevisionModal && (
-                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-base font-bold text-slate-900">Request Program Loading Revision</h3>
-                            <button type="button" onClick={() => setShowRevisionModal(false)} className="text-slate-400 hover:text-slate-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-3 text-xs">
-                            <label className="font-semibold text-slate-700">Revision Reason & Required Changes</label>
-                            <textarea
-                                rows={4}
-                                value={revisionReason}
-                                onChange={(e) => setRevisionReason(e.target.value)}
-                                placeholder="Specify which faculty assignments need rebalancing or course adjustments..."
-                                className="w-full p-2 border border-slate-200 rounded-xl"
-                            />
-
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowRevisionModal(false)}
-                                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleRequestRevision}
-                                    className="px-4 py-2 rounded-xl bg-rose-600 text-white font-semibold hover:bg-rose-700"
-                                >
-                                    Submit Revision Request
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                )}
             </SchedulingWorkspaceLayout>
         </AppLayout>
     );
 }
-

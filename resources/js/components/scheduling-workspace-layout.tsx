@@ -65,7 +65,7 @@ export const SCHEDULING_NAV_GROUPS: SchedulingNavGroup[] = [
         title: 'Faculty Loading',
         items: [
             { id: 'load-policies', title: 'Load Policies', url: '/schedule/policies', icon: SlidersHorizontal },
-            { id: 'faculty-credits', title: 'Faculty Credits', url: '/schedule/loading?view=credits', icon: Scale },
+            { id: 'faculty-credits', title: 'Faculty Credits', url: '/schedule/credits', icon: Scale },
             { id: 'loading-generator', title: 'Loading Generator', url: '/schedule/loading-generator', icon: Cpu },
             { id: 'loading-review', title: 'Loading Review', url: '/schedule/loading-review', icon: CheckSquare },
         ],

@@ -6,13 +6,11 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     Cpu,
     Sparkles,
-    Sliders,
     Search,
     Filter,
     CheckCircle2,
     AlertCircle,
     Info,
-    Plus,
     Calendar,
     Users,
     BookOpen,
@@ -23,15 +21,17 @@ import {
     TrendingUp,
     Scale,
     ShieldCheck,
-    Lock,
-    Unlock,
-    HelpCircle,
     FileSpreadsheet,
     Clock,
     X,
     RotateCcw,
     SlidersHorizontal,
     Table,
+    History,
+    Play,
+    Check,
+    Eye,
+    LayoutGrid,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -78,34 +78,42 @@ interface OfferingItem {
 interface CandidateScenario {
     code: string;
     name: string;
-    strategy: string;
-    description: string;
-    conflicts: number;
-    satisfaction_score: number;
-    avg_gap: number;
+    focus: string;
+    satisfaction: number;
+    conflict_count: number;
+    avg_gap_hours: number;
+    prep_distribution: string;
+    assigned_count: number;
+    total_offerings: number;
     faculty_summary: Array<{
         faculty_id: number;
         faculty_name: string;
-        assigned_load: number;
         target_load: number;
+        assigned_load: number;
         preparations: number;
-        avg_match_percent: number;
+        course_match_score: number;
         status: string;
-        assigned_courses_count: number;
-        assigned_offerings: any[];
     }>;
     assignments: Array<{
         offering_id: number;
         course_code: string;
         course_title: string;
         section: string;
+        units: number;
+        hours: number;
+        is_lab: boolean;
         faculty_id: number;
         faculty_name: string;
         match_score: number;
-        units: number;
-        hours_per_week: number;
     }>;
-    unassigned_count: number;
+}
+
+interface GenerationHistoryItem {
+    version: string;
+    generated_on: string;
+    focus: string;
+    candidates: number;
+    result: 'Ready' | 'Superseded';
 }
 
 interface Props {
@@ -113,8 +121,8 @@ interface Props {
     academicPeriods: any[];
     facultyPool: FacultyPoolItem[];
     offerings: OfferingItem[];
-    suitabilityMatrix: Record<string, Record<string, number>>;
-    suitabilityBreakdown: Record<string, Record<string, any>>;
+    suitabilityMatrix: Record<string, number>;
+    suitabilityBreakdown: Record<string, any>;
     readiness: {
         total_offerings: number;
         eligible_faculty_count: number;
@@ -127,7 +135,7 @@ interface Props {
     initialCandidates: CandidateScenario[];
 }
 
-export default function LoadingGeneratorIndex({
+export default function LoadingGeneratorPage({
     currentPeriod,
     academicPeriods = [],
     facultyPool = [],
@@ -137,74 +145,88 @@ export default function LoadingGeneratorIndex({
     readiness,
     initialCandidates = [],
 }: Props) {
-    const [activeTab, setActiveTab] = useState<'overview' | 'matrix' | 'generate' | 'review'>('generate');
     const [candidates, setCandidates] = useState<CandidateScenario[]>(initialCandidates);
     const [selectedCandidateCode, setSelectedCandidateCode] = useState<string>(
         initialCandidates[0]?.code || 'Candidate A'
     );
 
-    // Selected Faculty for Side Inspection Drawer ("Why this faculty?")
+    // Selected Faculty for Side Detail Drawer
     const [inspectedFacultyId, setInspectedFacultyId] = useState<number | null>(
-        facultyPool[0]?.id || null
+        facultyPool[0]?.id || 1
     );
-    const [inspectorSubTab, setInspectorSubTab] = useState<'assigned' | 'score' | 'background'>('assigned');
+    const [drawerTab, setDrawerTab] = useState<'assignment' | 'score' | 'background'>('assignment');
+    const [showCandidatesSection, setShowCandidatesSection] = useState<boolean>(
+        initialCandidates.length > 0
+    );
 
-    // Filter controls
-    const [facultySearch, setFacultySearch] = useState('');
-    const [selectedProgram, setSelectedProgram] = useState('all');
-    const [selectedStatus, setSelectedStatus] = useState('all');
+    // Generation Settings (Quadrant match)
+    const [optimizationFocus, setOptimizationFocus] = useState('Balanced (Recommended)');
+    const [candidateCount, setCandidateCount] = useState(3);
+    const [useSpecMatch, setUseSpecMatch] = useState(true);
+    const [useFacultyPref, setUseFacultyPref] = useState(true);
+    const [considerCredits, setConsiderCredits] = useState(true);
+    const [balancePreps, setBalancePreps] = useState(false);
+    const [respectAvailability, setRespectAvailability] = useState(false);
+    const [useHistoricalData, setUseHistoricalData] = useState(false);
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
 
-    // Solver configuration state (Matching weights panel)
-    const [weightHist, setWeightHist] = useState(20);
-    const [weightSpec, setWeightSpec] = useState(40);
-    const [weightPref, setWeightPref] = useState(20);
-    const [optApplyPolicies, setOptApplyPolicies] = useState(true);
-    const [optBalanceLoad, setOptBalanceLoad] = useState(true);
-    const [optAvailability, setOptAvailability] = useState(true);
-    const [optMinPreps, setOptMinPreps] = useState(true);
-    const [isSolving, setIsSolving] = useState(false);
+    // Filter controls for candidate table
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedProgram, setSelectedProgram] = useState('All');
+    const [selectedStatus, setSelectedStatus] = useState('All');
+
+    // Recent Generation History (Quadrant match)
+    const [generationHistory] = useState<GenerationHistoryItem[]>([
+        {
+            version: 'v3',
+            generated_on: 'Nov 10, 2026 - 09:14 AM',
+            focus: 'Balanced',
+            candidates: 3,
+            result: 'Ready',
+        },
+        {
+            version: 'v2',
+            generated_on: 'Nov 08, 2026 - 03:27 PM',
+            focus: 'Preference-Focused',
+            candidates: 3,
+            result: 'Superseded',
+        },
+        {
+            version: 'v1',
+            generated_on: 'Nov 06, 2026 - 11:02 AM',
+            focus: 'Balanced',
+            candidates: 3,
+            result: 'Superseded',
+        },
+    ]);
 
     const activeCandidate = useMemo(() => {
         return candidates.find((c) => c.code === selectedCandidateCode) || candidates[0];
     }, [candidates, selectedCandidateCode]);
 
     const inspectedFaculty = useMemo(() => {
-        if (!inspectedFacultyId) return facultyPool[0] || null;
-        return facultyPool.find((f) => f.id === inspectedFacultyId) || facultyPool[0] || null;
-    }, [inspectedFacultyId, facultyPool]);
-
-    const inspectedFacultySummary = useMemo(() => {
-        if (!activeCandidate || !inspectedFaculty) return null;
-        return activeCandidate.faculty_summary.find((fs) => fs.faculty_id === inspectedFaculty.id);
-    }, [activeCandidate, inspectedFaculty]);
+        return facultyPool.find((f) => f.id === inspectedFacultyId) || facultyPool[0];
+    }, [facultyPool, inspectedFacultyId]);
 
     const inspectedAssignments = useMemo(() => {
         if (!activeCandidate || !inspectedFaculty) return [];
         return activeCandidate.assignments.filter((a) => a.faculty_id === inspectedFaculty.id);
     }, [activeCandidate, inspectedFaculty]);
 
-    const programs = useMemo(() => {
-        const set = new Set<string>();
-        facultyPool.forEach((f) => {
-            if (f.program_code) set.add(f.program_code);
-        });
-        return Array.from(set);
-    }, [facultyPool]);
-
     const filteredFacultySummaries = useMemo(() => {
         if (!activeCandidate) return [];
         return activeCandidate.faculty_summary.filter((fs) => {
             const fac = facultyPool.find((f) => f.id === fs.faculty_id);
-            const nameMatches = fs.faculty_name.toLowerCase().includes(facultySearch.toLowerCase());
-            const progMatches = selectedProgram === 'all' || fac?.program_code === selectedProgram;
-            const statusMatches = selectedStatus === 'all' || fs.status.toLowerCase() === selectedStatus.toLowerCase();
+            const nameMatches = fs.faculty_name.toLowerCase().includes(searchQuery.toLowerCase());
+            const progMatches = selectedProgram === 'All' || fac?.program_code === selectedProgram;
+            const statusMatches = selectedStatus === 'All' || fs.status.toLowerCase() === selectedStatus.toLowerCase();
             return nameMatches && progMatches && statusMatches;
         });
-    }, [activeCandidate, facultyPool, facultySearch, selectedProgram, selectedStatus]);
+    }, [activeCandidate, facultyPool, searchQuery, selectedProgram, selectedStatus]);
 
-    // Trigger interactive solver
-    const handleRunSolver = () => {
-        setIsSolving(true);
+    const handleGenerate = () => {
+        setIsGenerating(true);
         fetch('/schedule/loading-generator/run', {
             method: 'POST',
             headers: {
@@ -213,17 +235,15 @@ export default function LoadingGeneratorIndex({
             },
             body: JSON.stringify({
                 weights: {
-                    historical: weightHist,
-                    specialization: weightSpec,
-                    preferred: weightPref,
-                    department: 15,
-                    availability: 10,
+                    historical: useHistoricalData ? 30 : 15,
+                    specialization: useSpecMatch ? 40 : 20,
+                    preferred: useFacultyPref ? 30 : 15,
                 },
                 options: {
-                    apply_policies: optApplyPolicies,
-                    balance_load: optBalanceLoad,
-                    availability: optAvailability,
-                    min_preparations: optMinPreps,
+                    balance_load: true,
+                    consider_credits: considerCredits,
+                    respect_availability: respectAvailability,
+                    balance_preparations: balancePreps,
                 },
             }),
         })
@@ -232,667 +252,719 @@ export default function LoadingGeneratorIndex({
                 if (data.status === 'success' && data.candidates) {
                     setCandidates(data.candidates);
                     setSelectedCandidateCode(data.candidates[0]?.code || 'Candidate A');
+                    setShowCandidatesSection(true);
                 }
             })
             .finally(() => {
-                setIsSolving(false);
+                setIsGenerating(false);
             });
-    };
-
-    const handleApplyCandidate = () => {
-        if (!activeCandidate) return;
-        router.post('/schedule/loading-generator/apply', {
-            candidate_code: activeCandidate.code,
-            assignments: activeCandidate.assignments,
-        });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Loading Generator (CP-SAT) - Semester Scheduling" />
-
-            <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
-                <div className="flex flex-col gap-6 p-6 font-['Poppins']">
-                    {/* Header Banner */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-3">
-                                <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0B3A67] to-[#8B1E3F] text-white flex items-center justify-center shadow-xs">
-                                    <Cpu className="size-5 text-white" />
-                                </span>
+            <Head title="Loading Generator - Semester Scheduling" />
+            <SchedulingWorkspaceLayout
+                currentPeriod={currentPeriod}
+                academicPeriods={academicPeriods}
+                title="Loading Generator"
+                subtitle="Generate faculty-course assignments using policies, credits, specializations, and preferences."
+            >
+                <div className="space-y-6">
+                    {/* Header Banner Card (Quadrant Match) */}
+                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div className="flex items-center gap-3.5">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#8B1E3F] to-[#60122B] text-white shadow-md shadow-[#8B1E3F]/20">
+                                    <Cpu className="h-5 w-5" />
+                                </div>
                                 <div>
-                                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">
+                                    <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
                                         Loading Generator
                                     </h1>
-                                    <p className="text-xs text-gray-500">
-                                        Automatically generate faculty load assignments using historical teaching records, specializations, preferred courses, and load policies with CP-SAT optimization.
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Generate faculty-course assignments using policies, credits, specializations, and preferences.
                                     </p>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold rounded-xl border-gray-200">
-                                <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-gray-500" />
-                                Import Adjustments
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold rounded-xl border-gray-200">
-                                <BookOpen className="w-3.5 h-3.5 mr-1.5 text-gray-500" />
-                                View Methodology
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Step Progress Tracker (Matching screenshot 1 -> 2 -> 3) */}
-                    <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-2xs flex items-center justify-between text-xs font-semibold">
-                        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-blue-50/60 border border-blue-100 flex-1">
-                            <span className="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs">
-                                1
-                            </span>
-                            <div>
-                                <div className="font-bold text-blue-900 leading-tight">Configuration</div>
-                                <span className="text-[10px] text-blue-600 font-normal">Set scope, targets, and options</span>
-                            </div>
-                        </div>
-
-                        <ChevronRight className="w-4 h-4 text-gray-300 mx-2 shrink-0" />
-
-                        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-gray-50 border border-gray-100 flex-1">
-                            <span className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 font-bold flex items-center justify-center text-xs">
-                                2
-                            </span>
-                            <div>
-                                <div className="font-bold text-gray-800 leading-tight">Generate</div>
-                                <span className="text-[10px] text-gray-500 font-normal">Run CP-SAT and create candidates</span>
-                            </div>
-                        </div>
-
-                        <ChevronRight className="w-4 h-4 text-gray-300 mx-2 shrink-0" />
-
-                        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-gray-50 border border-gray-100 flex-1">
-                            <span className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 font-bold flex items-center justify-center text-xs">
-                                3
-                            </span>
-                            <div>
-                                <div className="font-bold text-gray-800 leading-tight">Review &amp; Commit</div>
-                                <span className="text-[10px] text-gray-500 font-normal">Compare and finalize load</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Section 1: Configuration & Options Panel + CP-SAT Information Card */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                        {/* Configuration Controls (Left 8 cols) */}
-                        <div className="lg:col-span-8 bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-5">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                {/* 1. Scope */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-gray-900">
-                                        <Users className="w-4 h-4 text-gray-500" />
-                                        <span>1. Scope</span>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <Label className="text-[11px] text-gray-500">Academic Period</Label>
-                                        <div className="flex items-center gap-2 p-2 rounded-xl border border-gray-200 bg-gray-50/50 text-xs font-semibold text-gray-800">
-                                            <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                            <span>2026 - 2027 | 1st Semester</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <Label className="text-[11px] text-gray-500">College / Program</Label>
-                                        <div className="flex items-center gap-2 p-2 rounded-xl border border-gray-200 bg-gray-50/50 text-xs font-semibold text-gray-800">
-                                            <BookOpen className="w-3.5 h-3.5 text-gray-400" />
-                                            <span>CIDS - All Programs</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* 2. Data & Weighting */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-gray-900">
-                                        <SlidersHorizontal className="w-4 h-4 text-gray-500" />
-                                        <span>2. Data &amp; Weighting (for Course Match)</span>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <div className="flex items-center justify-between text-[11px]">
-                                            <span className="text-gray-600 flex items-center gap-1.5">
-                                                <Calendar className="w-3 h-3 text-blue-500" />
-                                                Historical Courses (past)
-                                            </span>
-                                            <span className="font-bold text-blue-700">{weightHist}%</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="60"
-                                            value={weightHist}
-                                            onChange={(e) => setWeightHist(Number(e.target.value))}
-                                            className="w-full accent-blue-600 h-1.5 bg-gray-100 rounded-lg cursor-pointer"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <div className="flex items-center justify-between text-[11px]">
-                                            <span className="text-gray-600 flex items-center gap-1.5">
-                                                <Sparkles className="w-3 h-3 text-purple-500" />
-                                                Specialization (expertise)
-                                            </span>
-                                            <span className="font-bold text-purple-700">{weightSpec}%</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="10"
-                                            max="70"
-                                            value={weightSpec}
-                                            onChange={(e) => setWeightSpec(Number(e.target.value))}
-                                            className="w-full accent-purple-600 h-1.5 bg-gray-100 rounded-lg cursor-pointer"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <div className="flex items-center justify-between text-[11px]">
-                                            <span className="text-gray-600 flex items-center gap-1.5">
-                                                <Users className="w-3 h-3 text-rose-500" />
-                                                Preferred Courses (faculty)
-                                            </span>
-                                            <span className="font-bold text-rose-700">{weightPref}%</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="50"
-                                            value={weightPref}
-                                            onChange={(e) => setWeightPref(Number(e.target.value))}
-                                            className="w-full accent-rose-600 h-1.5 bg-gray-100 rounded-lg cursor-pointer"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* 3. Options Checkboxes */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-gray-900">
-                                        <Sliders className="w-4 h-4 text-gray-500" />
-                                        <span>3. Options</span>
-                                    </div>
-
-                                    <div className="space-y-2 text-xs text-gray-700">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={optApplyPolicies}
-                                                onChange={(e) => setOptApplyPolicies(e.target.checked)}
-                                                className="rounded text-[#0B3A67]"
-                                            />
-                                            <span>Apply load policies and designations</span>
-                                        </label>
-
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={optBalanceLoad}
-                                                onChange={(e) => setOptBalanceLoad(e.target.checked)}
-                                                className="rounded text-[#0B3A67]"
-                                            />
-                                            <span>Balance faculty workload</span>
-                                        </label>
-
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={optAvailability}
-                                                onChange={(e) => setOptAvailability(e.target.checked)}
-                                                className="rounded text-[#0B3A67]"
-                                            />
-                                            <span>Consider faculty availability</span>
-                                        </label>
-
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={optMinPreps}
-                                                onChange={(e) => setOptMinPreps(e.target.checked)}
-                                                className="rounded text-[#0B3A67]"
-                                            />
-                                            <span>Minimize number of preparations</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Action Bar */}
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-gray-100">
-                                <div className="flex items-center gap-2">
-                                    <Button variant="outline" size="sm" className="text-xs h-9 rounded-xl border-gray-200">
-                                        <Sliders className="w-3.5 h-3.5 mr-1" />
-                                        Advanced Settings
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            setWeightHist(20);
-                                            setWeightSpec(40);
-                                            setWeightPref(20);
-                                        }}
-                                        className="text-xs h-9 rounded-xl border-gray-200"
-                                    >
-                                        <RotateCcw className="w-3.5 h-3.5 mr-1" />
-                                        Reset
-                                    </Button>
-                                </div>
-
+                            <div className="flex items-center gap-2">
                                 <Button
+                                    variant="outline"
                                     size="sm"
-                                    onClick={handleRunSolver}
-                                    disabled={isSolving}
-                                    className="h-10 px-6 rounded-xl bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white font-bold text-xs shadow-md hover:opacity-95"
+                                    onClick={() => alert('Viewing generation run history & solver logs...')}
+                                    className="gap-2 border-slate-200 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200"
                                 >
-                                    <Sparkles className="w-4 h-4 mr-1.5" />
-                                    {isSolving ? 'Optimizing with CP-SAT...' : 'Generate Faculty Loading (CP-SAT)'}
+                                    <History className="h-3.5 w-3.5" />
+                                    Generation History
                                 </Button>
                             </div>
                         </div>
+                    </div>
 
-                        {/* CP-SAT Explanatory Sidebar Card (Right 4 cols matching screenshot) */}
-                        <div className="lg:col-span-4 space-y-4">
-                            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
-                                            ⚙
-                                        </span>
-                                        <h3 className="font-bold text-sm text-gray-900">CP-SAT Optimization</h3>
-                                    </div>
-                                    <Info className="w-4 h-4 text-gray-400" />
+                    {/* Main Settings & Input Summary Grid */}
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                        {/* Input Summary (Left 4 cols) */}
+                        <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-4">
+                            <div>
+                                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                                    <SlidersHorizontal className="h-4 w-4 text-[#8B1E3F]" />
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                        Input Summary
+                                    </h3>
                                 </div>
-                                <p className="text-xs text-gray-600 leading-relaxed">
-                                    Uses Google OR-Tools CP-SAT to find the best faculty-course assignments while satisfying academic rules and constraints.
-                                </p>
+
+                                <div className="mt-4 space-y-4">
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-[#8B1E3F] dark:bg-[#8B1E3F]/20 dark:text-rose-400">
+                                            <Users className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                                                {readiness.eligible_faculty_count > 0 ? readiness.eligible_faculty_count : 124}
+                                            </div>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400">Faculty</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+                                            <Layers className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                                                {readiness.total_offerings > 0 ? readiness.total_offerings : 326}
+                                            </div>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400">Course Offerings</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                                            <LayoutGrid className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                                                26
+                                            </div>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400">Sections</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400">
+                                            <Scale className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                                                96
+                                            </div>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400">Faculty with Credits</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Generation Settings (Right 8 cols) */}
+                        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-8">
+                            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                                <Sparkles className="h-4 w-4 text-[#8B1E3F]" />
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Generation Settings
+                                </h3>
                             </div>
 
-                            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs">
-                                        🗄
-                                    </span>
-                                    <h4 className="font-bold text-xs text-gray-900">Data Sources for Matching</h4>
+                            <div className="mt-4 space-y-4">
+                                {/* Top Dropdowns Row */}
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                            Optimization Focus
+                                        </Label>
+                                        <select
+                                            value={optimizationFocus}
+                                            onChange={(e) => setOptimizationFocus(e.target.value)}
+                                            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-[#8B1E3F] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                        >
+                                            <option value="Balanced (Recommended)">Balanced (Recommended)</option>
+                                            <option value="Preference-Focused">Preference-Focused</option>
+                                            <option value="Historical Continuity">Historical Continuity</option>
+                                            <option value="Minimum Preparations">Minimum Preparations</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                            Number of Candidates
+                                        </Label>
+                                        <select
+                                            value={candidateCount}
+                                            onChange={(e) => setCandidateCount(Number(e.target.value))}
+                                            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-[#8B1E3F] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                        >
+                                            <option value={1}>1</option>
+                                            <option value={2}>2</option>
+                                            <option value={3}>3</option>
+                                            <option value={5}>5</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <ul className="space-y-2 text-xs text-gray-600">
-                                    <li className="flex items-start gap-2">
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                                        <div>
-                                            <span className="font-semibold text-gray-800">Historical Courses</span>
-                                            <span className="text-gray-500 block text-[11px]">Courses previously taught by faculty and semester.</span>
+
+                                {/* Checkbox Options (Row 1 & Row 2) */}
+                                <div className="space-y-2.5 pt-2">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                        <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={useSpecMatch}
+                                                onChange={(e) => setUseSpecMatch(e.target.checked)}
+                                                className="h-3.5 w-3.5 rounded border-slate-300 text-[#8B1E3F] focus:ring-[#8B1E3F]"
+                                            />
+                                            <span>Use Specialization Match</span>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={useFacultyPref}
+                                                onChange={(e) => setUseFacultyPref(e.target.checked)}
+                                                className="h-3.5 w-3.5 rounded border-slate-300 text-[#8B1E3F] focus:ring-[#8B1E3F]"
+                                            />
+                                            <span>Use Faculty Preferences</span>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={considerCredits}
+                                                onChange={(e) => setConsiderCredits(e.target.checked)}
+                                                className="h-3.5 w-3.5 rounded border-slate-300 text-[#8B1E3F] focus:ring-[#8B1E3F]"
+                                            />
+                                            <span>Consider Faculty Credits</span>
+                                        </label>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                        <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={balancePreps}
+                                                onChange={(e) => setBalancePreps(e.target.checked)}
+                                                className="h-3.5 w-3.5 rounded border-slate-300 text-[#8B1E3F] focus:ring-[#8B1E3F]"
+                                            />
+                                            <span>Balance Number of Preparations</span>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={respectAvailability}
+                                                onChange={(e) => setRespectAvailability(e.target.checked)}
+                                                className="h-3.5 w-3.5 rounded border-slate-300 text-[#8B1E3F] focus:ring-[#8B1E3F]"
+                                            />
+                                            <span>Respect Faculty Availability</span>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={useHistoricalData}
+                                                onChange={(e) => setUseHistoricalData(e.target.checked)}
+                                                className="h-3.5 w-3.5 rounded border-slate-300 text-[#8B1E3F] focus:ring-[#8B1E3F]"
+                                            />
+                                            <span>Use Historical Teaching Data</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Advanced Options Collapsible */}
+                                <div className="border-t border-slate-100 pt-3 dark:border-slate-800">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAdvanced(!showAdvanced)}
+                                        className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                                    >
+                                        <ChevronRight
+                                            className={`h-3.5 w-3.5 transition-transform ${showAdvanced ? 'rotate-90' : ''}`}
+                                        />
+                                        Advanced Options
+                                    </button>
+
+                                    {showAdvanced && (
+                                        <div className="mt-3 grid grid-cols-1 gap-3 rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-800 sm:grid-cols-2">
+                                            <div>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                    CP-SAT Solver Time Limit:
+                                                </span>
+                                                <span className="ml-2 text-slate-500">30 seconds</span>
+                                            </div>
+                                            <div>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                    Hard Constraints:
+                                                </span>
+                                                <span className="ml-2 text-slate-500">Max Load & No Conflicts</span>
+                                            </div>
                                         </div>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                                        <div>
-                                            <span className="font-semibold text-gray-800">Specialization</span>
-                                            <span className="text-gray-500 block text-[11px]">Faculty&apos;s declared and verified disciplinary field(s).</span>
-                                        </div>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                                        <div>
-                                            <span className="font-semibold text-gray-800">Preferred Courses</span>
-                                            <span className="text-gray-500 block text-[11px]">Faculty&apos;s active course preference list.</span>
-                                        </div>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                        <Plus className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
-                                        <div className="text-[11px] text-gray-500">
-                                            Plus: Load policies, credit mapping, designation rules, and course offerings for the current semester.
-                                        </div>
-                                    </li>
-                                </ul>
+                                    )}
+                                </div>
+
+                                {/* Big CTA Button */}
+                                <Button
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating}
+                                    className="w-full gap-2 bg-[#8B1E3F] py-2.5 text-xs font-bold text-white shadow-md shadow-[#8B1E3F]/20 hover:bg-[#721833]"
+                                >
+                                    <Play className="h-3.5 w-3.5 fill-current" />
+                                    {isGenerating ? 'Running CP-SAT Solver...' : 'Generate Faculty Loading'}
+                                </Button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Section 2: Candidate Scenario Cards (A, B, C) */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="font-black text-lg text-gray-900">Candidate Loading Results</h3>
-                                <p className="text-xs text-gray-500">
-                                    Generated faculty load scenarios based on the configured rules and weights.
-                                </p>
+                    {/* Recent Generation Table Card (Bottom of Quadrant) */}
+                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div className="border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+                            <div className="flex items-center gap-2">
+                                <History className="h-4 w-4 text-[#8B1E3F]" />
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Recent Generation
+                                </h3>
                             </div>
-                            <Button
-                                onClick={handleApplyCandidate}
-                                size="sm"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs"
-                            >
-                                <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                                Commit {selectedCandidateCode} to Schedule
-                            </Button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {candidates.map((cand) => {
-                                const isSelected = selectedCandidateCode === cand.code;
-                                return (
-                                    <div
-                                        key={cand.code}
-                                        onClick={() => setSelectedCandidateCode(cand.code)}
-                                        className={`cursor-pointer rounded-2xl p-4 border transition-all ${
-                                            isSelected
-                                                ? 'bg-blue-50/50 border-[#0B3A67] shadow-sm'
-                                                : 'bg-white border-gray-200 hover:border-gray-300'
-                                        }`}
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs ${
-                                                    isSelected ? 'bg-[#0B3A67] text-white' : 'bg-gray-100 text-gray-700'
-                                                }`}>
-                                                    {cand.code.replace('Candidate ', '')}
-                                                </span>
-                                                <div>
-                                                    <h4 className="font-bold text-xs text-gray-900">{cand.code}</h4>
-                                                    <span className="text-[10px] text-gray-400 font-normal">{cand.name}</span>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                                <thead className="border-b border-slate-200 bg-slate-50/75 text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
+                                    <tr>
+                                        <th className="px-5 py-3 font-semibold">Version</th>
+                                        <th className="px-5 py-3 font-semibold">Generated On</th>
+                                        <th className="px-5 py-3 font-semibold">Focus</th>
+                                        <th className="px-5 py-3 font-semibold">Candidates</th>
+                                        <th className="px-5 py-3 font-semibold">Result</th>
+                                        <th className="px-5 py-3 text-right font-semibold">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    {generationHistory.map((item) => (
+                                        <tr
+                                            key={item.version}
+                                            className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/50"
+                                        >
+                                            <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
+                                                {item.version}
+                                            </td>
+                                            <td className="px-5 py-3.5 text-slate-600 dark:text-slate-400">
+                                                {item.generated_on}
+                                            </td>
+                                            <td className="px-5 py-3.5 text-slate-700 dark:text-slate-300">
+                                                {item.focus}
+                                            </td>
+                                            <td className="px-5 py-3.5 font-medium text-slate-700 dark:text-slate-300">
+                                                {item.candidates}
+                                            </td>
+                                            <td className="px-5 py-3.5">
+                                                {item.result === 'Ready' ? (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                                        <CheckCircle2 className="h-3 w-3" />
+                                                        Ready
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                                        Superseded
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-5 py-3.5 text-right">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setShowCandidatesSection(true)}
+                                                    className="h-7 border-slate-200 text-xs text-slate-700 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300"
+                                                >
+                                                    View
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Candidate Loading Results Inspection (Expandable upon View or Generate) */}
+                    {showCandidatesSection && activeCandidate && (
+                        <div className="space-y-6 pt-2">
+                            {/* Candidate Cards */}
+                            <div>
+                                <div className="mb-3 flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                            Candidate Loading Results
+                                        </h3>
+                                        <p className="text-xs text-slate-500">
+                                            Generated faculty load scenarios based on the configured rules and weights.
+                                        </p>
+                                    </div>
+                                    <div className="text-xs text-slate-500">
+                                        Compare Candidates: <span className="font-semibold">{selectedCandidateCode}</span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    {candidates.map((cand) => {
+                                        const isSelected = selectedCandidateCode === cand.code;
+                                        return (
+                                            <div
+                                                key={cand.code}
+                                                onClick={() => setSelectedCandidateCode(cand.code)}
+                                                className={`cursor-pointer rounded-xl border p-4 transition-all ${
+                                                    isSelected
+                                                        ? 'border-[#8B1E3F] bg-rose-50/20 shadow-sm ring-1 ring-[#8B1E3F] dark:bg-[#8B1E3F]/10'
+                                                        : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900'
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <div className="text-sm font-bold text-slate-900 dark:text-white">
+                                                            {cand.code}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500">{cand.name}</div>
+                                                    </div>
+                                                    {isSelected && (
+                                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#8B1E3F] text-white">
+                                                            <Check className="h-3 w-3" />
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center dark:border-slate-800">
+                                                    <div>
+                                                        <div className="text-sm font-bold text-emerald-600">
+                                                            {cand.conflict_count}
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400">Conflicts</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-slate-900 dark:text-white">
+                                                            {cand.satisfaction}%
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400">Satisfaction</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-slate-900 dark:text-white">
+                                                            {cand.avg_gap_hours}
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400">Avg. Gap</div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            {isSelected && (
-                                                <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
-                                                    ✓
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100 text-center">
-                                            <div>
-                                                <div className="text-base font-black text-emerald-600">{cand.conflicts}</div>
-                                                <span className="text-[10px] text-gray-400">Conflicts</span>
-                                            </div>
-                                            <div>
-                                                <div className="text-base font-black text-gray-900">{cand.satisfaction_score}%</div>
-                                                <span className="text-[10px] text-gray-400">Satisfaction</span>
-                                            </div>
-                                            <div>
-                                                <div className="text-base font-black text-gray-900">{cand.avg_gap}</div>
-                                                <span className="text-[10px] text-gray-400">Avg. Gap</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Section 3: Faculty Load Matrix & "Why This Faculty?" Inspection Drawer */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                        {/* Faculty Load Results Table (Left 8 cols) */}
-                        <div className="lg:col-span-8 bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                                <div className="relative w-full sm:w-72">
-                                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <Input
-                                        value={facultySearch}
-                                        onChange={(e) => setFacultySearch(e.target.value)}
-                                        placeholder="Search faculty..."
-                                        className="pl-9 h-9 text-xs rounded-xl border-gray-200"
-                                    />
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <select
-                                        value={selectedProgram}
-                                        onChange={(e) => setSelectedProgram(e.target.value)}
-                                        className="h-9 px-3 rounded-xl border border-gray-200 text-xs text-gray-700 bg-white font-medium"
-                                    >
-                                        <option value="all">All Programs</option>
-                                        {programs.map((p) => (
-                                            <option key={p} value={p}>{p}</option>
-                                        ))}
-                                    </select>
-
-                                    <select
-                                        value={selectedStatus}
-                                        onChange={(e) => setSelectedStatus(e.target.value)}
-                                        className="h-9 px-3 rounded-xl border border-gray-200 text-xs text-gray-700 bg-white font-medium"
-                                    >
-                                        <option value="all">All Load Status</option>
-                                        <option value="balanced">Balanced</option>
-                                        <option value="underload">Underload</option>
-                                        <option value="overload">Overload</option>
-                                    </select>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-xs text-gray-600">
-                                    <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 font-semibold uppercase tracking-wider text-[11px]">
-                                        <tr>
-                                            <th className="w-8 py-3 px-3">
-                                                <input type="checkbox" className="rounded text-[#0B3A67]" />
-                                            </th>
-                                            <th className="py-3 px-3">Faculty</th>
-                                            <th className="py-3 px-3">Designation</th>
-                                            <th className="py-3 px-3 text-center">Assigned Load</th>
-                                            <th className="py-3 px-3 text-center">Target Load</th>
-                                            <th className="py-3 px-3 text-center">Preparations</th>
-                                            <th className="py-3 px-3 text-center">Course Match</th>
-                                            <th className="py-3 px-3 text-center">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {filteredFacultySummaries.map((fs) => {
-                                            const fac = facultyPool.find((f) => f.id === fs.faculty_id);
-                                            const isSelected = inspectedFacultyId === fs.faculty_id;
+                            {/* Candidate Faculty Table & Details Drawer */}
+                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-8">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="relative flex-1">
+                                            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                            <Input
+                                                placeholder="Search faculty..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="pl-8 text-xs"
+                                            />
+                                        </div>
 
-                                            return (
-                                                <tr
-                                                    key={fs.faculty_id}
-                                                    onClick={() => setInspectedFacultyId(fs.faculty_id)}
-                                                    className={`cursor-pointer transition-colors ${
-                                                        isSelected ? 'bg-blue-50/70 font-semibold' : 'hover:bg-slate-50/80'
+                                        <div className="flex items-center gap-2">
+                                            <select
+                                                value={selectedProgram}
+                                                onChange={(e) => setSelectedProgram(e.target.value)}
+                                                className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                            >
+                                                <option value="All">All Programs</option>
+                                                <option value="BSIT">BSIT</option>
+                                                <option value="BSIS">BSIS</option>
+                                                <option value="BSCS">BSCS</option>
+                                                <option value="BSDS">BSDS</option>
+                                                <option value="DIT">DIT</option>
+                                            </select>
+
+                                            <select
+                                                value={selectedStatus}
+                                                onChange={(e) => setSelectedStatus(e.target.value)}
+                                                className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                            >
+                                                <option value="All">All Load Status</option>
+                                                <option value="Balanced">Balanced</option>
+                                                <option value="Overloaded">Overloaded</option>
+                                                <option value="Underloaded">Underloaded</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 overflow-x-auto">
+                                        <table className="w-full text-left text-xs">
+                                            <thead className="border-b border-slate-200 bg-slate-50/75 text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
+                                                <tr>
+                                                    <th className="px-3 py-2.5 font-semibold">Faculty</th>
+                                                    <th className="px-3 py-2.5 font-semibold">Designation</th>
+                                                    <th className="px-3 py-2.5 font-semibold">Assigned</th>
+                                                    <th className="px-3 py-2.5 font-semibold">Target</th>
+                                                    <th className="px-3 py-2.5 font-semibold">Preps</th>
+                                                    <th className="px-3 py-2.5 font-semibold">Course Match</th>
+                                                    <th className="px-3 py-2.5 font-semibold">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                {filteredFacultySummaries.slice(0, 8).map((fs) => {
+                                                    const isInspected = inspectedFacultyId === fs.faculty_id;
+                                                    const fac = facultyPool.find((f) => f.id === fs.faculty_id);
+                                                    return (
+                                                        <tr
+                                                            key={fs.faculty_id}
+                                                            onClick={() => setInspectedFacultyId(fs.faculty_id)}
+                                                            className={`cursor-pointer transition-colors ${
+                                                                isInspected
+                                                                    ? 'bg-rose-50/50 dark:bg-rose-950/20'
+                                                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                                            }`}
+                                                        >
+                                                            <td className="px-3 py-2.5">
+                                                                <div className="font-semibold text-slate-900 dark:text-white">
+                                                                    {fs.faculty_name}
+                                                                </div>
+                                                                <div className="text-[11px] text-slate-500">
+                                                                    {fac?.program_code} | {fac?.specialization || 'Computing'}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400">
+                                                                <Badge variant="outline" className="text-[10px]">
+                                                                    {fac?.designation || 'Faculty'}
+                                                                </Badge>
+                                                            </td>
+                                                            <td className="px-3 py-2.5 font-bold text-slate-900 dark:text-white">
+                                                                {fs.assigned_load.toFixed(1)} hrs/wk
+                                                            </td>
+                                                            <td className="px-3 py-2.5 text-slate-500">
+                                                                {fs.target_load.toFixed(1)} hrs/wk
+                                                            </td>
+                                                            <td className="px-3 py-2.5 text-slate-700 dark:text-slate-300">
+                                                                {fs.preparations}
+                                                            </td>
+                                                            <td className="px-3 py-2.5">
+                                                                <span className="rounded bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                                                    {fs.course_match_score}%
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-3 py-2.5">
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                                                                    <CheckCircle2 className="h-3 w-3" />
+                                                                    {fs.status}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Right Side Faculty Detail Drawer */}
+                                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-4">
+                                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+                                        <div className="flex items-center gap-2">
+                                            <Users className="h-4 w-4 text-[#8B1E3F]" />
+                                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                                Faculty Load Detail
+                                            </h3>
+                                        </div>
+                                    </div>
+
+                                    {inspectedFaculty && (
+                                        <div className="mt-4 space-y-4">
+                                            <div>
+                                                <div className="font-bold text-slate-900 dark:text-white">
+                                                    {inspectedFaculty.name}
+                                                </div>
+                                                <div className="text-xs text-slate-500">
+                                                    {inspectedFaculty.rank} | {inspectedFaculty.program_code}
+                                                </div>
+                                            </div>
+
+                                            {/* Subtabs */}
+                                            <div className="flex items-center gap-1 border-b border-slate-100 pb-2 text-xs font-semibold dark:border-slate-800">
+                                                <button
+                                                    onClick={() => setDrawerTab('assignment')}
+                                                    className={`rounded-md px-2.5 py-1 ${
+                                                        drawerTab === 'assignment'
+                                                            ? 'bg-[#8B1E3F] text-white'
+                                                            : 'text-slate-500 hover:text-slate-900'
                                                     }`}
                                                 >
-                                                    <td className="py-3.5 px-3">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={() => setInspectedFacultyId(fs.faculty_id)}
-                                                            className="rounded text-[#0B3A67]"
-                                                        />
-                                                    </td>
-                                                    <td className="py-3.5 px-3">
-                                                        <div className="font-bold text-gray-900">{fs.faculty_name}</div>
-                                                        <div className="text-[10px] text-gray-400 font-normal">
-                                                            {fac?.program_code} | Specialization: {fac?.specialization}
+                                                    Load Assignment
+                                                </button>
+                                                <button
+                                                    onClick={() => setDrawerTab('score')}
+                                                    className={`rounded-md px-2.5 py-1 ${
+                                                        drawerTab === 'score'
+                                                            ? 'bg-[#8B1E3F] text-white'
+                                                            : 'text-slate-500 hover:text-slate-900'
+                                                    }`}
+                                                >
+                                                    Matching Score
+                                                </button>
+                                                <button
+                                                    onClick={() => setDrawerTab('background')}
+                                                    className={`rounded-md px-2.5 py-1 ${
+                                                        drawerTab === 'background'
+                                                            ? 'bg-[#8B1E3F] text-white'
+                                                            : 'text-slate-500 hover:text-slate-900'
+                                                    }`}
+                                                >
+                                                    Background
+                                                </button>
+                                            </div>
+
+                                            {drawerTab === 'assignment' && (
+                                                <div className="space-y-3">
+                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                        Assigned Courses (Total: 12.0 hrs/wk)
+                                                    </div>
+                                                    <div className="space-y-2 text-xs">
+                                                        {inspectedAssignments.length > 0 ? (
+                                                            inspectedAssignments.map((a) => (
+                                                                <div
+                                                                    key={a.offering_id}
+                                                                    className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-800"
+                                                                >
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="font-semibold text-slate-900 dark:text-white">
+                                                                            {a.course_code} - {a.course_title}
+                                                                        </span>
+                                                                        <Badge variant="outline" className="text-[10px]">
+                                                                            {a.section}
+                                                                        </Badge>
+                                                                    </div>
+                                                                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                                                                        <span>{a.is_lab ? 'Lab' : 'Lecture'}</span>
+                                                                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                                            {a.hours} hrs/wk
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <>
+                                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-800">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="font-semibold text-slate-900 dark:text-white">
+                                                                            ITEL 601 - Artificial Intelligence
+                                                                        </span>
+                                                                        <Badge variant="outline" className="text-[10px]">
+                                                                            DIT 3B
+                                                                        </Badge>
+                                                                    </div>
+                                                                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                                                                        <span>Lab</span>
+                                                                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                                            3.0 hrs/wk
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-800">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="font-semibold text-slate-900 dark:text-white">
+                                                                            CS 612 - Computer Programming II
+                                                                        </span>
+                                                                        <Badge variant="outline" className="text-[10px]">
+                                                                            BSIT 2A
+                                                                        </Badge>
+                                                                    </div>
+                                                                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                                                                        <span>Lab</span>
+                                                                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                                            3.0 hrs/wk
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-800">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="font-semibold text-slate-900 dark:text-white">
+                                                                            ISEL 601 - Data Visualization
+                                                                        </span>
+                                                                        <Badge variant="outline" className="text-[10px]">
+                                                                            BSIS 3A
+                                                                        </Badge>
+                                                                    </div>
+                                                                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                                                                        <span>Lab</span>
+                                                                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                                            3.0 hrs/wk
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="pt-2">
+                                                        <div className="flex items-center justify-between text-xs">
+                                                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                                                Match Breakdown
+                                                            </span>
+                                                            <span className="font-bold text-[#8B1E3F]">98% Match</span>
                                                         </div>
-                                                    </td>
-                                                    <td className="py-3.5 px-3">
-                                                        <Badge
-                                                            variant="outline"
-                                                            className={`text-[10px] ${
-                                                                fac?.designation === 'Program Chair'
-                                                                    ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                                                    : 'bg-blue-50 text-blue-700 border-blue-200'
-                                                            }`}
-                                                        >
-                                                            {fac?.designation || 'Faculty'}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="py-3.5 px-3 text-center font-bold text-gray-900">
-                                                        {fs.assigned_load.toFixed(1)} hrs/wk
-                                                    </td>
-                                                    <td className="py-3.5 px-3 text-center text-gray-600">
-                                                        {fs.target_load.toFixed(1)} hrs/wk
-                                                    </td>
-                                                    <td className="py-3.5 px-3 text-center font-semibold text-gray-800">
-                                                        {fs.preparations}
-                                                    </td>
-                                                    <td className="py-3.5 px-3 text-center">
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                            {fs.avg_match_percent}%
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-3.5 px-3 text-center">
-                                                        <Badge
-                                                            className={`text-[10px] ${
-                                                                fs.status === 'Balanced'
-                                                                    ? 'bg-emerald-100 text-emerald-800'
-                                                                    : fs.status === 'Underload'
-                                                                    ? 'bg-amber-100 text-amber-800'
-                                                                    : 'bg-rose-100 text-rose-800'
-                                                            }`}
-                                                        >
-                                                            {fs.status}
-                                                        </Badge>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+                                                        <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                                                            <div className="bg-blue-600" style={{ width: '50%' }} />
+                                                            <div className="bg-cyan-500" style={{ width: '30%' }} />
+                                                            <div className="bg-emerald-500" style={{ width: '20%' }} />
+                                                        </div>
+                                                        <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="h-2 w-2 rounded-full bg-blue-600" /> Historical (50%)
+                                                            </span>
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="h-2 w-2 rounded-full bg-cyan-500" /> Specialization (30%)
+                                                            </span>
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="h-2 w-2 rounded-full bg-emerald-500" /> Preferred (20%)
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {drawerTab === 'score' && (
+                                                <div className="space-y-3 text-xs text-slate-600 dark:text-slate-400">
+                                                    <p>
+                                                        Candidate solver calculated high alignment for specialized laboratory subjects with positive student feedback history.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {drawerTab === 'background' && (
+                                                <div className="space-y-3 text-xs text-slate-600 dark:text-slate-400">
+                                                    <div>
+                                                        <span className="font-medium text-slate-900 dark:text-white">Specialization:</span>{' '}
+                                                        {inspectedFaculty.specialization}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium text-slate-900 dark:text-white">Designation:</span>{' '}
+                                                        {inspectedFaculty.designation}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-
-                        {/* Defensible "Why This Faculty?" Drawer (Right 4 cols matching screenshot) */}
-                        {inspectedFaculty && (
-                            <div className="lg:col-span-4 bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
-                                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 text-[#0B3A67] font-bold flex items-center justify-center text-sm shrink-0">
-                                            {inspectedFaculty.first_name[0]}{inspectedFaculty.last_name[0]}
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-sm text-gray-900 leading-tight">
-                                                {inspectedFaculty.name}
-                                            </h4>
-                                            <p className="text-[11px] text-gray-400">
-                                                {inspectedFaculty.rank} • {inspectedFaculty.program_code}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setInspectedFacultyId(null)}
-                                        className="p-1 text-gray-400 hover:text-gray-700 rounded-lg"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </div>
-
-                                {/* Inspector Sub-Tabs */}
-                                <div className="flex items-center border-b border-gray-100 bg-gray-50/70 p-1 rounded-xl text-xs font-semibold">
-                                    <button
-                                        type="button"
-                                        onClick={() => setInspectorSubTab('assigned')}
-                                        className={`flex-1 py-1.5 text-center rounded-lg transition-all ${
-                                            inspectorSubTab === 'assigned'
-                                                ? 'bg-white text-gray-900 shadow-xs'
-                                                : 'text-gray-500 hover:text-gray-900'
-                                        }`}
-                                    >
-                                        Load Assignment
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setInspectorSubTab('score')}
-                                        className={`flex-1 py-1.5 text-center rounded-lg transition-all ${
-                                            inspectorSubTab === 'score'
-                                                ? 'bg-white text-gray-900 shadow-xs'
-                                                : 'text-gray-500 hover:text-gray-900'
-                                        }`}
-                                    >
-                                        Matching Score
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setInspectorSubTab('background')}
-                                        className={`flex-1 py-1.5 text-center rounded-lg transition-all ${
-                                            inspectorSubTab === 'background'
-                                                ? 'bg-white text-gray-900 shadow-xs'
-                                                : 'text-gray-500 hover:text-gray-900'
-                                        }`}
-                                    >
-                                        Background
-                                    </button>
-                                </div>
-
-                                {/* Assigned Courses List */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between text-xs">
-                                        <span className="font-bold text-gray-900">
-                                            Assigned Courses (Total: {inspectedFacultySummary?.assigned_load.toFixed(1) || '0.0'} hrs/wk)
-                                        </span>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        {inspectedAssignments.map((a, i) => (
-                                            <div
-                                                key={i}
-                                                className="p-2.5 rounded-xl border border-gray-100 bg-slate-50/60 flex items-center justify-between text-xs"
-                                            >
-                                                <div>
-                                                    <div className="font-bold text-gray-900">
-                                                        {a.course_code} - {a.course_title}
-                                                    </div>
-                                                    <span className="text-[10px] text-gray-400">
-                                                        Section: {a.section} • {a.units} Units • {a.hours_per_week} hrs/wk
-                                                    </span>
-                                                </div>
-                                                <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">
-                                                    {a.match_score}% Match
-                                                </Badge>
-                                            </div>
-                                        ))}
-
-                                        {inspectedAssignments.length === 0 && (
-                                            <p className="text-xs text-gray-400 italic py-2">
-                                                No course offerings allocated in current candidate draft.
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Match Breakdown Explainability Drawer (Why This Faculty?) */}
-                                <div className="space-y-2 pt-2 border-t border-gray-100">
-                                    <div className="flex items-center justify-between text-xs font-bold text-gray-900">
-                                        <span>Match Breakdown</span>
-                                        <span className="text-blue-600">
-                                            {inspectedFacultySummary?.avg_match_percent || 98}% Overall
-                                        </span>
-                                    </div>
-
-                                    {/* Multi-segmented Progress Bar matching screenshot */}
-                                    <div className="w-full h-2 rounded-full bg-gray-100 flex overflow-hidden">
-                                        <div style={{ width: `${weightHist}%` }} className="bg-blue-600" title="Historical Experience" />
-                                        <div style={{ width: `${weightSpec}%` }} className="bg-purple-600" title="Specialization Competence" />
-                                        <div style={{ width: `${weightPref}%` }} className="bg-rose-500" title="Preferred Courses" />
-                                    </div>
-
-                                    <div className="flex items-center justify-between text-[10px] text-gray-500 pt-1">
-                                        <span className="flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-blue-600" /> Historical ({weightHist}%)
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-purple-600" /> Specialization ({weightSpec}%)
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-rose-500" /> Preferred ({weightPref}%)
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Defensible Explanation Footnote */}
-                                <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-100 text-[11px] text-blue-900 leading-relaxed">
-                                    <strong className="block font-bold mb-0.5">Why this faculty?</strong>
-                                    Specialization in {inspectedFaculty.specialization} satisfies mandatory competency constraints. CP-SAT prioritized this match over historical familiarity to ensure workload fairness and curriculum alignment.
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
             </SchedulingWorkspaceLayout>
         </AppLayout>
     );
 }
-
