@@ -147,7 +147,8 @@ test('college admin only sees rooms within their college in room inventory', fun
     $response = $this->actingAs($this->collegeAdminUser)->get(route('schedule.master-data.rooms'));
     $response->assertOk();
 
-    $rooms = $response->viewData('page')['props']['rooms']['data'];
+    $roomsProp = $response->viewData('page')['props']['rooms'];
+    $rooms = isset($roomsProp['data']) ? $roomsProp['data'] : $roomsProp;
     $roomNames = collect($rooms)->pluck('room_name')->all();
 
     expect($roomNames)->toContain('CLR Test 1');

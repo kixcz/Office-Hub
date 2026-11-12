@@ -1,28 +1,26 @@
 import React, { useState, useMemo } from 'react';
+import { Head, router, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import SchedulingWorkspaceLayout from '@/components/scheduling-workspace-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
-import {
-    Building2,
+import { 
+    Building2, 
+    Upload, 
+    Plus, 
+    Search, 
+    CheckCircle2, 
+    AlertTriangle, 
+    Layers, 
     Monitor,
-    Search,
-    Plus,
     Edit3,
     Trash2,
-    AlertTriangle,
-    CheckCircle2,
-    Wrench,
     Clock,
-    Layers,
-    ShieldAlert,
-    Send,
+    X,
     Filter,
-    Info,
-    Laptop,
-    AirVent,
-    Flame,
-    Tv,
+    Wifi,
+    Cpu,
+    DoorClosed,
+    Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,126 +42,89 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Rooms & Laboratories', href: '/schedule/master-data/rooms' },
 ];
 
-export interface RoomItem {
+export interface WorkspaceRoomItem {
     id: number;
+    room_code: string;
     room_name: string;
-    building?: string;
-    floor?: string;
+    building: string;
+    floor: string;
     type: 'Laboratory' | 'Lecture' | 'Conference' | 'Office' | 'Other';
+    custom_type: string;
     capacity: number;
     status: 'Available' | 'In Use' | 'Maintenance' | 'Under Repair' | 'Reserved';
-    equipment_details?: string;
-    notes?: string;
+    readiness: string;
+    is_shared: boolean;
     scheduled_count: number;
-    active_complaints_count: number;
+    equipment_details: string;
+    notes?: string | null;
 }
 
-interface FacultyItem {
-    id: number;
-    name: string;
-    email: string;
-}
-
-interface ComplaintItem {
-    id: number;
-    room_name: string;
-    complainant_name: string;
-    issue_category: string;
-    urgency: string;
-    description: string;
-    status: string;
-    created_at: string;
-}
-
-interface Props {
+interface WorkspaceRoomsProps {
     currentPeriod: any;
-    rooms: RoomItem[];
-    faculties: FacultyItem[];
-    recentComplaints?: ComplaintItem[];
+    rooms: WorkspaceRoomItem[];
 }
 
-export default function MasterDataRoomsIndex({
-    currentPeriod,
-    rooms = [],
-    faculties = [],
-    recentComplaints = [],
-}: Props) {
-    const [search, setSearch] = useState('');
+export default function WorkspaceRoomsMasterDataPage({ currentPeriod, rooms = [] }: WorkspaceRoomsProps) {
+    const [searchQuery, setSearchQuery] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [selectedRoom, setSelectedRoom] = useState<WorkspaceRoomItem | null>(rooms[0] || null);
 
-    // Modals state
+    // Modals
     const [isAddEditOpen, setIsAddEditOpen] = useState(false);
-    const [editingRoom, setEditingRoom] = useState<RoomItem | null>(null);
-
+    const [editingRoom, setEditingRoom] = useState<WorkspaceRoomItem | null>(null);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-    const [deletingRoom, setDeletingRoom] = useState<RoomItem | null>(null);
+    const [deletingRoom, setDeletingRoom] = useState<WorkspaceRoomItem | null>(null);
 
-    const [isComplaintOpen, setIsComplaintOpen] = useState(false);
-    const [complaintRoom, setComplaintRoom] = useState<RoomItem | null>(null);
-
-    // Filtered rooms
-    const filtered = useMemo(() => {
-        return rooms.filter((r) => {
-            const matchesSearch =
-                r.room_name.toLowerCase().includes(search.toLowerCase()) ||
-                (r.building && r.building.toLowerCase().includes(search.toLowerCase())) ||
-                (r.equipment_details && r.equipment_details.toLowerCase().includes(search.toLowerCase()));
-            const matchesType = typeFilter === 'all' || r.type === typeFilter;
-            const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
-            return matchesSearch && matchesType && matchesStatus;
-        });
-    }, [rooms, search, typeFilter, statusFilter]);
-
-    // Room Add/Edit Form
+    // Form for Add/Edit
     const roomForm = useForm({
         room_name: '',
-        building: 'CIDS Main',
-        floor: '2nd Floor',
-        type: 'Laboratory' as RoomItem['type'],
-        capacity: 40,
-        status: 'Available' as RoomItem['status'],
+        room_code: '',
+        building: 'Main Academic Hall',
+        floor: '1st Floor',
+        type: 'Lecture',
+        capacity: 45,
+        status: 'Available',
         equipment_details: '',
-        notes: '',
+        is_shared: false,
     });
 
     const openAddModal = () => {
         setEditingRoom(null);
         roomForm.setData({
             room_name: '',
-            building: 'CIDS Main',
-            floor: '2nd Floor',
-            type: 'Laboratory',
-            capacity: 40,
+            room_code: '',
+            building: 'Main Academic Hall',
+            floor: '1st Floor',
+            type: 'Lecture',
+            capacity: 45,
             status: 'Available',
-            equipment_details: '40 Desktop PCs, 2 Split AC units, 1 Projector, 1 Whiteboard',
-            notes: '',
+            equipment_details: '',
+            is_shared: false,
         });
-        roomForm.clearErrors();
         setIsAddEditOpen(true);
     };
 
-    const openEditModal = (room: RoomItem) => {
+    const openEditModal = (room: WorkspaceRoomItem) => {
         setEditingRoom(room);
         roomForm.setData({
             room_name: room.room_name,
-            building: room.building || 'CIDS Main',
-            floor: room.floor || '2nd Floor',
+            room_code: room.room_code,
+            building: room.building,
+            floor: room.floor,
             type: room.type,
             capacity: room.capacity,
             status: room.status,
             equipment_details: room.equipment_details || '',
-            notes: room.notes || '',
+            is_shared: room.is_shared,
         });
-        roomForm.clearErrors();
         setIsAddEditOpen(true);
     };
 
-    const handleRoomSubmit = (e: React.FormEvent) => {
+    const handleSaveRoom = (e: React.FormEvent) => {
         e.preventDefault();
         if (editingRoom) {
             roomForm.put(`/schedule/master-data/rooms/${editingRoom.id}`, {
-                preserveScroll: true,
                 onSuccess: () => {
                     setIsAddEditOpen(false);
                     setEditingRoom(null);
@@ -171,27 +132,21 @@ export default function MasterDataRoomsIndex({
             });
         } else {
             roomForm.post('/schedule/master-data/rooms', {
-                preserveScroll: true,
                 onSuccess: () => {
                     setIsAddEditOpen(false);
-                    roomForm.reset();
                 },
             });
         }
     };
 
-    // Room Delete Form
-    const deleteForm = useForm({});
-    const openDeleteModal = (room: RoomItem) => {
+    const confirmDelete = (room: WorkspaceRoomItem) => {
         setDeletingRoom(room);
         setIsDeleteOpen(true);
     };
 
-    const handleDeleteSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleDeleteRoom = () => {
         if (!deletingRoom) return;
-        deleteForm.delete(`/schedule/master-data/rooms/${deletingRoom.id}`, {
-            preserveScroll: true,
+        router.delete(`/schedule/master-data/rooms/${deletingRoom.id}`, {
             onSuccess: () => {
                 setIsDeleteOpen(false);
                 setDeletingRoom(null);
@@ -199,665 +154,453 @@ export default function MasterDataRoomsIndex({
         });
     };
 
-    // Problem Complaint Report Form
-    const complaintForm = useForm({
-        room_name: '',
-        room_id: null as number | null,
-        faculty_id: null as number | null,
-        complainant_name: '',
-        complainant_email: '',
-        issue_category: 'Air Conditioning',
-        urgency: 'Medium',
-        description: '',
-    });
-
-    const openComplaintModal = (room?: RoomItem) => {
-        setComplaintRoom(room || null);
-        complaintForm.setData({
-            room_name: room ? room.room_name : rooms[0]?.room_name || '',
-            room_id: room ? room.id : (rooms[0]?.id || null),
-            faculty_id: faculties[0]?.id || null,
-            complainant_name: faculties[0]?.name || '',
-            complainant_email: faculties[0]?.email || '',
-            issue_category: 'Air Conditioning',
-            urgency: 'Medium',
-            description: '',
+    // Filter logic
+    const filteredRooms = useMemo(() => {
+        return rooms.filter((r) => {
+            const matchesSearch =
+                r.room_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                r.room_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                r.building.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesType = typeFilter === 'all' || r.type.toLowerCase() === typeFilter.toLowerCase();
+            const matchesStatus = statusFilter === 'all' || r.status.toLowerCase() === statusFilter.toLowerCase();
+            return matchesSearch && matchesType && matchesStatus;
         });
-        complaintForm.clearErrors();
-        setIsComplaintOpen(true);
-    };
+    }, [rooms, searchQuery, typeFilter, statusFilter]);
 
-    const handleComplaintSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        complaintForm.post('/schedule/master-data/rooms/report-problem', {
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsComplaintOpen(false);
-                complaintForm.reset();
-            },
-        });
-    };
-
-    // Helpers
-    const getStatusBadge = (status: RoomItem['status']) => {
-        switch (status) {
-            case 'Available':
-                return <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">Available</Badge>;
-            case 'In Use':
-                return <Badge className="bg-blue-50 text-blue-700 border-blue-200">In Use</Badge>;
-            case 'Maintenance':
-                return <Badge className="bg-[#0B3A67]/10 text-[#0B3A67] border-[#0B3A67]/20">Maintenance</Badge>;
-            case 'Under Repair':
-                return <Badge className="bg-rose-50 text-rose-700 border-rose-200">Under Repair</Badge>;
-            case 'Reserved':
-                return <Badge className="bg-[#8B1E3F]/10 text-[#8B1E3F] border-[#8B1E3F]/20">Reserved</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
-        }
-    };
-
-    const getTypeBadge = (type: RoomItem['type']) => {
-        switch (type) {
-            case 'Laboratory':
-                return <Badge className="bg-blue-50 text-blue-700 border-blue-200">Laboratory</Badge>;
-            case 'Lecture':
-                return <Badge className="bg-[#0B3A67]/10 text-[#0B3A67] border-[#0B3A67]/20">Lecture Room</Badge>;
-            case 'Conference':
-                return <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200">Conference</Badge>;
-            default:
-                return <Badge variant="outline">{type}</Badge>;
-        }
-    };
+    // Summary counts
+    const totalRooms = rooms.length;
+    const labCount = rooms.filter((r) => r.type === 'Laboratory').length;
+    const lectureCount = rooms.filter((r) => r.type === 'Lecture').length;
+    const readyForSolver = rooms.filter((r) => r.status === 'Available').length;
+    const maintenanceCount = rooms.filter((r) => r.status === 'Maintenance' || r.status === 'Under Repair').length;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Rooms & Laboratories Inventory - CIDS" />
+            <Head title="Rooms & Laboratories - Master Data" />
 
             <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
-                <div className="flex flex-col gap-6 p-6 font-['Poppins']">
-                    {/* Header Banner */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                                <span className="p-2.5 rounded-xl bg-gradient-to-br from-[#0B3A67] to-[#8B1E3F] text-white">
-                                    <Building2 className="size-6" />
-                                </span>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h1 className="text-2xl font-bold text-gray-900">
-                                            Rooms &amp; Laboratories Inventory
-                                        </h1>
-                                        <Badge className="bg-gradient-to-r from-[#0B3A67]/15 to-[#8B1E3F]/15 text-[#0B3A67] border-[#0B3A67]/30 text-xs font-semibold">
-                                            CIDS Facilities
-                                        </Badge>
+                <div className="space-y-6 p-6 font-['Poppins']">
+                    {/* Header Section */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-900 to-rose-950 border border-rose-900/30 flex items-center justify-center text-rose-200 shadow-sm">
+                                <Building2 className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">Rooms &amp; Laboratories</h1>
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                                        Scheduling Master Data
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-500 font-medium">
+                                    Manage physical learning spaces, computer laboratories, capacity limits, and equipment profiles for automated scheduling.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2.5">
+                            <button
+                                type="button"
+                                onClick={openAddModal}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-slate-900 to-rose-950 text-white text-xs font-semibold hover:opacity-95 shadow-xs"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Add Facility</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 4 Summary Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0">
+                                <Building2 className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <div className="text-xl font-bold text-slate-900">{totalRooms}</div>
+                                <div className="text-[11px] font-medium text-slate-500">Total Facilities</div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-rose-900 text-rose-100 flex items-center justify-center shrink-0">
+                                <Monitor className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <div className="text-xl font-bold text-slate-900">{labCount}</div>
+                                <div className="text-[11px] font-medium text-slate-500">Computer Labs</div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                                <CheckCircle2 className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <div className="text-xl font-bold text-slate-900">{readyForSolver}</div>
+                                <div className="text-[11px] font-medium text-slate-500">Available / Solver Ready</div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <div className="text-xl font-bold text-slate-900">{maintenanceCount}</div>
+                                <div className="text-[11px] font-medium text-slate-500">Under Maintenance</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Filter & Search Toolbar */}
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search room code, name, or building..."
+                                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <select
+                                value={typeFilter}
+                                onChange={(e) => setTypeFilter(e.target.value)}
+                                className="text-xs rounded-xl border border-slate-200 py-2 px-3 bg-white text-slate-700"
+                            >
+                                <option value="all">All Types</option>
+                                <option value="Laboratory">Laboratories</option>
+                                <option value="Lecture">Lecture Rooms</option>
+                                <option value="Conference">Conference / Hall</option>
+                            </select>
+
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="text-xs rounded-xl border border-slate-200 py-2 px-3 bg-white text-slate-700"
+                            >
+                                <option value="all">All Status</option>
+                                <option value="Available">Available</option>
+                                <option value="In Use">In Use</option>
+                                <option value="Maintenance">Maintenance</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Main Layout: Rooms Table & Right Side Details */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        {/* Rooms Table */}
+                        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200/80">
+                                        <tr>
+                                            <th className="py-3 px-4">Room / Space</th>
+                                            <th className="py-3 px-4">Type</th>
+                                            <th className="py-3 px-4">Capacity</th>
+                                            <th className="py-3 px-4">Building &amp; Floor</th>
+                                            <th className="py-3 px-4 text-center">Status</th>
+                                            <th className="py-3 px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {filteredRooms.map((r) => {
+                                            const isSelected = selectedRoom?.id === r.id;
+                                            return (
+                                                <tr
+                                                    key={r.id}
+                                                    onClick={() => setSelectedRoom(r)}
+                                                    className={`cursor-pointer transition-colors ${
+                                                        isSelected ? 'bg-rose-50/50' : 'hover:bg-slate-50/60'
+                                                    }`}
+                                                >
+                                                    <td className="py-3 px-4">
+                                                        <div className="font-bold text-slate-900">{r.room_name}</div>
+                                                        <div className="text-[10px] text-slate-400 font-mono">{r.room_code}</div>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
+                                                            r.type === 'Laboratory'
+                                                                ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                                                                : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                                                        }`}>
+                                                            {r.custom_type || r.type}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 font-bold text-slate-700">
+                                                        {r.capacity} seats
+                                                    </td>
+                                                    <td className="py-3 px-4 text-slate-600">
+                                                        <div>{r.building}</div>
+                                                        <div className="text-[10px] text-slate-400">{r.floor}</div>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-center">
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                            r.status === 'Available'
+                                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                : r.status === 'In Use'
+                                                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                        }`}>
+                                                            {r.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right">
+                                                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openEditModal(r)}
+                                                                className="p-1 rounded hover:bg-slate-100 text-slate-600"
+                                                                title="Edit Room"
+                                                            >
+                                                                <Edit3 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => confirmDelete(r)}
+                                                                className="p-1 rounded hover:bg-rose-50 text-rose-600"
+                                                                title="Delete Room"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {filteredRooms.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="py-8 text-center text-slate-400">
+                                                    No rooms found matching your filter criteria.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Right Detail Card */}
+                        {selectedRoom && (
+                            <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 space-y-4">
+                                <div className="bg-gradient-to-r from-slate-900 to-rose-950 text-white p-4 rounded-xl space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="font-bold text-base">{selectedRoom.room_name}</h3>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-rose-200 border border-rose-300/20">
+                                            {selectedRoom.room_code}
+                                        </span>
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-0.5">
-                                        Manage room capacities, equipment specifications, and enable faculty problem reports submitted directly to the Dean.
-                                    </p>
+                                    <p className="text-xs text-slate-200">{selectedRoom.custom_type || selectedRoom.type} • {selectedRoom.capacity} Capacity</p>
+                                </div>
+
+                                <div className="space-y-3 text-xs">
+                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+                                        <div className="font-bold text-slate-800 uppercase text-[10px] tracking-wider">Facility Metadata</div>
+                                        <div className="flex justify-between py-0.5 border-b border-slate-200/60">
+                                            <span className="text-slate-500">Building:</span>
+                                            <span className="font-semibold text-slate-900">{selectedRoom.building}</span>
+                                        </div>
+                                        <div className="flex justify-between py-0.5 border-b border-slate-200/60">
+                                            <span className="text-slate-500">Floor Level:</span>
+                                            <span className="font-semibold text-slate-900">{selectedRoom.floor}</span>
+                                        </div>
+                                        <div className="flex justify-between py-0.5 border-b border-slate-200/60">
+                                            <span className="text-slate-500">Sharing Scope:</span>
+                                            <span className="font-semibold text-slate-900">{selectedRoom.is_shared ? 'Shared Institution-Wide' : 'College-Exclusive'}</span>
+                                        </div>
+                                        <div className="flex justify-between py-0.5">
+                                            <span className="text-slate-500">Scheduled Classes:</span>
+                                            <span className="font-bold text-rose-950">{selectedRoom.scheduled_count} sections</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+                                        <div className="font-bold text-slate-800 uppercase text-[10px] tracking-wider">Equipment &amp; Solver Attributes</div>
+                                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                                            {selectedRoom.equipment_details || 'Standard classroom fixtures, whiteboard, and basic AV equipment.'}
+                                        </p>
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => openEditModal(selectedRoom)}
+                                            className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors"
+                                        >
+                                            Edit Facility Details
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                            {/* Problem Reporting Button for Faculty */}
-                            <Button
-                                onClick={() => openComplaintModal()}
-                                variant="outline"
-                                className="border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-semibold gap-1.5 shadow-2xs"
-                            >
-                                <AlertTriangle className="size-4 text-rose-600" />
-                                Report Facility Problem
-                            </Button>
-
-                            {/* Add New Room Button */}
-                            <Button
-                                onClick={openAddModal}
-                                className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-semibold text-xs gap-1.5 shadow-xs"
-                            >
-                                <Plus className="size-4" />
-                                Add New Room
-                            </Button>
-
-                            <Button asChild variant="outline" size="sm" className="text-xs">
-                                <Link href="/operations/facility-reports">
-                                    Dean Reports View &rarr;
-                                </Link>
-                            </Button>
-                        </div>
+                        )}
                     </div>
+                </div>
 
-                    {/* Facility Summary Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-1">
-                            <span className="text-xs font-semibold text-gray-400 uppercase">Registered Facilities</span>
-                            <div className="text-2xl font-black text-gray-900">{rooms.length}</div>
-                            <span className="text-[11px] text-gray-500">Assignable rooms &amp; laboratories</span>
-                        </div>
-                        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-1">
-                            <span className="text-xs font-semibold text-gray-400 uppercase">Computer Laboratories</span>
-                            <div className="text-2xl font-black text-blue-600">
-                                {rooms.filter((r) => r.type === 'Laboratory').length}
-                            </div>
-                            <span className="text-[11px] text-gray-500">Equipped with desktop machines</span>
-                        </div>
-                        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-1">
-                            <span className="text-xs font-semibold text-gray-400 uppercase">Lecture Theaters &amp; Rooms</span>
-                            <div className="text-2xl font-black text-[#8B1E3F]">
-                                {rooms.filter((r) => r.type === 'Lecture').length}
-                            </div>
-                            <span className="text-[11px] text-gray-500">General instructional classrooms</span>
-                        </div>
-                        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-1">
-                            <span className="text-xs font-semibold text-rose-500 uppercase flex items-center gap-1">
-                                <AlertTriangle className="size-3.5" />
-                                Pending Complaints
-                            </span>
-                            <div className="text-2xl font-black text-rose-600">
-                                {rooms.reduce((acc, r) => acc + (r.active_complaints_count || 0), 0)}
-                            </div>
-                            <span className="text-[11px] text-rose-600 font-medium">Forwarded to Dean for review</span>
-                        </div>
-                    </div>
+                {/* Add / Edit Dialog */}
+                <Dialog open={isAddEditOpen} onOpenChange={setIsAddEditOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>{editingRoom ? 'Edit Facility' : 'Add New Facility'}</DialogTitle>
+                            <DialogDescription>
+                                Set room capacity, type, and equipment specifications used by the timetable CP-SAT solver.
+                            </DialogDescription>
+                        </DialogHeader>
 
-                    {/* Table Section */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-5 space-y-4">
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <div className="relative w-full sm:w-80">
-                                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <Input
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search room, building, equipment..."
-                                    className="pl-9 h-9 text-xs rounded-xl"
-                                />
+                        <form onSubmit={handleSaveRoom} className="space-y-3 py-2 text-xs">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label className="text-xs">Room Name *</Label>
+                                    <Input
+                                        value={roomForm.data.room_name}
+                                        onChange={(e) => roomForm.setData('room_name', e.target.value)}
+                                        placeholder="e.g., Computer Lab 201"
+                                        className="h-8 text-xs mt-1"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Room Code</Label>
+                                    <Input
+                                        value={roomForm.data.room_code}
+                                        onChange={(e) => roomForm.setData('room_code', e.target.value)}
+                                        placeholder="e.g., CL-201"
+                                        className="h-8 text-xs mt-1"
+                                    />
+                                </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label className="text-xs">Type *</Label>
+                                    <select
+                                        value={roomForm.data.type}
+                                        onChange={(e) => roomForm.setData('type', e.target.value as any)}
+                                        className="w-full h-8 text-xs rounded-md border border-input px-2 mt-1 bg-background"
+                                    >
+                                        <option value="Lecture">Lecture</option>
+                                        <option value="Laboratory">Laboratory</option>
+                                        <option value="Conference">Conference</option>
+                                        <option value="Office">Office</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Capacity (Seats) *</Label>
+                                    <Input
+                                        type="number"
+                                        value={roomForm.data.capacity}
+                                        onChange={(e) => roomForm.setData('capacity', parseInt(e.target.value) || 0)}
+                                        min="1"
+                                        className="h-8 text-xs mt-1"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label className="text-xs">Building</Label>
+                                    <Input
+                                        value={roomForm.data.building}
+                                        onChange={(e) => roomForm.setData('building', e.target.value)}
+                                        placeholder="e.g., CIDS Building"
+                                        className="h-8 text-xs mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Floor</Label>
+                                    <Input
+                                        value={roomForm.data.floor}
+                                        onChange={(e) => roomForm.setData('floor', e.target.value)}
+                                        placeholder="e.g., 2nd Floor"
+                                        className="h-8 text-xs mt-1"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <Label className="text-xs">Status</Label>
                                 <select
-                                    value={typeFilter}
-                                    onChange={(e) => setTypeFilter(e.target.value)}
-                                    className="h-9 px-3 rounded-xl border border-gray-200 text-xs text-gray-700 bg-white font-medium"
+                                    value={roomForm.data.status}
+                                    onChange={(e) => roomForm.setData('status', e.target.value as any)}
+                                    className="w-full h-8 text-xs rounded-md border border-input px-2 mt-1 bg-background"
                                 >
-                                    <option value="all">All Room Types</option>
-                                    <option value="Laboratory">Laboratory</option>
-                                    <option value="Lecture">Lecture Room</option>
-                                    <option value="Conference">Conference Room</option>
-                                    <option value="Office">Office</option>
-                                </select>
-
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="h-9 px-3 rounded-xl border border-gray-200 text-xs text-gray-700 bg-white font-medium"
-                                >
-                                    <option value="all">All Statuses</option>
-                                    <option value="Available">Available</option>
+                                    <option value="Available">Available (Solver Ready)</option>
                                     <option value="In Use">In Use</option>
                                     <option value="Maintenance">Maintenance</option>
                                     <option value="Under Repair">Under Repair</option>
                                     <option value="Reserved">Reserved</option>
                                 </select>
-
-                                <Button asChild size="sm" variant="outline" className="text-xs h-9">
-                                    <Link href="/schedule/master-timetable?view=room">
-                                        Room Grid &rarr;
-                                    </Link>
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs text-gray-600">
-                                <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 font-semibold uppercase tracking-wider text-[11px]">
-                                    <tr>
-                                        <th className="py-3 px-4">Room &amp; Location</th>
-                                        <th className="py-3 px-4">Classification</th>
-                                        <th className="py-3 px-4">Seating Capacity</th>
-                                        <th className="py-3 px-4">Status &amp; Health</th>
-                                        <th className="py-3 px-4">Equipment &amp; Facilities</th>
-                                        <th className="py-3 px-4 text-center">Active Issues</th>
-                                        <th className="py-3 px-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {filtered.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={7} className="text-center py-10 text-gray-400">
-                                                No rooms or laboratories match your search criteria.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        filtered.map((room) => (
-                                            <tr key={room.id} className="hover:bg-slate-50/80 transition-colors">
-                                                <td className="py-3 px-4">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <span className="p-2 rounded-lg bg-gray-100 text-gray-600">
-                                                            <Building2 className="size-4" />
-                                                        </span>
-                                                        <div>
-                                                            <div className="font-bold text-gray-900 text-sm">
-                                                                {room.room_name}
-                                                            </div>
-                                                            <div className="text-[11px] text-gray-400">
-                                                                {room.building || 'Main Building'} • {room.floor || 'Floor'}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    {getTypeBadge(room.type)}
-                                                </td>
-                                                <td className="py-3 px-4 font-mono font-semibold text-gray-800">
-                                                    {room.capacity} seats
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    {getStatusBadge(room.status)}
-                                                </td>
-                                                <td className="py-3 px-4 max-w-xs">
-                                                    <p className="text-xs text-gray-600 truncate" title={room.equipment_details}>
-                                                        {room.equipment_details || 'Standard classroom equipment'}
-                                                    </p>
-                                                </td>
-                                                <td className="py-3 px-4 text-center">
-                                                    {room.active_complaints_count > 0 ? (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-semibold text-[11px]">
-                                                            <AlertTriangle className="size-3" />
-                                                            {room.active_complaints_count} reported
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 text-emerald-600 text-[11px]">
-                                                            <CheckCircle2 className="size-3.5" />
-                                                            Normal
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="py-3 px-4 text-right">
-                                                    <div className="flex items-center justify-end gap-1">
-                                                        {/* Report problem for this specific room */}
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={() => openComplaintModal(room)}
-                                                            className="h-8 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                                                            title="Report issue with room"
-                                                        >
-                                                            <AlertTriangle className="size-3.5" />
-                                                        </Button>
-
-                                                        {/* Edit room */}
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={() => openEditModal(room)}
-                                                            className="h-8 px-2 text-[#0B3A67] hover:text-[#0B3A67] hover:bg-slate-100"
-                                                            title="Edit Room"
-                                                        >
-                                                            <Edit3 className="size-3.5" />
-                                                        </Button>
-
-                                                        {/* Delete room */}
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={() => openDeleteModal(room)}
-                                                            className="h-8 px-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50"
-                                                            title="Delete Room"
-                                                        >
-                                                            <Trash2 className="size-3.5" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ADD / EDIT ROOM MODAL */}
-                <Dialog open={isAddEditOpen} onOpenChange={setIsAddEditOpen}>
-                    <DialogContent className="sm:max-w-md font-['Poppins']">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900">
-                                <Building2 className="size-5 text-[#0B3A67]" />
-                                {editingRoom ? `Edit Room: ${editingRoom.room_name}` : 'Add New Room / Laboratory'}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs text-gray-500">
-                                {editingRoom
-                                    ? 'Update capacity, classification, and equipment inventory details.'
-                                    : 'Create a new assignable facility in the CIDS scheduling inventory.'}
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <form onSubmit={handleRoomSubmit} className="space-y-3.5 py-2">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-xs font-semibold text-gray-700">Room Identifier *</Label>
-                                    <Input
-                                        value={roomForm.data.room_name}
-                                        onChange={(e) => roomForm.setData('room_name', e.target.value)}
-                                        placeholder="e.g. CLR 201, LAB 302"
-                                        className="h-9 text-xs rounded-xl"
-                                        required
-                                    />
-                                    {roomForm.errors.room_name && (
-                                        <p className="text-[11px] text-rose-500">{roomForm.errors.room_name}</p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs font-semibold text-gray-700">Classification *</Label>
-                                    <select
-                                        value={roomForm.data.type}
-                                        onChange={(e) => roomForm.setData('type', e.target.value as any)}
-                                        className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs bg-white text-gray-800"
-                                    >
-                                        <option value="Laboratory">Laboratory</option>
-                                        <option value="Lecture">Lecture Room</option>
-                                        <option value="Conference">Conference Room</option>
-                                        <option value="Office">Office</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-xs font-semibold text-gray-700">Building</Label>
-                                    <Input
-                                        value={roomForm.data.building}
-                                        onChange={(e) => roomForm.setData('building', e.target.value)}
-                                        placeholder="e.g. CIDS Main"
-                                        className="h-9 text-xs rounded-xl"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-xs font-semibold text-gray-700">Floor Level</Label>
-                                    <Input
-                                        value={roomForm.data.floor}
-                                        onChange={(e) => roomForm.setData('floor', e.target.value)}
-                                        placeholder="e.g. 2nd Floor"
-                                        className="h-9 text-xs rounded-xl"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-xs font-semibold text-gray-700">Seating Capacity *</Label>
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        max={500}
-                                        value={roomForm.data.capacity}
-                                        onChange={(e) => roomForm.setData('capacity', parseInt(e.target.value) || 0)}
-                                        className="h-9 text-xs rounded-xl"
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-xs font-semibold text-gray-700">Operational Status *</Label>
-                                    <select
-                                        value={roomForm.data.status}
-                                        onChange={(e) => roomForm.setData('status', e.target.value as any)}
-                                        className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs bg-white text-gray-800"
-                                    >
-                                        <option value="Available">Available</option>
-                                        <option value="In Use">In Use</option>
-                                        <option value="Maintenance">Maintenance</option>
-                                        <option value="Under Repair">Under Repair</option>
-                                        <option value="Reserved">Reserved</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <Label className="text-xs font-semibold text-gray-700">Equipment Inventory &amp; Specifications</Label>
+                            <div>
+                                <Label className="text-xs">Equipment &amp; Facilities Specification</Label>
                                 <Textarea
                                     value={roomForm.data.equipment_details}
                                     onChange={(e) => roomForm.setData('equipment_details', e.target.value)}
-                                    placeholder="e.g. 40 Desktop PCs, 2 Split Type ACs, Projector, HDMI input..."
-                                    className="text-xs rounded-xl min-h-[60px]"
+                                    placeholder="e.g., 45 High-Spec PCs, GigE switch, ceiling projector, air-conditioned"
+                                    rows={2}
+                                    className="text-xs mt-1"
                                 />
                             </div>
 
-                            <div className="space-y-1">
-                                <Label className="text-xs font-semibold text-gray-700">Internal Notes (Optional)</Label>
-                                <Input
-                                    value={roomForm.data.notes}
-                                    onChange={(e) => roomForm.setData('notes', e.target.value)}
-                                    placeholder="Optional notes for scheduling officers..."
-                                    className="h-9 text-xs rounded-xl"
+                            <div className="flex items-center gap-2 pt-1">
+                                <input
+                                    type="checkbox"
+                                    id="isSharedCheck"
+                                    checked={roomForm.data.is_shared}
+                                    onChange={(e) => roomForm.setData('is_shared', e.target.checked)}
+                                    className="rounded border-slate-300 text-rose-950 focus:ring-rose-900"
                                 />
+                                <Label htmlFor="isSharedCheck" className="text-xs cursor-pointer">
+                                    Share space across all colleges (Multi-College Scheduling Resource)
+                                </Label>
                             </div>
 
                             <DialogFooter className="pt-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setIsAddEditOpen(false)}
-                                    className="text-xs"
-                                >
+                                <Button type="button" variant="outline" size="sm" onClick={() => setIsAddEditOpen(false)}>
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
                                     size="sm"
                                     disabled={roomForm.processing}
-                                    className="bg-gradient-to-r from-[#0B3A67] to-[#175C94] hover:opacity-95 text-white font-semibold text-xs shadow-xs"
+                                    className="bg-gradient-to-r from-slate-900 to-rose-950 text-white"
                                 >
-                                    {roomForm.processing ? 'Saving...' : editingRoom ? 'Save Changes' : 'Create Room'}
+                                    {editingRoom ? 'Update Facility' : 'Create Facility'}
                                 </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
                 </Dialog>
 
-                {/* DELETE ROOM CONFIRMATION MODAL */}
+                {/* Delete Confirmation Dialog */}
                 <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-                    <DialogContent className="sm:max-w-sm font-['Poppins']">
+                    <DialogContent className="sm:max-w-sm">
                         <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2 text-base font-bold text-rose-600">
-                                <Trash2 className="size-5" />
-                                Confirm Room Deletion
-                            </DialogTitle>
-                            <DialogDescription className="text-xs text-gray-500">
-                                Are you sure you want to delete room{' '}
-                                <strong className="text-gray-900">{deletingRoom?.room_name}</strong>? This action will remove it from scheduling master data.
+                            <DialogTitle className="text-rose-900">Remove Facility</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to remove <strong>{deletingRoom?.room_name}</strong> from scheduling master data?
                             </DialogDescription>
                         </DialogHeader>
-
-                        <form onSubmit={handleDeleteSubmit}>
-                            <DialogFooter className="gap-2 pt-3">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setIsDeleteOpen(false)}
-                                    className="text-xs"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    size="sm"
-                                    disabled={deleteForm.processing}
-                                    className="bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs"
-                                >
-                                    {deleteForm.processing ? 'Deleting...' : 'Confirm Delete'}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-
-                {/* FACULTY REPORT ROOM PROBLEM MODAL (Submitted to Dean) */}
-                <Dialog open={isComplaintOpen} onOpenChange={setIsComplaintOpen}>
-                    <DialogContent className="sm:max-w-lg font-['Poppins']">
-                        <DialogHeader>
-                            <div className="flex items-center gap-2">
-                                <span className="p-2 rounded-xl bg-rose-100 text-rose-700">
-                                    <AlertTriangle className="size-5" />
-                                </span>
-                                <div>
-                                    <DialogTitle className="text-base font-bold text-gray-900">
-                                        Report Room / Laboratory Problem
-                                    </DialogTitle>
-                                    <DialogDescription className="text-xs text-gray-500">
-                                        Forward incident or defective facility report directly to the <strong className="text-[#0B3A67]">Office of the Dean</strong>.
-                                    </DialogDescription>
-                                </div>
-                            </div>
-                        </DialogHeader>
-
-                        <form onSubmit={handleComplaintSubmit} className="space-y-3.5 py-2">
-                            {/* Room Selector */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-xs font-semibold text-gray-700">Room / Facility *</Label>
-                                    <select
-                                        value={complaintForm.data.room_name}
-                                        onChange={(e) => {
-                                            const selectedRoom = rooms.find((r) => r.room_name === e.target.value);
-                                            complaintForm.setData({
-                                                ...complaintForm.data,
-                                                room_name: e.target.value,
-                                                room_id: selectedRoom ? selectedRoom.id : null,
-                                            });
-                                        }}
-                                        className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs bg-white text-gray-800 font-semibold"
-                                        required
-                                    >
-                                        {rooms.map((r) => (
-                                            <option key={r.id} value={r.room_name}>
-                                                {r.room_name} ({r.type})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs font-semibold text-gray-700">Issue Category *</Label>
-                                    <select
-                                        value={complaintForm.data.issue_category}
-                                        onChange={(e) => complaintForm.setData('issue_category', e.target.value)}
-                                        className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs bg-white text-gray-800"
-                                        required
-                                    >
-                                        <option value="Air Conditioning">Air Conditioning (Not cooling / leaking)</option>
-                                        <option value="Computers / Peripherals">Computers / Peripherals (PCs, keyboards)</option>
-                                        <option value="Projector / Audio Visual">Projector / Audio Visual / TV</option>
-                                        <option value="Electrical / Lighting">Electrical / Lighting / Outlets</option>
-                                        <option value="Furniture / Seating">Furniture / Armchairs / Desks</option>
-                                        <option value="Internet / LAN Connectivity">Internet / LAN Connectivity</option>
-                                        <option value="Cleanliness / Facilities">Cleanliness / Door / Lock</option>
-                                        <option value="Other">Other Issue</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Urgency */}
-                            <div className="space-y-1">
-                                <Label className="text-xs font-semibold text-gray-700">Urgency Level *</Label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {(['Low', 'Medium', 'High', 'Critical'] as const).map((lvl) => {
-                                        const isSelected = complaintForm.data.urgency === lvl;
-                                        return (
-                                            <button
-                                                key={lvl}
-                                                type="button"
-                                                onClick={() => complaintForm.setData('urgency', lvl)}
-                                                className={`py-1.5 text-xs font-semibold rounded-xl border transition-all ${
-                                                    isSelected
-                                                        ? lvl === 'Critical'
-                                                            ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                                                            : lvl === 'High'
-                                                            ? 'bg-[#8B1E3F] text-white border-[#8B1E3F] shadow-xs'
-                                                            : lvl === 'Medium'
-                                                            ? 'bg-[#0B3A67] text-white border-[#0B3A67] shadow-xs'
-                                                            : 'bg-gray-800 text-white border-gray-800 shadow-xs'
-                                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                                }`}
-                                            >
-                                                {lvl}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Description */}
-                            <div className="space-y-1">
-                                <Label className="text-xs font-semibold text-gray-700">
-                                    Problem Description &amp; Specific Details *
-                                </Label>
-                                <Textarea
-                                    value={complaintForm.data.description}
-                                    onChange={(e) => complaintForm.setData('description', e.target.value)}
-                                    placeholder="e.g. AC unit #2 on the left side is leaking water on the floor and blowing warm air. 3 student PCs (PC 12, 13, 14) fail to turn on."
-                                    className="text-xs rounded-xl min-h-[90px]"
-                                    required
-                                />
-                                {complaintForm.errors.description && (
-                                    <p className="text-[11px] text-rose-500">{complaintForm.errors.description}</p>
-                                )}
-                            </div>
-
-                            {/* Faculty Complainant info */}
-                            <div className="grid grid-cols-2 gap-3 pt-1 border-t border-gray-100">
-                                <div className="space-y-1">
-                                    <Label className="text-xs font-semibold text-gray-700">Faculty / Reporting Staff *</Label>
-                                    <Input
-                                        value={complaintForm.data.complainant_name}
-                                        onChange={(e) => complaintForm.setData('complainant_name', e.target.value)}
-                                        placeholder="Full name of faculty member"
-                                        className="h-9 text-xs rounded-xl"
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-xs font-semibold text-gray-700">Contact Email</Label>
-                                    <Input
-                                        type="email"
-                                        value={complaintForm.data.complainant_email}
-                                        onChange={(e) => complaintForm.setData('complainant_email', e.target.value)}
-                                        placeholder="faculty@cids.edu"
-                                        className="h-9 text-xs rounded-xl"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="bg-[#0B3A67]/5 p-3 rounded-xl border border-[#0B3A67]/20 text-[11px] text-[#0B3A67] flex items-start gap-2">
-                                <ShieldAlert className="size-4 text-[#0B3A67] shrink-0 mt-0.5" />
-                                <div>
-                                    This report will be marked as <strong>Submitted to Dean</strong> and logged in the Super Admin Facility Reports module. Critical urgency issues automatically notify maintenance personnel.
-                                </div>
-                            </div>
-
-                            <DialogFooter className="pt-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setIsComplaintOpen(false)}
-                                    className="text-xs"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    size="sm"
-                                    disabled={complaintForm.processing}
-                                    className="bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs gap-1.5 shadow-xs"
-                                >
-                                    <Send className="size-3.5" />
-                                    {complaintForm.processing ? 'Submitting...' : 'Submit to Dean'}
-                                </Button>
-                            </DialogFooter>
-                        </form>
+                        <DialogFooter className="pt-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIsDeleteOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={handleDeleteRoom}
+                            >
+                                Remove
+                            </Button>
+                        </DialogFooter>
                     </DialogContent>
                 </Dialog>
             </SchedulingWorkspaceLayout>

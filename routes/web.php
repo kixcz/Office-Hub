@@ -214,11 +214,10 @@ Route::middleware(['auth'])->group(function () {
             Route::post('faculty/load-targets', [SemesterScheduleController::class, 'updateFacultyLoadTargets'])->name('faculty.load-targets');
             Route::post('faculty-specializations/verify', [SemesterScheduleController::class, 'verifyFacultySpecialization'])->name('faculty-specializations.verify');
             Route::post('faculty-preferences/update', [SemesterScheduleController::class, 'updateFacultyPreferences'])->name('faculty-preferences.update');
-            Route::get('rooms', [RoomInventoryController::class, 'index'])->name('rooms');
-            Route::post('rooms', [RoomInventoryController::class, 'store'])->name('rooms.store');
-            Route::put('rooms/{room}', [RoomInventoryController::class, 'update'])->name('rooms.update');
-            Route::delete('rooms/{room}', [RoomInventoryController::class, 'destroy'])->name('rooms.destroy');
-            Route::post('rooms/report-problem', [RoomInventoryController::class, 'reportProblem'])->name('rooms.report-problem');
+            Route::get('rooms', [SemesterScheduleController::class, 'masterDataRooms'])->name('rooms');
+            Route::post('rooms', [SemesterScheduleController::class, 'storeMasterDataRoom'])->name('rooms.store');
+            Route::put('rooms/{room}', [SemesterScheduleController::class, 'updateMasterDataRoom'])->name('rooms.update');
+            Route::delete('rooms/{room}', [SemesterScheduleController::class, 'destroyMasterDataRoom'])->name('rooms.destroy');
         });
 
         // Semester Schedule Generator System

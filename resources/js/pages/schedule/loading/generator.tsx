@@ -12,6 +12,7 @@ import {
     CheckCircle2,
     AlertCircle,
     Info,
+    Plus,
     Calendar,
     Users,
     BookOpen,

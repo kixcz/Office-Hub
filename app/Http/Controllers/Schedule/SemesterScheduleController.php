@@ -28,6 +28,7 @@ use App\Services\PortalContextService;
 use App\Services\Scheduling\FacultyLoadingOptimizationService;
 use App\Services\Scheduling\GeminiScheduleAssistant;
 use App\Services\Scheduling\TimetableGenerator;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -2205,33 +2206,145 @@ class SemesterScheduleController extends Controller
     }
 
     /**
-     * Scheduling Master Data: Rooms & Laboratories inventory view.
+     * Scheduling Master Data: Rooms & Laboratories inventory view (dedicated to semester scheduling workspace).
      */
     public function masterDataRooms(Request $request): Response
     {
         $currentPeriod = AcademicPeriod::current();
-        $roomCounts = RoomSchedule::selectRaw('room_name, COUNT(*) as scheduled_count')
-            ->whereNotNull('room_name')
-            ->where('room_name', '!=', '')
-            ->groupBy('room_name')
-            ->get();
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
 
-        $rooms = $roomCounts->map(function ($row) {
-            $name = $row->room_name;
-            $isLab = str_contains(strtolower($name), 'lab') || str_contains(strtolower($name), 'clr') || str_contains(strtolower($name), 'chs');
+        $query = Room::query();
+        if ($scopeCollegeId) {
+            $query->where(function ($q) use ($scopeCollegeId) {
+                $q->where('college_id', $scopeCollegeId)
+                    ->orWhere('is_shared', true);
+            });
+        }
+
+        $rooms = $query->orderBy('room_name')->get()->map(function ($room) {
+            $scheduledCount = RoomSchedule::where('room_name', $room->room_name)->count();
+            $isLab = $room->type === 'Laboratory' || str_contains(strtolower($room->room_name), 'lab') || str_contains(strtolower($room->room_name), 'clr');
 
             return [
-                'room_name' => $name,
-                'type' => $isLab ? 'Laboratory' : 'Lecture',
-                'capacity' => $isLab ? 40 : 50,
-                'scheduled_count' => (int) $row->scheduled_count,
+                'id' => $room->id,
+                'room_code' => $room->room_code ?: strtoupper(str_replace(' ', '-', $room->room_name)),
+                'room_name' => $room->room_name,
+                'building' => $room->building ?: 'Main Building',
+                'floor' => $room->floor ?: 'Ground Floor',
+                'type' => $isLab ? 'Laboratory' : ($room->type ?: 'Lecture'),
+                'custom_type' => $room->custom_type ?: ($isLab ? 'Computer Laboratory' : 'Lecture Hall'),
+                'capacity' => (int) ($room->capacity ?: ($isLab ? 40 : 50)),
+                'status' => $room->status ?: 'Available',
+                'readiness' => ($room->status === 'Available' || empty($room->status)) ? 'Ready' : 'Under Review',
+                'is_shared' => (bool) $room->is_shared,
+                'scheduled_count' => $scheduledCount,
+                'equipment_details' => $room->equipment_details ?: ($isLab ? '45 Workstations, 1 GigE Switch, Projector, Air-conditioned' : 'Standard AV, Whiteboard, 50 Armchairs'),
+                'notes' => $room->notes,
             ];
         });
+
+        // If no Room model rows exist in DB yet, gracefully fallback to RoomSchedule distinct names
+        if ($rooms->isEmpty()) {
+            $roomCounts = RoomSchedule::selectRaw('room_name, COUNT(*) as scheduled_count')
+                ->whereNotNull('room_name')
+                ->where('room_name', '!=', '')
+                ->groupBy('room_name')
+                ->get();
+
+            $rooms = $roomCounts->map(function ($row, $idx) {
+                $name = $row->room_name;
+                $isLab = str_contains(strtolower($name), 'lab') || str_contains(strtolower($name), 'clr') || str_contains(strtolower($name), 'chs');
+
+                return [
+                    'id' => $idx + 1,
+                    'room_code' => strtoupper(str_replace(' ', '-', $name)),
+                    'room_name' => $name,
+                    'building' => 'Main Building',
+                    'floor' => 'Ground Floor',
+                    'type' => $isLab ? 'Laboratory' : 'Lecture',
+                    'custom_type' => $isLab ? 'Computer Laboratory' : 'Lecture Room',
+                    'capacity' => $isLab ? 40 : 50,
+                    'status' => 'Available',
+                    'readiness' => 'Ready',
+                    'is_shared' => false,
+                    'scheduled_count' => (int) $row->scheduled_count,
+                    'equipment_details' => $isLab ? '40 Workstations, Projector' : 'Standard AV, Whiteboard',
+                    'notes' => null,
+                ];
+            });
+        }
 
         return Inertia::render('schedule/master-data/rooms/index', [
             'currentPeriod' => $currentPeriod,
             'rooms' => $rooms,
         ]);
+    }
+
+    /**
+     * Store a new room record for the scheduling workspace.
+     */
+    public function storeMasterDataRoom(Request $request): RedirectResponse
+    {
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
+
+        $validated = $request->validate([
+            'room_name' => ['required', 'string', 'max:255'],
+            'room_code' => ['nullable', 'string', 'max:50'],
+            'building' => ['nullable', 'string', 'max:255'],
+            'floor' => ['nullable', 'string', 'max:50'],
+            'type' => ['required', 'string', 'in:Lecture,Laboratory,Conference,Office,Other'],
+            'capacity' => ['required', 'integer', 'min:1'],
+            'status' => ['nullable', 'string', 'in:Available,In Use,Maintenance,Under Repair,Reserved'],
+            'equipment_details' => ['nullable', 'string'],
+            'is_shared' => ['nullable', 'boolean'],
+        ]);
+
+        Room::create([
+            'college_id' => $scopeCollegeId,
+            'room_name' => $validated['room_name'],
+            'room_code' => $validated['room_code'] ?? strtoupper(str_replace(' ', '-', $validated['room_name'])),
+            'building' => $validated['building'] ?? 'Main Academic Hall',
+            'floor' => $validated['floor'] ?? '1st Floor',
+            'type' => $validated['type'],
+            'capacity' => $validated['capacity'],
+            'status' => $validated['status'] ?? 'Available',
+            'equipment_details' => $validated['equipment_details'] ?? null,
+            'is_shared' => $validated['is_shared'] ?? false,
+        ]);
+
+        return back()->with('success', 'Room added to scheduling master data.');
+    }
+
+    /**
+     * Update an existing room record for the scheduling workspace.
+     */
+    public function updateMasterDataRoom(Request $request, Room $room): RedirectResponse
+    {
+        $validated = $request->validate([
+            'room_name' => ['required', 'string', 'max:255'],
+            'room_code' => ['nullable', 'string', 'max:50'],
+            'building' => ['nullable', 'string', 'max:255'],
+            'floor' => ['nullable', 'string', 'max:50'],
+            'type' => ['required', 'string', 'in:Lecture,Laboratory,Conference,Office,Other'],
+            'capacity' => ['required', 'integer', 'min:1'],
+            'status' => ['nullable', 'string', 'in:Available,In Use,Maintenance,Under Repair,Reserved'],
+            'equipment_details' => ['nullable', 'string'],
+            'is_shared' => ['nullable', 'boolean'],
+        ]);
+
+        $room->update($validated);
+
+        return back()->with('success', 'Room updated successfully.');
+    }
+
+    /**
+     * Delete a room record from the scheduling master data.
+     */
+    public function destroyMasterDataRoom(Room $room): RedirectResponse
+    {
+        $room->delete();
+
+        return back()->with('success', 'Room removed from scheduling master data.');
     }
 
     /**
