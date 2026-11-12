@@ -14,6 +14,12 @@ class FacultyPreference extends Model
         'preferred_days',
         'preferred_time_windows',
         'max_days_per_week',
+        'preferred_min_load',
+        'preferred_max_load',
+        'preferred_max_preparations',
+        'preferred_teaching_mode',
+        'avoid_early_morning',
+        'avoid_late_evening',
         'notes',
     ];
 
@@ -24,6 +30,8 @@ class FacultyPreference extends Model
             'preferred_days' => 'array',
             'preferred_time_windows' => 'array',
             'max_days_per_week' => 'integer',
+            'avoid_early_morning' => 'boolean',
+            'avoid_late_evening' => 'boolean',
         ];
     }
 

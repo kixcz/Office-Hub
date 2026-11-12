@@ -1,580 +1,408 @@
-import AppLayout from '@/layouts/app-layout';
+import React, { useState } from 'react';
+import { Head, router } from '@inertiajs/react';
 import SchedulingWorkspaceLayout from '@/components/scheduling-workspace-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
-import {
-    Users,
-    Search,
-    BookOpen,
-    GraduationCap,
-    Clock,
-    Sparkles,
-    Sliders,
-    Calendar,
-    CheckCircle2,
-    CheckCircle,
-    AlertCircle,
-    Info,
+import { 
+    Users, 
+    Upload, 
+    Plus, 
+    Search, 
+    CheckCircle2, 
+    AlertTriangle, 
+    Clock, 
+    BookOpen, 
+    Sparkles, 
+    Sliders, 
+    ShieldCheck, 
+    X,
+    Save
 } from 'lucide-react';
-import React, { useState, useMemo, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Scheduling', href: '/schedule/generator' },
-    { title: 'Master Data', href: '/schedule/master-data/faculty' },
-    { title: 'Faculty Matrix', href: '/schedule/master-data/faculty' },
-];
-
-interface SpecializationRecord {
+interface FacultyItem {
     id: number;
-    expertise_area: string;
-    qualification_level: string;
-    course_category_match?: string | null;
-    is_verified?: boolean;
-}
-
-interface PreferenceRecord {
-    id: number;
-    preferred_days?: string[] | null;
-    preferred_time_windows?: string[] | null;
-    max_days_per_week?: number | null;
-    notes?: string | null;
-}
-
-interface AvailabilityRecord {
-    id: number;
-    academic_year?: string | null;
-    semester?: string | null;
-    day_of_week: string;
-    preferred_start_time: string;
-    preferred_end_time: string;
+    name: string;
+    avatar?: string;
+    employee_id: string;
+    email: string;
+    program_code: string;
+    program_name: string;
+    employment_type: string;
+    designation: string;
+    min_load: number;
+    target_load: number;
+    max_load: number;
+    assigned_load: number;
+    specialization: string;
+    specializations_count: number;
+    preferences_count: number;
+    availability_status: string;
+    readiness: string;
     status: string;
-    notes?: string | null;
+    courses_taught_count: number;
 }
 
-interface FacultyMember {
-    id: number;
-    first_name: string;
-    last_name: string;
-    title_name?: string | null;
-    academic_rank?: string | null;
-    employment_type?: string | null;
-    specialization?: string | null;
-    program?: {
-        id: number;
-        code: string;
-        name: string;
-        college_id?: number;
-    } | null;
-    specializations?: SpecializationRecord[];
-    preferences?: PreferenceRecord[];
-    availabilities?: AvailabilityRecord[];
-}
-
-interface Props {
+interface FacultyMasterDataProps {
     currentPeriod: any;
-    faculties: FacultyMember[];
-    initialTab?: 'all' | 'specializations' | 'preferences' | 'availability';
+    faculties: FacultyItem[];
 }
 
-export default function MasterDataFacultyIndex({
-    currentPeriod,
-    faculties = [],
-    initialTab = 'all',
-}: Props) {
-    const [activeTab, setActiveTab] = useState<'all' | 'specializations' | 'preferences' | 'availability'>(initialTab);
-    const [search, setSearch] = useState('');
-    const [programFilter, setProgramFilter] = useState('all');
+export default function FacultyMasterDataPage({ currentPeriod, faculties }: FacultyMasterDataProps) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [programFilter, setProgramFilter] = useState('All');
+    const [employmentFilter, setEmploymentFilter] = useState('All');
+    const [selectedFaculty, setSelectedFaculty] = useState<FacultyItem | null>(faculties[0] || null);
 
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            const tabParam = params.get('tab') as any;
-            if (['all', 'specializations', 'preferences', 'availability'].includes(tabParam)) {
-                setActiveTab(tabParam);
-            }
-        }
-    }, []);
+    // Load Target Edit States for Selected Faculty
+    const [isEditingBounds, setIsEditingBounds] = useState(false);
+    const [loadBounds, setLoadBounds] = useState({
+        min_load: selectedFaculty?.min_load || 9.0,
+        target_load: selectedFaculty?.target_load || 12.0,
+        max_load: selectedFaculty?.max_load || 15.0,
+    });
 
-    const filtered = useMemo(() => {
-        return faculties.filter((f) => {
-            const name = `${f.first_name} ${f.last_name} ${f.title_name || ''}`.toLowerCase();
-            const spec = (f.specialization || '').toLowerCase();
-            const specTags = (f.specializations || []).map((s) => s.expertise_area.toLowerCase()).join(' ');
-            const matchesSearch =
-                name.includes(search.toLowerCase()) ||
-                spec.includes(search.toLowerCase()) ||
-                specTags.includes(search.toLowerCase());
-            const matchesProg = programFilter === 'all' || f.program?.code === programFilter;
-            return matchesSearch && matchesProg;
+    const totalFaculty = faculties.length;
+    const fullTime = faculties.filter((f) => f.employment_type === 'Full-Time').length;
+    const partTime = faculties.filter((f) => f.employment_type === 'Part-Time').length;
+    const profilesComplete = faculties.filter((f) => f.readiness === 'Complete').length;
+    const needsAttention = faculties.filter((f) => f.readiness !== 'Complete').length;
+
+    const filteredFaculties = faculties.filter((f) => {
+        const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              f.employee_id.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesProgram = programFilter === 'All' || f.program_code === programFilter;
+        const matchesEmployment = employmentFilter === 'All' || f.employment_type === employmentFilter;
+        return matchesSearch && matchesProgram && matchesEmployment;
+    });
+
+    const distinctPrograms = Array.from(new Set(faculties.map((f) => f.program_code)));
+
+    const handleSaveLoadBounds = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedFaculty) return;
+        router.post(route('schedule.master-data.faculty.load-targets'), {
+            faculty_id: selectedFaculty.id,
+            min_load_hours: loadBounds.min_load,
+            target_load_hours: loadBounds.target_load,
+            max_load_hours: loadBounds.max_load,
+        }, {
+            onSuccess: () => setIsEditingBounds(false),
         });
-    }, [faculties, search, programFilter]);
-
-    const programs = useMemo(() => {
-        const set = new Set<string>();
-        faculties.forEach((f) => {
-            if (f.program?.code) set.add(f.program.code);
-        });
-        return Array.from(set);
-    }, [faculties]);
-
-    const totalSpecs = useMemo(() => {
-        return faculties.reduce((sum, f) => sum + (f.specializations?.length || (f.specialization ? 1 : 0)), 0);
-    }, [faculties]);
-
-    const totalPrefs = useMemo(() => {
-        return faculties.filter((f) => (f.preferences && f.preferences.length > 0) || f.specialization).length;
-    }, [faculties]);
-
-    const totalAvailSlots = useMemo(() => {
-        return faculties.reduce((sum, f) => sum + (f.availabilities?.length || 0), 0);
-    }, [faculties]);
+    };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Faculty Matrix - Scheduling Master Data" />
+        <SchedulingWorkspaceLayout>
+            <Head title="Faculty Scheduling Profiles - Master Data" />
 
-            <SchedulingWorkspaceLayout currentPeriod={currentPeriod}>
-                <div className="flex flex-col gap-6 p-6 font-['Poppins']">
-                    {/* Header Banner */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                        <div className="space-y-1">
+            <div className="space-y-6 pb-12">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-900 to-rose-950 border border-rose-900/30 flex items-center justify-center text-rose-200 shadow-sm">
+                            <Users className="w-6 h-6" />
+                        </div>
+                        <div>
                             <div className="flex items-center gap-2">
-                                <span className="p-2 rounded-xl bg-gradient-to-br from-[#0B3A67] to-[#8B1E3F] text-white">
-                                    <Users className="size-5" />
+                                <h1 className="text-2xl font-bold tracking-tight text-slate-900">Faculty</h1>
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                                    Scheduling Profiles
                                 </span>
-                                <h1 className="text-2xl font-bold text-gray-900">
-                                    Faculty Academic Master Data
-                                </h1>
-                                <Badge className="bg-gradient-to-r from-[#0B3A67]/15 to-[#8B1E3F]/15 text-[#0B3A67] border-[#0B3A67]/30 text-xs font-semibold">
-                                    College Scoped
-                                </Badge>
                             </div>
-                            <p className="text-xs text-gray-500 max-w-2xl">
-                                Instructors, disciplinary expertise tags, scheduling preferences, and teaching availability within your college.
+                            <p className="text-xs text-slate-500 font-medium">
+                                Maintain authoritative faculty scheduling profiles, workload limits, and teaching history for CP-SAT loading.
                             </p>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                            <Button asChild variant="outline" size="sm" className="text-xs">
-                                <Link href="/faculties">
-                                    Faculty Directory &rarr;
-                                </Link>
-                            </Button>
-                        </div>
                     </div>
 
-                    {/* Navigation Tabs */}
-                    <div className="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <div className="flex items-center gap-2.5">
                         <button
                             type="button"
-                            onClick={() => setActiveTab('all')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                                activeTab === 'all'
-                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                            }`}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-xs"
                         >
-                            <Users className="w-4 h-4" />
-                            <span>Faculty Members</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                                activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                            }`}>
-                                {faculties.length}
-                            </span>
+                            <Upload className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Import CSV</span>
                         </button>
-
                         <button
                             type="button"
-                            onClick={() => setActiveTab('specializations')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                                activeTab === 'specializations'
-                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                            }`}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-slate-900 to-rose-950 text-white text-xs font-semibold hover:opacity-95 shadow-xs"
                         >
-                            <Sparkles className="w-4 h-4" />
-                            <span>Faculty Specializations</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                                activeTab === 'specializations' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                            }`}>
-                                {totalSpecs}
-                            </span>
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add Faculty</span>
                         </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('preferences')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                                activeTab === 'preferences'
-                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                            }`}
-                        >
-                            <Sliders className="w-4 h-4" />
-                            <span>Faculty Preferences</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                                activeTab === 'preferences' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                            }`}>
-                                {totalPrefs}
-                            </span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('availability')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                                activeTab === 'availability'
-                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                            }`}
-                        >
-                            <Clock className="w-4 h-4" />
-                            <span>Faculty Availability</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                                activeTab === 'availability' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                            }`}>
-                                {totalAvailSlots}
-                            </span>
-                        </button>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-1">
-                            <span className="text-xs font-semibold text-gray-400 uppercase">College Faculty Pool</span>
-                            <div className="text-2xl font-black text-gray-900">{faculties.length}</div>
-                            <span className="text-[11px] text-gray-500">Department instructional pool</span>
-                        </div>
-                        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-1">
-                            <span className="text-xs font-semibold text-gray-400 uppercase">Specialization Matrix</span>
-                            <div className="text-2xl font-black text-emerald-600">{totalSpecs}</div>
-                            <span className="text-[11px] text-gray-500">Course match tags</span>
-                        </div>
-                        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-1">
-                            <span className="text-xs font-semibold text-gray-400 uppercase">Preference Profiles</span>
-                            <div className="text-2xl font-black text-purple-600">{totalPrefs}</div>
-                            <span className="text-[11px] text-gray-500">Day/time preference registered</span>
-                        </div>
-                        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-1">
-                            <span className="text-xs font-semibold text-gray-400 uppercase">Loading Workload Target</span>
-                            <div className="text-2xl font-black text-blue-600">18 Units</div>
-                            <span className="text-[11px] text-gray-500">Institutional standard full-time</span>
-                        </div>
-                    </div>
-
-                    {/* Content Section */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-5 space-y-4">
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <div className="relative w-full sm:w-80">
-                                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <Input
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search by instructor, rank, or specialty..."
-                                    className="pl-9 h-9 text-xs rounded-xl"
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <select
-                                    value={programFilter}
-                                    onChange={(e) => setProgramFilter(e.target.value)}
-                                    className="h-9 px-3 rounded-xl border border-gray-200 text-xs text-gray-700 bg-white font-semibold"
-                                >
-                                    <option value="all">All Programs in College</option>
-                                    {programs.map((p) => (
-                                        <option key={p} value={p}>{p}</option>
-                                    ))}
-                                </select>
-                                <Button asChild size="sm" className="bg-[#0B3A67] hover:bg-[#0B3A67]/90 text-white font-semibold text-xs">
-                                    <Link href="/schedule/loading">
-                                        View Load Allocation &rarr;
-                                    </Link>
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* TAB 1: FACULTY MEMBERS (ALL) */}
-                        {activeTab === 'all' && (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-xs text-gray-600">
-                                    <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 font-semibold uppercase tracking-wider text-[11px]">
-                                        <tr>
-                                            <th className="py-3 px-4">Faculty Member</th>
-                                            <th className="py-3 px-4">Home Program</th>
-                                            <th className="py-3 px-4">Academic Rank</th>
-                                            <th className="py-3 px-4">Employment</th>
-                                            <th className="py-3 px-4">Primary Specialty</th>
-                                            <th className="py-3 px-4 text-center">Eligibility</th>
-                                            <th className="py-3 px-4 text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {filtered.map((faculty) => (
-                                            <tr key={faculty.id} className="hover:bg-slate-50/80 transition-colors">
-                                                <td className="py-3 px-4 font-bold text-gray-900">
-                                                    {faculty.title_name ? `${faculty.title_name} ` : ''}
-                                                    {faculty.first_name} {faculty.last_name}
-                                                </td>
-                                                <td className="py-3 px-4 font-semibold text-gray-700">
-                                                    {faculty.program?.code || 'General'}
-                                                </td>
-                                                <td className="py-3 px-4 text-gray-600">
-                                                    {faculty.academic_rank || 'Instructor'}
-                                                </td>
-                                                <td className="py-3 px-4 text-gray-600">
-                                                    {faculty.employment_type || 'Full-time'}
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    {faculty.specialization ? (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-medium">
-                                                            {faculty.specialization}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-gray-400 italic text-[11px]">No tags assigned</span>
-                                                    )}
-                                                </td>
-                                                <td className="py-3 px-4 text-center">
-                                                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px]">
-                                                        Assignable
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-3 px-4 text-right">
-                                                    <Button asChild variant="outline" size="sm" className="text-xs h-7">
-                                                        <Link href="/schedule/loading">
-                                                            Inspect Load &rarr;
-                                                        </Link>
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-
-                        {/* TAB 2: FACULTY SPECIALIZATIONS */}
-                        {activeTab === 'specializations' && (
-                            <div className="space-y-4">
-                                <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-100 flex items-center gap-2 text-xs text-blue-800">
-                                    <Info className="w-4 h-4 text-blue-600 shrink-0" />
-                                    <span>Specializations define verified subject expertise used by the scheduler to pair faculty with course offerings.</span>
-                                </div>
-
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-xs text-gray-600">
-                                        <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 font-semibold uppercase tracking-wider text-[11px]">
-                                            <tr>
-                                                <th className="py-3 px-4">Faculty Member</th>
-                                                <th className="py-3 px-4">Program</th>
-                                                <th className="py-3 px-4">Specialization Area(s)</th>
-                                                <th className="py-3 px-4">Match Category</th>
-                                                <th className="py-3 px-4 text-center">Status</th>
-                                                <th className="py-3 px-4 text-right">Verification</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {filtered.map((faculty) => {
-                                                const specs = faculty.specializations || [];
-                                                return (
-                                                    <tr key={faculty.id} className="hover:bg-slate-50/80 transition-colors">
-                                                        <td className="py-3 px-4 font-bold text-gray-900">
-                                                            {faculty.title_name || `${faculty.first_name} ${faculty.last_name}`}
-                                                        </td>
-                                                        <td className="py-3 px-4 font-semibold text-gray-700">
-                                                            {faculty.program?.code || 'General'}
-                                                        </td>
-                                                        <td className="py-3 px-4">
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {specs.length > 0 ? (
-                                                                    specs.map((s) => (
-                                                                        <span
-                                                                            key={s.id}
-                                                                            className="inline-flex items-center px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[11px] font-medium"
-                                                                        >
-                                                                            {s.expertise_area}
-                                                                        </span>
-                                                                    ))
-                                                                ) : faculty.specialization ? (
-                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[11px] font-medium">
-                                                                        {faculty.specialization}
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-gray-400 italic text-[11px]">No tags recorded</span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-3 px-4 text-gray-600">
-                                                            {specs[0]?.course_category_match || 'Major Courses'}
-                                                        </td>
-                                                        <td className="py-3 px-4 text-center">
-                                                            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
-                                                                Active
-                                                            </Badge>
-                                                        </td>
-                                                        <td className="py-3 px-4 text-right">
-                                                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                                                                <CheckCircle className="w-3.5 h-3.5" />
-                                                                Dean Verified
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TAB 3: FACULTY PREFERENCES */}
-                        {activeTab === 'preferences' && (
-                            <div className="space-y-4">
-                                <div className="p-3 rounded-xl bg-purple-50/50 border border-purple-100 flex items-center gap-2 text-xs text-purple-800">
-                                    <Info className="w-4 h-4 text-purple-600 shrink-0" />
-                                    <span>Faculty preferences (day combinations, preferred teaching hours, and maximum days) guide the automated solver.</span>
-                                </div>
-
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-xs text-gray-600">
-                                        <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 font-semibold uppercase tracking-wider text-[11px]">
-                                            <tr>
-                                                <th className="py-3 px-4">Faculty Member</th>
-                                                <th className="py-3 px-4">Home Program</th>
-                                                <th className="py-3 px-4">Preferred Days</th>
-                                                <th className="py-3 px-4">Time Windows</th>
-                                                <th className="py-3 px-4 text-center">Max Days / Wk</th>
-                                                <th className="py-3 px-4">Notes</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {filtered.map((faculty) => {
-                                                const pref = (faculty.preferences && faculty.preferences[0]) || null;
-                                                const days = pref?.preferred_days || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-                                                const times = pref?.preferred_time_windows || ['08:00 - 12:00', '13:00 - 17:00'];
-                                                return (
-                                                    <tr key={faculty.id} className="hover:bg-slate-50/80 transition-colors">
-                                                        <td className="py-3 px-4 font-bold text-gray-900">
-                                                            {faculty.title_name || `${faculty.first_name} ${faculty.last_name}`}
-                                                        </td>
-                                                        <td className="py-3 px-4 font-semibold text-gray-700">
-                                                            {faculty.program?.code || 'General'}
-                                                        </td>
-                                                        <td className="py-3 px-4">
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {days.map((d: string) => (
-                                                                    <span
-                                                                        key={d}
-                                                                        className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 text-[10px] font-medium"
-                                                                    >
-                                                                        {d.slice(0, 3)}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-3 px-4">
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {times.map((t: string) => (
-                                                                    <span
-                                                                        key={t}
-                                                                        className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-medium"
-                                                                    >
-                                                                        {t}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-3 px-4 text-center font-bold text-gray-800">
-                                                            {pref?.max_days_per_week || 4} days
-                                                        </td>
-                                                        <td className="py-3 px-4 text-gray-500 text-[11px]">
-                                                            {pref?.notes || 'Standard department loading constraints apply.'}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TAB 4: FACULTY AVAILABILITY */}
-                        {activeTab === 'availability' && (
-                            <div className="space-y-4">
-                                <div className="p-3 rounded-xl bg-amber-50/50 border border-amber-100 flex items-center gap-2 text-xs text-amber-800">
-                                    <Info className="w-4 h-4 text-amber-600 shrink-0" />
-                                    <span>Weekly availability time windows logged by faculty members for the active academic semester.</span>
-                                </div>
-
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-xs text-gray-600">
-                                        <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 font-semibold uppercase tracking-wider text-[11px]">
-                                            <tr>
-                                                <th className="py-3 px-4">Faculty Member</th>
-                                                <th className="py-3 px-4">Program</th>
-                                                <th className="py-3 px-4">Available Days</th>
-                                                <th className="py-3 px-4">Time Slot Allocation</th>
-                                                <th className="py-3 px-4 text-center">Status</th>
-                                                <th className="py-3 px-4 text-right">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {filtered.map((faculty) => {
-                                                const avails = faculty.availabilities || [];
-                                                return (
-                                                    <tr key={faculty.id} className="hover:bg-slate-50/80 transition-colors">
-                                                        <td className="py-3 px-4 font-bold text-gray-900">
-                                                            {faculty.title_name || `${faculty.first_name} ${faculty.last_name}`}
-                                                        </td>
-                                                        <td className="py-3 px-4 font-semibold text-gray-700">
-                                                            {faculty.program?.code || 'General'}
-                                                        </td>
-                                                        <td className="py-3 px-4">
-                                                            {avails.length > 0 ? (
-                                                                <div className="flex flex-wrap gap-1">
-                                                                    {avails.map((a) => (
-                                                                        <span
-                                                                            key={a.id}
-                                                                            className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-medium"
-                                                                        >
-                                                                            {a.day_of_week} ({a.preferred_start_time}-{a.preferred_end_time})
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-gray-500 text-[11px]">Monday–Friday (08:00–17:00 Standard)</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="py-3 px-4 text-gray-600">
-                                                            40 hrs / week standard window
-                                                        </td>
-                                                        <td className="py-3 px-4 text-center">
-                                                            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
-                                                                Available
-                                                            </Badge>
-                                                        </td>
-                                                        <td className="py-3 px-4 text-right">
-                                                            <Button asChild variant="outline" size="sm" className="text-xs h-7">
-                                                                <Link href="/schedule/loading">
-                                                                    View Timetable &rarr;
-                                                                </Link>
-                                                            </Button>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
-            </SchedulingWorkspaceLayout>
-        </AppLayout>
+
+                {/* 5 Top Summary Metric Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0">
+                            <Users className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <div className="text-xl font-bold text-slate-900">{totalFaculty}</div>
+                            <div className="text-[11px] font-medium text-slate-500">Total Faculty</div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <div className="text-xl font-bold text-slate-900">{fullTime}</div>
+                            <div className="text-[11px] font-medium text-slate-500">Full-Time</div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <div className="text-xl font-bold text-slate-900">{partTime}</div>
+                            <div className="text-[11px] font-medium text-slate-500">Part-Time</div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <div className="text-xl font-bold text-slate-900">{profilesComplete}</div>
+                            <div className="text-[11px] font-medium text-slate-500">Profiles Complete</div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center shrink-0">
+                            <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <div className="text-xl font-bold text-slate-900">{needsAttention}</div>
+                            <div className="text-[11px] font-medium text-slate-500">Needs Attention</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Filters */}
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-3 shadow-xs flex flex-wrap items-center gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search faculty name or ID..."
+                            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 font-medium">Program:</span>
+                        <select
+                            value={programFilter}
+                            onChange={(e) => setProgramFilter(e.target.value)}
+                            className="px-2.5 py-1 text-xs rounded-xl border border-slate-200 bg-white"
+                        >
+                            <option value="All">All Programs</option>
+                            {distinctPrograms.map((p) => (
+                                <option key={p} value={p}>{p}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 font-medium">Employment:</span>
+                        <select
+                            value={employmentFilter}
+                            onChange={(e) => setEmploymentFilter(e.target.value)}
+                            className="px-2.5 py-1 text-xs rounded-xl border border-slate-200 bg-white"
+                        >
+                            <option value="All">All Types</option>
+                            <option value="Full-Time">Full-Time</option>
+                            <option value="Part-Time">Part-Time</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Main Table & Side Drawer */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* Faculty Table */}
+                    <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                                <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200/80">
+                                    <tr>
+                                        <th className="py-2.5 px-3">Faculty</th>
+                                        <th className="py-2.5 px-3">Program</th>
+                                        <th className="py-2.5 px-3">Employment</th>
+                                        <th className="py-2.5 px-3 text-center">Target Load</th>
+                                        <th className="py-2.5 px-3 text-center">Assigned</th>
+                                        <th className="py-2.5 px-3 text-center">Readiness</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {filteredFaculties.map((f) => {
+                                        const isSelected = selectedFaculty?.id === f.id;
+                                        return (
+                                            <tr
+                                                key={f.id}
+                                                onClick={() => {
+                                                    setSelectedFaculty(f);
+                                                    setLoadBounds({
+                                                        min_load: f.min_load,
+                                                        target_load: f.target_load,
+                                                        max_load: f.max_load,
+                                                    });
+                                                    setIsEditingBounds(false);
+                                                }}
+                                                className={`cursor-pointer transition-colors ${
+                                                    isSelected ? 'bg-rose-50/50' : 'hover:bg-slate-50/60'
+                                                }`}
+                                            >
+                                                <td className="py-2.5 px-3">
+                                                    <div className="font-bold text-slate-900">{f.name}</div>
+                                                    <div className="text-[10px] text-slate-400">{f.employee_id} • {f.designation}</div>
+                                                </td>
+                                                <td className="py-2.5 px-3 font-semibold text-slate-700">{f.program_code}</td>
+                                                <td className="py-2.5 px-3 text-slate-600">{f.employment_type}</td>
+                                                <td className="py-2.5 px-3 text-center font-bold text-slate-900">{f.target_load.toFixed(1)} hrs</td>
+                                                <td className="py-2.5 px-3 text-center text-slate-600">{f.assigned_load.toFixed(1)} hrs</td>
+                                                <td className="py-2.5 px-3 text-center">
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                        f.readiness === 'Complete'
+                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                    }`}>
+                                                        {f.readiness}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Faculty Profile Detail Drawer */}
+                    {selectedFaculty && (
+                        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+                            <div className="bg-gradient-to-r from-slate-900 to-rose-950 text-white p-4 rounded-xl space-y-1">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-bold text-base">{selectedFaculty.name}</h3>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                                        {selectedFaculty.readiness}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-200 font-medium">
+                                    {selectedFaculty.designation} • {selectedFaculty.program_code}
+                                </p>
+                            </div>
+
+                            {/* Workload Limits & Target Setting */}
+                            <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-3 text-xs">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-bold text-slate-800 uppercase tracking-wider">Workload Limits (Target Load)</h4>
+                                    {!isEditingBounds ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditingBounds(true)}
+                                            className="text-[11px] font-bold text-rose-900 hover:underline"
+                                        >
+                                            Edit Limits
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditingBounds(false)}
+                                            className="text-[11px] font-medium text-slate-500 hover:underline"
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
+
+                                {!isEditingBounds ? (
+                                    <div className="grid grid-cols-3 gap-2 text-center">
+                                        <div className="p-2 bg-white rounded-lg border border-slate-200">
+                                            <div className="text-[10px] text-slate-400">Min Load</div>
+                                            <div className="font-bold text-slate-800">{selectedFaculty.min_load.toFixed(1)} hrs</div>
+                                        </div>
+                                        <div className="p-2 bg-white rounded-lg border border-slate-200">
+                                            <div className="text-[10px] text-slate-400">Target</div>
+                                            <div className="font-bold text-rose-900">{selectedFaculty.target_load.toFixed(1)} hrs</div>
+                                        </div>
+                                        <div className="p-2 bg-white rounded-lg border border-slate-200">
+                                            <div className="text-[10px] text-slate-400">Max Load</div>
+                                            <div className="font-bold text-slate-800">{selectedFaculty.max_load.toFixed(1)} hrs</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleSaveLoadBounds} className="space-y-2">
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div>
+                                                <label className="text-[10px] text-slate-500">Min (hrs)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.5"
+                                                    value={loadBounds.min_load}
+                                                    onChange={(e) => setLoadBounds({ ...loadBounds, min_load: parseFloat(e.target.value) })}
+                                                    className="w-full mt-1 p-1 text-center font-bold border border-slate-300 rounded-md"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-500">Target (hrs)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.5"
+                                                    value={loadBounds.target_load}
+                                                    onChange={(e) => setLoadBounds({ ...loadBounds, target_load: parseFloat(e.target.value) })}
+                                                    className="w-full mt-1 p-1 text-center font-bold border border-slate-300 rounded-md"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-500">Max (hrs)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.5"
+                                                    value={loadBounds.max_load}
+                                                    onChange={(e) => setLoadBounds({ ...loadBounds, max_load: parseFloat(e.target.value) })}
+                                                    className="w-full mt-1 p-1 text-center font-bold border border-slate-300 rounded-md"
+                                                />
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            className="w-full py-1.5 rounded-lg bg-gradient-to-r from-slate-900 to-rose-950 text-white font-bold text-xs flex items-center justify-center gap-1.5"
+                                        >
+                                            <Save className="w-3.5 h-3.5" />
+                                            <span>Save Workload Bounds</span>
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+
+                            {/* Quick Indicators */}
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-rose-900 shrink-0" />
+                                    <div>
+                                        <div className="font-bold text-slate-800">{selectedFaculty.specializations_count} Areas</div>
+                                        <div className="text-[10px] text-slate-400">Specializations</div>
+                                    </div>
+                                </div>
+                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
+                                    <BookOpen className="w-4 h-4 text-indigo-600 shrink-0" />
+                                    <div>
+                                        <div className="font-bold text-slate-800">{selectedFaculty.preferences_count} Subjects</div>
+                                        <div className="text-[10px] text-slate-400">Preferences</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </SchedulingWorkspaceLayout>
     );
 }

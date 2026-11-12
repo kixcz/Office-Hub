@@ -205,7 +205,15 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('master-data')->name('master-data.')->group(function () {
             Route::get('academic-periods', [SemesterScheduleController::class, 'masterDataAcademicPeriods'])->name('academic-periods');
             Route::get('programs', [SemesterScheduleController::class, 'masterDataPrograms'])->name('programs');
+            Route::get('courses', [SemesterScheduleController::class, 'masterDataCourses'])->name('courses');
+            Route::get('sections', [SemesterScheduleController::class, 'masterDataSections'])->name('sections');
             Route::get('faculty', [SemesterScheduleController::class, 'masterDataFaculty'])->name('faculty');
+            Route::get('faculty-specializations', [SemesterScheduleController::class, 'masterDataFacultySpecializations'])->name('faculty-specializations');
+            Route::get('faculty-preferences', [SemesterScheduleController::class, 'masterDataFacultyPreferences'])->name('faculty-preferences');
+            Route::get('faculty-availability', [SemesterScheduleController::class, 'masterDataFacultyAvailability'])->name('faculty-availability');
+            Route::post('faculty/load-targets', [SemesterScheduleController::class, 'updateFacultyLoadTargets'])->name('faculty.load-targets');
+            Route::post('faculty-specializations/verify', [SemesterScheduleController::class, 'verifyFacultySpecialization'])->name('faculty-specializations.verify');
+            Route::post('faculty-preferences/update', [SemesterScheduleController::class, 'updateFacultyPreferences'])->name('faculty-preferences.update');
             Route::get('rooms', [RoomInventoryController::class, 'index'])->name('rooms');
             Route::post('rooms', [RoomInventoryController::class, 'store'])->name('rooms.store');
             Route::put('rooms/{room}', [RoomInventoryController::class, 'update'])->name('rooms.update');
@@ -219,9 +227,36 @@ Route::middleware(['auth'])->group(function () {
         Route::post('generator/assign-faculty', [SemesterScheduleController::class, 'assignFaculty'])->name('generator.assign-faculty');
         Route::get('sections', [SemesterScheduleController::class, 'sectionsOfferings'])->name('sections');
         Route::get('loading', [SemesterScheduleController::class, 'facultyLoading'])->name('loading');
+        Route::get('loading-generator', [SemesterScheduleController::class, 'loadingGenerator'])->name('loading-generator');
+        Route::post('loading-generator/run', [SemesterScheduleController::class, 'runLoadingSolver'])->name('loading-generator.run');
+        Route::post('loading-generator/apply', [SemesterScheduleController::class, 'applyLoadingCandidate'])->name('loading-generator.apply');
+        Route::get('loading-review', [SemesterScheduleController::class, 'loadingReview'])->name('loading-review');
+        Route::post('loading-review/endorse-program', [SemesterScheduleController::class, 'endorseProgramLoadingReview'])->name('loading-review.endorse-program');
+        Route::post('loading-review/request-revision', [SemesterScheduleController::class, 'requestProgramLoadingRevision'])->name('loading-review.request-revision');
+        Route::post('loading-review/flag', [SemesterScheduleController::class, 'storeLoadingFlag'])->name('loading-review.flag');
+        Route::post('loading-review/resolve-flag', [SemesterScheduleController::class, 'resolveLoadingFlag'])->name('loading-review.resolve-flag');
+        Route::post('loading-review/dean-decision', [SemesterScheduleController::class, 'deanLoadingDecision'])->name('loading-review.dean-decision');
         Route::get('policies', [SemesterScheduleController::class, 'loadPolicies'])->name('policies');
-        Route::get('timetable', [SemesterScheduleController::class, 'timetable'])->name('timetable');
-        Route::get('conflicts', [SemesterScheduleController::class, 'conflictCenter'])->name('conflicts');
+        // Timetable Generation with Loading Gating & Locked Version Source
+        Route::prefix('timetable')->name('timetable.')->group(function () {
+            Route::get('constraints', [SemesterScheduleController::class, 'timetableConstraints'])->name('constraints');
+            Route::get('generator', [SemesterScheduleController::class, 'timetableScheduleGenerator'])->name('generator');
+            Route::post('generator/run', [SemesterScheduleController::class, 'runTimetableGenerator'])->name('generator.run');
+            Route::get('candidates', [SemesterScheduleController::class, 'timetableCandidates'])->name('candidates');
+            Route::post('candidates/set-working-draft', [SemesterScheduleController::class, 'setTimetableWorkingDraft'])->name('candidates.set-working-draft');
+            Route::get('conflict-checker', [SemesterScheduleController::class, 'timetableConflictChecker'])->name('conflict-checker');
+            Route::get('editor', [SemesterScheduleController::class, 'timetableEditor'])->name('editor');
+            Route::post('editor/validate-move', [SemesterScheduleController::class, 'validateTimetableMove'])->name('editor.validate-move');
+            Route::post('editor/save-changes', [SemesterScheduleController::class, 'saveTimetableChanges'])->name('editor.save-changes');
+
+            // Faculty Loading Publication & Change Requests Workflow
+            Route::post('publish-loading', [SemesterScheduleController::class, 'publishFacultyLoading'])->name('publish-loading');
+            Route::post('lock-loading', [SemesterScheduleController::class, 'lockFacultyLoading'])->name('lock-loading');
+            Route::post('reopen-loading', [SemesterScheduleController::class, 'reopenFacultyLoading'])->name('reopen-loading');
+            Route::post('course-change-request', [SemesterScheduleController::class, 'submitCourseChangeRequest'])->name('course-change-request');
+            Route::post('course-change-respond', [SemesterScheduleController::class, 'respondCourseChangeRequest'])->name('course-change-respond');
+            Route::post('course-change-decide', [SemesterScheduleController::class, 'decideCourseChangeRequest'])->name('course-change-decide');
+        });
         Route::get('reviews', [SemesterScheduleController::class, 'reviews'])->name('reviews');
         Route::get('master-timetable', [SemesterScheduleController::class, 'masterTimetable'])->name('master-timetable');
         Route::get('candidates', [SemesterScheduleController::class, 'getCandidates'])->name('candidates');
