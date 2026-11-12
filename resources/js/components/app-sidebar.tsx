@@ -253,6 +253,90 @@ const institutionSuperAdminNavGroups: NavGroup[] = [
     },
 ];
 
+// VPAA / Academic Executive Navigation Groups (Institution Academic Oversight)
+const vpaaNavGroups: NavGroup[] = [
+    {
+        title: 'VPAA / ACADEMIC EXECUTIVE',
+        items: [
+            { title: 'Dashboard', url: '/vpaa/dashboard', icon: LayoutGrid },
+        ],
+    },
+    {
+        title: 'ACADEMIC OVERVIEW',
+        items: [
+            { title: 'Colleges & Programs', url: '/vpaa/academic-overview?tab=colleges-programs', icon: Building2 },
+            { title: 'Academic Performance', url: '/vpaa/academic-overview?tab=performance', icon: BarChart3 },
+            { title: 'Risk & Attention Center', url: '/vpaa/academic-overview?tab=risks', icon: AlertTriangle },
+            { title: 'Academic Decision Support', url: '/vpaa/academic-overview?tab=decision-support', icon: Sparkles },
+        ],
+    },
+    {
+        title: 'CURRICULUM & PROGRAMS',
+        items: [
+            { title: 'Program Portfolio', url: '/vpaa/curriculum-programs?tab=portfolio', icon: GraduationCap },
+            { title: 'Curriculum Oversight', url: '/vpaa/curriculum-programs?tab=curriculum', icon: BookOpen },
+            { title: 'Course Offerings', url: '/vpaa/curriculum-programs?tab=offerings', icon: Layers },
+            { title: 'Program Status & Readiness', url: '/vpaa/curriculum-programs?tab=readiness', icon: CheckSquare },
+        ],
+    },
+    {
+        title: 'FACULTY & INSTRUCTION',
+        items: [
+            { title: 'Faculty Workload', url: '/vpaa/faculty-instruction?tab=workload', icon: Briefcase },
+            { title: 'Faculty Attendance', url: '/vpaa/faculty-instruction?tab=attendance', icon: ClipboardCheck },
+            { title: 'Instructional Completion', url: '/vpaa/faculty-instruction?tab=completion', icon: Clock },
+            { title: 'Faculty Loading', url: '/vpaa/faculty-instruction?tab=loading', icon: Users },
+            { title: 'Make-Up Classes', url: '/vpaa/faculty-instruction?tab=make-up', icon: RefreshCw },
+        ],
+    },
+    {
+        title: 'SCHEDULING & EXAMS',
+        items: [
+            { title: 'Scheduling Readiness', url: '/vpaa/scheduling-exams?tab=readiness', icon: CalendarDays },
+            { title: 'Published Schedules', url: '/vpaa/scheduling-exams?tab=published', icon: Calendar },
+            { title: 'Schedule Conflicts', url: '/vpaa/scheduling-exams?tab=conflicts', icon: ShieldAlert },
+            { title: 'Exam Monitoring', url: '/vpaa/scheduling-exams?tab=exams', icon: BookOpen },
+            { title: 'Academic Calendar', url: '/vpaa/scheduling-exams?tab=calendar', icon: Projector },
+        ],
+    },
+    {
+        title: 'COMPLIANCE & QUALITY',
+        items: [
+            { title: 'Academic Compliance', url: '/vpaa/compliance-quality?tab=academic-compliance', icon: CheckSquare },
+            { title: 'Requirement Performance', url: '/vpaa/compliance-quality?tab=requirements', icon: LibraryBig },
+            { title: 'Program Quality Indicators', url: '/vpaa/compliance-quality?tab=quality-indicators', icon: Star },
+            { title: 'Accreditation / Evidence Readiness', url: '/vpaa/compliance-quality?tab=accreditation', icon: ShieldCheck },
+        ],
+    },
+    {
+        title: 'RESEARCH & EXTENSION',
+        items: [
+            { title: 'Research Overview', url: '/vpaa/research-extension?tab=overview', icon: BookOpen },
+            { title: 'Extension Overview', url: '/vpaa/research-extension?tab=extension', icon: FolderKanban },
+            { title: 'Academic Outputs', url: '/vpaa/research-extension?tab=outputs', icon: Trophy },
+        ],
+    },
+    {
+        title: 'REPORTS',
+        items: [
+            { title: 'Academic Executive Reports', url: '/vpaa/reports?tab=executive', icon: FileText },
+            { title: 'College Comparison Reports', url: '/vpaa/reports?tab=comparison', icon: BarChart3 },
+            { title: 'Faculty & Instruction Reports', url: '/vpaa/reports?tab=faculty', icon: Briefcase },
+            { title: 'Scheduling Reports', url: '/vpaa/reports?tab=scheduling', icon: CalendarDays },
+            { title: 'Consolidated Academic Report', url: '/vpaa/reports?tab=consolidated', icon: FileCheck },
+        ],
+    },
+    {
+        title: 'TV & COMMUNICATIONS',
+        items: [
+            { title: 'Executive TV', url: '/vpaa/tv-communications?tab=executive-tv', icon: Tv },
+            { title: 'Channel Switcher', url: '/vpaa/tv-communications?tab=switcher', icon: Projector },
+            { title: 'College TV Channels', url: '/vpaa/tv-communications?tab=college-channels', icon: Monitor },
+            { title: 'Academic Highlights', url: '/vpaa/tv-communications?tab=highlights', icon: Sparkles },
+        ],
+    },
+];
+
 // VPAF / Executive Workspace Navigation Groups (Executive, Comparative, and Decision-Oriented)
 const vpafNavGroups: NavGroup[] = [
     {
@@ -526,6 +610,7 @@ export function AppSidebar() {
     const isDean = roles.includes('Dean');
     const isCollegeAdmin = roles.includes('College Admin') || roles.includes('System Administrator') || roles.includes('Super Admin');
     const isInstitutionAdmin = roles.includes('Institution Super Admin');
+    const isVpaa = roles.includes('VPAA / Academic Executive');
     const isVpaf = roles.includes('VPAF / Executive Oversight');
     const isLabInCharge = roles.includes('Lab In-Charge') || roles.includes('Head Lab / Facility In-Charge') || roles.includes('Non-Teaching Lab / Facility In-Charge');
     const isFaculty = user?.is_faculty || roles.includes('Faculty Member');
@@ -576,6 +661,8 @@ export function AppSidebar() {
 
     if (activePortalType === 'faculty') {
         groups = facultyNavGroups;
+    } else if (activePortalType === 'vpaa') {
+        groups = vpaaNavGroups;
     } else if (activePortalType === 'vpaf') {
         groups = vpafNavGroups;
     } else if (activePortalType === 'institution_super_admin') {
@@ -590,6 +677,8 @@ export function AppSidebar() {
         groups = adminNavGroups;
     } else if (isInstitutionAdmin) {
         groups = institutionSuperAdminNavGroups;
+    } else if (isVpaa) {
+        groups = vpaaNavGroups;
     } else if (isVpaf) {
         groups = vpafNavGroups;
     } else if (isProgramHead) {

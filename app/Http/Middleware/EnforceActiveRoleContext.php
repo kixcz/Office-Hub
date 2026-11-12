@@ -27,14 +27,21 @@ class EnforceActiveRoleContext
         $active = $this->portalService->getActiveAssignment($user, $request);
         $path = $request->path();
 
-        // 1. Enforce VPAF Routes isolation
+        // 1. Enforce VPAA Routes isolation
+        if (str_starts_with($path, 'vpaa')) {
+            if ($active['portal_type'] !== 'vpaa' && $active['portal_type'] !== 'institution_super_admin') {
+                abort(403, "Access Denied. Your active workspace context is '{$active['display_label']}'. To access academic executive oversight, please switch to the VPAA Academic Executive portal using the header switcher.");
+            }
+        }
+
+        // 2. Enforce VPAF Routes isolation
         if (str_starts_with($path, 'vpaf')) {
-            if ($active['portal_type'] !== 'vpaf') {
+            if ($active['portal_type'] !== 'vpaf' && $active['portal_type'] !== 'institution_super_admin') {
                 abort(403, "Access Denied. Your active workspace context is '{$active['display_label']}'. To access executive oversight, please switch to the VPAF Executive portal using the header switcher.");
             }
         }
 
-        // 2. Enforce Institution Super Admin Routes isolation
+        // 3. Enforce Institution Super Admin Routes isolation
         if (str_starts_with($path, 'institution')) {
             if ($active['portal_type'] !== 'institution_super_admin') {
                 abort(403, "Access Denied. Your active workspace context is '{$active['display_label']}'. To access central governance, please switch to the Institution Super Admin portal using the header switcher.");

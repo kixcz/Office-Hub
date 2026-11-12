@@ -188,6 +188,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is VPAA / Academic Executive.
+     */
+    public function isVpaa(): bool
+    {
+        return $this->hasRole('VPAA / Academic Executive');
+    }
+
+    /**
      * Check if user is VPAF / Executive Oversight.
      */
     public function isVpaf(): bool

@@ -28,6 +28,7 @@ class CustomContentSlide extends Model
         'duration_seconds',
         'playlist',
         'target_display_id',
+        'college_code',
         'priority',
         'fullscreen_takeover',
         'start_at',

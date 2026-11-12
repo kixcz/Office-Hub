@@ -9,6 +9,7 @@ class TvSlide extends Model
     protected $fillable = [
         'title',
         'type',
+        'college_code',
         'order',
         'is_active',
         'duration_seconds',

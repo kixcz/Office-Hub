@@ -30,6 +30,8 @@ const getPortalIcon = (portalType: string): LucideIcon => {
     switch (portalType) {
         case 'institution_super_admin':
             return Crown;
+        case 'vpaa':
+            return GraduationCap;
         case 'vpaf':
             return Sparkles;
         case 'dean':

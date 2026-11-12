@@ -119,6 +119,7 @@ export interface User {
     is_faculty?: boolean;
     is_college_admin?: boolean;
     is_institution_super_admin?: boolean;
+    is_vpaa?: boolean;
     is_vpaf?: boolean;
     can_switch_channels?: boolean;
     faculty?: {

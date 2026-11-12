@@ -64,8 +64,8 @@ class ScopeBrandingService
     {
         $institutionBranding = $this->getInstitutionBranding();
 
-        // 1. If active portal is purely Institutional (e.g. Institution Super Admin, VPAF), return Institution Branding
-        if (in_array($portalType, ['institution_super_admin', 'vpaf'], true) && ! $collegeId) {
+        // 1. If active portal is purely Institutional (e.g. Institution Super Admin, VPAA, VPAF), return Institution Branding
+        if (in_array($portalType, ['institution_super_admin', 'vpaa', 'vpaf'], true) && ! $collegeId) {
             return array_merge($institutionBranding, [
                 'resolved_level' => 'institution',
                 'semantic_colors' => self::SEMANTIC_STATUS_COLORS,

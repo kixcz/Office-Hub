@@ -51,6 +51,7 @@ use App\Http\Controllers\Tv\SpotlightController;
 use App\Http\Controllers\Tv\TvCleaningScheduleController;
 use App\Http\Controllers\Tv\TvStudioController;
 use App\Http\Controllers\TvDisplayController;
+use App\Http\Controllers\Vpaa\VpaaAcademicController;
 use App\Http\Controllers\Vpaf\VpafExecutiveController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -640,7 +641,21 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports', [InstitutionGovernanceController::class, 'reports'])->name('reports');
     });
 
-    // VPAF / Executive Workspace (Vice President for Academic Affairs & Platform Oversight)
+    // VPAA / Academic Executive Workspace (Vice President for Academic Affairs & Academic Governance)
+    Route::prefix('vpaa')->name('vpaa.')->group(function () {
+        Route::get('/dashboard', [VpaaAcademicController::class, 'dashboard'])->name('dashboard');
+        Route::get('/academic-overview', [VpaaAcademicController::class, 'academicOverview'])->name('academic-overview');
+        Route::get('/curriculum-programs', [VpaaAcademicController::class, 'curriculumPrograms'])->name('curriculum-programs');
+        Route::get('/faculty-instruction', [VpaaAcademicController::class, 'facultyInstruction'])->name('faculty-instruction');
+        Route::get('/scheduling-exams', [VpaaAcademicController::class, 'schedulingExams'])->name('scheduling-exams');
+        Route::get('/compliance-quality', [VpaaAcademicController::class, 'complianceQuality'])->name('compliance-quality');
+        Route::get('/research-extension', [VpaaAcademicController::class, 'researchExtension'])->name('research-extension');
+        Route::get('/reports', [VpaaAcademicController::class, 'reports'])->name('reports');
+        Route::get('/tv-communications', [VpaaAcademicController::class, 'tvCommunications'])->name('tv-communications');
+        Route::post('/tv-communications/promote-slide', [VpaaAcademicController::class, 'promoteSlide'])->name('tv-communications.promote');
+    });
+
+    // VPAF / Executive Workspace (Vice President for Administration and Finance)
     Route::prefix('vpaf')->name('vpaf.')->group(function () {
         Route::get('/dashboard', [VpafExecutiveController::class, 'dashboard'])->name('dashboard');
         Route::get('/analytics', [VpafExecutiveController::class, 'analytics'])->name('analytics');

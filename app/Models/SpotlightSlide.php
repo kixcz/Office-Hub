@@ -44,6 +44,7 @@ class SpotlightSlide extends Model
         'layout_mode',
         'fullscreen_takeover',
         'playlist',
+        'college_code',
         'priority',
         'start_at',
         'end_at',

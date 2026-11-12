@@ -210,20 +210,28 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                     </Link>
 
                     {/* TV Display Button */}
-                    <Link
-                        href="/tv-display"
-                        className="hidden md:flex items-center gap-2 rounded-xl border border-border px-3 py-1.5 bg-card hover:bg-muted/60 transition-colors shadow-2xs group"
-                        title="Open TV Display Screen"
-                    >
-                        <Monitor className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
-                        <div className="flex flex-col text-left leading-none">
-                            <span className="text-xs font-bold text-foreground">TV Display</span>
-                            <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                                Online
-                            </span>
-                        </div>
-                    </Link>
+                    {(() => {
+                        const targetCollegeCode = activeAssignment?.scope_code || (user as any)?.faculty?.program?.college?.code || (isCollegeScope && brandSubtitle ? brandSubtitle : null);
+                        const tvHref = targetCollegeCode ? `/tv-display/${targetCollegeCode}-MAIN` : '/tv-display';
+                        return (
+                            <Link
+                                href={tvHref}
+                                className="hidden md:flex items-center gap-2 rounded-xl border border-border px-3 py-1.5 bg-card hover:bg-muted/60 transition-colors shadow-2xs group"
+                                title={`Open ${targetCollegeCode ? targetCollegeCode + ' ' : ''}TV Display Screen`}
+                            >
+                                <Monitor className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
+                                <div className="flex flex-col text-left leading-none">
+                                    <span className="text-xs font-bold text-foreground">
+                                        {targetCollegeCode ? `${targetCollegeCode} TV` : 'TV Display'}
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                                        Online
+                                    </span>
+                                </div>
+                            </Link>
+                        );
+                    })()}
 
                     {/* Persistent Multi-Role Portal Switcher */}
                     <PortalSwitcher />

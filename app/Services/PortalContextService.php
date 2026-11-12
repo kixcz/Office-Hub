@@ -30,7 +30,15 @@ class PortalContextService
             ];
         }
 
-        if (str_contains($normalized, 'VPAF') || str_contains($normalized, 'Vice President') || str_contains($normalized, 'Executive Oversight')) {
+        if (str_contains($normalized, 'VPAA') || str_contains($normalized, 'Academic Executive')) {
+            return [
+                'portal_type' => 'vpaa',
+                'landing_url' => '/vpaa/dashboard',
+                'tier' => 'Institution',
+            ];
+        }
+
+        if (str_contains($normalized, 'VPAF') || str_contains($normalized, 'Executive Oversight')) {
             return [
                 'portal_type' => 'vpaf',
                 'landing_url' => '/vpaf/dashboard',

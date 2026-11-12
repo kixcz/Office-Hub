@@ -5,14 +5,15 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Schedule\CalendarController;
 use App\Models\Activity;
 use App\Models\Announcement;
+use App\Models\College;
 use App\Models\CustomContentSlide;
-use App\Models\FacilityMonitoring;
 use App\Models\Faculty;
 use App\Models\FacultyAttendanceSummary;
 use App\Models\LocatorSlip;
 use App\Models\Meeting;
 use App\Models\Program;
 use App\Models\Requirement;
+use App\Models\Room;
 use App\Models\RoomSchedule;
 use App\Models\SpotlightSlide;
 use App\Models\Submission;
@@ -22,6 +23,7 @@ use App\Models\TvCleaningSchedule;
 use App\Models\TvDevice;
 use App\Models\TvSetting;
 use App\Models\TvSlide;
+use App\Services\PortalContextService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -36,26 +38,20 @@ class TvDisplayController extends Controller
         $now = Carbon::now();
 
         // 1. Device resolution & keep-alive ping
-        $device = null;
-        try {
-            if ($displayId) {
-                $device = TvDevice::where('id', $displayId)->orWhere('device_code', $displayId)->first();
-            }
-            if (! $device) {
-                $device = TvDevice::first();
-            }
+        $device = $this->resolveTvDevice($displayId);
 
-            if ($device) {
+        if ($device) {
+            try {
                 $device->update(['last_ping_at' => $now, 'is_online' => true]);
+            } catch (\Throwable $e) {
+                Log::warning('TvDevice ping failed: '.$e->getMessage());
             }
-        } catch (\Throwable $e) {
-            Log::warning('TvDevice ping/resolution failed: '.$e->getMessage());
         }
 
         $displayKey = $device ? (string) $device->id : ($displayId ?: 'default');
         $tz = config('services.room_schedule.timezone', 'Asia/Manila');
         $today = Carbon::now($tz)->toDateString();
-        $cacheKey = 'tv_display_payload_v3_'.$displayKey.'_'.$today;
+        $cacheKey = 'tv_display_payload_v4_'.$displayKey.'_'.$today;
 
         // Cache the entire display payload for 60 seconds (keeps TV in sync with latest locator slips & travel orders)
         try {
@@ -75,22 +71,12 @@ class TvDisplayController extends Controller
      */
     public function getTvDataApi($displayId = null)
     {
-        $device = null;
-        try {
-            if ($displayId) {
-                $device = TvDevice::where('id', $displayId)->orWhere('device_code', $displayId)->first();
-            }
-            if (! $device) {
-                $device = TvDevice::first();
-            }
-        } catch (\Throwable $e) {
-            Log::warning('TvDevice resolution in getTvDataApi failed: '.$e->getMessage());
-        }
+        $device = $this->resolveTvDevice($displayId);
 
         $displayKey = $device ? (string) $device->id : ($displayId ?: 'default');
         $tz = config('services.room_schedule.timezone', 'Asia/Manila');
         $today = Carbon::now($tz)->toDateString();
-        $cacheKey = 'tv_display_payload_v3_'.$displayKey.'_'.$today;
+        $cacheKey = 'tv_display_payload_v4_'.$displayKey.'_'.$today;
 
         try {
             $payload = Cache::remember($cacheKey, 60, function () use ($device, $displayId) {
@@ -105,6 +91,62 @@ class TvDisplayController extends Controller
     }
 
     /**
+     * Resolve TV device from displayId, device_code, college code, or authenticated portal context.
+     */
+    private function resolveTvDevice($displayId = null): ?TvDevice
+    {
+        if (! Schema::hasTable('tv_devices')) {
+            return null;
+        }
+
+        try {
+            if ($displayId) {
+                // 1. Direct device ID or exact device_code match (e.g. CED-MAIN, CIDS-MAIN)
+                $device = TvDevice::where('id', $displayId)->orWhere('device_code', $displayId)->first();
+                if ($device) {
+                    return $device;
+                }
+
+                // 2. Exact or normalized College Code match (e.g. /tv-display/CED, /tv-display/COE)
+                $normalizedId = strtoupper(trim($displayId));
+                $deviceByCollege = TvDevice::where('college_code', $normalizedId)
+                    ->orWhere('device_code', $normalizedId.'-MAIN')
+                    ->first();
+                if ($deviceByCollege) {
+                    return $deviceByCollege;
+                }
+            }
+
+            // 3. Fallback to authenticated user's active college context if logged in
+            $user = request()->user();
+            if ($user) {
+                $user->loadMissing(['faculty.program.college']);
+                $userCollegeCode = $user->faculty?->program?->college?->code;
+
+                if (! $userCollegeCode && class_exists(PortalContextService::class)) {
+                    $portalService = app(PortalContextService::class);
+                    $assignment = $portalService->getActiveAssignment($user, request());
+                    $userCollegeCode = $assignment['scope_code'] ?? null;
+                }
+
+                if ($userCollegeCode) {
+                    $contextDevice = TvDevice::where('college_code', $userCollegeCode)->first();
+                    if ($contextDevice) {
+                        return $contextDevice;
+                    }
+                }
+            }
+
+            // 4. Default to primary CIDS device or first device in database
+            return TvDevice::where('device_code', 'CIDS-MAIN')->first() ?: TvDevice::first();
+        } catch (\Throwable $e) {
+            Log::warning('TvDevice resolution failed: '.$e->getMessage());
+
+            return TvDevice::first();
+        }
+    }
+
+    /**
      * Build the TV Display payload (slides, data, settings, current_term).
      */
     private function buildTvPayload($device = null, $displayId = null): array
@@ -113,13 +155,24 @@ class TvDisplayController extends Controller
         $now = Carbon::now($tz);
         $today = $now->format('Y-m-d');
 
+        // Resolve College context from the device or displayId
+        $targetCollegeCode = $device?->college_code ?? 'CIDS';
+        $college = College::where('code', $targetCollegeCode)
+            ->orWhere('code', strtoupper(explode('-', $targetCollegeCode)[0]))
+            ->first();
+        if (! $college && $targetCollegeCode !== 'CIDS') {
+            $college = College::where('name', 'like', '%'.$device?->college_name.'%')->first();
+        }
+        $collegeId = $college?->id ?? ($targetCollegeCode === 'CIDS' ? 4 : null);
+        $collegeName = $device?->college_name ?? ($college?->name ?? 'College of Information and Digital Sciences');
+
         $globalSettings = TvSetting::pluck('value', 'key')->toArray();
 
         // Overlay device settings on top of global settings
         $settings = array_merge($globalSettings, [
             'display_id' => $device ? $device->id : null,
             'device_code' => $device ? $device->device_code : 'CIDS-MAIN',
-            'display_name' => $device ? $device->name : ($globalSettings['display_name'] ?? 'CIDS Office TV'),
+            'display_name' => $device ? $device->name : ($globalSettings['display_name'] ?? $collegeName.' TV'),
             'location' => $device ? $device->location : "Dean's Office",
             'audience_mode' => $device ? $device->audience_mode : ($globalSettings['audience_mode'] ?? 'internal'),
             'screen_resolution' => $device ? $device->screen_resolution : ($globalSettings['screen_resolution'] ?? '1920x1080'),
@@ -140,17 +193,34 @@ class TvDisplayController extends Controller
             'emergency_takeover_enabled' => $device ? ($device->emergency_takeover_enabled ? '1' : '0') : ($globalSettings['emergency_takeover_enabled'] ?? '1'),
         ]);
 
-        $baseSlides = TvSlide::where('is_active', true)->orderBy('order')->get();
+        $baseSlides = TvSlide::where('is_active', true)
+            ->where(function ($q) use ($targetCollegeCode) {
+                $q->whereNull('college_code')->orWhere('college_code', '')->orWhere('college_code', $targetCollegeCode);
+            })
+            ->orderBy('order')
+            ->get();
 
-        // 2. Fetch published and active Spotlight Slides (Recognition & Celebrations)
+        // 2. Fetch published and active Spotlight Slides scoped to this college (or campus-wide)
         $activeSpotlights = SpotlightSlide::with('faculty.program')
+            ->where(function ($q) use ($targetCollegeCode) {
+                $q->where('college_code', $targetCollegeCode)
+                    ->orWhereNull('college_code')
+                    ->orWhere('college_code', '');
+            })
             ->activeAt($now)
             ->orderByDesc('priority')
             ->latest()
             ->get();
 
-        // 3. Fetch published and active Custom Content Slides (Manual Slides)
+        // 3. Fetch published and active Custom Content Slides scoped to this college (or target display)
         $activeCustomSlides = CustomContentSlide::with(['creator'])
+            ->where(function ($q) use ($device, $targetCollegeCode) {
+                $q->where('college_code', $targetCollegeCode)
+                    ->orWhere('target_display_id', $device?->id)
+                    ->orWhere('target_display_id', $device?->device_code)
+                    ->orWhereNull('college_code')
+                    ->orWhere('college_code', '');
+            })
             ->activeAt($now)
             ->orderByDesc('priority')
             ->latest()
@@ -335,8 +405,18 @@ class TvDisplayController extends Controller
 
         $slides = $interleavedSlides;
 
-        // Data for Slide 1 (Daily Overview)
-        $activeAnnouncements = Announcement::with('author')->where('status', 'active')->latest()->get();
+        // Data for Slide 1 (Daily Overview) - Filtered by College or Campus-Wide
+        $activeAnnouncements = Announcement::with('author')
+            ->where('status', 'active')
+            ->where(function ($q) use ($targetCollegeCode, $collegeId) {
+                $q->where('college_code', $targetCollegeCode)
+                    ->orWhere('college_id', $collegeId)
+                    ->orWhereNull('college_code')
+                    ->orWhere('college_code', '')
+                    ->orWhere('destination', 'public');
+            })
+            ->latest()
+            ->get();
 
         $meetingsToday = Meeting::where('date', $today)->orderBy('start_time')->get()->map(fn ($m) => [
             'id' => $m->id,
@@ -439,8 +519,12 @@ class TvDisplayController extends Controller
         $overdueCount = $submissions->filter(fn ($s) => ! $s->submitted_at && Carbon::parse($s->requirement->due_date)->isPast())->count();
         $pendingCount = $submissions->filter(fn ($s) => ! $s->submitted_at && ! Carbon::parse($s->requirement->due_date)->isPast())->count();
 
-        // Data for Slide 4 (Performance & Recognition)
-        $programs = Program::with('faculties.submissions.requirement')->get();
+        // Data for Slide 4 (Performance & Recognition) - Filtered to Current College
+        $programs = Program::with('faculties.submissions.requirement')
+            ->when($collegeId, function ($q) use ($collegeId) {
+                $q->where('college_id', $collegeId);
+            })
+            ->get();
         $programsData = [];
         $facultyData = [];
 
@@ -496,9 +580,13 @@ class TvDisplayController extends Controller
             }
         }
 
-        // Add remaining faculties if needed
+        // Add remaining faculties for this college if needed
         $existingNames = collect($facultyData)->pluck('name')->all();
-        $remainingFaculties = Faculty::with('program')->get()
+        $remainingFaculties = Faculty::with('program')
+            ->when($collegeId, function ($q) use ($collegeId) {
+                $q->whereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+            })
+            ->get()
             ->reject(fn ($fac) => in_array($fac->first_name.' '.$fac->last_name, $existingNames));
 
         foreach ($remainingFaculties as $rf) {
@@ -664,7 +752,7 @@ class TvDisplayController extends Controller
             ],
         ];
 
-        // Data for Slide 7 (Faculty Schedule) & Laboratory Peak Hours
+        // Data for Slide 7 (Faculty Schedule) & Laboratory Peak Hours - Scoped to Current College
         $tz = config('services.room_schedule.timezone', 'Asia/Manila');
         $scheduleNow = Carbon::now($tz);
         $currentDay = $scheduleNow->format('l');
@@ -673,8 +761,13 @@ class TvDisplayController extends Controller
         // If today is a weekend without schedules, default to Monday
         $activeDay = in_array($currentDay, ['Saturday', 'Sunday']) ? 'Monday' : $currentDay;
 
-        $todayRoomSchedules = RoomSchedule::with('faculty')
+        $todayRoomSchedules = RoomSchedule::with(['faculty.program'])
             ->where('day_of_week', $activeDay)
+            ->when($collegeId, function ($q) use ($collegeId) {
+                $q->whereHas('faculty.program', function ($pq) use ($collegeId) {
+                    $pq->where('college_id', $collegeId);
+                });
+            })
             ->orderBy('start_time')
             ->orderBy('room_name')
             ->get();
@@ -763,11 +856,13 @@ class TvDisplayController extends Controller
             ? "{$maxSlot['label']} ({$maxSlot['count']} simultaneous lab classes)"
             : 'Normal across all labs';
 
-        // Data for Slide 5 (Classroom Monitoring - Facilities & Labs)
-        // Dynamically compute real-time room status from RoomSchedule for the current day and time
-        $allRooms = RoomSchedule::query()->distinct()->orderBy('room_name')->pluck('room_name');
+        // Data for Slide 5 (Classroom Monitoring - Facilities & Labs) - Scoped to College
+        $allRooms = Room::when($collegeId, fn ($q) => $q->where('college_id', $collegeId))->pluck('room_name');
         if ($allRooms->isEmpty()) {
-            $allRooms = FacilityMonitoring::query()->distinct()->orderBy('room_name')->pluck('room_name');
+            $allRooms = $todayRoomSchedules->pluck('room_name')->unique();
+        }
+        if ($allRooms->isEmpty()) {
+            $allRooms = RoomSchedule::query()->distinct()->orderBy('room_name')->pluck('room_name');
         }
 
         $facilityData = $allRooms->map(function (string $room) use ($todayRoomSchedules, $currentTime, $currentDay, $activeDay, $peakHoursPerLab) {
@@ -913,10 +1008,17 @@ class TvDisplayController extends Controller
             'last_updated' => $scheduleNow->format('M d, Y g:i A'),
         ];
 
-        // Data for Slide 9 (Compliance Tracker)
-        $allTrackerPrograms = Program::orderBy('code')->get();
+        // Data for Slide 9 (Compliance Tracker) - Scoped to College Programs
+        $allTrackerPrograms = Program::when($collegeId, fn ($q) => $q->where('college_id', $collegeId))->orderBy('code')->get();
+        if ($allTrackerPrograms->isEmpty()) {
+            $allTrackerPrograms = Program::orderBy('code')->get();
+        }
         $allTrackerRequirements = Requirement::orderBy('title')->get();
-        $allTrackerSubmissions = Submission::with(['faculty.program', 'requirement'])->get();
+        $allTrackerSubmissions = Submission::with(['faculty.program', 'requirement'])
+            ->when($collegeId, function ($q) use ($collegeId) {
+                $q->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
+            })
+            ->get();
 
         $trackerProgramStats = $allTrackerPrograms->map(function ($prog) use ($allTrackerSubmissions, $now) {
             $progSubmissions = $allTrackerSubmissions->filter(function ($s) use ($prog) {
@@ -1084,14 +1186,26 @@ class TvDisplayController extends Controller
             'recent_tasks' => $allTasks->take(8)->map($formatTaskForTv)->all(),
         ];
 
-        // Data for Slide 11 (Program Performance)
-        $progModels = Program::with(['faculties.submissions.requirement'])->get();
+        // Data for Slide 11 (Program Performance) - Scoped to College Programs
+        $progModels = Program::with(['faculties.submissions.requirement'])
+            ->when($collegeId, fn ($q) => $q->where('college_id', $collegeId))
+            ->get();
+        if ($progModels->isEmpty()) {
+            $progModels = Program::with(['faculties.submissions.requirement'])->get();
+        }
         $progPerformances = [];
         $progColors = [
             'BSIS' => 'amber',
             'BSIT' => 'sky',
-            'BLIS' => 'orange',
-            'BSCS' => 'purple',
+            'DIT' => 'emerald',
+            'BSED' => 'blue',
+            'BEED' => 'teal',
+            'BSBA' => 'amber',
+            'BSA' => 'emerald',
+            'BSCE' => 'indigo',
+            'BSEE' => 'rose',
+            'BACOMM' => 'purple',
+            'BSBIO' => 'emerald',
         ];
 
         foreach ($progModels as $pm) {
@@ -1254,19 +1368,31 @@ class TvDisplayController extends Controller
                 'slide10' => $tasksAndProjectsData,
                 'slide11' => $programPerformanceData,
                 'slide12' => $cleaningSchedule ?? (Schema::hasTable('tv_cleaning_schedules') ? TvCleaningSchedule::first() : null),
-                'slide13' => (function () {
+                'slide13' => (function () use ($collegeId, $targetCollegeCode) {
                     $tz = config('services.room_schedule.timezone', 'Asia/Manila');
                     $now = Carbon::now($tz);
                     $today = $now->copy()->startOfDay();
                     $todayStr = $today->toDateString();
 
-                    // Active directory faculty list with program
-                    $facultyList = Faculty::with('program')->get();
+                    // Active directory faculty list scoped to this college
+                    $facultyList = Faculty::with('program')
+                        ->when($collegeId, function ($q) use ($collegeId) {
+                            $q->whereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+                        })
+                        ->get();
                     $totalFaculty = $facultyList->count();
 
-                    // All Locator Slips and Travel Orders relevant to today & upcoming
-                    $locatorSlips = LocatorSlip::with('faculty.program')->get();
-                    $travelOrders = TravelOrder::with('faculty.program')->get();
+                    // Locator Slips and Travel Orders relevant to this college
+                    $locatorSlips = LocatorSlip::with('faculty.program')
+                        ->when($collegeId, function ($q) use ($collegeId) {
+                            $q->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
+                        })
+                        ->get();
+                    $travelOrders = TravelOrder::with('faculty.program')
+                        ->when($collegeId, function ($q) use ($collegeId) {
+                            $q->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
+                        })
+                        ->get();
 
                     // Identify Off-Campus records today:
                     // 1. Locator slips departed today or approved for today with official/personal/other destination
@@ -1430,7 +1556,7 @@ class TvDisplayController extends Controller
                         ->get()
                         ->groupBy('faculty_id');
 
-                    $onCampusList = $onCampusFaculty->map(function ($f) use ($todaySchedulesByFaculty, $currentTime) {
+                    $onCampusList = $onCampusFaculty->map(function ($f) use ($todaySchedulesByFaculty, $currentTime, $targetCollegeCode) {
                         $schedules = $todaySchedulesByFaculty->get($f->id);
                         $location = null;
 
@@ -1447,9 +1573,9 @@ class TvDisplayController extends Controller
                             }
                         }
 
-                        // If no active class schedule at this time, faculty is at their office room or CIDS Faculty Office
+                        // If no active class schedule at this time, faculty is at their office room or college office
                         if (! $location) {
-                            $location = $f->office_room ?: 'CIDS Faculty Office';
+                            $location = $f->office_room ?: "{$targetCollegeCode} Faculty Office";
                         }
 
                         return [
@@ -1490,16 +1616,19 @@ class TvDisplayController extends Controller
                         'upcoming_off_campus' => $upcomingOffCampus->sortBy('start_date')->values()->all(),
                     ];
                 })(),
-                'slide14' => (function () {
+                'slide14' => (function () use ($collegeId, $targetCollegeCode, $collegeName) {
                     $tz = config('services.room_schedule.timezone', 'Asia/Manila');
                     $now = Carbon::now($tz);
                     $today = $now->copy()->startOfDay();
                     $todayStr = $today->toDateString();
 
                     $allOrders = TravelOrder::with('faculty.program')
+                        ->when($collegeId, function ($q) use ($collegeId) {
+                            $q->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
+                        })
                         ->orderBy('start_date', 'asc')
                         ->get()
-                        ->map(function ($t) use ($today, $todayStr, $tz) {
+                        ->map(function ($t) use ($today, $todayStr, $tz, $targetCollegeCode, $collegeName) {
                             $startDate = Carbon::parse($t->start_date, $tz)->startOfDay();
                             $endDate = Carbon::parse($t->end_date, $tz)->endOfDay();
                             $startStr = $startDate->toDateString();
@@ -1540,8 +1669,8 @@ class TvDisplayController extends Controller
                                 'id' => $t->id,
                                 'tracking_number' => $t->tracking_number,
                                 'faculty_name' => $t->faculty_name,
-                                'program' => $t->faculty?->program?->code ?? 'CIDS',
-                                'program_name' => $t->faculty?->program?->name ?? 'College of Information and Digital Sciences',
+                                'program' => $t->faculty?->program?->code ?? $targetCollegeCode,
+                                'program_name' => $t->faculty?->program?->name ?? $collegeName,
                                 'photo_url' => $t->faculty?->photo_url,
                                 'academic_rank' => $t->faculty?->academic_rank ?? 'Faculty Member',
                                 'destination' => $t->destination,
@@ -1615,6 +1744,9 @@ class TvDisplayController extends Controller
             ],
             'current_term' => $settings['academic_term'] ?? 'AY 2026-2027, 1st Semester',
             'faculty_profiles' => Faculty::with('program')
+                ->when($collegeId, function ($q) use ($collegeId) {
+                    $q->whereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+                })
                 ->get()
                 ->mapWithKeys(fn ($f) => [
                     $f->id => [
@@ -1623,12 +1755,12 @@ class TvDisplayController extends Controller
                         'first_name' => $f->first_name,
                         'last_name' => $f->last_name,
                         'photo_url' => $f->photo_url,
-                        'program' => $f->program ? $f->program->code : 'CIDS',
-                        'program_name' => $f->program ? $f->program->name : 'College of Information and Digital Sciences',
+                        'program' => $f->program ? $f->program->code : $targetCollegeCode,
+                        'program_name' => $f->program ? $f->program->name : $collegeName,
                         'academic_rank' => $f->academic_rank ?: 'Faculty Member',
                         'highest_qualification' => $f->highest_qualification ?: 'Master of Science',
                         'specialization' => $f->specialization ?: 'Information Technology',
-                        'office_room' => $f->office_room ?: 'CIDS Faculty Office',
+                        'office_room' => $f->office_room ?: "{$targetCollegeCode} Faculty Office",
                         'email' => $f->email,
                         'employment_type' => $f->employment_type ?: 'Full-time',
                         'status' => $f->status ?: 'Active',
@@ -1656,8 +1788,8 @@ class TvDisplayController extends Controller
                 'device_code' => $device->device_code,
                 'name' => $device->name,
                 'location' => $device->location,
-                'college_name' => $device->college_name ?? 'College of Information and Digital Sciences',
-                'college_code' => $device->college_code ?? 'CIDS',
+                'college_name' => $collegeName,
+                'college_code' => $targetCollegeCode,
                 'channel_number' => $device->channel_number ?? 1,
             ] : null,
         ];

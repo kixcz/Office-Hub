@@ -69,7 +69,7 @@ class HandleInertiaRequests extends Middleware
 
             if ($activeScopeCollegeId) {
                 $activeCollege = College::find($activeScopeCollegeId);
-            } elseif ($activePortalType !== 'institution_super_admin' && $activePortalType !== 'vpaf') {
+            } elseif ($activePortalType !== 'institution_super_admin' && $activePortalType !== 'vpaa' && $activePortalType !== 'vpaf') {
                 $activeCollege = $user->resolveActiveCollege();
                 $activeScopeCollegeId = $activeCollege?->id;
             }
@@ -103,6 +103,7 @@ class HandleInertiaRequests extends Middleware
                     'is_faculty' => $user->isFaculty(),
                     'is_college_admin' => $user->isCollegeAdmin(),
                     'is_institution_super_admin' => $user->isInstitutionSuperAdmin(),
+                    'is_vpaa' => $user->isVpaa(),
                     'is_vpaf' => $user->isVpaf(),
                     'can_switch_channels' => $user->canSwitchTvChannels(),
                     'faculty' => $user->faculty,

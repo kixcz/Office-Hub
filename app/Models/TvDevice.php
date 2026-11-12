@@ -9,6 +9,10 @@ class TvDevice extends Model
     protected $fillable = [
         'name',
         'device_code',
+        'college_id',
+        'college_code',
+        'college_name',
+        'channel_number',
         'location',
         'audience_mode',
         'default_playlist',
