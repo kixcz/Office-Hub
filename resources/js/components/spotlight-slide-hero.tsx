@@ -261,33 +261,9 @@ export function SpotlightSlideHero({ slide, isDark = false, isPreview = false }:
             <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Top Bar: Reference Layout - DSSC & CIDS Branding (Left) | Category Pill & DateTime (Right) */}
-            <div className="relative z-10 flex items-center justify-between gap-4 border-b border-white/10 pb-3 mb-2 shrink-0">
-                {/* Left: Dual Institutional Emblems and Text */}
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        <img
-                            src="/Ascend.png"
-                            alt="Ascend Logo"
-                            className="w-9 h-9 md:w-11 md:h-11 rounded-xl object-contain p-1 border border-white/20 shadow-sm bg-white"
-                        />
-                        <img
-                            src="/DSSC.jpg"
-                            alt="DSSC Emblem"
-                            className="w-9 h-9 md:w-11 md:h-11 rounded-full object-cover border border-white/20 shadow-sm bg-white"
-                        />
-                    </div>
-                    <div className="flex flex-col justify-center">
-                        <span className="text-[10px] md:text-xs font-black tracking-wider uppercase text-amber-300 drop-shadow-sm leading-tight">
-                            Davao del Sur State College
-                        </span>
-                        <span className="text-[9px] md:text-[11px] font-bold tracking-wider uppercase text-white/90 drop-shadow-sm leading-tight">
-                            College of Information and Digital Sciences
-                        </span>
-                    </div>
-                </div>
-
-                {/* Right: Category Badge Pill & Current Time/Date */}
+            {/* Top Bar: Category Pill & Slide Metadata */}
+            <div className="relative z-10 flex items-center justify-end gap-2.5 border-b border-white/10 pb-3 mb-2 shrink-0">
+                {/* Category Badge Pill & Current Time/Date */}
                 <div className="flex items-center gap-2.5">
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] md:text-xs font-black tracking-wider uppercase border backdrop-blur-md shadow-xs ${badge.badgeClass}`}>
                         <BadgeIcon className="w-3.5 h-3.5 shrink-0" />

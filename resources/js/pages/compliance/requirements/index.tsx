@@ -285,44 +285,49 @@ export default function ComplianceManagementIndex({
 
             <div className="flex flex-col gap-6 p-4 md:p-6 lg:p-8 bg-[#F9FAFB] dark:bg-zinc-950 min-h-screen">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-sm">
-                            <Folder className="w-6 h-6 fill-amber-500 text-amber-600" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#0B3A67] via-[#1D3557] to-[#7B1113] text-white shadow-md relative overflow-hidden">
+                    <div className="relative z-10 flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md text-white border border-white/20 flex items-center justify-center shadow-sm">
+                            <Folder className="w-6 h-6 fill-white/80 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] uppercase tracking-widest font-black px-2 py-0.5 rounded-md bg-white/15 text-white border border-white/20">
+                                    Quality & Deliverables
+                                </span>
+                            </div>
+                            <h1 className="text-2xl font-black tracking-tight text-white mt-1">
                                 Compliance Management
                             </h1>
-                            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                                Monitor and manage faculty requirement submissions
+                            <p className="text-xs md:text-sm font-medium text-white/80">
+                                Monitor and manage faculty requirement submissions, syllabus compliance, and clearance
                             </p>
                         </div>
                     </div>
 
                     {/* Action Buttons Top Right */}
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative z-10 flex flex-wrap items-center gap-2">
                         <Button
                             onClick={() => setIsCreateOpen(true)}
-                            className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all"
+                            className="bg-white hover:bg-white/90 text-[#0B3A67] font-extrabold text-xs md:text-sm px-4 py-2.5 rounded-xl shadow-xs transition-all"
                         >
                             <Plus className="w-4 h-4 mr-1.5 stroke-[2.5]" />
                             Create Requirement Folder
                         </Button>
                         <Button
                             variant="outline"
-                            className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-semibold text-xs md:text-sm px-3.5 py-2.5 rounded-xl text-zinc-700 dark:text-zinc-300 shadow-xs"
+                            className="border-white/25 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs md:text-sm px-3.5 py-2.5 rounded-xl shadow-xs backdrop-blur-sm"
                             onClick={() => window.print()}
                         >
-                            <FileText className="w-4 h-4 mr-1.5 text-zinc-500" />
+                            <FileText className="w-4 h-4 mr-1.5 text-white" />
                             Generate Report
                         </Button>
                         <Button
                             variant="outline"
-                            className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-semibold text-xs md:text-sm px-3.5 py-2.5 rounded-xl text-zinc-700 dark:text-zinc-300 shadow-xs"
+                            className="border-white/25 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs md:text-sm px-3.5 py-2.5 rounded-xl shadow-xs backdrop-blur-sm"
                             onClick={() => alert('Exporting compliance tracker matrix to CSV...')}
                         >
-                            <Download className="w-4 h-4 mr-1.5 text-zinc-500" />
+                            <Download className="w-4 h-4 mr-1.5 text-white" />
                             Export Matrix
                         </Button>
                     </div>
@@ -333,9 +338,9 @@ export default function ComplianceManagementIndex({
                     <button
                         onClick={() => setMainTab('overview')}
                         className={cn(
-                            'px-5 py-2 text-sm font-bold rounded-xl transition-all',
+                            'px-5 py-2 text-sm font-bold rounded-xl transition-all cursor-pointer',
                             mainTab === 'overview'
-                                ? 'bg-amber-100/90 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 shadow-xs'
+                                ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-2xs'
                                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
                         )}
                     >
@@ -344,9 +349,9 @@ export default function ComplianceManagementIndex({
                     <button
                         onClick={() => setMainTab('requirements')}
                         className={cn(
-                            'px-5 py-2 text-sm font-bold rounded-xl transition-all',
+                            'px-5 py-2 text-sm font-bold rounded-xl transition-all cursor-pointer',
                             mainTab === 'requirements'
-                                ? 'bg-amber-100/90 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 shadow-xs'
+                                ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-2xs'
                                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
                         )}
                     >
@@ -444,7 +449,7 @@ export default function ComplianceManagementIndex({
                             <div className="flex items-end self-end">
                                 <Button
                                     onClick={applyFilters}
-                                    className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold text-xs px-5 py-2 rounded-xl h-[34px] shadow-xs"
+                                    className="bg-gradient-to-r from-[#0B3A67] to-[#7B1113] hover:opacity-95 text-white font-bold text-xs px-5 py-2 rounded-xl h-[34px] shadow-xs cursor-pointer"
                                 >
                                     Apply
                                 </Button>
@@ -516,10 +521,10 @@ export default function ComplianceManagementIndex({
                             {/* 4. Submitted Late */}
                             <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600">
+                                    <div className="w-8 h-8 rounded-xl bg-[#7B1113]/10 dark:bg-[#7B1113]/20 flex items-center justify-center text-[#7B1113] dark:text-rose-400">
                                         <Clock className="w-4 h-4" />
                                     </div>
-                                    <span className="text-2xl font-black text-amber-600 dark:text-amber-400">
+                                    <span className="text-2xl font-black text-[#7B1113] dark:text-rose-400">
                                         {kpiCards?.submitted_late ?? 6}
                                     </span>
                                 </div>
@@ -664,7 +669,7 @@ export default function ComplianceManagementIndex({
                                                     className={cn(
                                                         'px-3 py-1 rounded-lg transition-all',
                                                         matrixView === 'matrix'
-                                                            ? 'bg-[#F59E0B] text-white shadow-xs'
+                                                            ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-xs'
                                                             : 'text-zinc-600 dark:text-zinc-400'
                                                     )}
                                                 >
@@ -675,7 +680,7 @@ export default function ComplianceManagementIndex({
                                                     className={cn(
                                                         'px-3 py-1 rounded-lg transition-all',
                                                         matrixView === 'list'
-                                                            ? 'bg-[#F59E0B] text-white shadow-xs'
+                                                            ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-xs'
                                                             : 'text-zinc-600 dark:text-zinc-400'
                                                     )}
                                                 >
@@ -1048,7 +1053,7 @@ export default function ComplianceManagementIndex({
                                         className={cn(
                                             'px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all',
                                             folderView === 'grid'
-                                                ? 'bg-[#F59E0B] text-white shadow-xs'
+                                                ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-xs'
                                                 : 'text-zinc-600 dark:text-zinc-400'
                                         )}
                                     >
@@ -1060,7 +1065,7 @@ export default function ComplianceManagementIndex({
                                         className={cn(
                                             'px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all',
                                             folderView === 'list'
-                                                ? 'bg-[#F59E0B] text-white shadow-xs'
+                                                ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-xs'
                                                 : 'text-zinc-600 dark:text-zinc-400'
                                         )}
                                     >
@@ -1487,7 +1492,7 @@ export default function ComplianceManagementIndex({
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold rounded-xl text-xs px-5"
+                                    className="bg-gradient-to-r from-[#0B3A67] to-[#7B1113] hover:opacity-95 text-white font-bold rounded-xl text-xs px-5 shadow-xs"
                                 >
                                     {processing ? 'Creating...' : 'Create Folder & Notify'}
                                 </Button>

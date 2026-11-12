@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Clock, Maximize2, Minimize2, Moon, Pause, Play, RefreshCw, Sun, Tv, ChevronDown } from 'lucide-react';
+import { Clock, Maximize2, Minimize2, Moon, Pause, Play, RefreshCw, Sun, Tv } from 'lucide-react';
 import { router, usePage } from '@inertiajs/react';
 import { type SharedData } from '@/types';
 
@@ -51,7 +51,6 @@ export default function TvLayout({
 
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isChannelMenuOpen, setIsChannelMenuOpen] = useState(false);
 
     // Scope branding resolution
     const activeAssignment = portal_context?.active_assignment;
@@ -217,86 +216,8 @@ export default function TvLayout({
                         </div>
                     </div>
 
-                    {/* Date & Time Center/Right & Channel Remote Controls */}
+                    {/* Date & Time Center/Right */}
                     <div className="flex items-center gap-3 sm:gap-4 relative z-10">
-                        {/* Channel Remote Switcher (For Institution Super Admin, VPAF, and College Admins) */}
-                        {channels.length > 0 && canSwitchChannels && (
-                            <div className="relative">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsChannelMenuOpen((prev) => !prev)}
-                                    title="Switch TV Channel (Institution Super Admin & VPAF remote)"
-                                    className="h-9 px-3 rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 border border-white/20 hover:border-white/40 bg-white/10 hover:bg-white/15 text-white text-xs font-bold backdrop-blur-sm"
-                                >
-                                    <Tv size={14} className="text-sky-300" />
-                                    <span>
-                                        CH {currentChannel?.channel_number ?? 1}: {currentChannel?.college_code || currentChannel?.name || 'CIDS TV'}
-                                    </span>
-                                    <ChevronDown size={13} className={`transition-transform ${isChannelMenuOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                {isChannelMenuOpen && (
-                                    <>
-                                        <div
-                                            className="fixed inset-0 z-40"
-                                            onClick={() => setIsChannelMenuOpen(false)}
-                                        />
-                                        <div className={`absolute right-0 mt-2 w-72 rounded-2xl p-2 z-50 shadow-2xl border ${
-                                            isDark ? 'bg-[#0f172a] border-white/10 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
-                                        }`}>
-                                            <div className="px-3 py-2 border-b border-black/5 dark:border-white/5 mb-1">
-                                                <div className="text-[10px] font-black uppercase tracking-wider text-[#175C94] dark:text-sky-400 flex items-center justify-between">
-                                                    <span>Switch TV Channel</span>
-                                                    <span>INSTITUTION / VPAF</span>
-                                                </div>
-                                                <div className="text-xs text-muted-foreground mt-0.5">
-                                                    Select a college display to view live
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
-                                                {channels.map((chan) => {
-                                                    const isSelected = currentChannel?.id === chan.id || (!currentChannel && chan.device_code === 'CIDS-MAIN');
-                                                    return (
-                                                        <button
-                                                            key={chan.id}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setIsChannelMenuOpen(false);
-                                                                router.visit(`/tv-display/${chan.device_code || chan.id}`, {
-                                                                    preserveScroll: true,
-                                                                });
-                                                            }}
-                                                            className={`flex items-center justify-between px-3 py-2 rounded-xl text-left transition-all cursor-pointer ${
-                                                                isSelected
-                                                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#8B1E3F] text-white font-bold shadow-xs'
-                                                                    : isDark
-                                                                    ? 'hover:bg-white/5 text-slate-200'
-                                                                    : 'hover:bg-slate-100 text-slate-800'
-                                                            }`}
-                                                        >
-                                                            <div className="flex flex-col">
-                                                                <span className="text-xs font-bold leading-tight">
-                                                                    CH {chan.channel_number ? String(chan.channel_number).padStart(2, '0') : '01'} • {chan.name}
-                                                                </span>
-                                                                <span className={`text-[10px] ${isSelected ? 'text-white/80 font-semibold' : 'text-slate-400'}`}>
-                                                                    {chan.college_name || chan.location || 'College Display'}
-                                                                </span>
-                                                            </div>
-                                                            {isSelected && (
-                                                                <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-black/30 rounded-md text-white">
-                                                                    NOW
-                                                                </span>
-                                                            )}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        )}
-
                         {showClock && (
                             <div className="text-right hidden md:block">
                                 <div className="text-[11px] font-medium text-white/70">

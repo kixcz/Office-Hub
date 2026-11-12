@@ -387,21 +387,21 @@ export default function CoursesCatalogIndex({
 
             <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-7 max-w-[1600px] mx-auto w-full transition-colors">
                 {/* 1. Header Hero Banner */}
-                <div className="rounded-2xl border border-purple-200/60 dark:border-purple-900/40 bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent dark:from-purple-950/30 dark:via-purple-950/10 dark:to-transparent p-6 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-2xs">
+                <div className="rounded-2xl bg-gradient-to-r from-[#0B3A67] via-[#1D3557] to-[#7B1113] p-6 text-white relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-md">
                     <div className="flex items-center gap-4 z-10">
-                        <div className="w-13 h-13 rounded-2xl bg-purple-100 dark:bg-purple-950/60 border border-purple-200/90 dark:border-purple-800/80 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 shadow-2xs p-3">
-                            <BookOpen className="w-7 h-7" />
+                        <div className="w-13 h-13 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shrink-0 shadow-2xs p-3">
+                            <BookOpen className="w-7 h-7 text-white" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
                                     Canonical Courses Catalog
                                 </h1>
-                                <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-white/15 text-white border border-white/20">
                                     Single Source of Truth
                                 </span>
                             </div>
-                            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
+                            <p className="text-xs sm:text-sm font-medium text-white/80 mt-1 max-w-2xl">
                                 Reusable academic entities defining credit units, lecture/laboratory contact rules, required facility types, prerequisites, and tracked data source origins.
                             </p>
                         </div>
@@ -410,15 +410,15 @@ export default function CoursesCatalogIndex({
                     <div className="flex items-center gap-3 z-10">
                         <button
                             onClick={() => setIsSyncModalOpen(true)}
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 rounded-xl shadow-xs transition-all cursor-pointer"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/25 rounded-xl shadow-xs transition-all cursor-pointer backdrop-blur-sm"
                         >
-                            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <FileSpreadsheet className="w-4 h-4 text-white" />
                             <span>Import / Sync Spreadsheet</span>
                         </button>
 
                         <button
                             onClick={() => setIsAddCourseOpen(true)}
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-500 rounded-xl shadow-xs transition-all cursor-pointer"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-[#0B3A67] bg-white hover:bg-white/90 rounded-xl shadow-xs transition-all cursor-pointer"
                         >
                             <Plus className="w-4 h-4 stroke-[2.5]" />
                             <span>Add Canonical Course</span>
@@ -429,7 +429,7 @@ export default function CoursesCatalogIndex({
                 {/* 2. Bento Stats */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/50 flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-[#0B3A67]/10 text-[#0B3A67] dark:text-sky-300 border border-[#0B3A67]/20 flex items-center justify-center shrink-0">
                             <BookOpen className="w-6 h-6" />
                         </div>
                         <div>
@@ -468,7 +468,7 @@ export default function CoursesCatalogIndex({
                     </div>
 
                     <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50 flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-[#7B1113]/10 text-[#7B1113] dark:text-rose-400 border border-[#7B1113]/20 flex items-center justify-center shrink-0">
                             <Clock className="w-6 h-6" />
                         </div>
                         <div>
@@ -490,7 +490,7 @@ export default function CoursesCatalogIndex({
                             placeholder="Search course code, title, facility, specialization..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                            className="w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#0B3A67]/20 focus:border-[#0B3A67]"
                         />
                     </div>
 
@@ -588,7 +588,7 @@ export default function CoursesCatalogIndex({
                                                 key={course.id}
                                                 className={cn(
                                                     'hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors',
-                                                    isSelected && 'bg-purple-50/40 dark:bg-purple-950/20'
+                                                    isSelected && 'bg-[#0B3A67]/5 dark:bg-[#0B3A67]/15'
                                                 )}
                                             >
                                                 {/* Code & Title */}
@@ -601,7 +601,7 @@ export default function CoursesCatalogIndex({
                                                             {course.title}
                                                         </span>
                                                         {course.specialization_tag && (
-                                                            <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold mt-0.5">
+                                                            <span className="text-[10px] text-[#7B1113] dark:text-rose-400 font-semibold mt-0.5">
                                                                 Track: {course.specialization_tag}
                                                             </span>
                                                         )}
@@ -779,7 +779,7 @@ export default function CoursesCatalogIndex({
                                             className={cn(
                                                 'px-3 py-1.5 rounded-lg font-bold transition-colors',
                                                 link.active
-                                                    ? 'bg-slate-900 text-white dark:bg-purple-600'
+                                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-2xs'
                                                     : link.url
                                                     ? 'border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200'
                                                     : 'opacity-40 pointer-events-none text-slate-400'
@@ -800,7 +800,7 @@ export default function CoursesCatalogIndex({
                             <>
                                 <DialogHeader>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
+                                        <div className="w-10 h-10 rounded-xl bg-[#0B3A67]/10 text-[#0B3A67] dark:text-sky-300 flex items-center justify-center font-bold">
                                             <BookOpen className="w-5 h-5" />
                                         </div>
                                         <div>
@@ -822,7 +822,7 @@ export default function CoursesCatalogIndex({
                                             className={cn(
                                                 'px-3 py-1.5 rounded-lg transition-colors cursor-pointer',
                                                 activeTab === 'academic'
-                                                    ? 'bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-300'
+                                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-2xs'
                                                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                                             )}
                                         >
@@ -833,7 +833,7 @@ export default function CoursesCatalogIndex({
                                             className={cn(
                                                 'px-3 py-1.5 rounded-lg transition-colors cursor-pointer',
                                                 activeTab === 'scheduling'
-                                                    ? 'bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-300'
+                                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-2xs'
                                                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                                             )}
                                         >
@@ -844,7 +844,7 @@ export default function CoursesCatalogIndex({
                                             className={cn(
                                                 'px-3 py-1.5 rounded-lg transition-colors cursor-pointer',
                                                 activeTab === 'curriculum'
-                                                    ? 'bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-300'
+                                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-2xs'
                                                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                                             )}
                                         >
@@ -855,7 +855,7 @@ export default function CoursesCatalogIndex({
                                             className={cn(
                                                 'px-3 py-1.5 rounded-lg transition-colors cursor-pointer',
                                                 activeTab === 'faculty'
-                                                    ? 'bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-300'
+                                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-2xs'
                                                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                                             )}
                                         >
@@ -866,7 +866,7 @@ export default function CoursesCatalogIndex({
                                             className={cn(
                                                 'px-3 py-1.5 rounded-lg transition-colors cursor-pointer',
                                                 activeTab === 'history'
-                                                    ? 'bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-300'
+                                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-2xs'
                                                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                                             )}
                                         >
@@ -1188,7 +1188,7 @@ export default function CoursesCatalogIndex({
                                 <button
                                     type="submit"
                                     disabled={addCourseForm.processing}
-                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-purple-600 rounded-lg"
+                                    className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-[#0B3A67] to-[#7B1113] hover:opacity-95 rounded-lg shadow-xs"
                                 >
                                     Register Subject
                                 </button>
@@ -1348,7 +1348,7 @@ export default function CoursesCatalogIndex({
                                 <button
                                     type="submit"
                                     disabled={editCourseForm.processing}
-                                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-purple-600 rounded-lg"
+                                    className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-[#0B3A67] to-[#7B1113] hover:opacity-95 rounded-lg shadow-xs"
                                 >
                                     Update Course
                                 </button>

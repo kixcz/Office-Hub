@@ -548,10 +548,10 @@ export default function SuperAdminDashboard({
                 </div>
 
                 {/* Compact Action Required / For Your Review Operational Hub */}
-                <div className="bg-card rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 via-card to-card p-5 shadow-2xs">
+                <div className="bg-card rounded-2xl border border-[#0B3A67]/20 bg-gradient-to-r from-[#0B3A67]/5 via-card to-[#6A0DAD]/5 p-5 shadow-2xs">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5 mb-4">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
+                            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#0B3A67] to-[#7B1113] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
                                 !
                             </div>
                             <div>
@@ -571,7 +571,7 @@ export default function SuperAdminDashboard({
                                 </p>
                             </div>
                         </div>
-                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 self-start sm:self-auto">
+                        <span className="text-[10px] font-bold text-white bg-gradient-to-r from-[#0B3A67] to-[#7B1113] px-3 py-1 rounded-full shadow-2xs self-start sm:self-auto tracking-wide">
                             Requires Immediate Attention
                         </span>
                     </div>
@@ -594,12 +594,12 @@ export default function SuperAdminDashboard({
 
                         <Link
                             href="/operations/make-up-classes"
-                            className="flex flex-col p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-colors group"
+                            className="flex flex-col p-3 rounded-xl border border-[#7B1113]/25 bg-[#7B1113]/5 hover:bg-[#7B1113]/10 transition-colors group"
                         >
-                            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">
+                            <span className="text-[10px] font-bold text-[#7B1113] dark:text-rose-400 uppercase tracking-wider">
                                 Make-Up Classes
                             </span>
-                            <span className="text-xl font-black text-amber-700 dark:text-amber-400 mt-1">
+                            <span className="text-xl font-black text-[#7B1113] dark:text-rose-300 mt-1">
                                 {action_required?.pending_make_ups ?? 2} Pending
                             </span>
                             <span className="text-[10px] text-muted-foreground group-hover:text-foreground mt-1 flex items-center gap-1 font-semibold">
@@ -717,7 +717,7 @@ export default function SuperAdminDashboard({
                     {/* Events & Meetings */}
                     <div className="bg-card rounded-2xl border border-border p-4.5 shadow-2xs hover:shadow-xs transition-shadow">
                         <div className="flex items-center justify-between">
-                            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0B3A67]/15 to-[#7B1113]/15 text-[#0B3A67] dark:text-[#93C5FD] flex items-center justify-center">
                                 <Calendar className="w-5 h-5" />
                             </div>
                         </div>
@@ -726,7 +726,7 @@ export default function SuperAdminDashboard({
                             <div className="text-2xl font-black text-foreground mt-0.5 tracking-tight">
                                 {kpis.events_meetings}
                             </div>
-                            <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1">
+                            <div className="text-[11px] font-bold text-[#7B1113] dark:text-rose-400 mt-1">
                                 {kpis.events_meetings_trend}
                             </div>
                         </div>
@@ -824,10 +824,10 @@ export default function SuperAdminDashboard({
                                             strokeWidth="2.5"
                                             fill="none"
                                         />
-                                        {/* Research/Extension (Amber) */}
+                                        {/* Research/Extension (Navy/Maroon Theme) */}
                                         <path
                                             d={buildTrendPath((trend_data || []).map((t) => t.research_extension))}
-                                            stroke="#f59e0b"
+                                            stroke="#7B1113"
                                             strokeWidth="2.5"
                                             fill="none"
                                         />
@@ -850,7 +850,7 @@ export default function SuperAdminDashboard({
                                         <span>Compliance Rate</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                                        <div className="w-2.5 h-2.5 rounded-full bg-[#0B3A67]" />
                                         <span>Attendance Rate</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
@@ -858,7 +858,7 @@ export default function SuperAdminDashboard({
                                         <span>Tasks</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                                        <div className="w-2.5 h-2.5 rounded-full bg-[#7B1113]" />
                                         <span>Research / Extension</span>
                                     </div>
                                 </div>
@@ -912,26 +912,26 @@ export default function SuperAdminDashboard({
                                                 strokeDashoffset="0"
                                             />
                                         )}
-                                        {/* Minor Issues segment (Amber) */}
+                                        {/* Minor Issues segment (Primary Navy / Indigo) */}
                                         {currentDistribution.minor_issues_pct > 0 && (
                                             <circle
                                                 cx="50"
                                                 cy="50"
                                                 r="40"
-                                                stroke="#f59e0b"
+                                                stroke="#1D4ED8"
                                                 strokeWidth="12"
                                                 fill="transparent"
                                                 strokeDasharray={`${minorDash} ${donutCircumference}`}
                                                 strokeDashoffset={minorOffset}
                                             />
                                         )}
-                                        {/* Needs Attention segment (Orange) */}
+                                        {/* Needs Attention segment (Maroon #7B1113) */}
                                         {currentDistribution.needs_attention_pct > 0 && (
                                             <circle
                                                 cx="50"
                                                 cy="50"
                                                 r="40"
-                                                stroke="#f97316"
+                                                stroke="#7B1113"
                                                 strokeWidth="12"
                                                 fill="transparent"
                                                 strokeDasharray={`${needsAttnDash} ${donutCircumference}`}
@@ -973,7 +973,7 @@ export default function SuperAdminDashboard({
 
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                                            <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
                                             <span className="font-medium text-muted-foreground">Minor Issues</span>
                                         </div>
                                         <span className="font-bold text-foreground">
@@ -983,7 +983,7 @@ export default function SuperAdminDashboard({
 
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+                                            <div className="w-2.5 h-2.5 rounded-full bg-[#7B1113]" />
                                             <span className="font-medium text-muted-foreground">Needs Attention</span>
                                         </div>
                                         <span className="font-bold text-foreground">
@@ -1280,9 +1280,9 @@ export default function SuperAdminDashboard({
                                                 <td className="p-3">
                                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                                         f.issue_type === 'attendance'
-                                                            ? 'bg-amber-100 text-amber-800'
+                                                            ? 'bg-blue-100 text-[#0B3A67] dark:bg-blue-950/60 dark:text-blue-300'
                                                             : f.issue_type === 'compliance'
-                                                            ? 'bg-rose-100 text-rose-800'
+                                                            ? 'bg-rose-100 text-[#7B1113] dark:bg-rose-950/60 dark:text-rose-300'
                                                             : f.issue_type === 'workload'
                                                             ? 'bg-purple-100 text-purple-800'
                                                             : 'bg-blue-100 text-blue-800'
@@ -1292,7 +1292,7 @@ export default function SuperAdminDashboard({
                                                 </td>
                                                 <td className="p-3 text-muted-foreground">{f.details}</td>
                                                 <td className="p-3">
-                                                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                                                    <span className="text-[10px] font-bold text-[#7B1113] dark:text-rose-300 bg-[#7B1113]/10 border border-[#7B1113]/25 px-2 py-0.5 rounded-md">
                                                         {f.status}
                                                     </span>
                                                 </td>

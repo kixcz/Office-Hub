@@ -530,34 +530,39 @@ export default function AcademicCalendarImportIndex({
                 {/* ========================================================================= */}
                 {/* 1. HERO HEADER BANNER (Soft rounded card matching screenshot)             */}
                 {/* ========================================================================= */}
-                <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-5">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-[#ffedd5] text-[#f97316] flex items-center justify-center shrink-0 shadow-xs">
-                            <CalendarDays className="w-7 h-7 text-[#ea580c] stroke-[2.2]" />
+                <div className="rounded-2xl bg-gradient-to-r from-[#0B3A67] via-[#1D3557] to-[#7B1113] p-5 sm:p-6 shadow-md text-white flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
+                    <div className="relative z-10 flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md text-white flex items-center justify-center shrink-0 border border-white/20 shadow-xs">
+                            <CalendarDays className="w-7 h-7 text-white stroke-[2.2]" />
                         </div>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] uppercase tracking-widest font-black px-2 py-0.5 rounded-md bg-white/15 text-white border border-white/20">
+                                    AI-Powered Synchronization
+                                </span>
+                            </div>
+                            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight mt-1">
                                 Academic Calendar Import
                             </h1>
-                            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                            <p className="text-xs sm:text-sm text-white/80 mt-1">
                                 Import institutional academic calendars and convert them into structured OfficeHub events using Gemini.
                             </p>
                         </div>
                     </div>
 
                     {/* Top Action Buttons: View Official Calendar & Upload Calendar */}
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="relative z-10 flex items-center gap-3 shrink-0">
                         <Link
                             href="/schedule/calendar"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 transition-all cursor-pointer shadow-xs"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 border border-white/25 text-white transition-all cursor-pointer shadow-xs backdrop-blur-sm"
                         >
-                            <Calendar className="w-4 h-4 text-slate-500" />
+                            <Calendar className="w-4 h-4 text-white" />
                             <span>View Official Calendar</span>
                         </Link>
 
                         <Button
                             onClick={() => setActiveTab('upload')}
-                            className="bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-xs gap-2 transition-all cursor-pointer"
+                            className="bg-white hover:bg-white/90 text-[#0B3A67] font-bold px-5 py-2.5 rounded-xl shadow-xs gap-2 transition-all cursor-pointer"
                         >
                             <UploadCloud className="w-4 h-4 stroke-[2.5]" />
                             <span>Upload Calendar</span>
@@ -575,13 +580,13 @@ export default function AcademicCalendarImportIndex({
                         className={cn(
                             'flex items-center gap-2 pb-3 pt-1 transition-all cursor-pointer relative whitespace-nowrap',
                             activeTab === 'queue'
-                                ? 'text-slate-900 font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-[#f59e0b]'
+                                ? 'text-[#0B3A67] font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-gradient-to-r after:from-[#0B3A67] after:to-[#7B1113]'
                                 : 'text-slate-500 hover:text-slate-800'
                         )}
                     >
-                        <CalendarDays className={cn('w-4 h-4', activeTab === 'queue' ? 'text-[#f59e0b]' : 'text-slate-400')} />
+                        <CalendarDays className={cn('w-4 h-4', activeTab === 'queue' ? 'text-[#0B3A67]' : 'text-slate-400')} />
                         <span>Import Review Queue</span>
-                        <span className="w-5 h-5 rounded-full bg-[#f59e0b] text-slate-950 text-[11px] font-bold flex items-center justify-center">
+                        <span className="w-5 h-5 rounded-full bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white text-[11px] font-bold flex items-center justify-center shadow-2xs">
                             {events.filter((e) => e.status === 'pending').length || 2}
                         </span>
                     </button>
@@ -592,11 +597,11 @@ export default function AcademicCalendarImportIndex({
                         className={cn(
                             'flex items-center gap-2 pb-3 pt-1 transition-all cursor-pointer relative whitespace-nowrap',
                             activeTab === 'upload'
-                                ? 'text-slate-900 font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-[#f59e0b]'
+                                ? 'text-[#0B3A67] font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-gradient-to-r after:from-[#0B3A67] after:to-[#7B1113]'
                                 : 'text-slate-500 hover:text-slate-800'
                         )}
                     >
-                        <UploadCloud className="w-4 h-4 text-slate-400" />
+                        <UploadCloud className={cn('w-4 h-4', activeTab === 'upload' ? 'text-[#0B3A67]' : 'text-slate-400')} />
                         <span>Upload Document</span>
                     </button>
 
@@ -606,11 +611,11 @@ export default function AcademicCalendarImportIndex({
                         className={cn(
                             'flex items-center gap-2 pb-3 pt-1 transition-all cursor-pointer relative whitespace-nowrap',
                             activeTab === 'rules'
-                                ? 'text-slate-900 font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-[#f59e0b]'
+                                ? 'text-[#0B3A67] font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-gradient-to-r after:from-[#0B3A67] after:to-[#7B1113]'
                                 : 'text-slate-500 hover:text-slate-800'
                         )}
                     >
-                        <Sliders className="w-4 h-4 text-slate-400" />
+                        <Sliders className={cn('w-4 h-4', activeTab === 'rules' ? 'text-[#0B3A67]' : 'text-slate-400')} />
                         <span>Import Rules &amp; Effects</span>
                     </button>
 
@@ -620,11 +625,11 @@ export default function AcademicCalendarImportIndex({
                         className={cn(
                             'flex items-center gap-2 pb-3 pt-1 transition-all cursor-pointer relative whitespace-nowrap',
                             activeTab === 'history'
-                                ? 'text-slate-900 font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-[#f59e0b]'
+                                ? 'text-[#0B3A67] font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-gradient-to-r after:from-[#0B3A67] after:to-[#7B1113]'
                                 : 'text-slate-500 hover:text-slate-800'
                         )}
                     >
-                        <RotateCcw className="w-4 h-4 text-slate-400" />
+                        <RotateCcw className={cn('w-4 h-4', activeTab === 'history' ? 'text-[#0B3A67]' : 'text-slate-400')} />
                         <span>Batch History &amp; Rollback</span>
                     </button>
                 </div>
@@ -796,7 +801,7 @@ export default function AcademicCalendarImportIndex({
                                 >
                                     <div className={cn(
                                         'w-4 h-4 rounded border flex items-center justify-center transition-colors',
-                                        selectedEventIds.length > 0 ? 'bg-[#f59e0b] border-[#d97706] text-slate-950' : 'border-slate-300 bg-white'
+                                        selectedEventIds.length > 0 ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] border-[#7B1113] text-white' : 'border-slate-300 bg-white'
                                     )}>
                                         {selectedEventIds.length > 0 && <Check className="w-3 h-3 stroke-[3]" />}
                                     </div>
@@ -918,7 +923,7 @@ export default function AcademicCalendarImportIndex({
                                                     confidenceScore >= 95
                                                         ? 'bg-[#10b981]'
                                                         : confidenceScore >= 85
-                                                        ? 'bg-[#f59e0b]'
+                                                        ? 'bg-[#0B3A67]'
                                                         : 'bg-[#ef4444]';
 
                                                 return (
@@ -1091,7 +1096,7 @@ export default function AcademicCalendarImportIndex({
                                             className={cn(
                                                 'w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition-colors cursor-pointer',
                                                 currentPage === pg
-                                                    ? 'bg-[#f59e0b] text-slate-950 shadow-xs'
+                                                    ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-xs'
                                                     : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                             )}
                                         >

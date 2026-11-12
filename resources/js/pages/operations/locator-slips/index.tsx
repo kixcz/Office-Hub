@@ -209,21 +209,21 @@ export default function LocatorSlipsIndex({ slips = [], faculties = [], metrics,
 
             <div className="flex flex-col gap-6 p-4 md:p-6 lg:p-8 bg-[#F9FAFB] dark:bg-zinc-950 min-h-screen">
                 {/* Header Banner */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-xs">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#0B3A67] via-[#1D3557] to-[#7B1113] text-white shadow-md relative overflow-hidden">
+                    <div className="relative z-10 flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md text-white border border-white/20 flex items-center justify-center shadow-xs">
                             <MapPin className="w-6 h-6 stroke-[2.2]" />
                         </div>
                         <div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
+                                <h1 className="text-2xl font-black tracking-tight text-white">
                                     Faculty Locator Slips
                                 </h1>
                                 <span
-                                    className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
+                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
                                         sync_status?.status === 'offline_snapshot'
-                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'
-                                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300'
+                                            ? 'bg-white/15 text-white border-white/25'
+                                            : 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30'
                                     }`}
                                     title={sync_status?.last_error || (sync_status?.last_synced_at ? `Last synced: ${sync_status.last_synced_at}` : 'Local snapshot active')}
                                 >
@@ -234,25 +234,25 @@ export default function LocatorSlipsIndex({ slips = [], faculties = [], metrics,
                                         : 'e-HRIS Snapshot Active'}
                                 </span>
                             </div>
-                            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                            <p className="text-xs md:text-sm font-medium text-white/80 mt-0.5">
                                 Track and monitor official or personal faculty campus leaves and guard logs
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2.5">
+                    <div className="relative z-10 flex items-center gap-2.5">
                         <Button
                             variant="outline"
                             onClick={handleSync}
                             disabled={isSyncing}
-                            className="h-10 px-4 rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-300 shadow-xs"
+                            className="h-10 px-4 rounded-xl border-white/25 bg-white/10 hover:bg-white/20 text-white font-bold text-xs shadow-xs backdrop-blur-sm"
                         >
-                            <RefreshCw className={`w-3.5 h-3.5 mr-2 text-zinc-500 ${isSyncing ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={`w-3.5 h-3.5 mr-2 text-white ${isSyncing ? 'animate-spin' : ''}`} />
                             {isSyncing ? 'Syncing e-HRIS...' : 'Sync with e-HRIS'}
                         </Button>
                         <Button
                             onClick={() => setCreateModalOpen(true)}
-                            className="h-10 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs"
+                            className="h-10 px-5 rounded-xl bg-white hover:bg-white/90 text-[#0B3A67] font-extrabold text-xs shadow-xs cursor-pointer"
                         >
                             <Plus className="w-4 h-4 mr-1.5 stroke-[2.5]" />
                             Create Locator Slip
@@ -301,7 +301,7 @@ export default function LocatorSlipsIndex({ slips = [], faculties = [], metrics,
                 {/* 4 Metric KPI Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center shrink-0">
+                        <div className="w-11 h-11 rounded-xl bg-[#0B3A67]/10 text-[#0B3A67] dark:text-sky-300 flex items-center justify-center shrink-0">
                             <FileText className="w-5 h-5" />
                         </div>
                         <div>
@@ -454,10 +454,10 @@ export default function LocatorSlipsIndex({ slips = [], faculties = [], metrics,
                                                         <img
                                                             src={slip.photo_url}
                                                             alt={slip.faculty_name}
-                                                            className="w-8 h-8 rounded-full object-cover border border-amber-200 shrink-0"
+                                                            className="w-8 h-8 rounded-full object-cover border border-[#0B3A67]/20 shrink-0"
                                                         />
                                                     ) : (
-                                                        <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-bold text-xs flex items-center justify-center shrink-0">
+                                                        <div className="w-8 h-8 rounded-full bg-[#0B3A67]/10 text-[#0B3A67] dark:text-sky-300 font-bold text-xs flex items-center justify-center shrink-0">
                                                             {slip.faculty_name
                                                                 .split(' ')
                                                                 .map((n) => n[0])
@@ -468,7 +468,7 @@ export default function LocatorSlipsIndex({ slips = [], faculties = [], metrics,
                                                     <div>
                                                         <button
                                                             onClick={() => setSelectedSlip(slip)}
-                                                            className="font-bold text-zinc-900 dark:text-zinc-100 hover:text-amber-600 transition-colors text-left block"
+                                                            className="font-bold text-zinc-900 dark:text-zinc-100 hover:text-[#0B3A67] dark:hover:text-sky-300 transition-colors text-left block cursor-pointer"
                                                         >
                                                             {slip.faculty_name}
                                                         </button>
@@ -730,7 +730,7 @@ export default function LocatorSlipsIndex({ slips = [], faculties = [], metrics,
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs px-5 shadow-xs"
+                                    className="bg-gradient-to-r from-[#0B3A67] to-[#7B1113] hover:opacity-95 text-white font-bold rounded-xl text-xs px-5 shadow-xs cursor-pointer"
                                 >
                                     {processing ? 'Filing...' : 'File Locator Slip'}
                                 </Button>

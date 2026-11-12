@@ -517,29 +517,29 @@ export default function FacultiesIndex({
 
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6 bg-slate-50/50 dark:bg-slate-950/20 font-['Poppins',sans-serif]">
                 {/* Header Banner */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-card p-6 rounded-2xl border border-border shadow-xs">
-                    <div>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-[#0B3A67] via-[#1D3557] to-[#7B1113] p-6 rounded-2xl text-white shadow-md relative overflow-hidden">
+                    <div className="relative z-10">
                         <div className="flex items-center gap-3">
-                            <span className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                            <span className="p-2.5 rounded-xl bg-white/10 text-white border border-white/20 backdrop-blur-md">
                                 <Users className="w-6 h-6" />
                             </span>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                                    <h1 className="text-2xl font-bold tracking-tight text-white">
                                         {user_permissions.is_program_head ? 'Program Faculty Directory' : 'Faculty Management'}
                                     </h1>
                                     {user_permissions.is_program_head && (
-                                        <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 text-[10px] font-semibold">
+                                        <Badge className="bg-white/15 text-white border-white/20 text-[10px] font-semibold">
                                             Departmental Scope
                                         </Badge>
                                     )}
                                     {user_permissions.is_dean && (
-                                        <Badge className="bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30 text-[10px] font-semibold">
+                                        <Badge className="bg-white/15 text-white border-white/20 text-[10px] font-semibold">
                                             College-Wide Directory
                                         </Badge>
                                     )}
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-0.5">
+                                <p className="text-xs text-white/80 mt-0.5">
                                     {user_permissions.is_program_head
                                         ? 'View assigned departmental faculty, workload, specializations, compliance history, and course eligibility.'
                                         : 'View and manage faculty profiles, teaching workload, requirements, and performance.'}
@@ -551,7 +551,7 @@ export default function FacultiesIndex({
                     {user_permissions.can_delete && (
                         <button
                             onClick={openAddDialog}
-                            className="inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all bg-amber-500 hover:bg-amber-600 text-slate-950 h-10 px-5 py-2 shadow-xs cursor-pointer active:scale-98"
+                            className="relative z-10 inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all bg-white hover:bg-white/90 text-[#0B3A67] h-10 px-5 py-2 shadow-xs cursor-pointer active:scale-98"
                         >
                             <Plus className="w-4 h-4 mr-1.5 stroke-[2.5]" />
                             Add Faculty
@@ -567,7 +567,7 @@ export default function FacultiesIndex({
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             {/* Total Faculty */}
                             <div className="bg-white dark:bg-card p-4 rounded-2xl border border-border shadow-xs flex items-center gap-3.5">
-                                <div className="p-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                                <div className="p-3 rounded-xl bg-[#0B3A67]/10 text-[#0B3A67] dark:text-sky-400 shrink-0">
                                     <Users className="w-5 h-5" />
                                 </div>
                                 <div className="min-w-0">
@@ -829,10 +829,10 @@ export default function FacultiesIndex({
                                                                     const completionPct = getFacultyCompletion(faculty);
                                                                     const strokeColor =
                                                                         completionPct >= 80
-                                                                            ? '#eab308' // primary amber/yellow
+                                                                            ? '#0B3A67' // primary navy
                                                                             : completionPct >= 50
-                                                                            ? '#f59e0b' // amber
-                                                                            : '#fbbf24'; // light amber/yellow
+                                                                            ? '#1D4ED8' // blue
+                                                                            : '#7B1113'; // maroon
                                                                     return (
                                                                         <div
                                                                             className="relative w-11 h-11 shrink-0 flex items-center justify-center"
@@ -847,7 +847,7 @@ export default function FacultiesIndex({
                                                                                     fill="none"
                                                                                     stroke="currentColor"
                                                                                     strokeWidth="2.5"
-                                                                                    className="text-amber-500/15 dark:text-amber-500/20"
+                                                                                    className="text-[#0B3A67]/15 dark:text-[#0B3A67]/25"
                                                                                 />
                                                                                 <circle
                                                                                     cx="22"
@@ -870,13 +870,13 @@ export default function FacultiesIndex({
                                                                                     className="w-8 h-8 rounded-full object-cover shrink-0"
                                                                                 />
                                                                             ) : (
-                                                                                <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-bold text-[11px] flex items-center justify-center shrink-0">
+                                                                                <div className="w-8 h-8 rounded-full bg-[#0B3A67]/10 text-[#0B3A67] dark:text-sky-300 font-bold text-[11px] flex items-center justify-center shrink-0">
                                                                                     {initials}
                                                                                 </div>
                                                                             )}
 
                                                                             {/* Small percentage badge on bottom-right of donut */}
-                                                                            <span className="absolute -bottom-1 -right-1 text-[8px] font-black font-mono leading-none bg-amber-500 text-slate-950 px-1 py-0.5 rounded-full border border-background shadow-2xs">
+                                                                            <span className="absolute -bottom-1 -right-1 text-[8px] font-black font-mono leading-none bg-[#0B3A67] text-white px-1 py-0.5 rounded-full border border-background shadow-2xs">
                                                                                 {completionPct}%
                                                                             </span>
                                                                         </div>
@@ -895,14 +895,14 @@ export default function FacultiesIndex({
 
                                                                             if (isD) {
                                                                                 return (
-                                                                                    <Badge className="text-[9px] font-black bg-amber-500 hover:bg-amber-600 text-slate-950 border-amber-600/30 px-1.5 py-0">
+                                                                                    <Badge className="text-[9px] font-black bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white border-none px-1.5 py-0 shadow-2xs">
                                                                                         College Dean
                                                                                     </Badge>
                                                                                 );
                                                                             }
                                                                             if (isPH) {
                                                                                 return (
-                                                                                    <Badge className="text-[9px] font-black bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800 px-1.5 py-0">
+                                                                                    <Badge className="text-[9px] font-black bg-[#0B3A67]/15 text-[#0B3A67] dark:text-sky-300 border-[#0B3A67]/30 px-1.5 py-0">
                                                                                         Program Head
                                                                                     </Badge>
                                                                                 );
@@ -947,8 +947,8 @@ export default function FacultiesIndex({
                                                         <td className="px-4 py-3.5">
                                                             {faculty.program ? (
                                                                 <div className="flex flex-col">
-                                                                    <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-400 text-xs">
-                                                                        <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
+                                                                    <span className="inline-flex items-center gap-1 font-semibold text-[#0B3A67] dark:text-sky-300 text-xs">
+                                                                        <GraduationCap className="w-3.5 h-3.5 text-[#0B3A67] dark:text-sky-400" />
                                                                         {faculty.program.code}
                                                                     </span>
                                                                     <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">
@@ -1172,7 +1172,7 @@ export default function FacultiesIndex({
                                                             className={cn(
                                                                 "w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer",
                                                                 isActive
-                                                                    ? "bg-amber-400 text-slate-950 shadow-xs"
+                                                                    ? "bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-xs"
                                                                     : "border border-border bg-background hover:bg-muted text-foreground"
                                                             )}
                                                         >
@@ -1691,7 +1691,7 @@ export default function FacultiesIndex({
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="inline-flex items-center justify-center rounded-md text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-600 h-9 px-4 py-2 disabled:opacity-50 transition-colors shadow-2xs"
+                                    className="inline-flex items-center justify-center rounded-md text-xs font-bold bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white hover:opacity-95 h-9 px-4 py-2 disabled:opacity-50 transition-colors shadow-2xs"
                                 >
                                     {isSubmitting ? 'Saving...' : editingFaculty ? 'Update Faculty' : 'Save Faculty'}
                                 </button>

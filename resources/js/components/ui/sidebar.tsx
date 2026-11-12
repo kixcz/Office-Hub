@@ -482,7 +482,7 @@ const SidebarMenuButton = React.forwardRef<
                 align="center"
                 sideOffset={12}
                 hidden={state !== 'collapsed' || isMobile}
-                className="z-[100] overflow-visible rounded-2xl border bg-popover/95 backdrop-blur-md p-3 text-popover-foreground shadow-2xl transition-all"
+                className="z-[9999] overflow-visible rounded-2xl border bg-popover/95 backdrop-blur-md p-3 text-popover-foreground shadow-2xl transition-all"
                 style={{
                     borderColor: `${brandPrimary}40`,
                     boxShadow: `0 14px 30px -6px ${brandPrimary}25, 0 4px 12px -2px rgba(0, 0, 0, 0.08)`,

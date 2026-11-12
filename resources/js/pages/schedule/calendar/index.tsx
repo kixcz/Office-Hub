@@ -363,27 +363,32 @@ export default function ConsolidatedCalendarIndex({
                 {/* ========================================================================= */}
                 {/* 1. PAGE HEADER ROW                                                        */}
                 {/* ========================================================================= */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5">
-                        <div className="p-3 rounded-2xl bg-[#EFF6FF] dark:bg-slate-800 text-[#0B3A67] dark:text-[#93C5FD] border border-[#175C94]/25 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#0B3A67] via-[#1D3557] to-[#7B1113] text-white shadow-md relative overflow-hidden">
+                    <div className="relative z-10 flex items-center gap-4">
+                        <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-xs">
                             <CalendarIcon className="w-7 h-7" />
                         </div>
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
-                                Consolidated Calendar
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] uppercase tracking-widest font-black px-2 py-0.5 rounded-md bg-white/15 text-white border border-white/20">
+                                    CIDS Consolidated
+                                </span>
+                            </div>
+                            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1">
+                                College Calendar
                             </h1>
-                            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-                                View all academic activities, deadlines, meetings, and events
+                            <p className="text-xs md:text-sm text-white/80 mt-0.5">
+                                Unified schedule of collegiate events, academic deadlines, meetings, and activities
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <div className="relative z-10 flex items-center gap-2 self-start sm:self-auto">
                         <Link
                             href="/schedule/calendar-import"
-                            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold border border-[#175C94]/30 bg-[#EFF6FF] text-[#0B3A67] dark:bg-slate-800 dark:text-[#93C5FD] hover:bg-[#E0F2FE] transition-all cursor-pointer shadow-2xs"
+                            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold border border-white/25 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer shadow-2xs backdrop-blur-sm"
                         >
-                            <CalendarRange className="w-4 h-4 text-[#0B3A67] dark:text-[#93C5FD]" />
+                            <CalendarRange className="w-4 h-4 text-white" />
                             <span>AI Calendar Import</span>
                         </Link>
 
@@ -392,7 +397,7 @@ export default function ConsolidatedCalendarIndex({
                                 setNewEventForm((prev) => ({ ...prev, date: selectedDateStr }));
                                 setIsAddModalOpen(true);
                             }}
-                            className="bg-[#0B3A67] hover:bg-[#175C94] text-white font-bold h-10 px-5 rounded-xl shadow-xs gap-2 transition-all cursor-pointer"
+                            className="bg-white hover:bg-white/90 text-[#0B3A67] font-extrabold h-10 px-5 rounded-xl shadow-xs gap-2 transition-all cursor-pointer"
                         >
                             <Plus className="w-4 h-4 stroke-[3]" />
                             <span>Add Event</span>
@@ -490,7 +495,7 @@ export default function ConsolidatedCalendarIndex({
                                 className={cn(
                                     'px-3.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer',
                                     viewMode === 'month'
-                                        ? 'bg-[#0B3A67] text-white shadow-2xs'
+                                        ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
                                 )}
                             >
@@ -502,7 +507,7 @@ export default function ConsolidatedCalendarIndex({
                                 className={cn(
                                     'px-3.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer',
                                     viewMode === 'week'
-                                        ? 'bg-[#0B3A67] text-white shadow-2xs'
+                                        ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
                                 )}
                             >
@@ -514,7 +519,7 @@ export default function ConsolidatedCalendarIndex({
                                 className={cn(
                                     'px-3.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer',
                                     viewMode === 'agenda'
-                                        ? 'bg-[#0B3A67] text-white shadow-2xs'
+                                        ? 'bg-gradient-to-r from-[#0B3A67] to-[#7B1113] text-white shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
                                 )}
                             >
@@ -694,7 +699,7 @@ export default function ConsolidatedCalendarIndex({
                                             className={cn(
                                                 'relative h-12 sm:h-14 flex flex-col items-center justify-center rounded-xl transition-all cursor-pointer group',
                                                 isSelected
-                                                    ? 'bg-[#0B3A67] text-white font-extrabold shadow-sm ring-2 ring-[#0B3A67]/30'
+                                                    ? 'bg-gradient-to-br from-[#0B3A67] to-[#7B1113] text-white font-extrabold shadow-sm ring-2 ring-[#7B1113]/30'
                                                     : cell.isCurrentMonth
                                                     ? 'text-foreground hover:bg-muted/70 font-semibold'
                                                     : 'text-muted-foreground/35 hover:bg-muted/30 font-normal'
@@ -764,12 +769,14 @@ export default function ConsolidatedCalendarIndex({
                         {/* Day Schedule Header */}
                         <div className="flex items-center justify-between pb-4 border-b border-border/70">
                             <div className="flex items-center gap-2">
-                                <CalendarIcon className="w-5 h-5 text-[#0B3A67] dark:text-[#93C5FD] shrink-0" />
+                                <div className="p-1.5 rounded-lg bg-gradient-to-br from-[#0B3A67] to-[#7B1113] text-white">
+                                    <CalendarIcon className="w-4 h-4 shrink-0" />
+                                </div>
                                 <h2 className="text-base sm:text-lg font-bold text-foreground">
                                     Events on {selectedDateFormatted}
                                 </h2>
                             </div>
-                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#0B3A67]/10 text-[#0B3A67] dark:text-sky-300 border border-[#0B3A67]/20">
                                 {selectedDayEvents.length} {selectedDayEvents.length === 1 ? 'event' : 'events'}
                             </span>
                         </div>
@@ -1019,7 +1026,7 @@ export default function ConsolidatedCalendarIndex({
                                 type="submit"
                                 size="sm"
                                 disabled={isSubmitting}
-                                className="bg-[#0B3A67] hover:bg-[#175C94] text-white font-bold"
+                                className="bg-gradient-to-r from-[#0B3A67] to-[#7B1113] hover:opacity-95 text-white font-bold"
                             >
                                 {isSubmitting ? 'Saving...' : 'Save Event'}
                             </Button>
