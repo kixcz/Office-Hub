@@ -329,10 +329,10 @@ const vpaaNavGroups: NavGroup[] = [
     {
         title: 'TV & COMMUNICATIONS',
         items: [
-            { title: 'Executive TV', url: '/vpaa/tv-communications?tab=executive-tv', icon: Tv },
-            { title: 'Channel Switcher', url: '/vpaa/tv-communications?tab=switcher', icon: Projector },
-            { title: 'College TV Channels', url: '/vpaa/tv-communications?tab=college-channels', icon: Monitor },
-            { title: 'Academic Highlights', url: '/vpaa/tv-communications?tab=highlights', icon: Sparkles },
+            { title: 'Executive TV', url: '/vpaa/tv-executive', icon: Tv },
+            { title: 'Channel Switcher', url: '/vpaa/tv-channel-switcher', icon: Projector },
+            { title: 'College TV Channels', url: '/vpaa/tv-college-channels', icon: Monitor },
+            { title: 'Academic Highlights', url: '/vpaa/tv-academic-highlights', icon: Sparkles },
         ],
     },
 ];

@@ -23,10 +23,17 @@ return new class extends Migration
             }
         });
 
-        // Seed distinct announcements for CED, CBA, COE, CAS so each college has vibrant unique announcements
+        // Only seed sample announcements if colleges exist (skips in fresh in-memory test migrations before seeders)
         $colleges = College::whereIn('code', ['CED', 'CBA', 'COE', 'CAS'])->get();
+        if ($colleges->isEmpty()) {
+            return;
+        }
+
         $admin = User::first();
-        $adminId = $admin ? $admin->id : 1;
+        if (! $admin) {
+            return;
+        }
+        $adminId = $admin->id;
 
         $collegeAnnouncements = [
             'CED' => [

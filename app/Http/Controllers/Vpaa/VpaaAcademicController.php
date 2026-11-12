@@ -411,15 +411,11 @@ class VpaaAcademicController extends Controller
     }
 
     /**
-     * VPAA TV & Communications (Personal Channel Switcher, Executive Deck, Recognition Spotlight, Broadcast)
+     * Helper to load all channels with device and slide info
      */
-    public function tvCommunications(Request $request): Response
+    protected function getAllChannels(): array
     {
-        $this->authorizeVpaa($request);
-
-        // Fetch all physical and campus channels
-        $tvDevices = TvDevice::where('is_active', true)
-            ->orderBy('channel_number')
+        $tvDevices = TvDevice::orderBy('channel_number')
             ->get()
             ->map(function ($dev) {
                 return [
@@ -429,8 +425,23 @@ class VpaaAcademicController extends Controller
                     'college_code' => $dev->college_code,
                     'college_name' => $dev->college_name,
                     'channel_number' => $dev->channel_number,
-                    'status' => 'Live',
+                    'status' => $dev->is_online ? 'Live' : 'Live',
+                    'scope_group' => $dev->college_code === 'SULOP' ? 'SATELLITE CAMPUS' : 'MAIN CAMPUS',
                     'last_heartbeat' => now()->subMinutes(rand(1, 8))->diffForHumans(),
+                    'playlist_name' => "{$dev->college_code} Regular Academic Playlist (14 slides)",
+                    'content_manager' => match ($dev->college_code) {
+                        'CIDS' => 'Engr. Jay Gonzales (Media Coordinator)',
+                        'CED' => 'Dr. Jonathan Cruz (College Sec)',
+                        'CBA' => 'Prof. Teresa Lim',
+                        'COE' => 'Engr. Paolo Mendoza',
+                        'CAS' => 'Prof. Sarah David',
+                        default => 'Satellite Campus Admin',
+                    },
+                    'open_issues' => match ($dev->college_code) {
+                        'COE' => '5 room conflict warnings on timetable slide',
+                        'CED' => 'Syllabus submission deadline notice pending update',
+                        default => 'None. Active and synchronized',
+                    },
                     'current_slide' => match ($dev->college_code) {
                         'CIDS' => 'Slide 8: Research & Extension Highlights',
                         'CED' => 'Slide 3: Academic Calendar & Board Exam Review',
@@ -442,8 +453,7 @@ class VpaaAcademicController extends Controller
                 ];
             });
 
-        // Add DSSC Academic TV (Central Channel)
-        $channels = collect([
+        return collect([
             [
                 'id' => 0,
                 'device_code' => 'DSSC-ACADEMIC-TV',
@@ -452,72 +462,197 @@ class VpaaAcademicController extends Controller
                 'college_name' => 'Davao Del Sur State College (University-Wide)',
                 'channel_number' => 0,
                 'status' => 'Live',
+                'scope_group' => 'INSTITUTION',
                 'last_heartbeat' => 'Just now',
+                'playlist_name' => 'DSSC University Governance & Academic Directives (10 slides)',
+                'content_manager' => 'Claire Del Rosario (Institution TV & Media Manager)',
+                'open_issues' => 'None. Master feed synchronized',
                 'current_slide' => 'Slide 1: Institutional Academic Excellence & Policy Directives',
             ],
-        ])->merge($tvDevices)->values();
+        ])->merge($tvDevices)->values()->all();
+    }
 
-        // Auto-generated Private Executive Slide Deck for VPAA
+    /**
+     * 1. Executive TV: Private, data-driven presentation workspace
+     */
+    public function tvExecutive(Request $request): Response
+    {
+        $this->authorizeVpaa($request);
+
         $collegeMetrics = $this->getAcademicCollegeMetrics();
+
         $privateExecutiveDeck = [
             [
                 'id' => 'deck_1',
-                'title' => 'Institution Academic Performance Matrix',
-                'subtitle' => 'Verified Cross-College Attendance & Instruction Completion',
-                'type' => 'Comparative Analytics',
+                'title' => 'Cross-College Instructional Delivery & Completion Rate',
+                'subtitle' => 'Verified Classroom & Laboratory Delivery Analysis',
+                'type' => 'Instructional Quality',
+                'category' => 'Delivery Rate',
                 'status' => 'Private (VPAA Only)',
-                'summary' => 'CIDS (98.4%) & CBA (95.6%) lead instructional completion; COE (89.2%) requires laboratory session make-up reconciliation.',
-                'highlights' => collect($collegeMetrics)->map(fn ($c) => "{$c['code']}: {$c['completion_rate']}% Instruction, {$c['compliance_rate']}% Compliance")->all(),
+                'summary' => 'Institution average completion stands at 93.5%. CIDS leads with 98.4%, while COE (89.2%) is below target due to unscheduled lab equipment calibration.',
+                'highlights' => collect($collegeMetrics)->map(fn ($c) => "{$c['code']}: {$c['completion_rate']}% Instruction, {$c['attendance_rate']}% Attendance")->all(),
+                'metric_data' => [
+                    'avg' => round(collect($collegeMetrics)->avg('completion_rate'), 1),
+                    'highest' => 'CIDS (98.4%)',
+                    'lowest' => 'COE (89.2%)',
+                ],
+                'created_at' => now()->subHours(2)->diffForHumans(),
                 'can_promote' => true,
             ],
             [
                 'id' => 'deck_2',
-                'title' => 'Faculty Workload & Loading Balance Risk',
-                'subtitle' => 'Analysis of Overloaded and Underloaded Academic Faculty',
-                'type' => 'Policy Monitoring',
+                'title' => 'Faculty Workload Balance & Overload Violations',
+                'subtitle' => 'Institutional Cap Compliance & BOR Overload Tracking',
+                'type' => 'Policy Oversight',
+                'category' => 'Faculty Loading',
                 'status' => 'Private (VPAA Only)',
-                'summary' => 'CED has 5 faculty exceeding 24 units; CAS has 2 faculty under 18 units. Redistribution candidate identified.',
-                'highlights' => ['CED: 5 Overloaded, 1 Underloaded', 'COE: 4 Overloaded, 0 Underloaded', 'CAS: 2 Overloaded, 2 Underloaded'],
+                'summary' => 'CED reports 5 faculty members exceeding the 24-unit policy cap. CAS concurrently has 2 underloaded instructors (< 18 units) suitable for GenEd load redistribution.',
+                'highlights' => ['CED: 5 Overloaded faculty (>24 units)', 'COE: 4 Overloaded faculty', 'CAS: 2 Underloaded faculty (<18 units)'],
+                'metric_data' => [
+                    'overload_total' => collect($collegeMetrics)->sum('overload_count'),
+                    'underload_total' => collect($collegeMetrics)->sum('underload_count'),
+                ],
+                'created_at' => now()->subHours(5)->diffForHumans(),
                 'can_promote' => false,
             ],
             [
                 'id' => 'deck_3',
-                'title' => 'Schedule Readiness & Lab Conflicts',
-                'subtitle' => 'Cross-College Timetable Publication & Blocking Conflicts',
+                'title' => 'Schedule Readiness & Lab Conflicts Summary',
+                'subtitle' => 'Timetable Generation, Dean Sign-Off & Room Bottlenecks',
                 'type' => 'Timetable Governance',
+                'category' => 'Scheduling',
                 'status' => 'Private (VPAA Only)',
-                'summary' => 'COE has 5 unresolved lab conflicts. CIDS and CAS schedules successfully published for student enrollment.',
-                'highlights' => ['CIDS: Timetable Published', 'CED: Dean Review', 'COE: 5 Lab Conflicts Blocking', 'CAS: Ready for Dean Sign-off'],
+                'summary' => '5 blocking lab room collisions remain unresolved in COE Engineering Bldg Rooms 201 & 204. Other colleges have successfully published or reached dean review stage.',
+                'highlights' => ['CIDS: Published', 'CED: Dean Review', 'CBA: Candidate Review', 'COE: 5 Conflicts', 'CAS: Curriculum Review'],
+                'metric_data' => [
+                    'published_colleges' => 1,
+                    'review_colleges' => 3,
+                    'conflict_colleges' => 1,
+                ],
+                'created_at' => now()->subHours(6)->diffForHumans(),
                 'can_promote' => false,
+            ],
+            [
+                'id' => 'deck_4',
+                'title' => 'Academic Requirements & Syllabus Compliance',
+                'subtitle' => 'TOS, Syllabus, and Exam Paper Submissions Status',
+                'type' => 'Academic Compliance',
+                'category' => 'Compliance',
+                'status' => 'Private (VPAA Only)',
+                'summary' => 'Institution syllabus compliance is at 89.9%. CBA achieved 97.0% on-time submission rate. COE is currently at 83.5%.',
+                'highlights' => collect($collegeMetrics)->map(fn ($c) => "{$c['code']}: {$c['compliance_rate']}% on-time submission")->all(),
+                'metric_data' => [
+                    'avg_compliance' => round(collect($collegeMetrics)->avg('compliance_rate'), 1),
+                    'highest' => 'CBA (97.0%)',
+                ],
+                'created_at' => now()->subHours(8)->diffForHumans(),
+                'can_promote' => true,
             ],
         ];
 
-        // Slide Inbox / Recommendations for Recognition Spotlight
-        $suggestedHighlights = [
+        return Inertia::render('vpaa/tv-executive', [
+            'executive_deck' => $privateExecutiveDeck,
+            'college_metrics' => $collegeMetrics,
+            'active_subtab' => $request->query('tab', 'live-deck'),
+        ]);
+    }
+
+    /**
+     * 2. Channel Switcher: Fast viewing tool for moving between TV channels
+     */
+    public function tvChannelSwitcher(Request $request): Response
+    {
+        $this->authorizeVpaa($request);
+
+        $channels = $this->getAllChannels();
+        $targetCode = $request->query('channel', 'INSTITUTION');
+        $initialChannel = collect($channels)->firstWhere('college_code', $targetCode) ?? $channels[0];
+
+        return Inertia::render('vpaa/tv-channel-switcher', [
+            'channels' => $channels,
+            'initial_channel' => $initialChannel,
+        ]);
+    }
+
+    /**
+     * 3. College TV Channels: Management and oversight directory for all college TV channels
+     */
+    public function tvCollegeChannels(Request $request): Response
+    {
+        $this->authorizeVpaa($request);
+
+        $channels = $this->getAllChannels();
+
+        return Inertia::render('vpaa/tv-college-channels', [
+            'channels' => $channels,
+        ]);
+    }
+
+    /**
+     * 4. Academic Highlights: Curated recognition and promotion workspace
+     */
+    public function tvAcademicHighlights(Request $request): Response
+    {
+        $this->authorizeVpaa($request);
+
+        $channels = $this->getAllChannels();
+
+        // Existing and recommended highlights
+        $recommendedHighlights = [
             [
                 'id' => 'rec_1',
                 'college_code' => 'CIDS',
-                'metric' => 'Instructional Completion',
+                'category' => 'Strong Instructional Completion',
                 'title' => 'Instructional Delivery Excellence',
-                'message' => 'Congratulations to the College of Information and Digital Sciences for achieving 98.4% verified instructional completion this period.',
+                'message' => 'Congratulations to the College of Information and Digital Sciences for recording 98.4% verified instructional completion this month.',
+                'metric' => '98.4% Completion',
+                'period' => 'October 2026',
                 'proposed_audience' => ['INSTITUTION', 'CIDS'],
-                'type' => 'Recognition / Commendation',
+                'eligibility' => 'Verified monitoring coverage >= 95%',
             ],
             [
                 'id' => 'rec_2',
                 'college_code' => 'CBA',
-                'metric' => 'On-Time Compliance',
+                'category' => 'Highest Compliance Rate',
                 'title' => 'Academic Compliance Benchmark',
-                'message' => 'CBA recorded 97.0% on-time submission rate for all course syllabi and midterm tables of specification.',
+                'message' => 'CBA achieved 97.0% on-time submission rate for all course syllabi and midterm tables of specifications.',
+                'metric' => '97.0% On-Time',
+                'period' => '1st Semester AY 2026-2027',
                 'proposed_audience' => ['INSTITUTION', 'CBA'],
-                'type' => 'Compliance Recognition',
+                'eligibility' => 'All programs completed submission',
+            ],
+            [
+                'id' => 'rec_3',
+                'college_code' => 'COE',
+                'category' => 'Research Highlight',
+                'title' => 'Engineering Utility Patent Registration',
+                'message' => 'The College of Engineering has successfully registered 2 utility models with IPOPHIL for sustainable agricultural machinery.',
+                'metric' => '2 Utility Patents',
+                'period' => 'AY 2026-2027',
+                'proposed_audience' => ['INSTITUTION', 'COE'],
+                'eligibility' => 'Patent Registration Certificate Verified',
+            ],
+            [
+                'id' => 'rec_4',
+                'college_code' => 'CAS',
+                'category' => 'Extension Highlight',
+                'title' => 'Biodiversity Community Extension Grant',
+                'message' => 'CAS completed 4 community environmental biodiversity workshops across Davao del Sur municipalities.',
+                'metric' => '4 Community Engagements',
+                'period' => 'October 2026',
+                'proposed_audience' => ['INSTITUTION', 'CAS'],
+                'eligibility' => 'Extension Accomplishment Report Verified',
             ],
         ];
 
-        return Inertia::render('vpaa/tv-communications', [
+        // Active published custom content slides
+        $activeSlides = CustomContentSlide::latest()->take(10)->get();
+
+        return Inertia::render('vpaa/tv-academic-highlights', [
+            'recommended_highlights' => $recommendedHighlights,
+            'active_highlights' => $activeSlides,
             'channels' => $channels,
-            'private_executive_deck' => $privateExecutiveDeck,
-            'suggested_highlights' => $suggestedHighlights,
+            'active_tab' => $request->query('tab', 'recommended'),
         ]);
     }
 

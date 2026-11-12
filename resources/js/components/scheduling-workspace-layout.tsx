@@ -52,19 +52,19 @@ export const SCHEDULING_NAV_GROUPS: SchedulingNavGroup[] = [
         title: 'Master Data',
         items: [
             { id: 'programs-curriculum', title: 'Programs & Curriculum', url: '/schedule/master-data/programs', icon: GraduationCap },
-            { id: 'courses', title: 'Courses', url: '/schedule/sections?tab=courses', icon: BookOpen },
+            { id: 'courses', title: 'Courses', url: '/courses', icon: BookOpen },
             { id: 'sections', title: 'Sections', url: '/schedule/sections', icon: Table },
             { id: 'faculty', title: 'Faculty', url: '/schedule/master-data/faculty', icon: Users },
             { id: 'faculty-specializations', title: 'Faculty Specializations', url: '/schedule/master-data/faculty?tab=specializations', icon: Sparkles },
             { id: 'faculty-preferences', title: 'Faculty Preferences', url: '/schedule/master-data/faculty?tab=preferences', icon: Sliders },
-            { id: 'faculty-availability', title: 'Faculty Availability', url: '/schedule/loading?view=availability', icon: Clock },
+            { id: 'faculty-availability', title: 'Faculty Availability', url: '/schedule/master-data/faculty?tab=availability', icon: Clock },
             { id: 'rooms-laboratories', title: 'Rooms & Laboratories', url: '/schedule/master-data/rooms', icon: Building2 },
         ],
     },
     {
         title: 'Faculty Loading',
         items: [
-            { id: 'load-policies', title: 'Load Policies', url: '/schedule/loading?view=policies', icon: SlidersHorizontal },
+            { id: 'load-policies', title: 'Load Policies', url: '/schedule/policies', icon: SlidersHorizontal },
             { id: 'faculty-credits', title: 'Faculty Credits', url: '/schedule/loading?view=credits', icon: Scale },
             { id: 'loading-generator', title: 'Loading Generator', url: '/schedule/loading?view=generator', icon: Cpu },
             { id: 'loading-review', title: 'Loading Review', url: '/schedule/loading?view=assignments', icon: CheckSquare },

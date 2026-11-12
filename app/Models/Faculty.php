@@ -190,6 +190,16 @@ class Faculty extends Model
         return $this->hasMany(FacultyAvailability::class);
     }
 
+    public function specializations()
+    {
+        return $this->hasMany(FacultySpecialization::class);
+    }
+
+    public function preferences()
+    {
+        return $this->hasMany(FacultyPreference::class);
+    }
+
     public function tasks()
     {
         return $this->belongsToMany(Task::class, 'faculty_task')->withTimestamps();

@@ -25,6 +25,8 @@ class RoomInventoryController extends Controller
 
         $user = $request->user();
         $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+        $isVpaa = $user?->isVpaa() ?? false;
+        $isExecutive = $isInstitutionSuperAdmin || $isVpaa;
 
         $portalService = app(PortalContextService::class);
         $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
@@ -34,7 +36,7 @@ class RoomInventoryController extends Controller
         $scopeCollegeId = null;
         if ($activeScopeType === 'college' && $activeScopeId) {
             $scopeCollegeId = $activeScopeId;
-        } elseif (! $isInstitutionSuperAdmin) {
+        } elseif (! $isExecutive) {
             $scopeCollegeId = $user?->resolveActiveCollege()?->id;
         }
 
@@ -54,7 +56,7 @@ class RoomInventoryController extends Controller
             },
         ]);
 
-        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+        if (! $isExecutive && $scopeCollegeId) {
             $query->where('college_id', $scopeCollegeId);
         }
 
@@ -87,14 +89,14 @@ class RoomInventoryController extends Controller
         }
 
         $allRoomsQuery = Room::query();
-        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+        if (! $isExecutive && $scopeCollegeId) {
             $allRoomsQuery->where('college_id', $scopeCollegeId);
         }
         $allRooms = $allRoomsQuery->get();
 
         $buildingsQuery = Room::select('building')->whereNotNull('building');
         $typesQuery = Room::select('custom_type')->whereNotNull('custom_type');
-        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+        if (! $isExecutive && $scopeCollegeId) {
             $buildingsQuery->where('college_id', $scopeCollegeId);
             $typesQuery->where('college_id', $scopeCollegeId);
         }

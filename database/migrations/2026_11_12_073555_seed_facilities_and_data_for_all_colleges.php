@@ -19,6 +19,11 @@ return new class extends Migration
         $now = Carbon::now();
         $todayStr = $now->toDateString();
 
+        // Check if colleges exist before seeding foreign key constrained records (skips in fresh in-memory tests)
+        if (College::whereIn('id', [5, 6, 7, 8])->count() < 4) {
+            return;
+        }
+
         // 1. Seed facilities for CED (5), CBA (6), COE (7), CAS (8)
         $collegeRooms = [
             5 => [ // CED

@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\CourseOffering;
 use App\Models\Faculty;
 use App\Models\Program;
+use App\Models\Room;
 use App\Models\RoomSchedule;
 use App\Models\ScheduleAdjustmentBatch;
 use App\Models\ScheduleAdjustmentWindow;
@@ -16,6 +17,7 @@ use App\Models\ScheduleSwapRequest;
 use App\Models\ScheduleVersion;
 use App\Models\Section;
 use App\Models\VerifiedSchedule;
+use App\Services\PortalContextService;
 use App\Services\Scheduling\GeminiScheduleAssistant;
 use App\Services\Scheduling\TimetableGenerator;
 use Illuminate\Http\Request;
@@ -27,31 +29,110 @@ use Inertia\Response;
 class SemesterScheduleController extends Controller
 {
     /**
+     * Resolve scoped college ID for current user context.
+     * Returns null for Institution Super Admin or VPAA (institution-wide view).
+     */
+    private function resolveScopeCollegeId(Request $request): ?int
+    {
+        $user = $request->user();
+        if (! $user) {
+            return null;
+        }
+
+        if ($user->isInstitutionSuperAdmin() || $user->isVpaa()) {
+            return null;
+        }
+
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $portalService->getActiveAssignment($user, $request);
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            return (int) $activeScopeId;
+        }
+
+        if ($activeScopeType === 'program' && $activeScopeId) {
+            return Program::find($activeScopeId)?->college_id;
+        }
+
+        return $user->resolveActiveCollege()?->id;
+    }
+
+    /**
+     * Apply College Scope filter to a RoomSchedule query if scoped to a college.
+     */
+    private function applyScheduleCollegeScope($query, ?int $scopeCollegeId)
+    {
+        if (! $scopeCollegeId) {
+            return $query;
+        }
+
+        $programIds = Program::where('college_id', $scopeCollegeId)->pluck('id')->toArray();
+        $programCodes = Program::where('college_id', $scopeCollegeId)->pluck('code')->toArray();
+        $facultyIds = Faculty::whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId))->pluck('id')->toArray();
+        $roomNames = Room::where('college_id', $scopeCollegeId)->pluck('room_name')->toArray();
+
+        // For CIDS specifically, ensure standard lecture rooms used in schedule are included if unassigned to a college record
+        if ($scopeCollegeId === 4) {
+            if (! in_array('Room 301', $roomNames)) {
+                $roomNames[] = 'Room 301';
+            }
+            if (! in_array('Room 302', $roomNames)) {
+                $roomNames[] = 'Room 302';
+            }
+        }
+
+        return $query->where(function ($q) use ($facultyIds, $roomNames, $programCodes) {
+            $q->whereIn('faculty_id', $facultyIds)
+                ->orWhereIn('room_name', $roomNames);
+
+            foreach ($programCodes as $code) {
+                $pattern = '%'.$code.'%';
+                $q->orWhere('section', 'like', $pattern);
+            }
+        });
+    }
+
+    /**
      * Display the Semester Schedule Generator dashboard / overview.
      */
     public function generator(Request $request): Response
     {
         $currentPeriod = AcademicPeriod::current();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
-        $faculties = Faculty::with('program')->orderBy('last_name')->get();
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
+
+        $facultiesQuery = Faculty::with('program')->orderBy('last_name');
+        $programsQuery = Program::query();
+        $schedulesQuery = RoomSchedule::with('faculty');
+
+        if ($scopeCollegeId) {
+            $facultiesQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+            $programsQuery->where('college_id', $scopeCollegeId);
+            $this->applyScheduleCollegeScope($schedulesQuery, $scopeCollegeId);
+        }
+
+        $faculties = $facultiesQuery->get();
         $facultiesCount = $faculties->count();
-        $programs = Program::all();
+        $programs = $programsQuery->get();
         $programsCount = $programs->count();
-        $schedules = RoomSchedule::with('faculty')->get();
+        $schedules = $schedulesQuery->get();
         $schedulesCount = $schedules->count();
-        $rooms = RoomSchedule::select('room_name')->distinct()->whereNotNull('room_name')->pluck('room_name');
-        $sections = RoomSchedule::select('section')->distinct()->whereNotNull('section')->where('section', '!=', '')->pluck('section');
+
+        $rooms = $schedules->pluck('room_name')->filter()->unique()->values();
+        $sections = $schedules->pluck('section')->filter()->unique()->values();
 
         // Pre-calculated Readiness Check Indicators
         $readiness = [
             'period_active' => $currentPeriod ? true : false,
             'period_name' => $currentPeriod ? "{$currentPeriod->academic_year} - {$currentPeriod->semester}" : 'No Active Period Selected',
             'faculty_count' => $facultiesCount,
-            'faculty_with_specializations' => Faculty::whereNotNull('specialization')->where('specialization', '!=', '')->count(),
+            'faculty_with_specializations' => $faculties->filter(fn ($f) => ! empty($f->specialization))->count(),
             'rooms_count' => $rooms->count(),
             'sections_count' => $sections->count(),
             'offerings_count' => $schedulesCount,
-            'unassigned_faculty_count' => RoomSchedule::whereNull('faculty_id')->count(),
+            'unassigned_faculty_count' => $schedules->whereNull('faculty_id')->count(),
             'ready_for_solver' => ($facultiesCount > 0 && $rooms->count() > 0 && $currentPeriod) ? true : false,
         ];
 
@@ -210,10 +291,19 @@ class SemesterScheduleController extends Controller
     {
         $currentPeriod = AcademicPeriod::current();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
-        $faculties = Faculty::with('program')->orderBy('last_name')->get();
-        $schedulesByFaculty = RoomSchedule::whereNotNull('faculty_id')
-            ->get()
-            ->groupBy('faculty_id');
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
+
+        $facultiesQuery = Faculty::with('program')->orderBy('last_name');
+        if ($scopeCollegeId) {
+            $facultiesQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+        }
+        $faculties = $facultiesQuery->get();
+
+        $schedulesQuery = RoomSchedule::whereNotNull('faculty_id');
+        if ($scopeCollegeId) {
+            $this->applyScheduleCollegeScope($schedulesQuery, $scopeCollegeId);
+        }
+        $schedulesByFaculty = $schedulesQuery->get()->groupBy('faculty_id');
 
         // Calculate load for each faculty
         $facultyLoads = $faculties->map(function ($faculty) use ($schedulesByFaculty) {
@@ -277,10 +367,20 @@ class SemesterScheduleController extends Controller
     {
         $currentPeriod = AcademicPeriod::current();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
-        $schedules = RoomSchedule::with('faculty')->get();
-        $rooms = RoomSchedule::select('room_name')->distinct()->whereNotNull('room_name')->pluck('room_name');
-        $sections = RoomSchedule::select('section')->distinct()->whereNotNull('section')->where('section', '!=', '')->pluck('section');
-        $faculties = Faculty::select('id', 'first_name', 'last_name', 'academic_rank')->get();
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
+
+        $schedulesQuery = RoomSchedule::with('faculty');
+        $facultiesQuery = Faculty::select('id', 'first_name', 'last_name', 'academic_rank');
+
+        if ($scopeCollegeId) {
+            $this->applyScheduleCollegeScope($schedulesQuery, $scopeCollegeId);
+            $facultiesQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+        }
+
+        $schedules = $schedulesQuery->get();
+        $rooms = $schedules->pluck('room_name')->filter()->unique()->values();
+        $sections = $schedules->pluck('section')->filter()->unique()->values();
+        $faculties = $facultiesQuery->get();
 
         return Inertia::render('schedule/timetable/index', [
             'currentPeriod' => $currentPeriod,
@@ -299,7 +399,13 @@ class SemesterScheduleController extends Controller
     {
         $currentPeriod = AcademicPeriod::current();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
-        $programs = Program::all();
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
+
+        $programsQuery = Program::query();
+        if ($scopeCollegeId) {
+            $programsQuery->where('college_id', $scopeCollegeId);
+        }
+        $programs = $programsQuery->get();
 
         return Inertia::render('schedule/reviews/index', [
             'currentPeriod' => $currentPeriod,
@@ -315,7 +421,17 @@ class SemesterScheduleController extends Controller
     {
         $currentPeriod = AcademicPeriod::current();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
-        $schedules = RoomSchedule::with('faculty')->get();
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
+
+        $schedulesQuery = RoomSchedule::with('faculty');
+        $facultiesQuery = Faculty::select('id', 'first_name', 'last_name', 'academic_rank');
+
+        if ($scopeCollegeId) {
+            $this->applyScheduleCollegeScope($schedulesQuery, $scopeCollegeId);
+            $facultiesQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+        }
+
+        $schedules = $schedulesQuery->get();
 
         // Retrieve verified schedules map to enable direct remapping from Master Timetable
         $verifiedSchedules = VerifiedSchedule::with('room')->get();
@@ -334,9 +450,9 @@ class SemesterScheduleController extends Controller
             return $s;
         });
 
-        $rooms = RoomSchedule::select('room_name')->distinct()->whereNotNull('room_name')->pluck('room_name');
-        $sections = RoomSchedule::select('section')->distinct()->whereNotNull('section')->where('section', '!=', '')->pluck('section');
-        $faculties = Faculty::select('id', 'first_name', 'last_name', 'academic_rank')->get();
+        $rooms = $schedules->pluck('room_name')->filter()->unique()->values();
+        $sections = $schedules->pluck('section')->filter()->unique()->values();
+        $faculties = $facultiesQuery->get();
 
         return Inertia::render('schedule/master-timetable/index', [
             'currentPeriod' => $currentPeriod,
@@ -355,13 +471,20 @@ class SemesterScheduleController extends Controller
     {
         $currentPeriod = AcademicPeriod::current();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
-        $programs = Program::all();
-        $schedules = RoomSchedule::with('faculty')->get();
-        $sectionsList = RoomSchedule::select('section')
-            ->distinct()
-            ->whereNotNull('section')
-            ->where('section', '!=', '')
-            ->pluck('section');
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
+
+        $programsQuery = Program::query();
+        $schedulesQuery = RoomSchedule::with('faculty');
+
+        if ($scopeCollegeId) {
+            $programsQuery->where('college_id', $scopeCollegeId);
+            $this->applyScheduleCollegeScope($schedulesQuery, $scopeCollegeId);
+        }
+
+        $programs = $programsQuery->get();
+        $schedules = $schedulesQuery->get();
+
+        $sectionsList = $schedules->pluck('section')->filter()->unique()->values();
 
         $sectionsMatrix = $sectionsList->map(function ($sec) use ($schedules) {
             $offerings = $schedules->where('section', $sec);
@@ -394,7 +517,13 @@ class SemesterScheduleController extends Controller
     {
         $currentPeriod = AcademicPeriod::current();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
-        $schedules = RoomSchedule::with('faculty')->get();
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
+
+        $schedulesQuery = RoomSchedule::with('faculty');
+        if ($scopeCollegeId) {
+            $this->applyScheduleCollegeScope($schedulesQuery, $scopeCollegeId);
+        }
+        $schedules = $schedulesQuery->get();
 
         // Technical conflicts inspection
         $unassignedOfferings = $schedules->whereNull('faculty_id');
@@ -492,7 +621,26 @@ class SemesterScheduleController extends Controller
     public function masterDataPrograms(Request $request): Response
     {
         $currentPeriod = AcademicPeriod::current();
-        $programs = Program::orderBy('code')->get();
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
+
+        $programsQuery = Program::with(['curricula', 'courses'])->orderBy('code');
+        if ($scopeCollegeId) {
+            $programsQuery->where('college_id', $scopeCollegeId);
+        }
+
+        $programs = $programsQuery->get()->map(function ($p) {
+            return [
+                'id' => $p->id,
+                'code' => $p->code,
+                'name' => $p->name,
+                'college_id' => $p->college_id,
+                'description' => $p->description,
+                'curricula_count' => $p->curricula->count(),
+                'active_curricula_count' => $p->curricula->where('status', 'Active')->count(),
+                'courses_count' => $p->courses->count(),
+                'offerings_count' => RoomSchedule::where('course_code', 'like', $p->code.'%')->count(),
+            ];
+        });
 
         return Inertia::render('schedule/master-data/programs/index', [
             'currentPeriod' => $currentPeriod,
@@ -501,16 +649,24 @@ class SemesterScheduleController extends Controller
     }
 
     /**
-     * Scheduling Master Data: Faculty & Specializations matrix view.
+     * Scheduling Master Data: Faculty, Specializations, Preferences & Availability matrix view.
      */
     public function masterDataFaculty(Request $request): Response
     {
         $currentPeriod = AcademicPeriod::current();
-        $faculties = Faculty::with('program')->orderBy('last_name')->get();
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
+
+        $facultiesQuery = Faculty::with(['program', 'specializations', 'preferences', 'availabilities'])->orderBy('last_name');
+        if ($scopeCollegeId) {
+            $facultiesQuery->whereHas('program', fn ($q) => $q->where('college_id', $scopeCollegeId));
+        }
+
+        $faculties = $facultiesQuery->get();
 
         return Inertia::render('schedule/master-data/faculty/index', [
             'currentPeriod' => $currentPeriod,
             'faculties' => $faculties,
+            'initialTab' => $request->query('tab', 'all'),
         ]);
     }
 

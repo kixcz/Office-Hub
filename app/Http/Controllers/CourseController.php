@@ -16,6 +16,8 @@ class CourseController extends Controller
     {
         $user = $request->user();
         $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+        $isVpaa = $user?->isVpaa() ?? false;
+        $isExecutive = $isInstitutionSuperAdmin || $isVpaa;
 
         $portalService = app(PortalContextService::class);
         $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
@@ -27,7 +29,7 @@ class CourseController extends Controller
             $scopeCollegeId = $activeScopeId;
         } elseif ($activeScopeType === 'program' && $activeScopeId) {
             $scopeCollegeId = Program::find($activeScopeId)?->college_id;
-        } elseif (! $isInstitutionSuperAdmin) {
+        } elseif (! $isExecutive) {
             $scopeCollegeId = $user?->resolveActiveCollege()?->id;
         }
 
@@ -38,7 +40,7 @@ class CourseController extends Controller
             'courseOfferings.faculty',
         ]);
 
-        if (! $isInstitutionSuperAdmin) {
+        if (! $isExecutive) {
             if ($activeScopeType === 'program' && $activeScopeId) {
                 $query->where(function ($q) use ($activeScopeId) {
                     $q->where('program_id', $activeScopeId)

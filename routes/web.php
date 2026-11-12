@@ -219,6 +219,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('generator/assign-faculty', [SemesterScheduleController::class, 'assignFaculty'])->name('generator.assign-faculty');
         Route::get('sections', [SemesterScheduleController::class, 'sectionsOfferings'])->name('sections');
         Route::get('loading', [SemesterScheduleController::class, 'facultyLoading'])->name('loading');
+        Route::get('policies', [SemesterScheduleController::class, 'loadPolicies'])->name('policies');
         Route::get('timetable', [SemesterScheduleController::class, 'timetable'])->name('timetable');
         Route::get('conflicts', [SemesterScheduleController::class, 'conflictCenter'])->name('conflicts');
         Route::get('reviews', [SemesterScheduleController::class, 'reviews'])->name('reviews');
@@ -651,7 +652,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/compliance-quality', [VpaaAcademicController::class, 'complianceQuality'])->name('compliance-quality');
         Route::get('/research-extension', [VpaaAcademicController::class, 'researchExtension'])->name('research-extension');
         Route::get('/reports', [VpaaAcademicController::class, 'reports'])->name('reports');
-        Route::get('/tv-communications', [VpaaAcademicController::class, 'tvCommunications'])->name('tv-communications');
+        // TV & Communications Modules (Clearly separated by purpose)
+        Route::get('/tv-executive', [VpaaAcademicController::class, 'tvExecutive'])->name('tv-executive');
+        Route::get('/tv-channel-switcher', [VpaaAcademicController::class, 'tvChannelSwitcher'])->name('tv-channel-switcher');
+        Route::get('/tv-college-channels', [VpaaAcademicController::class, 'tvCollegeChannels'])->name('tv-college-channels');
+        Route::get('/tv-academic-highlights', [VpaaAcademicController::class, 'tvAcademicHighlights'])->name('tv-academic-highlights');
+        Route::get('/tv-communications', [VpaaAcademicController::class, 'tvExecutive'])->name('tv-communications');
         Route::post('/tv-communications/promote-slide', [VpaaAcademicController::class, 'promoteSlide'])->name('tv-communications.promote');
     });
 
