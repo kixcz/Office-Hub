@@ -225,36 +225,19 @@ export default function LoadingGeneratorPage({
         });
     }, [activeCandidate, facultyPool, searchQuery, selectedProgram, selectedStatus]);
 
-    const getCsrfToken = (): string => {
-        const metaTag = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null;
-        if (metaTag?.content) {
-            return metaTag.content;
-        }
-
-        const match = document.cookie.match(new RegExp('(^|;\\s*)(XSRF-TOKEN)=([^;]*)'));
-        return match ? decodeURIComponent(match[3]) : '';
-    };
-
     const handleGenerate = () => {
         setIsGenerating(true);
-        const csrfToken = getCsrfToken();
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        };
-        if (csrfToken) {
-            headers['X-CSRF-TOKEN'] = csrfToken;
-            headers['X-XSRF-TOKEN'] = csrfToken;
-        }
 
-        fetch('/schedule/loading-generator/run', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                weights: {
+        router.post(
+            '/schedule/loading-generator',
+            {
+                run_solver: true,
+                solver_weights: {
                     historical: useHistoricalData ? 30 : 15,
                     specialization: useSpecMatch ? 40 : 20,
                     preferred: useFacultyPref ? 30 : 15,
+                    department: 15,
+                    availability: respectAvailability ? 15 : 5,
                 },
                 options: {
                     balance_load: true,
@@ -262,28 +245,26 @@ export default function LoadingGeneratorPage({
                     respect_availability: respectAvailability,
                     balance_preparations: balancePreps,
                 },
-            }),
-        })
-            .then(async (res) => {
-                if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error(`Server returned HTTP ${res.status}: ${text.slice(0, 120)}`);
-                }
-                return res.json();
-            })
-            .then((data) => {
-                if (data.status === 'success' && data.candidates) {
-                    setCandidates(data.candidates);
-                    setSelectedCandidateCode(data.candidates[0]?.code || 'Candidate A');
-                    setShowCandidatesSection(true);
-                }
-            })
-            .catch((err) => {
-                console.error('Failed to generate loading candidates:', err);
-            })
-            .finally(() => {
-                setIsGenerating(false);
-            });
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: (page) => {
+                    const freshCandidates = (page.props as any).initialCandidates;
+                    if (freshCandidates && freshCandidates.length > 0) {
+                        setCandidates(freshCandidates);
+                        setSelectedCandidateCode(freshCandidates[0]?.code || 'Candidate A');
+                        setShowCandidatesSection(true);
+                    }
+                },
+                onError: (errors) => {
+                    console.error('Failed to generate loading candidates:', errors);
+                },
+                onFinish: () => {
+                    setIsGenerating(false);
+                },
+            }
+        );
     };
 
     return (

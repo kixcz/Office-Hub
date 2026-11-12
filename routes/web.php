@@ -230,7 +230,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('credits', [SemesterScheduleController::class, 'storeFacultyCredit'])->name('credits.store');
         Route::put('credits/{credit}', [SemesterScheduleController::class, 'updateFacultyCredit'])->name('credits.update');
         Route::delete('credits/{credit}', [SemesterScheduleController::class, 'destroyFacultyCredit'])->name('credits.destroy');
-        Route::get('loading-generator', [SemesterScheduleController::class, 'loadingGenerator'])->name('loading-generator');
+        Route::match(['get', 'post'], 'loading-generator', [SemesterScheduleController::class, 'loadingGenerator'])->name('loading-generator');
         Route::post('loading-generator/run', [SemesterScheduleController::class, 'runLoadingSolver'])->name('loading-generator.run');
         Route::post('loading-generator/apply', [SemesterScheduleController::class, 'applyLoadingCandidate'])->name('loading-generator.apply');
         Route::get('loading-review', [SemesterScheduleController::class, 'loadingReview'])->name('loading-review');

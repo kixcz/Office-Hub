@@ -602,9 +602,19 @@ class SemesterScheduleController extends Controller
             ];
         })->toArray();
 
+        // Check if user requested to run the solver directly via Inertia
+        $shouldRunSolver = $request->boolean('run_solver') || $request->has('solver_weights');
+        $weights = $request->input('solver_weights', [
+            'specialization' => 40,
+            'historical' => 20,
+            'preferred' => 15,
+            'department' => 15,
+            'availability' => 10,
+        ]);
+
         // Compute Suitability Matrix using Optimization Service
         $optimizationService = new FacultyLoadingOptimizationService;
-        $matrixData = $optimizationService->buildSuitabilityMatrix($facultyPool, $offerings);
+        $matrixData = $optimizationService->buildSuitabilityMatrix($facultyPool, $offerings, $weights);
 
         // Pre-run Readiness Indicators
         $missingSpecializations = count(array_filter($facultyPool, fn ($f) => empty($f['specialization'])));
@@ -627,8 +637,8 @@ class SemesterScheduleController extends Controller
             $facultyPool,
             $sampleOfferings,
             $matrixData['matrix'],
-            [],
-            false
+            $weights,
+            $shouldRunSolver
         );
 
         return Inertia::render('schedule/loading/generator', [
