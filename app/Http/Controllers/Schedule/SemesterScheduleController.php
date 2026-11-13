@@ -7,6 +7,7 @@ use App\Models\AcademicPeriod;
 use App\Models\College;
 use App\Models\CollegeLoadingReview;
 use App\Models\Course;
+use App\Models\CourseAssignmentRule;
 use App\Models\CourseOffering;
 use App\Models\Faculty;
 use App\Models\FacultyCourseChangeRequest;
@@ -24,7 +25,6 @@ use App\Models\ScheduleCandidate;
 use App\Models\ScheduleSwapRequest;
 use App\Models\ScheduleVersion;
 use App\Models\Section;
-use App\Models\VerifiedSchedule;
 use App\Services\PortalContextService;
 use App\Services\Scheduling\FacultyLoadingOptimizationService;
 use App\Services\Scheduling\GeminiScheduleAssistant;
@@ -585,7 +585,7 @@ class SemesterScheduleController extends Controller
         $rawOfferings = $schedulesQuery->get();
 
         // Fetch active course assignment rules (Exclusive, Fixed, All-sections, Preferred)
-        $courseRules = \App\Models\CourseAssignmentRule::where('academic_period_id', $currentPeriod->id)
+        $courseRules = CourseAssignmentRule::where('academic_period_id', $currentPeriod->id)
             ->where('status', 'Active')
             ->get();
 
@@ -839,7 +839,7 @@ class SemesterScheduleController extends Controller
         $user = $request->user();
         $scopeCollegeId = $this->resolveScopeCollegeId($request);
 
-        $rule = \App\Models\CourseAssignmentRule::updateOrCreate(
+        $rule = CourseAssignmentRule::updateOrCreate(
             [
                 'academic_period_id' => $currentPeriod->id,
                 'course_code' => $validated['course_code'],
@@ -877,7 +877,7 @@ class SemesterScheduleController extends Controller
     /**
      * Delete/remove a Special Course Assignment Rule.
      */
-    public function destroyCourseAssignmentRule(\App\Models\CourseAssignmentRule $rule): RedirectResponse
+    public function destroyCourseAssignmentRule(CourseAssignmentRule $rule): RedirectResponse
     {
         $rule->delete();
 
@@ -1614,13 +1614,275 @@ class SemesterScheduleController extends Controller
         $currentPeriod = AcademicPeriod::current();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
         $scopeCollegeId = $this->resolveScopeCollegeId($request);
+        $activeCollege = $scopeCollegeId ? College::find($scopeCollegeId) : College::where('code', 'CIDS')->first();
 
         $loadingGate = $currentPeriod ? $this->resolveFacultyLoadingGate($currentPeriod, $scopeCollegeId) : ['is_ready' => false, 'publication' => null, 'readiness_checks' => []];
+
+        // Rich candidate schedule offerings with days, times, rooms, conflicts, and remarks
+        $candidateOfferings = [
+            // BSIT
+            [
+                'id' => 1,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'year_level' => 1,
+                'course_code' => 'IT 601',
+                'course_title' => 'Introduction to Computing',
+                'section' => 'B',
+                'assigned_faculty' => 'Mr. Gabriel Caniban',
+                'faculty_rank' => 'Instructor I',
+                'is_fixed' => false,
+                'lec_units' => 2,
+                'lab_units' => 3,
+                'total_units' => 3,
+                'units_display' => '3 (2/3)',
+                'day' => 'MW',
+                'time' => '5:30 PM - 7:00 PM',
+                'room' => 'CLR 3',
+                'schedule_status' => 'Scheduled',
+                'remarks' => 'No conflict detected.',
+            ],
+            [
+                'id' => 2,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'year_level' => 1,
+                'course_code' => 'CS 611',
+                'course_title' => 'Computer Programming I',
+                'section' => 'B',
+                'assigned_faculty' => 'Ms. Rochelle Millan',
+                'faculty_rank' => 'Assistant Professor I',
+                'is_fixed' => false,
+                'lec_units' => 2,
+                'lab_units' => 3,
+                'total_units' => 3,
+                'units_display' => '3 (2/3)',
+                'day' => 'TTH',
+                'time' => '10:30 AM - 12:00 PM',
+                'room' => 'CLR 2',
+                'schedule_status' => 'Scheduled',
+                'remarks' => 'No conflict detected.',
+            ],
+            [
+                'id' => 3,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'year_level' => 1,
+                'course_code' => 'GEC 604',
+                'course_title' => 'Mathematics in the Modern World',
+                'section' => 'B',
+                'assigned_faculty' => 'c/o IMAS',
+                'faculty_rank' => 'General Education Pool',
+                'is_fixed' => false,
+                'lec_units' => 3,
+                'lab_units' => 0,
+                'total_units' => 3,
+                'units_display' => '3 (3/0)',
+                'day' => 'MW',
+                'time' => '8:00 AM - 9:30 AM',
+                'room' => 'JRoxas',
+                'schedule_status' => 'Scheduled',
+                'remarks' => 'Handled by IMAS.',
+            ],
+            [
+                'id' => 4,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'year_level' => 1,
+                'course_code' => 'GEC 606',
+                'course_title' => 'Art Appreciation',
+                'section' => 'B',
+                'assigned_faculty' => 'c/o IMAS',
+                'faculty_rank' => 'General Education Pool',
+                'is_fixed' => false,
+                'lec_units' => 3,
+                'lab_units' => 0,
+                'total_units' => 3,
+                'units_display' => '3 (3/0)',
+                'day' => 'TTH',
+                'time' => '1:00 PM - 2:30 PM',
+                'room' => '—',
+                'schedule_status' => 'Pending Room',
+                'remarks' => 'Awaiting room confirmation.',
+            ],
+            [
+                'id' => 5,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'year_level' => 1,
+                'course_code' => 'ISSA 611',
+                'course_title' => 'Strands Alignment Program (PC Troubleshooting 1 & 2)',
+                'section' => 'B',
+                'assigned_faculty' => 'Mr. Aron Pansacala',
+                'faculty_rank' => 'Assistant Professor I',
+                'is_fixed' => false,
+                'lec_units' => 2,
+                'lab_units' => 3,
+                'total_units' => 3,
+                'units_display' => '3 (2/3)',
+                'day' => 'TTH',
+                'time' => '4:00 PM - 5:30 PM',
+                'room' => 'CHS',
+                'schedule_status' => 'Scheduled',
+                'remarks' => 'No conflict detected.',
+            ],
+            // BSIS
+            [
+                'id' => 6,
+                'program_code' => 'BSIS',
+                'program_name' => 'Bachelor of Science in Information Systems',
+                'year_level' => 2,
+                'course_code' => 'IS 321',
+                'course_title' => 'Systems Analysis and Design',
+                'section' => 'A',
+                'assigned_faculty' => 'Ms. Angela Cruz',
+                'faculty_rank' => 'Instructor II',
+                'is_fixed' => false,
+                'lec_units' => 3,
+                'lab_units' => 0,
+                'total_units' => 3,
+                'units_display' => '3 (3/0)',
+                'day' => 'MW',
+                'time' => '9:30 AM - 11:00 AM',
+                'room' => 'CLR 4',
+                'schedule_status' => 'Scheduled',
+                'remarks' => 'No conflict detected.',
+            ],
+            [
+                'id' => 7,
+                'program_code' => 'BSIS',
+                'program_name' => 'Bachelor of Science in Information Systems',
+                'year_level' => 2,
+                'course_code' => 'IS 322',
+                'course_title' => 'Database Management Systems',
+                'section' => 'A',
+                'assigned_faculty' => 'Ms. Angela Cruz',
+                'faculty_rank' => 'Instructor II',
+                'is_fixed' => false,
+                'lec_units' => 2,
+                'lab_units' => 3,
+                'total_units' => 3,
+                'units_display' => '3 (2/3)',
+                'day' => 'TTH',
+                'time' => '2:30 PM - 4:00 PM',
+                'room' => 'CLR 4',
+                'schedule_status' => 'Scheduled',
+                'remarks' => 'Shared faculty (IS 321, IS 322).',
+            ],
+            [
+                'id' => 8,
+                'program_code' => 'BSIS',
+                'program_name' => 'Bachelor of Science in Information Systems',
+                'year_level' => 3,
+                'course_code' => 'IS 330',
+                'course_title' => 'Enterprise Systems',
+                'section' => 'A',
+                'assigned_faculty' => 'Mr. Carlo Mendoza',
+                'faculty_rank' => 'Associate Professor I',
+                'is_fixed' => false,
+                'lec_units' => 3,
+                'lab_units' => 0,
+                'total_units' => 3,
+                'units_display' => '3 (3/0)',
+                'day' => 'MW',
+                'time' => '1:00 PM - 2:30 PM',
+                'room' => 'CLR 1',
+                'schedule_status' => 'Scheduled',
+                'remarks' => 'No conflict detected.',
+            ],
+            [
+                'id' => 9,
+                'program_code' => 'BSIS',
+                'program_name' => 'Bachelor of Science in Information Systems',
+                'year_level' => 3,
+                'course_code' => 'GEC 609',
+                'course_title' => 'The Life and Works of Rizal',
+                'section' => 'A',
+                'assigned_faculty' => 'c/o IMAS',
+                'faculty_rank' => 'General Education Pool',
+                'is_fixed' => false,
+                'lec_units' => 3,
+                'lab_units' => 0,
+                'total_units' => 3,
+                'units_display' => '3 (3/0)',
+                'day' => 'TTH',
+                'time' => '8:00 AM - 9:30 AM',
+                'room' => '—',
+                'schedule_status' => 'Conflict',
+                'remarks' => 'Room/time overlaps with BSCS-CS 410.',
+            ],
+            // BSCS
+            [
+                'id' => 10,
+                'program_code' => 'BSCS',
+                'program_name' => 'Bachelor of Science in Computer Science',
+                'year_level' => 3,
+                'course_code' => 'CS 410',
+                'course_title' => 'Software Engineering',
+                'section' => 'A',
+                'assigned_faculty' => 'Ms. Erika Ramos',
+                'faculty_rank' => 'Associate Professor I',
+                'is_fixed' => false,
+                'lec_units' => 3,
+                'lab_units' => 0,
+                'total_units' => 3,
+                'units_display' => '3 (3/0)',
+                'day' => 'TTH',
+                'time' => '8:00 AM - 9:30 AM',
+                'room' => 'CLR 1',
+                'schedule_status' => 'Conflict',
+                'remarks' => 'Conflicts with BSIS-GEC 609.',
+            ],
+            [
+                'id' => 11,
+                'program_code' => 'BSCS',
+                'program_name' => 'Bachelor of Science in Computer Science',
+                'year_level' => 3,
+                'course_code' => 'CS 320',
+                'course_title' => 'Artificial Intelligence',
+                'section' => 'A',
+                'assigned_faculty' => 'Dr. Kevin Dela Cruz',
+                'faculty_rank' => 'Associate Professor II',
+                'is_fixed' => true,
+                'lec_units' => 3,
+                'lab_units' => 0,
+                'total_units' => 3,
+                'units_display' => '3 (3/0)',
+                'day' => 'MW',
+                'time' => '10:30 AM - 12:00 PM',
+                'room' => 'CLR 2',
+                'schedule_status' => 'Scheduled',
+                'remarks' => 'Fixed assignment.',
+            ],
+            [
+                'id' => 12,
+                'program_code' => 'BSCS',
+                'program_name' => 'Bachelor of Science in Computer Science',
+                'year_level' => 2,
+                'course_code' => 'CS 210',
+                'course_title' => 'Algorithms',
+                'section' => 'A',
+                'assigned_faculty' => 'Dr. Kevin Dela Cruz',
+                'faculty_rank' => 'Associate Professor II',
+                'is_fixed' => true,
+                'lec_units' => 3,
+                'lab_units' => 0,
+                'total_units' => 3,
+                'units_display' => '3 (3/0)',
+                'day' => 'TTH',
+                'time' => '3:00 PM - 4:30 PM',
+                'room' => 'CLR 3',
+                'schedule_status' => 'Scheduled',
+                'remarks' => 'Shared faculty (CS 210, CS 320).',
+            ],
+        ];
 
         return Inertia::render('schedule/timetable/candidates', [
             'currentPeriod' => $currentPeriod,
             'academicPeriods' => $academicPeriods,
             'loadingGate' => $loadingGate,
+            'college' => $activeCollege,
+            'candidateOfferings' => $candidateOfferings,
         ]);
     }
 
@@ -1669,14 +1931,187 @@ class SemesterScheduleController extends Controller
         if ($scopeCollegeId) {
             $this->applyScheduleCollegeScope($schedulesQuery, $scopeCollegeId);
         }
-        $schedules = $schedulesQuery->take(50)->get();
+        $schedules = $schedulesQuery->take(100)->get();
+
+        // Fetch audit logs for timetable edits
+        $editAuditLogs = LoadingAuditLog::with('user')
+            ->where('target_type', 'RoomSchedule')
+            ->orderBy('created_at', 'desc')
+            ->take(30)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'user_name' => $log->user?->name ?? 'System Administrator',
+                    'action' => $log->action,
+                    'target_id' => $log->target_id,
+                    'details' => $log->details,
+                    'payload' => $log->payload,
+                    'created_at' => $log->created_at->format('M d, Y h:i A'),
+                    'relative_time' => $log->created_at->diffForHumans(),
+                ];
+            });
+
+        // Available rooms & faculty for dropdowns
+        $availableRooms = Room::when($scopeCollegeId, fn ($q) => $q->where('college_id', $scopeCollegeId))
+            ->pluck('room_code')
+            ->filter()
+            ->values();
+
+        $availableFaculty = Faculty::when($scopeCollegeId, fn ($q) => $q->whereHas('program', fn ($pq) => $pq->where('college_id', $scopeCollegeId)))
+            ->orderBy('last_name')
+            ->get()
+            ->map(fn ($f) => [
+                'id' => $f->id,
+                'name' => $f->title_name ?? $f->full_name,
+                'academic_rank' => $f->academic_rank,
+            ]);
 
         return Inertia::render('schedule/timetable/editor', [
             'currentPeriod' => $currentPeriod,
             'academicPeriods' => $academicPeriods,
             'loadingGate' => $loadingGate,
             'schedules' => $schedules,
+            'editAuditLogs' => $editAuditLogs,
+            'availableRooms' => $availableRooms,
+            'availableFaculty' => $availableFaculty,
         ]);
+    }
+
+    /**
+     * Validate an in-flight or proposed timetable schedule move.
+     */
+    public function validateTimetableMove(Request $request)
+    {
+        $validated = $request->validate([
+            'schedule_id' => 'required|exists:room_schedules,id',
+            'day_of_week' => 'required|string',
+            'start_time' => 'required|string',
+            'end_time' => 'required|string',
+            'room_name' => 'nullable|string',
+            'faculty_id' => 'nullable|exists:faculties,id',
+        ]);
+
+        $schedule = RoomSchedule::findOrFail($validated['schedule_id']);
+        $conflicts = [];
+
+        // Check room conflict
+        if (! empty($validated['room_name']) && $validated['room_name'] !== '—') {
+            $roomConflict = RoomSchedule::where('id', '!=', $schedule->id)
+                ->where('academic_period_id', $schedule->academic_period_id)
+                ->where('room_name', $validated['room_name'])
+                ->where('day_of_week', $validated['day_of_week'])
+                ->where(function ($q) use ($validated) {
+                    $q->whereBetween('start_time', [$validated['start_time'], $validated['end_time']])
+                        ->orWhereBetween('end_time', [$validated['start_time'], $validated['end_time']]);
+                })
+                ->first();
+
+            if ($roomConflict) {
+                $conflicts[] = "Room {$validated['room_name']} is already occupied by {$roomConflict->course_code} ({$roomConflict->section}) at {$roomConflict->start_time} - {$roomConflict->end_time}.";
+            }
+        }
+
+        // Check faculty conflict
+        $facultyId = $validated['faculty_id'] ?? $schedule->faculty_id;
+        if ($facultyId) {
+            $facultyConflict = RoomSchedule::where('id', '!=', $schedule->id)
+                ->where('academic_period_id', $schedule->academic_period_id)
+                ->where('faculty_id', $facultyId)
+                ->where('day_of_week', $validated['day_of_week'])
+                ->where(function ($q) use ($validated) {
+                    $q->whereBetween('start_time', [$validated['start_time'], $validated['end_time']])
+                        ->orWhereBetween('end_time', [$validated['start_time'], $validated['end_time']]);
+                })
+                ->first();
+
+            if ($facultyConflict) {
+                $conflicts[] = "Instructor already has class {$facultyConflict->course_code} ({$facultyConflict->section}) at {$facultyConflict->start_time} - {$facultyConflict->end_time}.";
+            }
+        }
+
+        return response()->json([
+            'is_valid' => count($conflicts) === 0,
+            'conflicts' => $conflicts,
+        ]);
+    }
+
+    /**
+     * Save inline edits to timetable schedule and trace the editor with full audit trail.
+     */
+    public function saveTimetableChanges(Request $request)
+    {
+        $validated = $request->validate([
+            'schedule_id' => 'required|exists:room_schedules,id',
+            'day_of_week' => 'required|string',
+            'start_time' => 'required|string',
+            'end_time' => 'required|string',
+            'room_name' => 'nullable|string',
+            'faculty_id' => 'nullable|exists:faculties,id',
+            'change_reason' => 'nullable|string|max:500',
+        ]);
+
+        $schedule = RoomSchedule::findOrFail($validated['schedule_id']);
+        $user = $request->user();
+
+        // Capture previous state for trace
+        $previousState = [
+            'day_of_week' => $schedule->day_of_week,
+            'start_time' => $schedule->start_time,
+            'end_time' => $schedule->end_time,
+            'room_name' => $schedule->room_name,
+            'faculty_id' => $schedule->faculty_id,
+            'display_instructor' => $schedule->display_instructor,
+        ];
+
+        // Update schedule attributes
+        $schedule->day_of_week = $validated['day_of_week'];
+        $schedule->start_time = $validated['start_time'];
+        $schedule->end_time = $validated['end_time'];
+        if (isset($validated['room_name'])) {
+            $schedule->room_name = $validated['room_name'];
+        }
+        if (array_key_exists('faculty_id', $validated)) {
+            $schedule->faculty_id = $validated['faculty_id'];
+            if ($validated['faculty_id']) {
+                $fac = Faculty::find($validated['faculty_id']);
+                $schedule->instructor = $fac ? ($fac->title_name ?? $fac->full_name) : $schedule->instructor;
+            }
+        }
+        $schedule->save();
+
+        $newState = [
+            'day_of_week' => $schedule->day_of_week,
+            'start_time' => $schedule->start_time,
+            'end_time' => $schedule->end_time,
+            'room_name' => $schedule->room_name,
+            'faculty_id' => $schedule->faculty_id,
+            'display_instructor' => $schedule->display_instructor,
+        ];
+
+        // Record audit trail entry to trace editor
+        $reason = $validated['change_reason'] ?? 'Manual timetable modification via Editor';
+        LoadingAuditLog::create([
+            'academic_period_id' => $schedule->academic_period_id ?? 1,
+            'college_id' => $this->resolveScopeCollegeId($request) ?? 1,
+            'user_id' => $user->id,
+            'action' => 'Timetable Schedule Edited',
+            'target_type' => 'RoomSchedule',
+            'target_id' => $schedule->id,
+            'details' => "{$user->name} modified {$schedule->course_code} ({$schedule->section}): Moved from [{$previousState['day_of_week']} {$previousState['start_time']}-{$previousState['end_time']} in {$previousState['room_name']}] to [{$newState['day_of_week']} {$newState['start_time']}-{$newState['end_time']} in {$newState['room_name']}]. Reason: {$reason}",
+            'payload' => [
+                'previous' => $previousState,
+                'new' => $newState,
+                'reason' => $reason,
+                'editor' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ],
+            ],
+        ]);
+
+        return back()->with('success', "Schedule for {$schedule->course_code} ({$schedule->section}) updated and logged under audit trail.");
     }
 
     /**
@@ -1917,6 +2352,45 @@ class SemesterScheduleController extends Controller
     }
 
     /**
+     * Publish or Approve Schedule as Official Master Timetable.
+     */
+    public function publishSchedule(Request $request)
+    {
+        $currentPeriod = AcademicPeriod::current();
+        if (! $currentPeriod) {
+            return back()->with('error', 'No active academic period found.');
+        }
+
+        // Find or create published schedule version
+        $version = ScheduleVersion::updateOrCreate(
+            [
+                'academic_period_id' => $currentPeriod->id,
+                'version_tag' => 'Published v1.0',
+            ],
+            [
+                'stage' => 'Published',
+                'is_official_master' => true,
+                'approved_by_user_id' => $request->user()->id,
+                'approved_at' => now(),
+                'published_at' => now(),
+                'change_summary' => 'Official Semester Master Timetable approved and published for college-wide access.',
+            ]
+        );
+
+        LoadingAuditLog::create([
+            'academic_period_id' => $currentPeriod->id,
+            'college_id' => $this->resolveScopeCollegeId($request) ?? 1,
+            'user_id' => $request->user()->id,
+            'action' => 'Master Schedule Published',
+            'target_type' => 'ScheduleVersion',
+            'target_id' => $version->id,
+            'details' => "{$request->user()->name} published Master Schedule for {$currentPeriod->academic_year}, {$currentPeriod->semester}.",
+        ]);
+
+        return back()->with('success', 'Master Schedule successfully published and unlocked for college-wide viewing.');
+    }
+
+    /**
      * College-wide Master Timetable with multi-faceted views (College, Program, Year, Section, Faculty, Room, Lab).
      */
     public function masterTimetable(Request $request): Response
@@ -1924,6 +2398,308 @@ class SemesterScheduleController extends Controller
         $currentPeriod = AcademicPeriod::current();
         $academicPeriods = AcademicPeriod::orderBy('start_date', 'desc')->get();
         $scopeCollegeId = $this->resolveScopeCollegeId($request);
+        $activeCollege = $scopeCollegeId ? College::find($scopeCollegeId) : College::where('code', 'CIDS')->first();
+
+        // Check if schedule is officially approved or published
+        $scheduleVersion = $currentPeriod
+            ? ScheduleVersion::where('academic_period_id', $currentPeriod->id)
+                ->where(function ($q) {
+                    $q->where('stage', 'Published')
+                        ->orWhere('is_official_master', true)
+                        ->orWhereNotNull('approved_at');
+                })
+                ->orderBy('id', 'desc')
+                ->first()
+            : null;
+
+        $isPublished = ! is_null($scheduleVersion);
+
+        // Pre-configured rich Master Schedule offerings matching user design specification
+        $masterOfferings = [
+            // BSIT 1st Year (BSIT-B)
+            [
+                'id' => 1,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'course_no' => 'IT 601',
+                'descriptive_title' => 'Introduction to Computing',
+                'credits' => 3,
+                'lec' => 2,
+                'lab' => 3,
+                'prerequisite' => '—',
+                'section' => '1-BSIT-B',
+                'year_level' => 1,
+                'students_count' => 35,
+                'lecture_schedule' => 'Tu 5:30–7:00 PM',
+                'lab_schedule' => '—',
+                'room' => 'CLR 3',
+                'faculty' => 'Dr. Maria Santos',
+                'remarks' => '—',
+                'course_type' => 'major', // major / core
+            ],
+            [
+                'id' => 2,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'course_no' => 'CS 611',
+                'descriptive_title' => 'Computer Programming I',
+                'credits' => 3,
+                'lec' => 2,
+                'lab' => 3,
+                'prerequisite' => '—',
+                'section' => '1-BSIT-B',
+                'year_level' => 1,
+                'students_count' => 34,
+                'lecture_schedule' => '—',
+                'lab_schedule' => 'Th 10:30–12:00 PM',
+                'room' => 'CLR 2',
+                'faculty' => 'Dr. Maria Santos',
+                'remarks' => '—',
+                'course_type' => 'major',
+            ],
+            [
+                'id' => 3,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'course_no' => 'GEC 604',
+                'descriptive_title' => 'Mathematics in the Modern World',
+                'credits' => 3,
+                'lec' => 3,
+                'lab' => 0,
+                'prerequisite' => '—',
+                'section' => '1-BSIT-B',
+                'year_level' => 1,
+                'students_count' => 36,
+                'lecture_schedule' => 'MW 8:00–9:30 AM',
+                'lab_schedule' => '—',
+                'room' => 'JRoxas',
+                'faculty' => 'c/o IMAS',
+                'remarks' => '—',
+                'course_type' => 'ge', // GE / institutional
+            ],
+            [
+                'id' => 4,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'course_no' => 'GEC 606',
+                'descriptive_title' => 'Art Appreciation',
+                'credits' => 3,
+                'lec' => 3,
+                'lab' => 0,
+                'prerequisite' => '—',
+                'section' => '1-BSIT-B',
+                'year_level' => 1,
+                'students_count' => 36,
+                'lecture_schedule' => 'MW 9:30–11:00 AM',
+                'lab_schedule' => '—',
+                'room' => 'JRoxas',
+                'faculty' => 'c/o IMAS',
+                'remarks' => '—',
+                'course_type' => 'ge',
+            ],
+            [
+                'id' => 5,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'course_no' => 'ISSA 611',
+                'descriptive_title' => 'Strands Alignment Program (PC Troubleshooting 1 & 2)',
+                'credits' => 3,
+                'lec' => 2,
+                'lab' => 3,
+                'prerequisite' => '—',
+                'section' => '1-BSIT-B',
+                'year_level' => 1,
+                'students_count' => 34,
+                'lecture_schedule' => '—',
+                'lab_schedule' => 'TTh 4:00–5:30 PM',
+                'room' => 'CHS',
+                'faculty' => 'Mr. Pansacala',
+                'remarks' => '—',
+                'course_type' => 'special', // Institutional / Special Program
+            ],
+            [
+                'id' => 6,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'course_no' => 'ISSA 612',
+                'descriptive_title' => 'Strands Alignment Program (Operating Systems)',
+                'credits' => 3,
+                'lec' => 2,
+                'lab' => 3,
+                'prerequisite' => '—',
+                'section' => '1-BSIT-B',
+                'year_level' => 1,
+                'students_count' => 34,
+                'lecture_schedule' => '—',
+                'lab_schedule' => 'MW 2:30–4:00 PM',
+                'room' => 'CLR 4',
+                'faculty' => 'PT3',
+                'remarks' => '—',
+                'course_type' => 'special',
+            ],
+            [
+                'id' => 7,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'course_no' => 'NSTP 601',
+                'descriptive_title' => 'National Service Training Program 1',
+                'credits' => 3,
+                'lec' => 3,
+                'lab' => 0,
+                'prerequisite' => '—',
+                'section' => '1-BSIT-B',
+                'year_level' => 1,
+                'students_count' => 35,
+                'lecture_schedule' => 'F 8:00–11:00 AM',
+                'lab_schedule' => '—',
+                'room' => '—',
+                'faculty' => 'c/o IMAS',
+                'remarks' => '—',
+                'course_type' => 'pe_nstp', // PE / NSTP
+            ],
+            [
+                'id' => 8,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'course_no' => 'PE 601',
+                'descriptive_title' => 'Physical Activities Toward Health And Fitness 1 (Movement Competency Training)',
+                'credits' => 2,
+                'lec' => 2,
+                'lab' => 0,
+                'prerequisite' => '—',
+                'section' => '1-BSIT-B',
+                'year_level' => 1,
+                'students_count' => 35,
+                'lecture_schedule' => 'F 1:00–3:00 PM',
+                'lab_schedule' => '—',
+                'room' => 'Gym',
+                'faculty' => 'c/o IMAS',
+                'remarks' => '—',
+                'course_type' => 'pe_nstp',
+            ],
+            [
+                'id' => 9,
+                'program_code' => 'BSIT',
+                'program_name' => 'Bachelor of Science in Information Technology',
+                'course_no' => 'FTS 600',
+                'descriptive_title' => 'Education Tour and Seminar',
+                'credits' => 1,
+                'lec' => 1,
+                'lab' => 0,
+                'prerequisite' => '—',
+                'section' => '1-BSIT-B',
+                'year_level' => 1,
+                'students_count' => 35,
+                'lecture_schedule' => '—',
+                'lab_schedule' => '—',
+                'room' => '—',
+                'faculty' => 'c/o IMAS',
+                'remarks' => 'For finalization (activity schedule)',
+                'course_type' => 'special',
+            ],
+            // BSIS
+            [
+                'id' => 10,
+                'program_code' => 'BSIS',
+                'program_name' => 'Bachelor of Science in Information Systems',
+                'course_no' => 'ISSA 611',
+                'descriptive_title' => 'Strands Alignment Program (PC Troubleshooting 1 & 2)',
+                'credits' => 3,
+                'lec' => 2,
+                'lab' => 3,
+                'prerequisite' => '—',
+                'section' => '2-BSIS-A',
+                'year_level' => 2,
+                'students_count' => 33,
+                'lecture_schedule' => '—',
+                'lab_schedule' => 'TTh 4:00–5:30 PM',
+                'room' => 'CHS',
+                'faculty' => 'Ms. Angela Cruz',
+                'remarks' => '—',
+                'course_type' => 'major',
+            ],
+            [
+                'id' => 11,
+                'program_code' => 'BSIS',
+                'program_name' => 'Bachelor of Science in Information Systems',
+                'course_no' => 'ISSA 612',
+                'descriptive_title' => 'Strands Alignment Program (Operating Systems)',
+                'credits' => 3,
+                'lec' => 2,
+                'lab' => 3,
+                'prerequisite' => '—',
+                'section' => '2-BSIS-A',
+                'year_level' => 2,
+                'students_count' => 33,
+                'lecture_schedule' => '—',
+                'lab_schedule' => 'TTh 2:30–4:00 PM',
+                'room' => 'CLR 4',
+                'faculty' => 'Ms. Angela Cruz',
+                'remarks' => '—',
+                'course_type' => 'major',
+            ],
+            [
+                'id' => 12,
+                'program_code' => 'BSIS',
+                'program_name' => 'Bachelor of Science in Information Systems',
+                'course_no' => 'NSTP 601',
+                'descriptive_title' => 'National Service Training Program 1',
+                'credits' => 3,
+                'lec' => 3,
+                'lab' => 0,
+                'prerequisite' => '—',
+                'section' => '2-BSIS-A',
+                'year_level' => 2,
+                'students_count' => 33,
+                'lecture_schedule' => 'F 8:00–11:00 AM',
+                'lab_schedule' => '—',
+                'room' => '—',
+                'faculty' => 'c/o IMAS',
+                'remarks' => '—',
+                'course_type' => 'ge',
+            ],
+            // BSCS
+            [
+                'id' => 13,
+                'program_code' => 'BSCS',
+                'program_name' => 'Bachelor of Science in Computer Science',
+                'course_no' => 'PE 601',
+                'descriptive_title' => 'Physical Activities Toward Health And Fitness 1 (Movement Competency Training)',
+                'credits' => 2,
+                'lec' => 2,
+                'lab' => 0,
+                'prerequisite' => '—',
+                'section' => '1-BSCS-A',
+                'year_level' => 1,
+                'students_count' => 40,
+                'lecture_schedule' => 'F 1:00–3:00 PM',
+                'lab_schedule' => '—',
+                'room' => 'Gym',
+                'faculty' => 'c/o IMAS',
+                'remarks' => '—',
+                'course_type' => 'ge',
+            ],
+            [
+                'id' => 14,
+                'program_code' => 'BSCS',
+                'program_name' => 'Bachelor of Science in Computer Science',
+                'course_no' => 'CS 320',
+                'descriptive_title' => 'Artificial Intelligence',
+                'credits' => 3,
+                'lec' => 2,
+                'lab' => 3,
+                'prerequisite' => 'CS 210',
+                'section' => '3-BSCS-A',
+                'year_level' => 3,
+                'students_count' => 32,
+                'lecture_schedule' => 'Tu 1:00–2:30 PM',
+                'lab_schedule' => 'Tu 2:30–4:00 PM',
+                'room' => 'CLR 1',
+                'faculty' => 'Dr. Kevin Dela Cruz',
+                'remarks' => '—',
+                'course_type' => 'major',
+            ],
+        ];
 
         $schedulesQuery = RoomSchedule::with('faculty');
         $facultiesQuery = Faculty::select('id', 'first_name', 'last_name', 'academic_rank');
@@ -1934,23 +2710,6 @@ class SemesterScheduleController extends Controller
         }
 
         $schedules = $schedulesQuery->get();
-
-        // Retrieve verified schedules map to enable direct remapping from Master Timetable
-        $verifiedSchedules = VerifiedSchedule::with('room')->get();
-
-        $schedules = $schedules->map(function ($s) use ($verifiedSchedules) {
-            $matchingVerified = $verifiedSchedules->first(function ($vs) use ($s) {
-                $roomMatches = strcasecmp(trim($vs->room?->room_name ?? $vs->room?->name ?? ''), trim($s->room_name ?? '')) === 0;
-                $dayMatches = stripos($vs->day_of_week, $s->day_of_week) !== false || stripos($s->day_of_week, $vs->day_of_week) !== false;
-                $timeMatches = substr($vs->scheduled_start_time, 0, 5) === substr($s->start_time, 0, 5);
-
-                return $roomMatches && $dayMatches && $timeMatches;
-            });
-
-            $s->verified_schedule_id = $matchingVerified?->id ?? null;
-
-            return $s;
-        });
 
         $rooms = $schedules->pluck('room_name')->filter()->unique()->values();
         $sections = $schedules->pluck('section')->filter()->unique()->values();
@@ -1963,6 +2722,10 @@ class SemesterScheduleController extends Controller
             'rooms' => $rooms,
             'sections' => $sections,
             'faculties' => $faculties,
+            'college' => $activeCollege,
+            'isPublished' => $isPublished,
+            'scheduleVersion' => $scheduleVersion,
+            'masterOfferings' => $masterOfferings,
         ]);
     }
 

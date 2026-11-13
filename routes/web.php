@@ -260,6 +260,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('publish-loading', [SemesterScheduleController::class, 'publishFacultyLoading'])->name('publish-loading');
             Route::post('lock-loading', [SemesterScheduleController::class, 'lockFacultyLoading'])->name('lock-loading');
             Route::post('reopen-loading', [SemesterScheduleController::class, 'reopenFacultyLoading'])->name('reopen-loading');
+            Route::post('publish-schedule', [SemesterScheduleController::class, 'publishSchedule'])->name('publish-schedule');
             Route::post('course-change-request', [SemesterScheduleController::class, 'submitCourseChangeRequest'])->name('course-change-request');
             Route::post('course-change-respond', [SemesterScheduleController::class, 'respondCourseChangeRequest'])->name('course-change-respond');
             Route::post('course-change-decide', [SemesterScheduleController::class, 'decideCourseChangeRequest'])->name('course-change-decide');

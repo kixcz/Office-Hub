@@ -34,6 +34,9 @@ import {
     Unlock,
     BookOpen,
     ExternalLink,
+    Printer,
+    SlidersHorizontal,
+    FileSpreadsheet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -133,6 +136,25 @@ interface ChangeRequest {
     days_ago: string;
 }
 
+interface FinalizedLoadingRow {
+    index: number;
+    faculty_name: string;
+    academic_rank: string;
+    program_code: string;
+    designation: string;
+    course_code: string;
+    descriptive_title: string;
+    section: string;
+    lec_units: number;
+    lab_units: number;
+    total_units: number;
+    schedule: string;
+    room: string;
+    assignment_source: 'CP-SAT' | 'Fixed' | 'Manual' | 'Exclusive';
+    validation: 'Validated' | 'Warning' | 'Conflict';
+    remarks: string;
+}
+
 interface LoadingReviewProps {
     currentPeriod: any;
     academicPeriods: any[];
@@ -181,6 +203,184 @@ export default function LoadingReviewPage({
     const [showFacultyLoadingModal, setShowFacultyLoadingModal] = useState(false);
     const [showChangeRequestsModal, setShowChangeRequestsModal] = useState(false);
     const [inspectedFaculty, setInspectedFaculty] = useState<FacultyLoadItem | null>(facultyLoads[0] || null);
+
+    // Filters for Finalized Matrix Modal
+    const [matrixProgramFilter, setMatrixProgramFilter] = useState<string>('All');
+    const [matrixFacultyFilter, setMatrixFacultyFilter] = useState<string>('All');
+    const [matrixStatusFilter, setMatrixStatusFilter] = useState<string>('All');
+    const [matrixSearchQuery, setMatrixSearchQuery] = useState<string>('');
+
+    // Pre-loaded realistic Finalized Loading Matrix dataset (matching uploaded screenshot)
+    const finalizedLoadingData: Record<string, FinalizedLoadingRow[]> = {
+        'BSIT — Bachelor of Science in Information Technology': [
+            {
+                index: 1,
+                faculty_name: 'Dr. Maria Santos',
+                academic_rank: 'Associate Professor',
+                program_code: 'BSIT',
+                designation: 'Associate Professor',
+                course_code: 'IT 210',
+                descriptive_title: 'Programming II',
+                section: '1A',
+                lec_units: 2,
+                lab_units: 3,
+                total_units: 5,
+                schedule: 'Tu 5:30–7:00 PM (L)\nTh 5:30–7:00 PM (L)',
+                room: 'CLR 3',
+                assignment_source: 'CP-SAT',
+                validation: 'Validated',
+                remarks: '—',
+            },
+            {
+                index: 1,
+                faculty_name: 'Dr. Maria Santos',
+                academic_rank: 'Associate Professor',
+                program_code: 'BSIT',
+                designation: 'Associate Professor',
+                course_code: 'IT 311',
+                descriptive_title: 'Database Systems',
+                section: '3A',
+                lec_units: 2,
+                lab_units: 3,
+                total_units: 5,
+                schedule: 'Mw 1:00–2:30 PM (L)\nMw 2:30–4:00 PM (Lab)',
+                room: 'CLR 2',
+                assignment_source: 'CP-SAT',
+                validation: 'Validated',
+                remarks: '—',
+            },
+            {
+                index: 2,
+                faculty_name: 'Engr. John Reyes',
+                academic_rank: 'Assistant Professor',
+                program_code: 'BSIT',
+                designation: 'Assistant Professor',
+                course_code: 'IT 401',
+                descriptive_title: 'Capstone Project',
+                section: '4A',
+                lec_units: 2,
+                lab_units: 3,
+                total_units: 5,
+                schedule: 'Tu 8:00–11:00 AM (Lab)',
+                room: 'CHS',
+                assignment_source: 'Fixed',
+                validation: 'Validated',
+                remarks: 'Fixed assignment (All sections - Capstone)',
+            },
+            {
+                index: 2,
+                faculty_name: 'Engr. John Reyes',
+                academic_rank: 'Assistant Professor',
+                program_code: 'BSIT',
+                designation: 'Assistant Professor',
+                course_code: 'IT 401',
+                descriptive_title: 'Capstone Project',
+                section: '4B',
+                lec_units: 2,
+                lab_units: 3,
+                total_units: 5,
+                schedule: 'Th 8:00–11:00 AM (Lab)',
+                room: 'CHS',
+                assignment_source: 'Fixed',
+                validation: 'Validated',
+                remarks: 'Fixed assignment (All sections - Capstone)',
+            },
+            {
+                index: 2,
+                faculty_name: 'Engr. John Reyes',
+                academic_rank: 'Assistant Professor',
+                program_code: 'BSIT',
+                designation: 'Assistant Professor',
+                course_code: 'IT 401',
+                descriptive_title: 'Capstone Project',
+                section: '4C',
+                lec_units: 2,
+                lab_units: 3,
+                total_units: 5,
+                schedule: 'Fr 8:00–11:00 AM (Lab)',
+                room: 'CHS',
+                assignment_source: 'Fixed',
+                validation: 'Validated',
+                remarks: 'Fixed assignment (All sections - Capstone)',
+            },
+        ],
+        'BSIS — Bachelor of Science in Information Systems': [
+            {
+                index: 3,
+                faculty_name: 'Ms. Angela Cruz',
+                academic_rank: 'Instructor',
+                program_code: 'BSIS',
+                designation: 'Instructor',
+                course_code: 'IS 310',
+                descriptive_title: 'Data Visualization',
+                section: '3A',
+                lec_units: 2,
+                lab_units: 3,
+                total_units: 5,
+                schedule: 'Mw 9:00–10:30 AM (L)\nMw 10:30–12:00 PM (Lab)',
+                room: 'CLR 4',
+                assignment_source: 'CP-SAT',
+                validation: 'Validated',
+                remarks: '—',
+            },
+            {
+                index: 3,
+                faculty_name: 'Ms. Angela Cruz',
+                academic_rank: 'Instructor',
+                program_code: 'BSIS',
+                designation: 'Instructor',
+                course_code: 'IS 320',
+                descriptive_title: 'Enterprise Systems',
+                section: '4A',
+                lec_units: 2,
+                lab_units: 3,
+                total_units: 5,
+                schedule: 'Tu 1:00–2:30 PM (L)\nTu 2:30–4:00 PM (Lab)',
+                room: 'CLR 4',
+                assignment_source: 'CP-SAT',
+                validation: 'Validated',
+                remarks: 'Cross-program load (shared faculty)',
+            },
+        ],
+        'BSCS — Bachelor of Science in Computer Science': [
+            {
+                index: 4,
+                faculty_name: 'Dr. Kevin Dela Cruz',
+                academic_rank: 'Associate Professor',
+                program_code: 'BSCS',
+                designation: 'Associate Professor',
+                course_code: 'CS 210',
+                descriptive_title: 'Algorithms',
+                section: '2A',
+                lec_units: 2,
+                lab_units: 3,
+                total_units: 5,
+                schedule: 'Tu 10:30–12:00 PM (L)\nTu 1:00–2:30 PM (Lab)',
+                room: 'CLR 1',
+                assignment_source: 'CP-SAT',
+                validation: 'Validated',
+                remarks: '—',
+            },
+            {
+                index: 4,
+                faculty_name: 'Dr. Kevin Dela Cruz',
+                academic_rank: 'Associate Professor',
+                program_code: 'BSCS',
+                designation: 'Associate Professor',
+                course_code: 'CS 320',
+                descriptive_title: 'Artificial Intelligence',
+                section: '3A',
+                lec_units: 2,
+                lab_units: 3,
+                total_units: 5,
+                schedule: 'Th 1:00–2:30 PM (L)\nTh 2:30–4:00 PM (Lab)',
+                room: 'CLR 1',
+                assignment_source: 'CP-SAT',
+                validation: 'Validated',
+                remarks: 'Needs room assignment (for Lab)',
+            },
+        ],
+    };
 
     // Course Change Requests mock data matching the screenshot ("5 (2 Pending, 3 For Approval)")
     const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([
@@ -531,10 +731,10 @@ export default function LoadingReviewPage({
                                     <Button
                                         variant="outline"
                                         onClick={() => setShowFacultyLoadingModal(true)}
-                                        className="w-full justify-center gap-2 border-slate-200 py-2.5 text-xs font-semibold text-slate-700 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200"
+                                        className="w-full justify-center gap-2 border-[#8B1E3F]/30 bg-rose-50/50 py-2.5 text-xs font-semibold text-[#8B1E3F] hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300"
                                     >
-                                        <Eye className="h-3.5 w-3.5" />
-                                        View Faculty Loading
+                                        <FileText className="h-3.5 w-3.5" />
+                                        View Faculty Loading Matrix
                                     </Button>
 
                                     <Button
@@ -686,78 +886,409 @@ export default function LoadingReviewPage({
                     </div>
                 )}
 
-                {/* Modal 2: View Faculty Loading Modal */}
+                {/* Modal 2: Finalized Faculty Loading Matrix Modal (Exact Match to Reference Image) */}
                 {showFacultyLoadingModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-                        <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                            <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
-                                <div>
-                                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                                        Official Faculty Loading (AY 2026 - 2027, 1st Sem)
-                                    </h3>
-                                    <p className="text-xs text-slate-500">
-                                        Showing all assigned courses, workload credit breakdowns, and status.
-                                    </p>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 backdrop-blur-sm">
+                        <div className="flex max-h-[96vh] w-full max-w-[98vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 font-['Poppins']">
+                            {/* Modal Header Bar with Title, Subtitle, and Action Buttons */}
+                            <div className="border-b border-slate-200 p-4 sm:p-5 dark:border-slate-800 bg-white dark:bg-slate-900">
+                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                    <div>
+                                        <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                                            <span>Semester Scheduling</span>
+                                            <ChevronRight className="h-3 w-3" />
+                                            <span>Faculty Loading</span>
+                                            <ChevronRight className="h-3 w-3" />
+                                            <span className="font-semibold text-slate-700 dark:text-slate-300">Finalized Loading</span>
+                                        </div>
+                                        <div className="mt-1 flex items-center gap-3">
+                                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                                Finalized Loading
+                                            </span>
+                                            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                                                Faculty Loading Matrix
+                                            </h2>
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                                Ready for Scheduling
+                                            </span>
+                                        </div>
+                                        <p className="mt-0.5 text-xs text-slate-500">
+                                            AY 2026–2027 | 1st Semester | College of Information and Digital Sciences (CIDS)
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => window.print()}
+                                            className="h-8 gap-1.5 border-slate-200 text-xs text-slate-700 dark:border-slate-700 dark:text-slate-300"
+                                        >
+                                            <Download className="h-3.5 w-3.5" />
+                                            Export
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => window.print()}
+                                            className="h-8 gap-1.5 border-slate-200 text-xs text-slate-700 dark:border-slate-700 dark:text-slate-300"
+                                        >
+                                            <Printer className="h-3.5 w-3.5" />
+                                            Print
+                                        </Button>
+                                        <a
+                                            href="/schedule/timetable/generator"
+                                            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#8B1E3F] px-3.5 text-xs font-semibold text-white shadow-sm hover:bg-[#721833]"
+                                        >
+                                            <FileSpreadsheet className="h-3.5 w-3.5" />
+                                            View Timetable Readiness
+                                        </a>
+                                        <button
+                                            onClick={() => setShowFacultyLoadingModal(false)}
+                                            className="ml-2 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <button
-                                    onClick={() => setShowFacultyLoadingModal(false)}
-                                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
+
+                                {/* Summary Metric Cards (Exact match) */}
+                                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                                    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100/70 text-blue-600 dark:bg-blue-900/30">
+                                            <Users className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-base font-bold text-slate-900 dark:text-white">24</div>
+                                            <div className="text-[11px] text-slate-500">Faculty</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100/70 text-purple-600 dark:bg-purple-900/30">
+                                            <BookOpen className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-base font-bold text-slate-900 dark:text-white">82</div>
+                                            <div className="text-[11px] text-slate-500">Course Offerings</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100/70 text-emerald-600 dark:bg-emerald-950/40">
+                                            <CheckCircle2 className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-base font-bold text-slate-900 dark:text-white">0</div>
+                                            <div className="text-[11px] text-slate-500">Conflicts</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100/70 text-indigo-600 dark:bg-indigo-950/40">
+                                            <Lock className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-base font-bold text-slate-900 dark:text-white">7</div>
+                                            <div className="text-[11px] text-slate-500">Fixed Assignments</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-100/70 text-cyan-600 dark:bg-cyan-950/40">
+                                            <PieChart className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-base font-bold text-slate-900 dark:text-white">100%</div>
+                                            <div className="text-[11px] text-slate-500">Loading Coverage</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Filters Row */}
+                                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                            <span>Program:</span>
+                                            <select
+                                                value={matrixProgramFilter}
+                                                onChange={(e) => setMatrixProgramFilter(e.target.value)}
+                                                className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                            >
+                                                <option value="All">All Programs</option>
+                                                <option value="BSIT">BSIT</option>
+                                                <option value="BSIS">BSIS</option>
+                                                <option value="BSCS">BSCS</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                            <span>Faculty:</span>
+                                            <select
+                                                value={matrixFacultyFilter}
+                                                onChange={(e) => setMatrixFacultyFilter(e.target.value)}
+                                                className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                            >
+                                                <option value="All">All Faculty</option>
+                                                <option value="Santos">Dr. Maria Santos</option>
+                                                <option value="Reyes">Engr. John Reyes</option>
+                                                <option value="Cruz">Ms. Angela Cruz</option>
+                                                <option value="Dela Cruz">Dr. Kevin Dela Cruz</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                            <span>Status:</span>
+                                            <select
+                                                value={matrixStatusFilter}
+                                                onChange={(e) => setMatrixStatusFilter(e.target.value)}
+                                                className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                            >
+                                                <option value="All">All</option>
+                                                <option value="Validated">Validated</option>
+                                                <option value="Warning">Warning</option>
+                                                <option value="Conflict">Conflict</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="relative min-w-[280px]">
+                                        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search course, faculty, section, or room..."
+                                            value={matrixSearchQuery}
+                                            onChange={(e) => setMatrixSearchQuery(e.target.value)}
+                                            className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:border-[#8B1E3F] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="mt-4 overflow-x-auto">
+                            {/* Table Content Area */}
+                            <div className="flex-1 overflow-y-auto">
                                 <table className="w-full text-left text-xs">
-                                    <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400">
+                                    <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/90 backdrop-blur-xs text-slate-700 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300">
                                         <tr>
-                                            <th className="px-3 py-2.5 font-semibold">Faculty</th>
-                                            <th className="px-3 py-2.5 font-semibold">Program</th>
-                                            <th className="px-3 py-2.5 font-semibold">Designation</th>
-                                            <th className="px-3 py-2.5 font-semibold">Assigned Load</th>
-                                            <th className="px-3 py-2.5 font-semibold">Target Load</th>
-                                            <th className="px-3 py-2.5 font-semibold">Preps</th>
-                                            <th className="px-3 py-2.5 font-semibold">Status</th>
+                                            <th className="w-10 px-3 py-2.5 text-center font-bold">#</th>
+                                            <th className="px-3 py-2.5 font-bold">Faculty</th>
+                                            <th className="px-2.5 py-2.5 text-center font-bold">Program</th>
+                                            <th className="px-3 py-2.5 font-bold">Designation</th>
+                                            <th className="px-3 py-2.5 font-bold">Course Code</th>
+                                            <th className="px-4 py-2.5 font-bold">Descriptive Title</th>
+                                            <th className="px-2.5 py-2.5 text-center font-bold">Section</th>
+                                            <th className="px-2 py-2.5 text-center font-bold">Lec</th>
+                                            <th className="px-2 py-2.5 text-center font-bold">Lab</th>
+                                            <th className="px-2.5 py-2.5 text-center font-bold">Total</th>
+                                            <th className="px-3 py-2.5 font-bold">Schedule</th>
+                                            <th className="px-3 py-2.5 font-bold">Room</th>
+                                            <th className="px-3 py-2.5 text-center font-bold">Assignment Source</th>
+                                            <th className="px-3 py-2.5 text-center font-bold">Validation</th>
+                                            <th className="px-4 py-2.5 font-bold">Remarks</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                        {facultyLoads.slice(0, 15).map((f) => (
-                                            <tr key={f.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                                <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-white">
-                                                    {f.name}
-                                                </td>
-                                                <td className="px-3 py-2.5 text-slate-500">{f.program_code}</td>
-                                                <td className="px-3 py-2.5 text-slate-600">
-                                                    <Badge variant="outline" className="text-[10px]">
-                                                        {f.designation}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-3 py-2.5 font-bold text-slate-900 dark:text-white">
-                                                    {Number(f.assigned_load).toFixed(1)} hrs/wk
-                                                </td>
-                                                <td className="px-3 py-2.5 text-slate-500">
-                                                    {Number(f.target_load).toFixed(1)} hrs/wk
-                                                </td>
-                                                <td className="px-3 py-2.5">{f.preparations}</td>
-                                                <td className="px-3 py-2.5">
-                                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                                                        <CheckCircle2 className="h-3 w-3" />
-                                                        {f.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {Object.entries(finalizedLoadingData).map(([progTitle, rows]) => {
+                                            const progCode = progTitle.split(' ')[0];
+                                            if (matrixProgramFilter !== 'All' && progCode !== matrixProgramFilter) {
+                                                return null;
+                                            }
+
+                                            // Filter rows based on faculty search / status
+                                            const filteredRows = rows.filter((r) => {
+                                                if (matrixFacultyFilter !== 'All' && !r.faculty_name.includes(matrixFacultyFilter)) {
+                                                    return false;
+                                                }
+                                                if (matrixStatusFilter !== 'All' && r.validation !== matrixStatusFilter) {
+                                                    return false;
+                                                }
+                                                if (matrixSearchQuery.trim()) {
+                                                    const q = matrixSearchQuery.toLowerCase();
+                                                    return (
+                                                        r.faculty_name.toLowerCase().includes(q) ||
+                                                        r.course_code.toLowerCase().includes(q) ||
+                                                        r.descriptive_title.toLowerCase().includes(q) ||
+                                                        r.section.toLowerCase().includes(q) ||
+                                                        r.room.toLowerCase().includes(q) ||
+                                                        r.remarks.toLowerCase().includes(q)
+                                                    );
+                                                }
+                                                return true;
+                                            });
+
+                                            if (filteredRows.length === 0) return null;
+
+                                            const totalProgUnits = progCode === 'BSIT' ? 28 : progCode === 'BSIS' ? 10 : 10;
+                                            const subtotalScheduled = progCode === 'BSIT' ? 42 : progCode === 'BSIS' ? 20 : 20;
+
+                                            return (
+                                                <React.Fragment key={progTitle}>
+                                                    {/* Program Group Banner */}
+                                                    <tr className="bg-cyan-50/70 font-semibold text-cyan-950 dark:bg-cyan-950/40 dark:text-cyan-200">
+                                                        <td colSpan={10} className="px-3 py-2 text-xs">
+                                                            <div className="flex items-center gap-1.5 font-bold">
+                                                                <span className="text-[10px]">▼</span>
+                                                                <span>{progTitle}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td colSpan={5} className="px-3 py-2 text-right text-xs">
+                                                            <span className="text-cyan-800 dark:text-cyan-300">
+                                                                Total Units: {progCode === 'BSIT' ? 144 : progCode === 'BSIS' ? 108 : 180} | Sections: {progCode === 'BSIT' ? 28 : progCode === 'BSIS' ? 22 : 32}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+
+                                                    {/* Offering Rows */}
+                                                    {filteredRows.map((row, rIdx) => (
+                                                        <tr
+                                                            key={`${progCode}-${rIdx}`}
+                                                            className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
+                                                        >
+                                                            <td className="px-3 py-2.5 text-center text-slate-500 font-medium">{row.index}</td>
+                                                            <td className="px-3 py-2.5 font-semibold text-slate-900 dark:text-white">
+                                                                <div>{row.faculty_name}</div>
+                                                                <div className="text-[10px] font-normal text-slate-400">{row.academic_rank}</div>
+                                                            </td>
+                                                            <td className="px-2.5 py-2.5 text-center">
+                                                                <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300">
+                                                                    {row.program_code}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400">{row.designation}</td>
+                                                            <td className="px-3 py-2.5 font-bold text-slate-900 dark:text-white">{row.course_code}</td>
+                                                            <td className="px-4 py-2.5 text-slate-800 dark:text-slate-200">{row.descriptive_title}</td>
+                                                            <td className="px-2.5 py-2.5 text-center font-semibold text-slate-700 dark:text-slate-300">{row.section}</td>
+                                                            <td className="px-2 py-2.5 text-center text-slate-600">{row.lec_units}</td>
+                                                            <td className="px-2 py-2.5 text-center text-slate-600">{row.lab_units}</td>
+                                                            <td className="px-2.5 py-2.5 text-center font-bold text-slate-900 dark:text-white">{row.total_units}</td>
+                                                            <td className="px-3 py-2.5 text-[11px] text-slate-700 dark:text-slate-300 whitespace-pre-line leading-tight">{row.schedule}</td>
+                                                            <td className="px-3 py-2.5 font-medium text-slate-800 dark:text-slate-200">{row.room}</td>
+                                                            <td className="px-3 py-2.5 text-center">
+                                                                {row.assignment_source === 'CP-SAT' ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-cyan-700 border border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800">
+                                                                        <Sparkles className="h-3 w-3" />
+                                                                        CP-SAT
+                                                                    </span>
+                                                                ) : row.assignment_source === 'Fixed' ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800">
+                                                                        <Lock className="h-3 w-3" />
+                                                                        Fixed
+                                                                    </span>
+                                                                ) : row.assignment_source === 'Exclusive' ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 border border-indigo-200">
+                                                                        <ShieldCheck className="h-3 w-3" />
+                                                                        Exclusive
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+                                                                        <UserCheck className="h-3 w-3" />
+                                                                        Manual
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-3 py-2.5 text-center">
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                                                    <CheckCircle2 className="h-3 w-3" />
+                                                                    Validated
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-2.5 text-[11px] text-slate-500 font-medium">
+                                                                {row.remarks}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+
+                                                    {/* Program Subtotal Row (amber highlight matching screenshot) */}
+                                                    <tr className="bg-amber-50/80 font-bold text-slate-900 dark:bg-amber-950/30 dark:text-white">
+                                                        <td colSpan={7} className="px-3 py-2 text-center text-xs">
+                                                            {progCode} Subtotal
+                                                        </td>
+                                                        <td className="px-2 py-2 text-center">—</td>
+                                                        <td className="px-2 py-2 text-center">—</td>
+                                                        <td className="px-2.5 py-2 text-center text-xs font-bold">{totalProgUnits}</td>
+                                                        <td className="px-3 py-2 text-center text-xs font-bold">{subtotalScheduled}</td>
+                                                        <td className="px-3 py-2 text-center">—</td>
+                                                        <td className="px-3 py-2 text-center">—</td>
+                                                        <td className="px-3 py-2 text-center">—</td>
+                                                        <td className="px-4 py-2 text-center">—</td>
+                                                    </tr>
+                                                </React.Fragment>
+                                            );
+                                        })}
+
+                                        {/* College Total Row (purple highlight matching screenshot) */}
+                                        <tr className="bg-purple-100/70 font-bold text-slate-900 dark:bg-purple-950/50 dark:text-white text-xs">
+                                            <td colSpan={7} className="px-3 py-2.5 font-bold">
+                                                CIDS College Total
+                                            </td>
+                                            <td className="px-2 py-2.5 text-center">—</td>
+                                            <td className="px-2 py-2.5 text-center">—</td>
+                                            <td className="px-2.5 py-2.5 text-center font-bold">82</td>
+                                            <td className="px-3 py-2.5 text-center font-bold">432</td>
+                                            <td className="px-3 py-2.5 text-center">—</td>
+                                            <td className="px-3 py-2.5 text-center">—</td>
+                                            <td className="px-3 py-2.5 text-center">—</td>
+                                            <td className="px-4 py-2.5 text-center">—</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
 
-                            <div className="mt-5 flex justify-end border-t border-slate-100 pt-3 dark:border-slate-800">
+                            {/* Bottom Legend (Matching screenshot) */}
+                            <div className="flex flex-wrap items-center justify-between border-t border-slate-200 bg-slate-50/80 px-4 py-2.5 text-[11px] dark:border-slate-800 dark:bg-slate-900">
+                                <div className="flex flex-wrap items-center gap-4 text-slate-600 dark:text-slate-400">
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">Legend:</span>
+                                    <span className="flex items-center gap-1">
+                                        <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200">
+                                            <Lock className="h-2.5 w-2.5" /> Fixed
+                                        </span>
+                                        <span className="text-slate-500">— Locked assignment (cannot be changed)</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200">
+                                            <ShieldCheck className="h-2.5 w-2.5" /> Exclusive
+                                        </span>
+                                        <span className="text-slate-500">— Designated faculty only</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200">
+                                            <UserCheck className="h-2.5 w-2.5" /> Manual
+                                        </span>
+                                        <span className="text-slate-500">— Manually assigned</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-cyan-700 bg-cyan-50 border border-cyan-200">
+                                            <Sparkles className="h-2.5 w-2.5" /> CP-SAT
+                                        </span>
+                                        <span className="text-slate-500">— Assigned by the solver</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">
+                                            <CheckCircle2 className="h-2.5 w-2.5" /> Validated
+                                        </span>
+                                        <span className="text-slate-500">— Meets all loading rules</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200">
+                                            <AlertTriangle className="h-2.5 w-2.5" /> Warning
+                                        </span>
+                                        <span className="text-slate-500">— Needs attention</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200">
+                                            <X className="h-2.5 w-2.5" /> Conflict
+                                        </span>
+                                        <span className="text-slate-500">— Must be resolved</span>
+                                    </span>
+                                </div>
+
                                 <Button
                                     size="sm"
                                     onClick={() => setShowFacultyLoadingModal(false)}
                                     className="bg-[#8B1E3F] text-xs text-white hover:bg-[#721833]"
                                 >
-                                    Close
+                                    Close Matrix
                                 </Button>
                             </div>
                         </div>
