@@ -2295,13 +2295,20 @@ class SemesterScheduleController extends Controller
 
         $faculties = $facultiesQuery->get()->map(function ($f) {
             $pref = $f->preferences->first();
+            $preferredCourses = $pref?->preferred_course_ids;
+            if (is_string($preferredCourses)) {
+                $decoded = json_decode($preferredCourses, true);
+                $preferredCourses = is_array($decoded) ? $decoded : [];
+            } elseif (! is_array($preferredCourses)) {
+                $preferredCourses = [];
+            }
 
             return [
                 'id' => $f->id,
                 'name' => $f->title_name ?? $f->full_name,
                 'avatar' => $f->profile_picture,
                 'program_code' => $f->program?->code ?? 'GEN',
-                'subjects_count' => $pref ? count($pref->preferred_course_ids ?? []) : 5,
+                'subjects_count' => count($preferredCourses) ?: 5,
                 'preferred_time' => 'Morning (7:30 AM - 12:00 PM)',
                 'avoid_time' => 'Late Afternoon (4:30 PM onward)',
                 'preferred_room' => 'Computer Laboratory, IT Laboratory',

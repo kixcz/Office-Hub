@@ -3,6 +3,7 @@
 use App\Models\AcademicPeriod;
 use App\Models\College;
 use App\Models\Faculty;
+use App\Models\FacultyPreference;
 use App\Models\Program;
 use App\Models\Role;
 use App\Models\ScopedRoleAssignment;
@@ -151,4 +152,65 @@ test('faculty workload targets and preferences can be updated for scheduling opt
     expect((float) $faculty->min_load_hours)->toBe(9.0);
     expect((float) $faculty->target_load_hours)->toBe(12.0);
     expect((float) $faculty->max_load_hours)->toBe(16.0);
+});
+
+test('college admin can access master data faculty preferences module', function () {
+    $college = College::create([
+        'code' => 'CBA',
+        'name' => 'College of Business Administration',
+        'type' => 'college',
+    ]);
+    $program = Program::create([
+        'college_id' => $college->id,
+        'code' => 'BSBA',
+        'name' => 'Bachelor of Science in Business Administration',
+    ]);
+    $period = AcademicPeriod::create([
+        'academic_year' => '2026-2027',
+        'semester' => '1st Semester',
+        'code' => '2026-2027-1S',
+        'start_date' => '2026-08-01',
+        'end_date' => '2026-12-15',
+        'class_start_date' => '2026-08-10',
+        'class_end_date' => '2026-12-15',
+        'is_current' => true,
+        'status' => 'active',
+    ]);
+
+    $faculty = Faculty::create([
+        'program_id' => $program->id,
+        'first_name' => 'John',
+        'last_name' => 'Doe',
+        'employment_type' => 'Full-time',
+        'status' => 'Active',
+    ]);
+
+    FacultyPreference::create([
+        'faculty_id' => $faculty->id,
+        'academic_period_id' => $period->id,
+        'preferred_course_ids' => '[10, 20]', // json encoded string edge-case
+        'preferred_days' => ['Monday', 'Wednesday'],
+        'preferred_min_load' => 9.0,
+        'preferred_max_load' => 15.0,
+    ]);
+
+    $user = User::factory()->create();
+    $role = Role::firstOrCreate(['name' => 'College Admin'], ['hierarchy_level' => 4, 'portal_type' => 'college_admin']);
+    $assignment = ScopedRoleAssignment::create([
+        'user_id' => $user->id,
+        'role_id' => $role->id,
+        'scope_level' => 'College',
+        'college_scope' => $college->code,
+        'status' => 'Active',
+    ]);
+
+    $response = $this->actingAs($user)
+        ->withSession(['active_role_assignment_id' => $assignment->id])
+        ->get(route('schedule.master-data.faculty-preferences'));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('schedule/master-data/faculty-preferences/index')
+        ->has('faculties', 1)
+    );
 });

@@ -500,8 +500,8 @@ class CbaSemesterScheduleSeeder extends Seeder
             FacultyPreference::updateOrCreate(
                 ['faculty_id' => $faculty->id, 'academic_period_id' => $currentPeriod->id],
                 [
-                    'preferred_course_ids' => json_encode($prefCourseIds),
-                    'preferred_days' => json_encode(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']),
+                    'preferred_course_ids' => $prefCourseIds,
+                    'preferred_days' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
                     'preferred_min_load' => $fData['min_load'],
                     'preferred_max_load' => $fData['max_load'],
                     'preferred_max_preparations' => 3,
