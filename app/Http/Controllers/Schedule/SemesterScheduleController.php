@@ -604,6 +604,7 @@ class SemesterScheduleController extends Controller
 
         // Check if user requested to run the solver directly via Inertia
         $shouldRunSolver = $request->boolean('run_solver') || $request->has('solver_weights');
+        $candidateCount = intval($request->input('candidate_count', 3));
         $weights = $request->input('solver_weights', [
             'specialization' => 40,
             'historical' => 20,
@@ -631,14 +632,15 @@ class SemesterScheduleController extends Controller
             'readiness_percent' => 96.5,
         ];
 
-        // Generate Candidates A, B, C via fast deterministic preview for instant page load (<100ms)
+        // Generate Candidates via fast preview or full CP-SAT based on requested candidate count (1 to 5)
         $sampleOfferings = array_slice($offerings, 0, 30);
         $candidates = $optimizationService->generateCandidatesWithCpSat(
             $facultyPool,
             $sampleOfferings,
             $matrixData['matrix'],
             $weights,
-            $shouldRunSolver
+            $shouldRunSolver,
+            $candidateCount
         );
 
         return Inertia::render('schedule/loading/generator', [
@@ -713,9 +715,10 @@ class SemesterScheduleController extends Controller
             'availability' => 10,
         ];
 
+        $candidateCount = intval($validated['options']['candidate_count'] ?? 3);
         $service = new FacultyLoadingOptimizationService;
         $matrixData = $service->buildSuitabilityMatrix($facultyPool, $offerings, $weights);
-        $candidates = $service->generateCandidatesWithCpSat($facultyPool, $offerings, $matrixData['matrix'], $weights);
+        $candidates = $service->generateCandidatesWithCpSat($facultyPool, $offerings, $matrixData['matrix'], $weights, true, $candidateCount);
 
         return response()->json([
             'status' => 'success',
@@ -750,6 +753,27 @@ class SemesterScheduleController extends Controller
         }
 
         return redirect()->back()->with('success', "{$validated['candidate_code']} successfully applied and committed to {$appliedCount} course offerings in active semester schedule.");
+    }
+
+    /**
+     * Manually assign or adjust a course offering load to a specific faculty member.
+     */
+    public function manualAssignLoading(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'offering_id' => 'required|exists:room_schedules,id',
+            'faculty_id' => 'required|exists:faculties,id',
+        ]);
+
+        $schedule = RoomSchedule::findOrFail($validated['offering_id']);
+        $faculty = Faculty::findOrFail($validated['faculty_id']);
+
+        $schedule->update([
+            'faculty_id' => $faculty->id,
+            'instructor' => $faculty->spreadsheet_name ?? $faculty->full_name,
+        ]);
+
+        return redirect()->back()->with('success', "Course {$schedule->course_code} ({$schedule->section}) successfully assigned to {$faculty->title_name}.");
     }
 
     /**

@@ -72,6 +72,10 @@ def solve_loading(data):
         match_multiplier = 16
     elif strategy == 'preparations':
         match_multiplier = 8
+    elif strategy == 'preferences':
+        match_multiplier = 14
+    elif strategy == 'historical':
+        match_multiplier = 12
 
     for f in faculty_list:
         fid = f['id']

@@ -32,11 +32,21 @@ import {
     Check,
     Eye,
     LayoutGrid,
+    Plus,
+    UserCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Scheduling', href: '/schedule/generator' },
@@ -176,6 +186,12 @@ export default function LoadingGeneratorPage({
     const [selectedProgram, setSelectedProgram] = useState('All');
     const [selectedStatus, setSelectedStatus] = useState('All');
 
+    // Manual Course Loading Modal State (for Program Heads & Dean)
+    const [isManualAssignModalOpen, setIsManualAssignModalOpen] = useState(false);
+    const [selectedOfferingForAssign, setSelectedOfferingForAssign] = useState<number | null>(null);
+    const [selectedFacultyForAssign, setSelectedFacultyForAssign] = useState<number | null>(null);
+    const [isSubmittingManualAssign, setIsSubmittingManualAssign] = useState(false);
+
     // Recent Generation History (Quadrant match)
     const [generationHistory] = useState<GenerationHistoryItem[]>([
         {
@@ -232,6 +248,7 @@ export default function LoadingGeneratorPage({
             '/schedule/loading-generator',
             {
                 run_solver: true,
+                candidate_count: candidateCount,
                 solver_weights: {
                     historical: useHistoricalData ? 30 : 15,
                     specialization: useSpecMatch ? 40 : 20,
@@ -240,6 +257,7 @@ export default function LoadingGeneratorPage({
                     availability: respectAvailability ? 15 : 5,
                 },
                 options: {
+                    candidate_count: candidateCount,
                     balance_load: true,
                     consider_credits: considerCredits,
                     respect_availability: respectAvailability,
@@ -262,6 +280,68 @@ export default function LoadingGeneratorPage({
                 },
                 onFinish: () => {
                     setIsGenerating(false);
+                },
+            }
+        );
+    };
+
+    const handleOpenManualAssign = (offeringId?: number, facultyId?: number) => {
+        setSelectedOfferingForAssign(offeringId || offerings[0]?.id || null);
+        setSelectedFacultyForAssign(facultyId || inspectedFaculty?.id || facultyPool[0]?.id || null);
+        setIsManualAssignModalOpen(true);
+    };
+
+    const handleConfirmManualAssign = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedOfferingForAssign || !selectedFacultyForAssign) return;
+
+        setIsSubmittingManualAssign(true);
+        router.post(
+            '/schedule/loading-generator/manual-assign',
+            {
+                offering_id: selectedOfferingForAssign,
+                faculty_id: selectedFacultyForAssign,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setIsManualAssignModalOpen(false);
+
+                    // Realtime optimistic update into active candidate assignment state
+                    const targetOffering = offerings.find((o) => o.id === selectedOfferingForAssign);
+                    const targetFaculty = facultyPool.find((f) => f.id === selectedFacultyForAssign);
+
+                    if (targetOffering && targetFaculty) {
+                        setCandidates((prev) =>
+                            prev.map((cand) => {
+                                const updatedAssignments = cand.assignments.filter(
+                                    (a) => a.offering_id !== selectedOfferingForAssign
+                                );
+                                updatedAssignments.push({
+                                    offering_id: targetOffering.id,
+                                    course_code: targetOffering.course_code,
+                                    course_title: targetOffering.course_title,
+                                    section: targetOffering.section,
+                                    faculty_id: targetFaculty.id,
+                                    faculty_name: targetFaculty.name,
+                                    hours: targetOffering.hours_per_week || 3.0,
+                                    is_lab: targetOffering.is_lab,
+                                    match_score: 95,
+                                });
+
+                                return {
+                                    ...cand,
+                                    assignments: updatedAssignments,
+                                };
+                            })
+                        );
+                    }
+                },
+                onError: (err) => {
+                    console.error('Failed to manually assign course offering:', err);
+                },
+                onFinish: () => {
+                    setIsSubmittingManualAssign(false);
                 },
             }
         );
@@ -685,6 +765,16 @@ export default function LoadingGeneratorPage({
                                         </div>
 
                                         <div className="flex items-center gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleOpenManualAssign()}
+                                                className="h-8 gap-1.5 border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:border-[#8B1E3F] hover:text-[#8B1E3F] dark:border-slate-700 dark:text-slate-300"
+                                            >
+                                                <Plus className="h-3.5 w-3.5" />
+                                                Manual Add Load
+                                            </Button>
+
                                             <select
                                                 value={selectedProgram}
                                                 onChange={(e) => setSelectedProgram(e.target.value)}
@@ -788,6 +878,15 @@ export default function LoadingGeneratorPage({
                                                 Faculty Load Detail
                                             </h3>
                                         </div>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => handleOpenManualAssign(undefined, inspectedFaculty?.id)}
+                                            className="h-7 gap-1 border-rose-200 bg-rose-50/50 px-2.5 text-[11px] font-semibold text-[#8B1E3F] hover:bg-rose-100 hover:text-[#721833] dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300"
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                            Add Course Load
+                                        </Button>
                                     </div>
 
                                     {inspectedFaculty && (
@@ -971,6 +1070,84 @@ export default function LoadingGeneratorPage({
                         </div>
                     )}
                 </div>
+
+                {/* Manual Course Loading Assignment Modal for Program Head & Dean */}
+                <Dialog open={isManualAssignModalOpen} onOpenChange={setIsManualAssignModalOpen}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white">
+                                <UserCheck className="h-5 w-5 text-[#8B1E3F]" />
+                                Manual Faculty Loading Assignment
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-slate-500">
+                                As Program Head or Dean, directly assign or adjust course loading for a faculty member.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <form onSubmit={handleConfirmManualAssign} className="space-y-4 py-2">
+                            <div>
+                                <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                    Target Faculty Member
+                                </Label>
+                                <select
+                                    value={selectedFacultyForAssign || ''}
+                                    onChange={(e) => setSelectedFacultyForAssign(Number(e.target.value))}
+                                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-[#8B1E3F] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                    required
+                                >
+                                    <option value="" disabled>Select faculty member...</option>
+                                    {facultyPool.map((f) => (
+                                        <option key={f.id} value={f.id}>
+                                            {f.name} ({f.program_code}) — Target: {f.target_load}h | {f.specialization}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                    Course Offering to Assign
+                                </Label>
+                                <select
+                                    value={selectedOfferingForAssign || ''}
+                                    onChange={(e) => setSelectedOfferingForAssign(Number(e.target.value))}
+                                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-[#8B1E3F] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                    required
+                                >
+                                    <option value="" disabled>Select course offering...</option>
+                                    {offerings.map((o) => (
+                                        <option key={o.id} value={o.id}>
+                                            {o.course_code} - {o.course_title} ({o.section}) · {o.hours_per_week || 3.0} hrs/wk {o.is_lab ? '[Lab]' : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-[11px] text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+                                <strong>Note:</strong> Manual assignment overrides CP-SAT recommendations and records an audit trace for Program Head and Dean review.
+                            </div>
+
+                            <DialogFooter className="mt-4 gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setIsManualAssignModalOpen(false)}
+                                    className="text-xs"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isSubmittingManualAssign || !selectedOfferingForAssign || !selectedFacultyForAssign}
+                                    className="gap-1.5 bg-[#8B1E3F] text-xs font-semibold text-white hover:bg-[#721833]"
+                                >
+                                    <Check className="h-3.5 w-3.5" />
+                                    {isSubmittingManualAssign ? 'Saving...' : 'Confirm Assignment'}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </SchedulingWorkspaceLayout>
         </AppLayout>
     );

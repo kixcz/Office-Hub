@@ -138,20 +138,21 @@ class FacultyLoadingOptimizationService
     }
 
     /**
-     * Run Python Google OR-Tools CP-SAT solver script to generate candidates A, B, and C.
+     * Run Python Google OR-Tools CP-SAT solver script to generate candidates.
      */
     public function generateCandidatesWithCpSat(
         array $facultyPool,
         array $offerings,
         array $suitabilityMatrix,
         array $configuredWeights = [],
-        bool $usePython = true
+        bool $usePython = true,
+        int $candidateCount = 3
     ): array {
         if (function_exists('set_time_limit')) {
             @set_time_limit(180);
         }
 
-        $strategies = [
+        $allStrategies = [
             [
                 'code' => 'Candidate A',
                 'name' => 'Balanced (Recommended)',
@@ -170,7 +171,22 @@ class FacultyLoadingOptimizationService
                 'strategy' => 'preparations',
                 'description' => 'Minimizes distinct course preparations per instructor to maximize teaching focus.',
             ],
+            [
+                'code' => 'Candidate D',
+                'name' => 'Faculty Preference Priority',
+                'strategy' => 'preferences',
+                'description' => 'Maximizes instructor preferred course assignments and daytime schedule alignment.',
+            ],
+            [
+                'code' => 'Candidate E',
+                'name' => 'Historical Continuity',
+                'strategy' => 'historical',
+                'description' => 'Prioritizes course assignments based on previous teaching track records and terms.',
+            ],
         ];
+
+        $targetCount = max(1, min(5, $candidateCount));
+        $strategies = array_slice($allStrategies, 0, $targetCount);
 
         $candidates = [];
 
@@ -299,6 +315,10 @@ class FacultyLoadingOptimizationService
                     if (in_array($cCode, $facultyLoads[$fid]['preparations_set'])) {
                         $effectiveScore += 15; // reward reusing same prep
                     }
+                } elseif ($strat['strategy'] === 'preferences') {
+                    $effectiveScore += intval($f['has_preference'] ?? false) ? 20 : 0;
+                } elseif ($strat['strategy'] === 'historical') {
+                    $effectiveScore += intval($f['historical_match'] ?? false) ? 20 : 5;
                 }
 
                 if ($effectiveScore > $bestScore) {
