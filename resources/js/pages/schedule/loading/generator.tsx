@@ -235,16 +235,33 @@ export default function LoadingGeneratorPage({
         return activeCandidate.assignments.filter((a) => a.faculty_id === inspectedFaculty.id);
     }, [activeCandidate, inspectedFaculty]);
 
+    // Filtered Faculty Summaries for table
+    const [facultyStatusFilter, setFacultyStatusFilter] = useState<'All' | 'Full-Time' | 'Part-Time' | 'Designated'>('All');
+    const [facultyCurrentPage, setFacultyCurrentPage] = useState(1);
+    const facultyItemsPerPage = 5;
+
     const filteredFacultySummaries = useMemo(() => {
         if (!activeCandidate) return [];
         return activeCandidate.faculty_summary.filter((fs) => {
             const fac = facultyPool.find((f) => f.id === fs.faculty_id);
-            const nameMatches = fs.faculty_name.toLowerCase().includes(searchQuery.toLowerCase());
+            const query = searchQuery.toLowerCase();
+            const nameMatches = fs.faculty_name.toLowerCase().includes(query) ||
+                (fac?.rank && fac.rank.toLowerCase().includes(query)) ||
+                (fac?.specialization && fac.specialization.toLowerCase().includes(query)) ||
+                activeCandidate.assignments.some((a) => a.faculty_id === fs.faculty_id && (a.course_code.toLowerCase().includes(query) || a.course_title.toLowerCase().includes(query)));
+
             const progMatches = selectedProgram === 'All' || fac?.program_code === selectedProgram;
             const statusMatches = selectedStatus === 'All' || fs.status.toLowerCase() === selectedStatus.toLowerCase();
             return nameMatches && progMatches && statusMatches;
         });
     }, [activeCandidate, facultyPool, searchQuery, selectedProgram, selectedStatus]);
+
+    const paginatedFacultySummaries = useMemo(() => {
+        const start = (facultyCurrentPage - 1) * facultyItemsPerPage;
+        return filteredFacultySummaries.slice(start, start + facultyItemsPerPage);
+    }, [filteredFacultySummaries, facultyCurrentPage]);
+
+    const totalFacultyPages = Math.ceil(filteredFacultySummaries.length / facultyItemsPerPage) || 1;
 
     const handleGenerate = () => {
         setIsGenerating(true);
@@ -1063,17 +1080,60 @@ export default function LoadingGeneratorPage({
 
                             {/* Candidate Faculty Table & Details Drawer (Faculty Matrix View) */}
                             {matrixView === 'faculty' && (
-                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-8">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="relative flex-1">
-                                            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                                            <Input
-                                                placeholder="Search faculty..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="pl-8 text-xs"
-                                            />
+                                <div className="space-y-4">
+                                    {/* Faculty Matrix Filter Header Bar */}
+                                    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                                    Program:
+                                                </span>
+                                                <select
+                                                    value={selectedProgram}
+                                                    onChange={(e) => {
+                                                        setSelectedProgram(e.target.value);
+                                                        setFacultyCurrentPage(1);
+                                                    }}
+                                                    className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-800 focus:border-[#8B1E3F] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                                >
+                                                    <option value="All">All Programs</option>
+                                                    {Array.from(new Set(facultyPool.map((f) => f.program_code))).filter(Boolean).map((pCode) => (
+                                                        <option key={pCode} value={pCode}>{pCode}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                                    Faculty Status:
+                                                </span>
+                                                <select
+                                                    value={facultyStatusFilter}
+                                                    onChange={(e) => {
+                                                        setFacultyStatusFilter(e.target.value as any);
+                                                        setFacultyCurrentPage(1);
+                                                    }}
+                                                    className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-800 focus:border-[#8B1E3F] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                                >
+                                                    <option value="All">All</option>
+                                                    <option value="Full-Time">Full-Time</option>
+                                                    <option value="Part-Time">Part-Time</option>
+                                                    <option value="Designated">Designated</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="relative min-w-[280px]">
+                                                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                                <Input
+                                                    placeholder="Search faculty, course, or section..."
+                                                    value={searchQuery}
+                                                    onChange={(e) => {
+                                                        setSearchQuery(e.target.value);
+                                                        setFacultyCurrentPage(1);
+                                                    }}
+                                                    className="h-8 pl-8 text-xs"
+                                                />
+                                            </div>
                                         </div>
 
                                         <div className="flex items-center gap-2">
@@ -1081,304 +1141,272 @@ export default function LoadingGeneratorPage({
                                                 size="sm"
                                                 variant="outline"
                                                 onClick={() => handleOpenManualAssign()}
-                                                className="h-8 gap-1.5 border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:border-[#8B1E3F] hover:text-[#8B1E3F] dark:border-slate-700 dark:text-slate-300"
+                                                className="h-8 gap-1.5 border-slate-200 text-xs font-semibold text-slate-700 hover:border-[#8B1E3F] hover:text-[#8B1E3F] dark:border-slate-700 dark:text-slate-200"
                                             >
                                                 <Plus className="h-3.5 w-3.5" />
                                                 Manual Add Load
                                             </Button>
 
-                                            <select
-                                                value={selectedProgram}
-                                                onChange={(e) => setSelectedProgram(e.target.value)}
-                                                className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => alert('Exporting Candidate Loading A - Faculty Matrix...')}
+                                                className="h-8 gap-1.5 border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200"
                                             >
-                                                <option value="All">All Programs</option>
-                                                <option value="BSIT">BSIT</option>
-                                                <option value="BSIS">BSIS</option>
-                                                <option value="BSCS">BSCS</option>
-                                                <option value="BSDS">BSDS</option>
-                                                <option value="DIT">DIT</option>
-                                            </select>
-
-                                            <select
-                                                value={selectedStatus}
-                                                onChange={(e) => setSelectedStatus(e.target.value)}
-                                                className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                            >
-                                                <option value="All">All Load Status</option>
-                                                <option value="Balanced">Balanced</option>
-                                                <option value="Overloaded">Overloaded</option>
-                                                <option value="Underloaded">Underloaded</option>
-                                            </select>
+                                                <FileSpreadsheet className="h-3.5 w-3.5" />
+                                                Export
+                                            </Button>
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 overflow-x-auto">
-                                        <table className="w-full text-left text-xs">
-                                            <thead className="border-b border-slate-200 bg-slate-50/75 text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
-                                                <tr>
-                                                    <th className="px-3 py-2.5 font-semibold">Faculty</th>
-                                                    <th className="px-3 py-2.5 font-semibold">Designation</th>
-                                                    <th className="px-3 py-2.5 font-semibold">Assigned</th>
-                                                    <th className="px-3 py-2.5 font-semibold">Target</th>
-                                                    <th className="px-3 py-2.5 font-semibold">Preps</th>
-                                                    <th className="px-3 py-2.5 font-semibold">Course Match</th>
-                                                    <th className="px-3 py-2.5 font-semibold">Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                                {filteredFacultySummaries.slice(0, 8).map((fs) => {
-                                                    const isInspected = inspectedFacultyId === fs.faculty_id;
-                                                    const fac = facultyPool.find((f) => f.id === fs.faculty_id);
-                                                    return (
-                                                        <tr
-                                                            key={fs.faculty_id}
-                                                            onClick={() => setInspectedFacultyId(fs.faculty_id)}
-                                                            className={`cursor-pointer transition-colors ${
-                                                                isInspected
-                                                                    ? 'bg-rose-50/50 dark:bg-rose-950/20'
-                                                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                                                            }`}
-                                                        >
-                                                            <td className="px-3 py-2.5">
-                                                                <div className="font-semibold text-slate-900 dark:text-white">
-                                                                    {fs.faculty_name}
-                                                                </div>
-                                                                <div className="text-[11px] text-slate-500">
-                                                                    {fac?.program_code} | {fac?.specialization || 'Computing'}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400">
-                                                                <Badge variant="outline" className="text-[10px]">
-                                                                    {fac?.designation || 'Faculty'}
-                                                                </Badge>
-                                                            </td>
-                                                            <td className="px-3 py-2.5 font-bold text-slate-900 dark:text-white">
-                                                                {fs.assigned_load.toFixed(1)} hrs/wk
-                                                            </td>
-                                                            <td className="px-3 py-2.5 text-slate-500">
-                                                                {fs.target_load.toFixed(1)} hrs/wk
-                                                            </td>
-                                                            <td className="px-3 py-2.5 text-slate-700 dark:text-slate-300">
-                                                                {fs.preparations}
-                                                            </td>
-                                                            <td className="px-3 py-2.5">
-                                                                <span className="rounded bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                                                                    {fs.course_match_score}%
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-3 py-2.5">
-                                                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                                                                    <CheckCircle2 className="h-3 w-3" />
-                                                                    {fs.status}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                                    {/* Faculty Matrix Main Multi-row Table */}
+                                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-xs">
+                                                <thead className="border-b border-slate-200 bg-slate-50/75 text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300">
+                                                    <tr>
+                                                        <th className="w-12 px-3 py-3 text-center font-bold">#</th>
+                                                        <th className="w-48 px-4 py-3 font-bold">Faculty</th>
+                                                        <th className="w-24 px-3 py-3 text-center font-bold">Home Program</th>
+                                                        <th colSpan={5} className="border-x border-slate-200 px-3 py-2 text-center font-bold dark:border-slate-700">
+                                                            <div className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                                                                Assigned Courses / Sections
+                                                            </div>
+                                                            <div className="mt-1 grid grid-cols-12 text-[10px] font-semibold text-slate-500">
+                                                                <span className="col-span-3 text-left">Course No.</span>
+                                                                <span className="col-span-5 text-left">Descriptive Title</span>
+                                                                <span className="col-span-1 text-center">Lec</span>
+                                                                <span className="col-span-1 text-center">Lab</span>
+                                                                <span className="col-span-2 text-center">Credits</span>
+                                                            </div>
+                                                        </th>
+                                                        <th className="w-16 px-3 py-3 text-center font-bold">Total Units</th>
+                                                        <th className="w-16 px-3 py-3 text-center font-bold">Load (Units)</th>
+                                                        <th className="w-20 px-3 py-3 text-center font-bold">Max Load (Units)</th>
+                                                        <th className="w-28 px-3 py-3 text-center font-bold">Load %</th>
+                                                        <th className="w-28 px-3 py-3 text-center font-bold">Assignment Type</th>
+                                                        <th className="px-4 py-3 font-bold">Remarks</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                    {paginatedFacultySummaries.map((fs, idx) => {
+                                                        const fac = facultyPool.find((f) => f.id === fs.faculty_id);
+                                                        const rowNumber = (facultyCurrentPage - 1) * facultyItemsPerPage + idx + 1;
+                                                        const assignments = activeCandidate.assignments.filter((a) => a.faculty_id === fs.faculty_id);
 
-                                {/* Right Side Faculty Detail Drawer */}
-                                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-4">
-                                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-                                        <div className="flex items-center gap-2">
-                                            <Users className="h-4 w-4 text-[#8B1E3F]" />
-                                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                                                Faculty Load Detail
-                                            </h3>
+                                                        // Group assignments or course sections
+                                                        const courseRows = assignments.length > 0 ? assignments : [
+                                                            {
+                                                                offering_id: 0,
+                                                                course_code: '—',
+                                                                course_title: 'No assigned courses',
+                                                                section: '',
+                                                                hours: 0,
+                                                                is_lab: false,
+                                                                assignment_source: 'Unassigned',
+                                                                is_locked: false,
+                                                            }
+                                                        ];
+
+                                                        const totalLecUnits = assignments.reduce((acc, a) => acc + (a.is_lab ? 0 : (a.hours || 3.0)), 0);
+                                                        const totalLabUnits = assignments.reduce((acc, a) => acc + (a.is_lab ? (a.hours || 3.0) : 0), 0);
+                                                        const totalAssignedCredits = fs.assigned_load || assignments.reduce((acc, a) => acc + (a.hours || 3.0), 0);
+                                                        const maxLoadLimit = fs.max_load || fac?.max_load || 18.0;
+                                                        const loadPercent = Math.min(100, Math.round((totalAssignedCredits / maxLoadLimit) * 100));
+
+                                                        // Badge styling for home program
+                                                        const progColor = fac?.program_code === 'BSIT'
+                                                            ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300'
+                                                            : fac?.program_code === 'BSIS'
+                                                            ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300'
+                                                            : fac?.program_code === 'BSCS'
+                                                            ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                                                            : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300';
+
+                                                        return (
+                                                            <React.Fragment key={fs.faculty_id}>
+                                                                {courseRows.map((course, cIdx) => {
+                                                                    const isFirstRow = cIdx === 0;
+                                                                    const isExclusive = course.assignment_source === 'Exclusive';
+                                                                    const isFixed = course.assignment_source === 'Fixed';
+                                                                    const isManual = course.assignment_source === 'Manual';
+
+                                                                    // Remarks logic
+                                                                    let remarkText = '—';
+                                                                    if (isExclusive) {
+                                                                        remarkText = 'All sections handled by the same faculty';
+                                                                    } else if (isFixed) {
+                                                                        remarkText = 'Per program policy';
+                                                                    } else if (isManual) {
+                                                                        remarkText = 'Manually assigned by Program Head';
+                                                                    }
+
+                                                                    return (
+                                                                        <tr key={`${fs.faculty_id}-${cIdx}`} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                                                                            {/* Only render rowspans on the very first course row */}
+                                                                            {isFirstRow && (
+                                                                                <>
+                                                                                    <td rowSpan={courseRows.length + 1} className="border-r border-slate-100 px-3 py-3 text-center font-bold text-slate-700 dark:border-slate-800 dark:text-slate-300">
+                                                                                        {rowNumber}
+                                                                                    </td>
+                                                                                    <td rowSpan={courseRows.length + 1} className="border-r border-slate-100 px-4 py-3 align-top dark:border-slate-800">
+                                                                                        <div className="font-bold text-slate-900 dark:text-white">
+                                                                                            {fs.faculty_name}
+                                                                                        </div>
+                                                                                        <div className="text-[11px] text-slate-500">
+                                                                                            {fac?.rank || 'Associate Professor'}
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    <td rowSpan={courseRows.length + 1} className="border-r border-slate-100 px-3 py-3 text-center align-middle dark:border-slate-800">
+                                                                                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold ${progColor}`}>
+                                                                                            {fac?.program_code || 'BSIT'}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                </>
+                                                                            )}
+
+                                                                            {/* Course Detail Cells */}
+                                                                            <td className="w-24 px-3 py-2 text-left font-semibold text-slate-900 dark:text-white">
+                                                                                {course.course_code}
+                                                                            </td>
+                                                                            <td className="px-3 py-2 text-left text-slate-700 dark:text-slate-300">
+                                                                                {course.course_title} {course.section ? `(${course.section})` : ''}
+                                                                            </td>
+                                                                            <td className="w-10 px-2 py-2 text-center text-slate-600 dark:text-slate-400">
+                                                                                {course.offering_id === 0 ? '—' : (course.is_lab ? '0' : '3')}
+                                                                            </td>
+                                                                            <td className="w-10 px-2 py-2 text-center text-slate-600 dark:text-slate-400">
+                                                                                {course.offering_id === 0 ? '—' : (course.is_lab ? '3' : '0')}
+                                                                            </td>
+                                                                            <td className="w-14 border-r border-slate-100 px-2 py-2 text-center font-semibold text-slate-900 dark:border-slate-800 dark:text-white">
+                                                                                {course.offering_id === 0 ? '—' : (course.hours || 3)}
+                                                                            </td>
+
+                                                                            {/* Faculty Level Load Summary cells rowspanned across all courses + total row */}
+                                                                            {isFirstRow && (
+                                                                                <>
+                                                                                    <td rowSpan={courseRows.length + 1} className="border-r border-slate-100 px-3 py-3 text-center align-middle font-bold text-slate-900 dark:border-slate-800 dark:text-white">
+                                                                                        {Math.round(totalAssignedCredits)}
+                                                                                    </td>
+                                                                                    <td rowSpan={courseRows.length + 1} className="border-r border-slate-100 px-3 py-3 text-center align-middle font-bold text-slate-900 dark:border-slate-800 dark:text-white">
+                                                                                        {Math.round(totalAssignedCredits)}
+                                                                                    </td>
+                                                                                    <td rowSpan={courseRows.length + 1} className="border-r border-slate-100 px-3 py-3 text-center align-middle font-bold text-slate-900 dark:border-slate-800 dark:text-white">
+                                                                                        {Math.round(maxLoadLimit)}
+                                                                                    </td>
+                                                                                    <td rowSpan={courseRows.length + 1} className="border-r border-slate-100 px-3 py-3 align-middle dark:border-slate-800">
+                                                                                        <div className="flex flex-col items-center gap-1">
+                                                                                            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                                                                                                {loadPercent}%
+                                                                                            </span>
+                                                                                            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                                                                                <div
+                                                                                                    className="h-full rounded-full bg-emerald-500"
+                                                                                                    style={{ width: `${loadPercent}%` }}
+                                                                                                />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </td>
+                                                                                </>
+                                                                            )}
+
+                                                                            {/* Per-course Assignment Type Badge */}
+                                                                            <td className="border-r border-slate-100 px-3 py-2 text-center align-middle dark:border-slate-800">
+                                                                                {isExclusive ? (
+                                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
+                                                                                        🔒 Exclusive
+                                                                                    </span>
+                                                                                ) : isFixed ? (
+                                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                                                                                        🔒 Fixed
+                                                                                    </span>
+                                                                                ) : isManual ? (
+                                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
+                                                                                        👤 Manual
+                                                                                    </span>
+                                                                                ) : course.offering_id === 0 ? (
+                                                                                    <span className="text-slate-400">—</span>
+                                                                                ) : (
+                                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
+                                                                                        ⚙ CP-SAT
+                                                                                    </span>
+                                                                                )}
+                                                                            </td>
+
+                                                                            {/* Per-course Remarks */}
+                                                                            <td className="px-4 py-2 text-left italic text-slate-500">
+                                                                                {remarkText}
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+
+                                                                {/* Faculty Total Row (Yellow Highlight) */}
+                                                                <tr className="bg-amber-50/50 font-bold text-slate-900 dark:bg-amber-950/20 dark:text-white">
+                                                                    <td colSpan={2} className="px-3 py-2 text-left font-bold text-slate-800 dark:text-slate-200">
+                                                                        Total
+                                                                    </td>
+                                                                    <td className="px-2 py-2 text-center">{totalLecUnits}</td>
+                                                                    <td className="px-2 py-2 text-center">{totalLabUnits}</td>
+                                                                    <td className="border-r border-slate-100 px-2 py-2 text-center dark:border-slate-800">
+                                                                        {totalAssignedCredits}
+                                                                    </td>
+                                                                    <td colSpan={2} className="border-t border-slate-100 px-4 py-2 text-slate-400 dark:border-slate-800">—</td>
+                                                                </tr>
+                                                            </React.Fragment>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
                                         </div>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => handleOpenManualAssign(undefined, inspectedFaculty?.id)}
-                                            className="h-7 gap-1 border-rose-200 bg-rose-50/50 px-2.5 text-[11px] font-semibold text-[#8B1E3F] hover:bg-rose-100 hover:text-[#721833] dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300"
-                                        >
-                                            <Plus className="h-3.5 w-3.5" />
-                                            Add Course Load
-                                        </Button>
-                                    </div>
 
-                                    {inspectedFaculty && (
-                                        <div className="mt-4 space-y-4">
-                                            <div>
-                                                <div className="font-bold text-slate-900 dark:text-white">
-                                                    {inspectedFaculty.name}
-                                                </div>
-                                                <div className="text-xs text-slate-500">
-                                                    {inspectedFaculty.rank} | {inspectedFaculty.program_code}
-                                                </div>
+                                        {/* Pagination Bar */}
+                                        <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+                                            <div className="text-xs text-slate-500">
+                                                Showing {paginatedFacultySummaries.length > 0 ? (facultyCurrentPage - 1) * facultyItemsPerPage + 1 : 0}–
+                                                {Math.min(facultyCurrentPage * facultyItemsPerPage, filteredFacultySummaries.length)} of {filteredFacultySummaries.length} faculty
                                             </div>
 
-                                            {/* Subtabs */}
-                                            <div className="flex items-center gap-1 border-b border-slate-100 pb-2 text-xs font-semibold dark:border-slate-800">
-                                                <button
-                                                    onClick={() => setDrawerTab('assignment')}
-                                                    className={`rounded-md px-2.5 py-1 ${
-                                                        drawerTab === 'assignment'
-                                                            ? 'bg-[#8B1E3F] text-white'
-                                                            : 'text-slate-500 hover:text-slate-900'
-                                                    }`}
+                                            <div className="flex items-center gap-1">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setFacultyCurrentPage((p) => Math.max(1, p - 1))}
+                                                    disabled={facultyCurrentPage <= 1}
+                                                    className="h-7 w-7 p-0"
                                                 >
-                                                    Load Assignment
-                                                </button>
-                                                <button
-                                                    onClick={() => setDrawerTab('score')}
-                                                    className={`rounded-md px-2.5 py-1 ${
-                                                        drawerTab === 'score'
-                                                            ? 'bg-[#8B1E3F] text-white'
-                                                            : 'text-slate-500 hover:text-slate-900'
-                                                    }`}
+                                                    ‹
+                                                </Button>
+
+                                                {Array.from({ length: totalFacultyPages }, (_, i) => i + 1).slice(0, 5).map((page) => (
+                                                    <Button
+                                                        key={page}
+                                                        variant={facultyCurrentPage === page ? 'default' : 'outline'}
+                                                        size="sm"
+                                                        onClick={() => setFacultyCurrentPage(page)}
+                                                        className={`h-7 w-7 p-0 text-xs ${
+                                                            facultyCurrentPage === page
+                                                                ? 'bg-[#8B1E3F] font-bold text-white hover:bg-[#721833]'
+                                                                : 'text-slate-700 dark:text-slate-300'
+                                                        }`}
+                                                    >
+                                                        {page}
+                                                    </Button>
+                                                ))}
+
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setFacultyCurrentPage((p) => Math.min(totalFacultyPages, p + 1))}
+                                                    disabled={facultyCurrentPage >= totalFacultyPages}
+                                                    className="h-7 w-7 p-0"
                                                 >
-                                                    Matching Score
-                                                </button>
-                                                <button
-                                                    onClick={() => setDrawerTab('background')}
-                                                    className={`rounded-md px-2.5 py-1 ${
-                                                        drawerTab === 'background'
-                                                            ? 'bg-[#8B1E3F] text-white'
-                                                            : 'text-slate-500 hover:text-slate-900'
-                                                    }`}
-                                                >
-                                                    Background
-                                                </button>
+                                                    ›
+                                                </Button>
                                             </div>
-
-                                            {drawerTab === 'assignment' && (
-                                                <div className="space-y-3">
-                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                        Assigned Courses (Total: 12.0 hrs/wk)
-                                                    </div>
-                                                    <div className="space-y-2 text-xs">
-                                                        {inspectedAssignments.length > 0 ? (
-                                                            inspectedAssignments.map((a) => (
-                                                                <div
-                                                                    key={a.offering_id}
-                                                                    className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-800"
-                                                                >
-                                                                    <div className="flex items-center justify-between">
-                                                                        <span className="font-semibold text-slate-900 dark:text-white">
-                                                                            {a.course_code} - {a.course_title}
-                                                                        </span>
-                                                                        <Badge variant="outline" className="text-[10px]">
-                                                                            {a.section}
-                                                                        </Badge>
-                                                                    </div>
-                                                                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
-                                                                        <span>{a.is_lab ? 'Lab' : 'Lecture'}</span>
-                                                                        <span className="font-medium text-slate-700 dark:text-slate-300">
-                                                                            {a.hours} hrs/wk
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            ))
-                                                        ) : (
-                                                            <>
-                                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-800">
-                                                                    <div className="flex items-center justify-between">
-                                                                        <span className="font-semibold text-slate-900 dark:text-white">
-                                                                            ITEL 601 - Artificial Intelligence
-                                                                        </span>
-                                                                        <Badge variant="outline" className="text-[10px]">
-                                                                            DIT 3B
-                                                                        </Badge>
-                                                                    </div>
-                                                                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
-                                                                        <span>Lab</span>
-                                                                        <span className="font-medium text-slate-700 dark:text-slate-300">
-                                                                            3.0 hrs/wk
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-800">
-                                                                    <div className="flex items-center justify-between">
-                                                                        <span className="font-semibold text-slate-900 dark:text-white">
-                                                                            CS 612 - Computer Programming II
-                                                                        </span>
-                                                                        <Badge variant="outline" className="text-[10px]">
-                                                                            BSIT 2A
-                                                                        </Badge>
-                                                                    </div>
-                                                                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
-                                                                        <span>Lab</span>
-                                                                        <span className="font-medium text-slate-700 dark:text-slate-300">
-                                                                            3.0 hrs/wk
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-800">
-                                                                    <div className="flex items-center justify-between">
-                                                                        <span className="font-semibold text-slate-900 dark:text-white">
-                                                                            ISEL 601 - Data Visualization
-                                                                        </span>
-                                                                        <Badge variant="outline" className="text-[10px]">
-                                                                            BSIS 3A
-                                                                        </Badge>
-                                                                    </div>
-                                                                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
-                                                                        <span>Lab</span>
-                                                                        <span className="font-medium text-slate-700 dark:text-slate-300">
-                                                                            3.0 hrs/wk
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="pt-2">
-                                                        <div className="flex items-center justify-between text-xs">
-                                                            <span className="font-semibold text-slate-700 dark:text-slate-300">
-                                                                Match Breakdown
-                                                            </span>
-                                                            <span className="font-bold text-[#8B1E3F]">98% Match</span>
-                                                        </div>
-                                                        <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                                                            <div className="bg-blue-600" style={{ width: '50%' }} />
-                                                            <div className="bg-cyan-500" style={{ width: '30%' }} />
-                                                            <div className="bg-emerald-500" style={{ width: '20%' }} />
-                                                        </div>
-                                                        <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
-                                                            <span className="flex items-center gap-1">
-                                                                <span className="h-2 w-2 rounded-full bg-blue-600" /> Historical (50%)
-                                                            </span>
-                                                            <span className="flex items-center gap-1">
-                                                                <span className="h-2 w-2 rounded-full bg-cyan-500" /> Specialization (30%)
-                                                            </span>
-                                                            <span className="flex items-center gap-1">
-                                                                <span className="h-2 w-2 rounded-full bg-emerald-500" /> Preferred (20%)
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {drawerTab === 'score' && (
-                                                <div className="space-y-3 text-xs text-slate-600 dark:text-slate-400">
-                                                    <p>
-                                                        Candidate solver calculated high alignment for specialized laboratory subjects with positive student feedback history.
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            {drawerTab === 'background' && (
-                                                <div className="space-y-3 text-xs text-slate-600 dark:text-slate-400">
-                                                    <div>
-                                                        <span className="font-medium text-slate-900 dark:text-white">Specialization:</span>{' '}
-                                                        {inspectedFaculty.specialization}
-                                                    </div>
-                                                    <div>
-                                                        <span className="font-medium text-slate-900 dark:text-white">Designation:</span>{' '}
-                                                        {inspectedFaculty.designation}
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-                            </div>
                             )}
                         </div>
                     )}
