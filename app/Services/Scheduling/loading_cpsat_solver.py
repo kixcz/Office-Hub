@@ -35,6 +35,21 @@ def solve_loading(data):
         cid = c['id']
         model.Add(sum(x[(f['id'], cid)] for f in faculty_list) == 1)
 
+    # HARD CONSTRAINT 1.1: HYBRID LOADING PINNED ASSIGNMENTS & RULES
+    # Manually locked offerings or explicit fixed/exclusive instructor assignments
+    for c in offerings:
+        cid = c['id']
+        locked_fid = c.get('locked_faculty_id') or (c.get('faculty_id') if c.get('is_locked') else None)
+        if locked_fid and any(f['id'] == locked_fid for f in faculty_list):
+            model.Add(x[(locked_fid, cid)] == 1)
+
+        # Restrict exclusive candidates if exclusive_faculty_id is set
+        exclusive_fid = c.get('exclusive_faculty_id')
+        if exclusive_fid:
+            for f in faculty_list:
+                if f['id'] != exclusive_fid:
+                    model.Add(x[(f['id'], cid)] == 0)
+
     # Variables for preparations per faculty:
     # unique course codes taught by faculty f
     unique_course_codes = list(set(c['course_code'] for c in offerings))
@@ -159,6 +174,14 @@ def solve_loading(data):
 
             for c in assigned_offerings:
                 c_score = int(f_scores.get(str(c['id']), 50))
+                # Determine assignment source
+                if c.get('locked_faculty_id') or (c.get('faculty_id') == fid and c.get('is_locked')):
+                    source = 'Fixed' if c.get('rule_type') == 'fixed' else ('Exclusive' if c.get('rule_type') == 'exclusive' else 'Manual')
+                elif c.get('exclusive_faculty_id') == fid:
+                    source = 'Exclusive'
+                else:
+                    source = 'CP-SAT'
+
                 assignments.append({
                     'offering_id': c['id'],
                     'course_code': c['course_code'],
@@ -169,6 +192,9 @@ def solve_loading(data):
                     'match_score': c_score,
                     'units': float(c.get('units', 3)),
                     'hours_per_week': float(c.get('units', 3)),
+                    'assignment_source': source,
+                    'is_locked': bool(c.get('is_locked', False) or c.get('locked_faculty_id')),
+                    'rule_type': c.get('rule_type'),
                 })
 
         # Calculate Candidate Aggregate Quality Metrics

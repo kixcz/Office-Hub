@@ -186,10 +186,15 @@ export default function LoadingGeneratorPage({
     const [selectedProgram, setSelectedProgram] = useState('All');
     const [selectedStatus, setSelectedStatus] = useState('All');
 
+    // Matrix View Switcher: Consolidated Matrix (Course-centric by Program) vs. Faculty Matrix (Faculty-centric)
+    const [matrixView, setMatrixView] = useState<'consolidated' | 'faculty'>('consolidated');
+
     // Manual Course Loading Modal State (for Program Heads & Dean)
     const [isManualAssignModalOpen, setIsManualAssignModalOpen] = useState(false);
     const [selectedOfferingForAssign, setSelectedOfferingForAssign] = useState<number | null>(null);
     const [selectedFacultyForAssign, setSelectedFacultyForAssign] = useState<number | null>(null);
+    const [selectedRuleTypeForAssign, setSelectedRuleTypeForAssign] = useState<'manual' | 'fixed' | 'exclusive' | 'all_sections'>('manual');
+    const [assignJustification, setAssignJustification] = useState('');
     const [isSubmittingManualAssign, setIsSubmittingManualAssign] = useState(false);
 
     // Recent Generation History (Quadrant match)
@@ -296,55 +301,123 @@ export default function LoadingGeneratorPage({
         if (!selectedOfferingForAssign || !selectedFacultyForAssign) return;
 
         setIsSubmittingManualAssign(true);
-        router.post(
-            '/schedule/loading-generator/manual-assign',
-            {
-                offering_id: selectedOfferingForAssign,
-                faculty_id: selectedFacultyForAssign,
-            },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setIsManualAssignModalOpen(false);
 
-                    // Realtime optimistic update into active candidate assignment state
-                    const targetOffering = offerings.find((o) => o.id === selectedOfferingForAssign);
-                    const targetFaculty = facultyPool.find((f) => f.id === selectedFacultyForAssign);
+        const targetOffering = offerings.find((o) => o.id === selectedOfferingForAssign);
+        const targetFaculty = facultyPool.find((f) => f.id === selectedFacultyForAssign);
 
-                    if (targetOffering && targetFaculty) {
-                        setCandidates((prev) =>
-                            prev.map((cand) => {
-                                const updatedAssignments = cand.assignments.filter(
-                                    (a) => a.offering_id !== selectedOfferingForAssign
-                                );
-                                updatedAssignments.push({
-                                    offering_id: targetOffering.id,
-                                    course_code: targetOffering.course_code,
-                                    course_title: targetOffering.course_title,
-                                    section: targetOffering.section,
-                                    faculty_id: targetFaculty.id,
-                                    faculty_name: targetFaculty.name,
-                                    hours: targetOffering.hours_per_week || 3.0,
-                                    is_lab: targetOffering.is_lab,
-                                    match_score: 95,
-                                });
+        if (selectedRuleTypeForAssign === 'manual') {
+            router.post(
+                '/schedule/loading-generator/manual-assign',
+                {
+                    offering_id: selectedOfferingForAssign,
+                    faculty_id: selectedFacultyForAssign,
+                },
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setIsManualAssignModalOpen(false);
 
-                                return {
-                                    ...cand,
-                                    assignments: updatedAssignments,
-                                };
-                            })
-                        );
-                    }
+                        // Realtime optimistic update into active candidate assignment state
+                        if (targetOffering && targetFaculty) {
+                            setCandidates((prev) =>
+                                prev.map((cand) => {
+                                    const updatedAssignments = cand.assignments.filter(
+                                        (a) => a.offering_id !== selectedOfferingForAssign
+                                    );
+                                    updatedAssignments.push({
+                                        offering_id: targetOffering.id,
+                                        course_code: targetOffering.course_code,
+                                        course_title: targetOffering.course_title,
+                                        section: targetOffering.section,
+                                        faculty_id: targetFaculty.id,
+                                        faculty_name: targetFaculty.name,
+                                        hours: targetOffering.hours_per_week || 3.0,
+                                        is_lab: targetOffering.is_lab,
+                                        match_score: 95,
+                                        assignment_source: 'Manual',
+                                        is_locked: true,
+                                    });
+
+                                    return {
+                                        ...cand,
+                                        assignments: updatedAssignments,
+                                    };
+                                })
+                            );
+                        }
+                    },
+                    onError: (err) => {
+                        console.error('Failed to manually assign course offering:', err);
+                    },
+                    onFinish: () => {
+                        setIsSubmittingManualAssign(false);
+                    },
+                }
+            );
+        } else {
+            // Rule-based assignment (fixed, exclusive, all_sections, preferred)
+            router.post(
+                '/schedule/loading-generator/rules',
+                {
+                    course_code: targetOffering?.course_code,
+                    course_title: targetOffering?.course_title,
+                    section: selectedRuleTypeForAssign === 'all_sections' || selectedRuleTypeForAssign === 'exclusive' ? null : targetOffering?.section,
+                    designated_faculty_id: selectedFacultyForAssign,
+                    rule_type: selectedRuleTypeForAssign,
+                    justification: assignJustification,
+                    is_locked: true,
                 },
-                onError: (err) => {
-                    console.error('Failed to manually assign course offering:', err);
-                },
-                onFinish: () => {
-                    setIsSubmittingManualAssign(false);
-                },
-            }
-        );
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setIsManualAssignModalOpen(false);
+                        setAssignJustification('');
+
+                        if (targetOffering && targetFaculty) {
+                            setCandidates((prev) =>
+                                prev.map((cand) => {
+                                    const updatedAssignments = cand.assignments.map((a) => {
+                                        const matchesCourse = a.course_code === targetOffering.course_code;
+                                        const matchesSection = !targetOffering.section || a.section === targetOffering.section;
+                                        const shouldUpdate =
+                                            selectedRuleTypeForAssign === 'exclusive' || selectedRuleTypeForAssign === 'all_sections'
+                                                ? matchesCourse
+                                                : matchesCourse && matchesSection;
+
+                                        if (shouldUpdate) {
+                                            return {
+                                                ...a,
+                                                faculty_id: targetFaculty.id,
+                                                faculty_name: targetFaculty.name,
+                                                assignment_source:
+                                                    selectedRuleTypeForAssign === 'exclusive'
+                                                        ? 'Exclusive'
+                                                        : selectedRuleTypeForAssign === 'fixed'
+                                                          ? 'Fixed'
+                                                          : 'Manual',
+                                                is_locked: true,
+                                            };
+                                        }
+                                        return a;
+                                    });
+
+                                    return {
+                                        ...cand,
+                                        assignments: updatedAssignments,
+                                    };
+                                })
+                            );
+                        }
+                    },
+                    onError: (err) => {
+                        console.error('Failed to store assignment rule:', err);
+                    },
+                    onFinish: () => {
+                        setIsSubmittingManualAssign(false);
+                    },
+                }
+            );
+        }
     };
 
     return (
@@ -750,7 +823,246 @@ export default function LoadingGeneratorPage({
                                 </div>
                             </div>
 
-                            {/* Candidate Faculty Table & Details Drawer */}
+                            {/* View Switcher Tabs: Consolidated Matrix vs Faculty Matrix (Quadrant Match) */}
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setMatrixView('consolidated')}
+                                        className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition-all ${
+                                            matrixView === 'consolidated'
+                                                ? 'bg-[#8B1E3F] text-white shadow-sm shadow-[#8B1E3F]/30'
+                                                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                        }`}
+                                    >
+                                        <Table className="h-4 w-4" />
+                                        Consolidated Matrix
+                                    </button>
+                                    <button
+                                        onClick={() => setMatrixView('faculty')}
+                                        className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition-all ${
+                                            matrixView === 'faculty'
+                                                ? 'bg-[#8B1E3F] text-white shadow-sm shadow-[#8B1E3F]/30'
+                                                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                        }`}
+                                    >
+                                        <Users className="h-4 w-4" />
+                                        Faculty Matrix
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="border-rose-200 bg-rose-50 text-[11px] text-[#8B1E3F] dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300">
+                                        College-Wide View: {facultyPool.length} Faculty · {offerings.length} Offerings
+                                    </Badge>
+                                </div>
+                            </div>
+
+                            {/* Consolidated Matrix View (Course-centric grouped by Program with totals) */}
+                            {matrixView === 'consolidated' && (
+                                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                    <div className="flex flex-col gap-3 border-b border-slate-100 p-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                                                Consolidated College Loading Matrix — {activeCandidate.code}
+                                            </h4>
+                                            <p className="text-xs text-slate-500">
+                                                Complete college teaching allocations by academic program, course units, assigned instructors, and lock status.
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleOpenManualAssign()}
+                                                className="h-8 gap-1.5 border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:border-[#8B1E3F] hover:text-[#8B1E3F] dark:border-slate-700 dark:text-slate-300"
+                                            >
+                                                <Plus className="h-3.5 w-3.5" />
+                                                Add Course Rule / Fixed Load
+                                            </Button>
+
+                                            <select
+                                                value={selectedProgram}
+                                                onChange={(e) => setSelectedProgram(e.target.value)}
+                                                className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                            >
+                                                <option value="All">All Programs</option>
+                                                {Array.from(new Set(offerings.map((o) => o.program_code))).filter(Boolean).map((pCode) => (
+                                                    <option key={pCode} value={pCode}>{pCode}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-xs">
+                                            <thead className="border-b border-slate-200 bg-slate-50/75 text-slate-700 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-300">
+                                                <tr>
+                                                    <th className="w-12 px-3 py-2.5 text-center font-bold">No.</th>
+                                                    <th className="px-4 py-2.5 font-bold">Program / Course Code — Course Title</th>
+                                                    <th className="px-3 py-2.5 text-center font-bold">Units (Lec/Lab)</th>
+                                                    <th className="px-3 py-2.5 text-center font-bold">No. of Sections</th>
+                                                    <th className="px-3 py-2.5 text-center font-bold">Total Units</th>
+                                                    <th className="px-4 py-2.5 font-bold">Assigned Faculty</th>
+                                                    <th className="px-3 py-2.5 text-center font-bold">Load per Faculty</th>
+                                                    <th className="px-3 py-2.5 text-center font-bold">Assignment Type</th>
+                                                    <th className="px-4 py-2.5 font-bold">Remarks</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                {(() => {
+                                                    // Group offerings by Program and Course Code
+                                                    const filteredOfferings = offerings.filter(
+                                                        (o) => selectedProgram === 'All' || o.program_code === selectedProgram
+                                                    );
+
+                                                    const programs = Array.from(new Set(filteredOfferings.map((o) => o.program_code))).sort();
+                                                    let globalIndex = 1;
+
+                                                    return programs.map((progCode) => {
+                                                        const progOfferings = filteredOfferings.filter((o) => o.program_code === progCode);
+                                                        const uniqueCourses = Array.from(new Set(progOfferings.map((o) => o.course_code)));
+
+                                                        const progSectionsCount = progOfferings.length;
+                                                        const progTotalUnits = progOfferings.reduce((sum, o) => sum + (o.units || 3.0), 0);
+
+                                                        return (
+                                                            <React.Fragment key={progCode}>
+                                                                {/* Program Header Banner */}
+                                                                <tr className="bg-cyan-50/80 font-bold text-cyan-950 dark:bg-cyan-950/40 dark:text-cyan-200">
+                                                                    <td className="px-3 py-2 text-center text-xs">▾</td>
+                                                                    <td className="px-4 py-2 text-xs">
+                                                                        {progCode} — Academic Program Course Offerings
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-center text-xs">—</td>
+                                                                    <td className="px-3 py-2 text-center text-xs">{progSectionsCount}</td>
+                                                                    <td className="px-3 py-2 text-center text-xs">{progTotalUnits}</td>
+                                                                    <td colSpan={4} className="px-4 py-2 text-xs text-slate-500">
+                                                                        Program Cohort Teaching Allocations
+                                                                    </td>
+                                                                </tr>
+
+                                                                {/* Course Offerings under this Program */}
+                                                                {uniqueCourses.map((cCode) => {
+                                                                    const courseGroup = progOfferings.filter((o) => o.course_code === cCode);
+                                                                    const firstOffering = courseGroup[0];
+                                                                    const sectionsCount = courseGroup.length;
+                                                                    const totalCourseUnits = courseGroup.reduce((s, o) => s + (o.units || 3.0), 0);
+
+                                                                    // Determine assignments for these sections in the active candidate
+                                                                    const assignedInCand = courseGroup.map((o) => {
+                                                                        return activeCandidate.assignments.find((a) => a.offering_id === o.id);
+                                                                    }).filter(Boolean);
+
+                                                                    const uniqueFacultyNames = Array.from(new Set(assignedInCand.map((a) => a?.faculty_name))).filter(Boolean);
+                                                                    const sourceTypes = Array.from(new Set(assignedInCand.map((a) => a?.assignment_source || (firstOffering.is_locked ? 'Fixed' : 'CP-SAT'))));
+
+                                                                    const isExclusive = sourceTypes.includes('Exclusive') || (sectionsCount > 1 && uniqueFacultyNames.length === 1 && firstOffering.is_locked);
+                                                                    const isManual = sourceTypes.includes('Manual');
+                                                                    const isFixed = sourceTypes.includes('Fixed');
+
+                                                                    const rowNum = globalIndex++;
+
+                                                                    return (
+                                                                        <tr key={cCode} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50">
+                                                                            <td className="px-3 py-2.5 text-center font-medium text-slate-500">
+                                                                                {rowNum}
+                                                                            </td>
+                                                                            <td className="px-4 py-2.5 font-semibold text-slate-900 dark:text-white">
+                                                                                <span className="font-bold text-[#8B1E3F]">{firstOffering.course_code}</span> — {firstOffering.course_title}
+                                                                            </td>
+                                                                            <td className="px-3 py-2.5 text-center text-slate-600 dark:text-slate-400">
+                                                                                {firstOffering.is_lab ? '2 / 3' : '3 / 0'}
+                                                                            </td>
+                                                                            <td className="px-3 py-2.5 text-center font-medium text-slate-700 dark:text-slate-300">
+                                                                                {sectionsCount}
+                                                                            </td>
+                                                                            <td className="px-3 py-2.5 text-center font-bold text-slate-900 dark:text-white">
+                                                                                {totalCourseUnits}
+                                                                            </td>
+                                                                            <td className="px-4 py-2.5">
+                                                                                {uniqueFacultyNames.length > 0 ? (
+                                                                                    <div className="space-y-0.5">
+                                                                                        {uniqueFacultyNames.map((name) => (
+                                                                                            <div key={name} className="font-semibold text-slate-900 dark:text-white">
+                                                                                                {name}
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <span className="text-amber-600">Pending Assignment</span>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-3 py-2.5 text-center font-bold text-slate-900 dark:text-white">
+                                                                                {totalCourseUnits}
+                                                                            </td>
+                                                                            <td className="px-3 py-2.5 text-center">
+                                                                                {isExclusive ? (
+                                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
+                                                                                        Exclusive
+                                                                                    </span>
+                                                                                ) : isFixed ? (
+                                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                                                                                        Fixed
+                                                                                    </span>
+                                                                                ) : isManual ? (
+                                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                                                                                        Manual
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300">
+                                                                                        CP-SAT
+                                                                                    </span>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-4 py-2.5 text-[11px] text-slate-500">
+                                                                                {isExclusive
+                                                                                    ? 'All sections handled by designated faculty'
+                                                                                    : isFixed
+                                                                                    ? 'Pinned per program policy'
+                                                                                    : 'Optimized by CP-SAT solver'}
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+
+                                                                {/* Program Subtotal Row */}
+                                                                <tr className="bg-amber-50/50 font-bold text-slate-900 dark:bg-amber-950/20 dark:text-white">
+                                                                    <td className="px-3 py-2 text-center text-xs">—</td>
+                                                                    <td className="px-4 py-2 text-xs">{progCode} Subtotal</td>
+                                                                    <td className="px-3 py-2 text-center text-xs">—</td>
+                                                                    <td className="px-3 py-2 text-center text-xs">{progSectionsCount}</td>
+                                                                    <td className="px-3 py-2 text-center text-xs">{progTotalUnits}</td>
+                                                                    <td colSpan={4} className="px-4 py-2 text-xs text-slate-500">—</td>
+                                                                </tr>
+                                                            </React.Fragment>
+                                                        );
+                                                    });
+                                                })()}
+
+                                                {/* College-wide Consolidated Total Row */}
+                                                <tr className="border-t-2 border-slate-300 bg-slate-100 font-extrabold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                                    <td className="px-3 py-3 text-center text-xs">—</td>
+                                                    <td className="px-4 py-3 text-xs uppercase tracking-wide">
+                                                        College Consolidated Total ({activeCandidate.code})
+                                                    </td>
+                                                    <td className="px-3 py-3 text-center text-xs">—</td>
+                                                    <td className="px-3 py-3 text-center text-xs">{offerings.length}</td>
+                                                    <td className="px-3 py-3 text-center text-xs">
+                                                        {offerings.reduce((sum, o) => sum + (o.units || 3.0), 0)}
+                                                    </td>
+                                                    <td colSpan={4} className="px-4 py-3 text-xs text-emerald-600 dark:text-emerald-400">
+                                                        100% Schedulable Offerings Covered
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Candidate Faculty Table & Details Drawer (Faculty Matrix View) */}
+                            {matrixView === 'faculty' && (
                             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                                 <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-8">
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1067,6 +1379,7 @@ export default function LoadingGeneratorPage({
                                     )}
                                 </div>
                             </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -1123,8 +1436,36 @@ export default function LoadingGeneratorPage({
                                 </select>
                             </div>
 
+                            <div>
+                                <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                    Assignment Type / Rule
+                                </Label>
+                                <select
+                                    value={selectedRuleTypeForAssign}
+                                    onChange={(e) => setSelectedRuleTypeForAssign(e.target.value as any)}
+                                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-[#8B1E3F] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                >
+                                    <option value="manual">Manual Direct Assignment (Selected offering)</option>
+                                    <option value="fixed">Fixed Assignment (Lock this section specifically)</option>
+                                    <option value="exclusive">Exclusive Instructor (Only this faculty allowed for course)</option>
+                                    <option value="all_sections">All-Sections Assignment (One instructor for all sections)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                    Justification / Reason (Required for Exclusive/Exceptional)
+                                </Label>
+                                <Input
+                                    value={assignJustification}
+                                    onChange={(e) => setAssignJustification(e.target.value)}
+                                    placeholder="e.g. Lead researcher for Capstone Project / Departmental designation"
+                                    className="mt-1.5 text-xs"
+                                />
+                            </div>
+
                             <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-[11px] text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
-                                <strong>Note:</strong> Manual assignment overrides CP-SAT recommendations and records an audit trace for Program Head and Dean review.
+                                <strong>Hybrid Loading Rule:</strong> CP-SAT respects manually assigned and locked courses as hard constraints, optimizing only the remaining offerings.
                             </div>
 
                             <DialogFooter className="mt-4 gap-2">

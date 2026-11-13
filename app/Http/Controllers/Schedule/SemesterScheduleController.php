@@ -577,15 +577,54 @@ class SemesterScheduleController extends Controller
             ];
         })->toArray();
 
-        // Scoped Course Offerings for Semester
+        // Scoped Course Offerings for Semester with Special Course Assignment Rules (Hybrid Loading)
         $schedulesQuery = RoomSchedule::query();
         if ($scopeCollegeId) {
             $this->applyScheduleCollegeScope($schedulesQuery, $scopeCollegeId);
         }
         $rawOfferings = $schedulesQuery->get();
 
-        $offerings = $rawOfferings->map(function ($s) {
+        // Fetch active course assignment rules (Exclusive, Fixed, All-sections, Preferred)
+        $courseRules = \App\Models\CourseAssignmentRule::where('academic_period_id', $currentPeriod->id)
+            ->where('status', 'Active')
+            ->get();
+
+        $offerings = $rawOfferings->map(function ($s) use ($courseRules) {
             $isLab = str_contains(strtolower($s->room_name ?? ''), 'lab') || str_contains(strtolower($s->room_name ?? ''), 'clr');
+
+            // Find matching rule by course_code and optional section
+            $matchedRule = $courseRules->first(function ($r) use ($s) {
+                if ($r->course_code !== $s->course_code) {
+                    return false;
+                }
+                if ($r->section && $r->section !== $s->section) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            $lockedFacultyId = null;
+            $exclusiveFacultyId = null;
+            $ruleType = null;
+            $isLocked = false;
+
+            if ($matchedRule) {
+                $ruleType = $matchedRule->rule_type;
+                if (in_array($ruleType, ['fixed', 'all_sections'])) {
+                    $lockedFacultyId = $matchedRule->designated_faculty_id;
+                    $isLocked = true;
+                } elseif ($ruleType === 'exclusive') {
+                    $exclusiveFacultyId = $matchedRule->designated_faculty_id;
+                    $lockedFacultyId = $matchedRule->designated_faculty_id;
+                    $isLocked = true;
+                }
+            } elseif ($s->faculty_id) {
+                // If manually assigned prior
+                $lockedFacultyId = $s->faculty_id;
+                $isLocked = true;
+                $ruleType = 'manual';
+            }
 
             return [
                 'id' => $s->id,
@@ -596,9 +635,13 @@ class SemesterScheduleController extends Controller
                 'is_lab' => $isLab,
                 'units' => 3.0,
                 'hours_per_week' => 3.0,
-                'current_faculty_id' => $s->faculty_id,
+                'current_faculty_id' => $lockedFacultyId ?: $s->faculty_id,
                 'instructor' => $s->instructor,
                 'program_code' => ! empty($s->section) ? explode(' ', trim($s->section))[0] : 'General',
+                'is_locked' => $isLocked,
+                'locked_faculty_id' => $lockedFacultyId,
+                'exclusive_faculty_id' => $exclusiveFacultyId,
+                'rule_type' => $ruleType,
             ];
         })->toArray();
 
@@ -648,6 +691,7 @@ class SemesterScheduleController extends Controller
             'academicPeriods' => $academicPeriods,
             'facultyPool' => $facultyPool,
             'offerings' => $offerings,
+            'courseRules' => $courseRules,
             'suitabilityMatrix' => $matrixData['matrix'],
             'suitabilityBreakdown' => $matrixData['breakdown'],
             'readiness' => $readiness,
@@ -774,6 +818,70 @@ class SemesterScheduleController extends Controller
         ]);
 
         return redirect()->back()->with('success', "Course {$schedule->course_code} ({$schedule->section}) successfully assigned to {$faculty->title_name}.");
+    }
+
+    /**
+     * Store or update a Special Course Assignment Rule (Exclusive, Fixed, All-sections, Preferred).
+     */
+    public function storeCourseAssignmentRule(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'course_code' => 'required|string|max:50',
+            'course_title' => 'nullable|string|max:255',
+            'section' => 'nullable|string|max:50',
+            'designated_faculty_id' => 'required|exists:faculties,id',
+            'rule_type' => 'required|string|in:fixed,exclusive,all_sections,preferred',
+            'justification' => 'nullable|string|max:1000',
+            'is_locked' => 'nullable|boolean',
+        ]);
+
+        $currentPeriod = AcademicPeriod::current();
+        $user = $request->user();
+        $scopeCollegeId = $this->resolveScopeCollegeId($request);
+
+        $rule = \App\Models\CourseAssignmentRule::updateOrCreate(
+            [
+                'academic_period_id' => $currentPeriod->id,
+                'course_code' => $validated['course_code'],
+                'section' => $validated['section'] ?: null,
+            ],
+            [
+                'college_id' => $scopeCollegeId,
+                'course_title' => $validated['course_title'] ?? $validated['course_code'],
+                'designated_faculty_id' => $validated['designated_faculty_id'],
+                'rule_type' => $validated['rule_type'],
+                'is_locked' => $validated['is_locked'] ?? true,
+                'justification' => $validated['justification'],
+                'status' => 'Active',
+                'proposed_by' => $user?->id,
+                'approved_by' => $user?->id,
+            ]
+        );
+
+        // Apply immediately to matching room schedules if fixed/exclusive
+        if (in_array($validated['rule_type'], ['fixed', 'all_sections', 'exclusive'])) {
+            $faculty = Faculty::find($validated['designated_faculty_id']);
+            $schedQuery = RoomSchedule::where('course_code', $validated['course_code']);
+            if ($validated['section']) {
+                $schedQuery->where('section', $validated['section']);
+            }
+            $schedQuery->update([
+                'faculty_id' => $faculty->id,
+                'instructor' => $faculty->spreadsheet_name ?? $faculty->full_name,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Special Course Rule ({$validated['rule_type']}) for {$validated['course_code']} registered and pinned successfully.");
+    }
+
+    /**
+     * Delete/remove a Special Course Assignment Rule.
+     */
+    public function destroyCourseAssignmentRule(\App\Models\CourseAssignmentRule $rule): RedirectResponse
+    {
+        $rule->delete();
+
+        return redirect()->back()->with('success', "Course assignment rule for {$rule->course_code} removed.");
     }
 
     /**

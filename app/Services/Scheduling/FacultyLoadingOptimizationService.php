@@ -291,46 +291,56 @@ class FacultyLoadingOptimizationService
             $cCode = $c['course_code'];
             $units = floatval($c['units'] ?? 3.0);
 
-            // Find best faculty with available capacity
-            $bestFacultyId = null;
-            $bestScore = -1;
-
-            foreach ($facultyPool as $f) {
-                $fid = $f['id'];
-                $currentLoad = $facultyLoads[$fid]['assigned_load'];
-                $maxLoad = floatval($f['max_load'] ?? 21.0);
-
-                if ($currentLoad + $units > $maxLoad) {
-                    continue;
-                }
-
-                $rawScore = intval($suitabilityMatrix[$fid][$cid] ?? 50);
-
-                // Bias score according to strategy
-                $effectiveScore = $rawScore;
-                if ($strat['strategy'] === 'balanced') {
-                    $target = $facultyLoads[$fid]['target_load'];
-                    $effectiveScore -= abs(($currentLoad + $units) - $target) * 3;
-                } elseif ($strat['strategy'] === 'preparations') {
-                    if (in_array($cCode, $facultyLoads[$fid]['preparations_set'])) {
-                        $effectiveScore += 15; // reward reusing same prep
-                    }
-                } elseif ($strat['strategy'] === 'preferences') {
-                    $effectiveScore += intval($f['has_preference'] ?? false) ? 20 : 0;
-                } elseif ($strat['strategy'] === 'historical') {
-                    $effectiveScore += intval($f['historical_match'] ?? false) ? 20 : 5;
-                }
-
-                if ($effectiveScore > $bestScore) {
-                    $bestScore = $effectiveScore;
-                    $bestFacultyId = $fid;
-                }
+            // Check if offering is pinned by manual assignment or special course rule
+            $pinnedFacultyId = $c['locked_faculty_id'] ?? ($c['is_locked'] ? ($c['current_faculty_id'] ?? $c['faculty_id'] ?? null) : null);
+            if (! $pinnedFacultyId && ! empty($c['exclusive_faculty_id'])) {
+                $pinnedFacultyId = $c['exclusive_faculty_id'];
             }
 
-            // Fallback to least loaded faculty if all are at max
-            if (! $bestFacultyId && ! empty($facultyPool)) {
-                $sorted = collect($facultyLoads)->sortBy('assigned_load');
-                $bestFacultyId = $sorted->first()['faculty_id'];
+            if ($pinnedFacultyId && isset($facultyLoads[$pinnedFacultyId])) {
+                $bestFacultyId = $pinnedFacultyId;
+            } else {
+                // Find best faculty with available capacity
+                $bestFacultyId = null;
+                $bestScore = -1;
+
+                foreach ($facultyPool as $f) {
+                    $fid = $f['id'];
+                    $currentLoad = $facultyLoads[$fid]['assigned_load'];
+                    $maxLoad = floatval($f['max_load'] ?? 21.0);
+
+                    if ($currentLoad + $units > $maxLoad) {
+                        continue;
+                    }
+
+                    $rawScore = intval($suitabilityMatrix[$fid][$cid] ?? 50);
+
+                    // Bias score according to strategy
+                    $effectiveScore = $rawScore;
+                    if ($strat['strategy'] === 'balanced') {
+                        $target = $facultyLoads[$fid]['target_load'];
+                        $effectiveScore -= abs(($currentLoad + $units) - $target) * 3;
+                    } elseif ($strat['strategy'] === 'preparations') {
+                        if (in_array($cCode, $facultyLoads[$fid]['preparations_set'])) {
+                            $effectiveScore += 15; // reward reusing same prep
+                        }
+                    } elseif ($strat['strategy'] === 'preferences') {
+                        $effectiveScore += intval($f['has_preference'] ?? false) ? 20 : 0;
+                    } elseif ($strat['strategy'] === 'historical') {
+                        $effectiveScore += intval($f['historical_match'] ?? false) ? 20 : 5;
+                    }
+
+                    if ($effectiveScore > $bestScore) {
+                        $bestScore = $effectiveScore;
+                        $bestFacultyId = $fid;
+                    }
+                }
+
+                // Fallback to least loaded faculty if all are at max
+                if (! $bestFacultyId && ! empty($facultyPool)) {
+                    $sorted = collect($facultyLoads)->sortBy('assigned_load');
+                    $bestFacultyId = $sorted->first()['faculty_id'];
+                }
             }
 
             if ($bestFacultyId) {
@@ -339,6 +349,11 @@ class FacultyLoadingOptimizationService
                 $facultyLoads[$bestFacultyId]['assigned_courses_count']++;
                 $facultyLoads[$bestFacultyId]['scores_sum'] += intval($suitabilityMatrix[$bestFacultyId][$cid] ?? 50);
                 $facultyLoads[$bestFacultyId]['assigned_offerings'][] = $c;
+
+                $source = 'CP-SAT';
+                if ($pinnedFacultyId) {
+                    $source = ($c['rule_type'] ?? '') === 'exclusive' ? 'Exclusive' : (($c['rule_type'] ?? '') === 'fixed' ? 'Fixed' : 'Manual');
+                }
 
                 $assignments[] = [
                     'offering_id' => $cid,
@@ -350,6 +365,9 @@ class FacultyLoadingOptimizationService
                     'match_score' => intval($suitabilityMatrix[$bestFacultyId][$cid] ?? 50),
                     'units' => $units,
                     'hours_per_week' => $units,
+                    'assignment_source' => $source,
+                    'is_locked' => ! empty($pinnedFacultyId),
+                    'rule_type' => $c['rule_type'] ?? null,
                 ];
             }
         }

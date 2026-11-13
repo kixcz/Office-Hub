@@ -234,6 +234,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('loading-generator/run', [SemesterScheduleController::class, 'runLoadingSolver'])->name('loading-generator.run');
         Route::post('loading-generator/apply', [SemesterScheduleController::class, 'applyLoadingCandidate'])->name('loading-generator.apply');
         Route::post('loading-generator/manual-assign', [SemesterScheduleController::class, 'manualAssignLoading'])->name('loading-generator.manual-assign');
+        Route::post('loading-generator/rules', [SemesterScheduleController::class, 'storeCourseAssignmentRule'])->name('loading-generator.rules.store');
+        Route::delete('loading-generator/rules/{rule}', [SemesterScheduleController::class, 'destroyCourseAssignmentRule'])->name('loading-generator.rules.destroy');
         Route::get('loading-review', [SemesterScheduleController::class, 'loadingReview'])->name('loading-review');
         Route::post('loading-review/endorse-program', [SemesterScheduleController::class, 'endorseProgramLoadingReview'])->name('loading-review.endorse-program');
         Route::post('loading-review/request-revision', [SemesterScheduleController::class, 'requestProgramLoadingRevision'])->name('loading-review.request-revision');
