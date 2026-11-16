@@ -1618,264 +1618,80 @@ class SemesterScheduleController extends Controller
 
         $loadingGate = $currentPeriod ? $this->resolveFacultyLoadingGate($currentPeriod, $scopeCollegeId) : ['is_ready' => false, 'publication' => null, 'readiness_checks' => []];
 
-        // Rich candidate schedule offerings with days, times, rooms, conflicts, and remarks
-        $candidateOfferings = [
-            // BSIT
-            [
-                'id' => 1,
-                'program_code' => 'BSIT',
-                'program_name' => 'Bachelor of Science in Information Technology',
-                'year_level' => 1,
-                'course_code' => 'IT 601',
-                'course_title' => 'Introduction to Computing',
-                'section' => 'B',
-                'assigned_faculty' => 'Mr. Gabriel Caniban',
-                'faculty_rank' => 'Instructor I',
-                'is_fixed' => false,
-                'lec_units' => 2,
-                'lab_units' => 3,
-                'total_units' => 3,
-                'units_display' => '3 (2/3)',
-                'day' => 'MW',
-                'time' => '5:30 PM - 7:00 PM',
-                'room' => 'CLR 3',
+        // Fetch real database room schedules filtered strictly by user's assigned college
+        $schedulesQuery = RoomSchedule::with(['faculty.program']);
+        if ($scopeCollegeId) {
+            $this->applyScheduleCollegeScope($schedulesQuery, $scopeCollegeId);
+        }
+        $dbSchedules = $schedulesQuery->get();
+
+        // Map real DB records into candidate schedule format
+        $candidateOfferings = $dbSchedules->map(function ($s) {
+            $faculty = $s->faculty;
+            $facultyName = $faculty ? ($faculty->title_name ?? $faculty->full_name) : ($s->instructor ?: 'Unassigned');
+            $facultyRank = $faculty?->academic_rank ?? ($faculty ? 'Faculty' : 'General Pool');
+
+            $lec = 2;
+            $lab = 3;
+            if (is_numeric($s->units)) {
+                $u = (float) $s->units;
+                $lec = $u > 3 ? 3 : (int) $u;
+                $lab = max(0, (int) ($u - $lec));
+            }
+
+            $progCode = 'CIDS';
+            $yearLevel = 1;
+            if (! empty($s->section)) {
+                $parts = explode(' ', trim($s->section));
+                $firstPart = $parts[0] ?? '';
+                if (preg_match('/^([1-4])-?([A-Z]+)/', $firstPart, $matches)) {
+                    $yearLevel = (int) $matches[1];
+                    $progCode = $matches[2];
+                } elseif (preg_match('/([A-Z]+)\s*([1-4])/', $s->section, $matches)) {
+                    $progCode = $matches[1];
+                    $yearLevel = (int) $matches[2];
+                } else {
+                    $progCode = $firstPart ?: 'General';
+                }
+            } elseif (! empty($s->program_code)) {
+                $progCode = $s->program_code;
+            }
+
+            $progName = match ($progCode) {
+                'BSIT' => 'Bachelor of Science in Information Technology',
+                'BSIS' => 'Bachelor of Science in Information Systems',
+                'BSCS' => 'Bachelor of Science in Computer Science',
+                'ACT' => 'Associate in Computer Technology',
+                'DIT' => 'Doctor in Information Technology',
+                default => 'Program Offering',
+            };
+
+            $day = $s->day ?: 'TTH';
+            $time = $s->time_slot ?: ($s->start_time && $s->end_time ? "{$s->start_time} - {$s->end_time}" : '8:00 AM - 9:30 AM');
+            $room = $s->room_name ?: 'CLR 1';
+
+            return [
+                'id' => $s->id,
+                'program_code' => $progCode,
+                'program_name' => $progName,
+                'year_level' => $yearLevel,
+                'course_code' => $s->course_code,
+                'course_title' => $s->course_title ?? $s->subject ?? 'Course Offering',
+                'section' => $s->section ?: 'A',
+                'assigned_faculty' => $facultyName,
+                'faculty_rank' => $facultyRank,
+                'is_fixed' => ! empty($s->faculty_id),
+                'lec_units' => $lec,
+                'lab_units' => $lab,
+                'total_units' => (int) ($s->units ?: 3),
+                'units_display' => "{$s->units} ({$lec}/{$lab})",
+                'day' => $day,
+                'time' => $time,
+                'room' => $room,
                 'schedule_status' => 'Scheduled',
-                'remarks' => 'No conflict detected.',
-            ],
-            [
-                'id' => 2,
-                'program_code' => 'BSIT',
-                'program_name' => 'Bachelor of Science in Information Technology',
-                'year_level' => 1,
-                'course_code' => 'CS 611',
-                'course_title' => 'Computer Programming I',
-                'section' => 'B',
-                'assigned_faculty' => 'Ms. Rochelle Millan',
-                'faculty_rank' => 'Assistant Professor I',
-                'is_fixed' => false,
-                'lec_units' => 2,
-                'lab_units' => 3,
-                'total_units' => 3,
-                'units_display' => '3 (2/3)',
-                'day' => 'TTH',
-                'time' => '10:30 AM - 12:00 PM',
-                'room' => 'CLR 2',
-                'schedule_status' => 'Scheduled',
-                'remarks' => 'No conflict detected.',
-            ],
-            [
-                'id' => 3,
-                'program_code' => 'BSIT',
-                'program_name' => 'Bachelor of Science in Information Technology',
-                'year_level' => 1,
-                'course_code' => 'GEC 604',
-                'course_title' => 'Mathematics in the Modern World',
-                'section' => 'B',
-                'assigned_faculty' => 'c/o IMAS',
-                'faculty_rank' => 'General Education Pool',
-                'is_fixed' => false,
-                'lec_units' => 3,
-                'lab_units' => 0,
-                'total_units' => 3,
-                'units_display' => '3 (3/0)',
-                'day' => 'MW',
-                'time' => '8:00 AM - 9:30 AM',
-                'room' => 'JRoxas',
-                'schedule_status' => 'Scheduled',
-                'remarks' => 'Handled by IMAS.',
-            ],
-            [
-                'id' => 4,
-                'program_code' => 'BSIT',
-                'program_name' => 'Bachelor of Science in Information Technology',
-                'year_level' => 1,
-                'course_code' => 'GEC 606',
-                'course_title' => 'Art Appreciation',
-                'section' => 'B',
-                'assigned_faculty' => 'c/o IMAS',
-                'faculty_rank' => 'General Education Pool',
-                'is_fixed' => false,
-                'lec_units' => 3,
-                'lab_units' => 0,
-                'total_units' => 3,
-                'units_display' => '3 (3/0)',
-                'day' => 'TTH',
-                'time' => '1:00 PM - 2:30 PM',
-                'room' => '—',
-                'schedule_status' => 'Pending Room',
-                'remarks' => 'Awaiting room confirmation.',
-            ],
-            [
-                'id' => 5,
-                'program_code' => 'BSIT',
-                'program_name' => 'Bachelor of Science in Information Technology',
-                'year_level' => 1,
-                'course_code' => 'ISSA 611',
-                'course_title' => 'Strands Alignment Program (PC Troubleshooting 1 & 2)',
-                'section' => 'B',
-                'assigned_faculty' => 'Mr. Aron Pansacala',
-                'faculty_rank' => 'Assistant Professor I',
-                'is_fixed' => false,
-                'lec_units' => 2,
-                'lab_units' => 3,
-                'total_units' => 3,
-                'units_display' => '3 (2/3)',
-                'day' => 'TTH',
-                'time' => '4:00 PM - 5:30 PM',
-                'room' => 'CHS',
-                'schedule_status' => 'Scheduled',
-                'remarks' => 'No conflict detected.',
-            ],
-            // BSIS
-            [
-                'id' => 6,
-                'program_code' => 'BSIS',
-                'program_name' => 'Bachelor of Science in Information Systems',
-                'year_level' => 2,
-                'course_code' => 'IS 321',
-                'course_title' => 'Systems Analysis and Design',
-                'section' => 'A',
-                'assigned_faculty' => 'Ms. Angela Cruz',
-                'faculty_rank' => 'Instructor II',
-                'is_fixed' => false,
-                'lec_units' => 3,
-                'lab_units' => 0,
-                'total_units' => 3,
-                'units_display' => '3 (3/0)',
-                'day' => 'MW',
-                'time' => '9:30 AM - 11:00 AM',
-                'room' => 'CLR 4',
-                'schedule_status' => 'Scheduled',
-                'remarks' => 'No conflict detected.',
-            ],
-            [
-                'id' => 7,
-                'program_code' => 'BSIS',
-                'program_name' => 'Bachelor of Science in Information Systems',
-                'year_level' => 2,
-                'course_code' => 'IS 322',
-                'course_title' => 'Database Management Systems',
-                'section' => 'A',
-                'assigned_faculty' => 'Ms. Angela Cruz',
-                'faculty_rank' => 'Instructor II',
-                'is_fixed' => false,
-                'lec_units' => 2,
-                'lab_units' => 3,
-                'total_units' => 3,
-                'units_display' => '3 (2/3)',
-                'day' => 'TTH',
-                'time' => '2:30 PM - 4:00 PM',
-                'room' => 'CLR 4',
-                'schedule_status' => 'Scheduled',
-                'remarks' => 'Shared faculty (IS 321, IS 322).',
-            ],
-            [
-                'id' => 8,
-                'program_code' => 'BSIS',
-                'program_name' => 'Bachelor of Science in Information Systems',
-                'year_level' => 3,
-                'course_code' => 'IS 330',
-                'course_title' => 'Enterprise Systems',
-                'section' => 'A',
-                'assigned_faculty' => 'Mr. Carlo Mendoza',
-                'faculty_rank' => 'Associate Professor I',
-                'is_fixed' => false,
-                'lec_units' => 3,
-                'lab_units' => 0,
-                'total_units' => 3,
-                'units_display' => '3 (3/0)',
-                'day' => 'MW',
-                'time' => '1:00 PM - 2:30 PM',
-                'room' => 'CLR 1',
-                'schedule_status' => 'Scheduled',
-                'remarks' => 'No conflict detected.',
-            ],
-            [
-                'id' => 9,
-                'program_code' => 'BSIS',
-                'program_name' => 'Bachelor of Science in Information Systems',
-                'year_level' => 3,
-                'course_code' => 'GEC 609',
-                'course_title' => 'The Life and Works of Rizal',
-                'section' => 'A',
-                'assigned_faculty' => 'c/o IMAS',
-                'faculty_rank' => 'General Education Pool',
-                'is_fixed' => false,
-                'lec_units' => 3,
-                'lab_units' => 0,
-                'total_units' => 3,
-                'units_display' => '3 (3/0)',
-                'day' => 'TTH',
-                'time' => '8:00 AM - 9:30 AM',
-                'room' => '—',
-                'schedule_status' => 'Conflict',
-                'remarks' => 'Room/time overlaps with BSCS-CS 410.',
-            ],
-            // BSCS
-            [
-                'id' => 10,
-                'program_code' => 'BSCS',
-                'program_name' => 'Bachelor of Science in Computer Science',
-                'year_level' => 3,
-                'course_code' => 'CS 410',
-                'course_title' => 'Software Engineering',
-                'section' => 'A',
-                'assigned_faculty' => 'Ms. Erika Ramos',
-                'faculty_rank' => 'Associate Professor I',
-                'is_fixed' => false,
-                'lec_units' => 3,
-                'lab_units' => 0,
-                'total_units' => 3,
-                'units_display' => '3 (3/0)',
-                'day' => 'TTH',
-                'time' => '8:00 AM - 9:30 AM',
-                'room' => 'CLR 1',
-                'schedule_status' => 'Conflict',
-                'remarks' => 'Conflicts with BSIS-GEC 609.',
-            ],
-            [
-                'id' => 11,
-                'program_code' => 'BSCS',
-                'program_name' => 'Bachelor of Science in Computer Science',
-                'year_level' => 3,
-                'course_code' => 'CS 320',
-                'course_title' => 'Artificial Intelligence',
-                'section' => 'A',
-                'assigned_faculty' => 'Dr. Kevin Dela Cruz',
-                'faculty_rank' => 'Associate Professor II',
-                'is_fixed' => true,
-                'lec_units' => 3,
-                'lab_units' => 0,
-                'total_units' => 3,
-                'units_display' => '3 (3/0)',
-                'day' => 'MW',
-                'time' => '10:30 AM - 12:00 PM',
-                'room' => 'CLR 2',
-                'schedule_status' => 'Scheduled',
-                'remarks' => 'Fixed assignment.',
-            ],
-            [
-                'id' => 12,
-                'program_code' => 'BSCS',
-                'program_name' => 'Bachelor of Science in Computer Science',
-                'year_level' => 2,
-                'course_code' => 'CS 210',
-                'course_title' => 'Algorithms',
-                'section' => 'A',
-                'assigned_faculty' => 'Dr. Kevin Dela Cruz',
-                'faculty_rank' => 'Associate Professor II',
-                'is_fixed' => true,
-                'lec_units' => 3,
-                'lab_units' => 0,
-                'total_units' => 3,
-                'units_display' => '3 (3/0)',
-                'day' => 'TTH',
-                'time' => '3:00 PM - 4:30 PM',
-                'room' => 'CLR 3',
-                'schedule_status' => 'Scheduled',
-                'remarks' => 'Shared faculty (CS 210, CS 320).',
-            ],
-        ];
+                'remarks' => $s->remarks ?: 'No conflict detected.',
+            ];
+        })->values()->toArray();
 
         return Inertia::render('schedule/timetable/candidates', [
             'currentPeriod' => $currentPeriod,

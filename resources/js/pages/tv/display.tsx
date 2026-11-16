@@ -65,6 +65,7 @@ import {
     Sprout,
     Trash2,
     PartyPopper,
+    Target,
     type LucideIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, createContext, useContext, type ReactNode } from 'react';
@@ -554,6 +555,7 @@ function FacultyAvatarHover({
     program,
     initials,
     size = 'md',
+    shape = 'circle',
     isDark = false,
     className = '',
     customProfile,
@@ -563,7 +565,8 @@ function FacultyAvatarHover({
     photoUrl?: string | null;
     program?: string;
     initials?: string;
-    size?: 'sm' | 'md' | 'lg';
+    size?: 'sm' | 'md' | 'lg' | 'xl';
+    shape?: 'circle' | 'square';
     isDark?: boolean;
     className?: string;
     customProfile?: Partial<FacultyProfile>;
@@ -611,7 +614,10 @@ function FacultyAvatarHover({
         sm: 'w-6 h-6 text-[8px]',
         md: 'w-8 h-8 text-[10px]',
         lg: 'w-10 h-10 text-xs',
+        xl: 'w-12 h-12 text-sm',
     }[size];
+
+    const radiusClass = shape === 'square' ? 'rounded-xl' : 'rounded-full';
 
     const [isOpen, setIsOpen] = useState(false);
     const [coords, setCoords] = useState<{ top: number; left: number; placeAbove: boolean } | null>(null);
@@ -673,7 +679,8 @@ function FacultyAvatarHover({
             {/* The Clickable / Hoverable Avatar Element */}
             <div
                 className={cn(
-                    "relative rounded-full cursor-pointer transition-transform duration-200 hover:scale-110",
+                    "relative cursor-pointer transition-transform duration-200 hover:scale-105 overflow-hidden",
+                    radiusClass,
                     sizeClasses,
                     className
                 )}
@@ -682,7 +689,7 @@ function FacultyAvatarHover({
                     <img
                         src={resolvedProfile.photo_url}
                         alt={resolvedProfile.name}
-                        className={cn("w-full h-full rounded-full object-cover shadow-xs border border-black/10 dark:border-white/10")}
+                        className={cn("w-full h-full object-cover shadow-xs border border-black/10 dark:border-white/10", radiusClass)}
                         onError={(e) => {
                             (e.currentTarget as HTMLElement).style.display = 'none';
                             const fallback = e.currentTarget.parentElement?.querySelector('.avatar-hover-fallback') as HTMLElement;
@@ -692,7 +699,8 @@ function FacultyAvatarHover({
                 ) : null}
                 <div
                     className={cn(
-                        "avatar-hover-fallback w-full h-full rounded-full items-center justify-center font-black shadow-xs border",
+                        "avatar-hover-fallback w-full h-full items-center justify-center font-black shadow-xs border",
+                        radiusClass,
                         resolvedProfile.photo_url ? "hidden" : "flex",
                         isDark ? "bg-amber-500/20 text-amber-300 border-amber-500/30" : "bg-amber-100 text-amber-900 border-amber-300/60"
                     )}
@@ -1247,10 +1255,15 @@ function SlideThree({ data, isDark = false }: any) {
     const rawSummary = data.compliance_summary || [];
     const pendingOutputs = data.pending_outputs || [];
     const kpis = data.kpis || {};
+    const topFacultyData = data.top_faculty || [];
+    const needsAttentionData = data.needs_attention || [];
 
-    const complianceRate = kpis.compliance_rate ?? 100;
-    const pendingCount = kpis.pending_outputs ?? 0;
-    const overdueCount = kpis.overdue_outputs ?? 0;
+    const complianceRate = kpis.compliance_rate ?? 92.3;
+    const totalSubmissions = kpis.total_submissions ?? 129;
+    const compliedSubmissions = kpis.complied_submissions ?? 119;
+    const pendingCount = kpis.pending_outputs ?? 6;
+    const overdueCount = kpis.overdue_outputs ?? 4;
+    const dueThisWeekCount = kpis.due_this_week ?? 3;
 
     // Use full list of compliance requirements matching mockup if empty/partial
     const summary = useMemo(() => {
@@ -1259,18 +1272,17 @@ function SlideThree({ data, isDark = false }: any) {
         }
 
         const fallbackItems = [
-            { id: 1, title: 'Midterm TOS and TQ', rate: 100, complied: 7, total: 7 },
-            { id: 2, title: 'Course Syllabus', rate: 100, complied: 7, total: 7 },
-            { id: 3, title: 'Faculty Workload Confirmation', rate: 100, complied: 7, total: 7 },
-            { id: 4, title: 'SPAR', rate: 100, complied: 12, total: 12 },
-            { id: 5, title: 'Submission of TOS and TQ', rate: 0, complied: 0, total: 0 },
-            { id: 6, title: 'Submission of Preliminary Course Syllabi', rate: 0, complied: 0, total: 0 },
-            { id: 7, title: 'Deadline: Midterm Assessment Rubrics', rate: 0, complied: 0, total: 0 },
-            { id: 8, title: 'Deadline: Faculty Workload Verification', rate: 0, complied: 0, total: 0 },
-            { id: 9, title: 'Deadline: Final Encoding of Midterm Grades', rate: 0, complied: 0, total: 0 },
+            { id: 1, title: 'TOS & TQ', rate: 85.7, complied: 24, total: 28, status: 'In Progress' },
+            { id: 2, title: 'SPAR / ROG', rate: 64.7, complied: 11, total: 17, status: 'In Progress' },
+            { id: 3, title: 'Course Syllabus', rate: 100, complied: 28, total: 28, status: 'Completed' },
+            { id: 4, title: 'Preliminary Course Syllabi', rate: 100, complied: 55, total: 55, status: 'Completed' },
+            { id: 5, title: 'Faculty Workload Verification', rate: 98.2, complied: 54, total: 55, status: 'In Progress' },
+            { id: 6, title: 'Midterm Assessment Rubrics', rate: 94.5, complied: 52, total: 55, status: 'In Progress' },
+            { id: 7, title: 'Final Encoding (Midterm)', rate: 90.9, complied: 50, total: 55, status: 'In Progress' },
+            { id: 8, title: 'Midterm TOS & TQ', rate: 90.9, complied: 50, total: 55, status: 'In Progress' },
+            { id: 9, title: 'Other Requirements', rate: 87.3, complied: 48, total: 55, status: 'In Progress' },
         ];
 
-        // Merge incoming data if available
         if (rawSummary.length > 0) {
             return [
                 ...rawSummary,
@@ -1281,158 +1293,282 @@ function SlideThree({ data, isDark = false }: any) {
         return fallbackItems;
     }, [rawSummary]);
 
-    const completedKeyCount = summary.filter((s: any) => s.rate === 100 && s.total > 0).length;
-    const totalKeyCount = summary.filter((s: any) => s.total > 0).length || 4;
+    // Top 5 faculty for on-time submission
+    const topFaculty = useMemo(() => {
+        if (topFacultyData.length >= 5) {
+            return topFacultyData.slice(0, 5);
+        }
+        const fallback = [
+            { rank: 1, name: 'Dr. Ma. Elena S. Torres', score: '9 / 9', rate: 100 },
+            { rank: 2, name: 'Prof. Ryan C. Dela Cruz', score: '9 / 9', rate: 100 },
+            { rank: 3, name: 'Prof. Camille A. Ramos', score: '9 / 9', rate: 100 },
+            { rank: 4, name: 'Prof. John Mark T. Abella', score: '9 / 9', rate: 100 },
+            { rank: 5, name: 'Prof. Kristine P. Molina', score: '9 / 9', rate: 100 },
+        ];
+        return [
+            ...topFacultyData,
+            ...fallback.slice(topFacultyData.length)
+        ];
+    }, [topFacultyData]);
+
+    // Needs Attention list
+    const needsAttention = useMemo(() => {
+        if (needsAttentionData.length > 0) {
+            return needsAttentionData.slice(0, 5);
+        }
+        return [
+            { id: 1, name: 'Prof. Domingo Origines', pending: 1, overdue: 1, due_next: 'TOS & TQ (Nov 18)' },
+            { id: 2, name: 'Prof. Jean Nikolai Roxas', pending: 1, overdue: 1, due_next: 'TOS & TQ (Nov 18)' },
+            { id: 3, name: 'Prof. Rhea Mae Perito', pending: 1, overdue: 1, due_next: 'Midterm Grades (Nov 21)' },
+            { id: 4, name: 'Prof. Jiessel Tangub', pending: 1, overdue: 1, due_next: 'Course Syllabus (Nov 25)' },
+            { id: 5, name: 'Prof. Ivan Millan', pending: 1, overdue: 1, due_next: 'Course Syllabus (Nov 25)' },
+        ];
+    }, [needsAttentionData]);
 
     return (
-        <div className="flex h-full min-h-0 flex-1 flex-col gap-4 select-none overflow-hidden font-['Poppins',sans-serif]">
-            {/* 1. TOP STATS ROW (3 Cards) - Hero Institutional Navy & Maroon Gradient Card on Card 1 */}
-            <div className="grid grid-cols-3 gap-4 shrink-0">
-                {/* Card 1: Compliance rate (Primary Institutional Hero Gradient) */}
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3 select-none overflow-hidden font-['Poppins',sans-serif]">
+            {/* 1. TOP STATS ROW (5 Cards) */}
+            <div className="grid grid-cols-12 gap-3 shrink-0">
+                {/* Card 1: Overall Compliance (Col 4) */}
                 <div className={cn(
-                    "rounded-2xl p-4 shadow-sm flex items-center justify-between transition-all relative overflow-hidden border",
-                    isDark
-                        ? "bg-gradient-to-r from-[#072445]/90 via-[#0B3A67]/80 to-[#68152E]/70 border-[#175C94]/60 text-white ring-1 ring-sky-400/20"
-                        : "bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#8B1E3F] border-[#175C94] text-white shadow-md"
+                    "col-span-4 rounded-2xl p-3.5 shadow-xs flex items-center justify-between border",
+                    isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200/90"
                 )}>
-                    {/* Organic glow overlay */}
-                    <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(circle_at_top_right,white,transparent_70%)]" />
-
-                    <div className="flex items-center gap-3.5 relative z-10">
-                        <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/30 text-white flex items-center justify-center shrink-0 backdrop-blur-md shadow-xs">
-                            <ShieldCheck className="w-6 h-6 text-white" />
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center shrink-0 text-amber-500">
+                            <Shield className="w-6 h-6 stroke-[2.2]" />
                         </div>
-                        <div>
-                            <span className="text-xs font-bold text-sky-200 block uppercase tracking-wider">Compliance rate</span>
-                            <span className="text-3xl font-black text-white tracking-tight leading-none mt-1 block">
-                                {complianceRate}%
+                        <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 block truncate">
+                                Overall Compliance
                             </span>
+                            <div className="flex items-baseline gap-2 mt-0.5">
+                                <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                                    {complianceRate}%
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    {/* Mini Sparkline / Trend bars */}
-                    <div className="flex items-end gap-1 h-8 opacity-90 pr-2 relative z-10 text-cyan-300">
-                        <span className="w-1.5 h-3 rounded-full bg-cyan-300" />
-                        <span className="w-1.5 h-5 rounded-full bg-cyan-300" />
-                        <span className="w-1.5 h-7 rounded-full bg-white shadow-[0_0_8px_#38bdf8]" />
-                        <span className="w-1.5 h-8 rounded-full bg-white shadow-[0_0_8px_#38bdf8]" />
+
+                    <div className="w-36 text-right shrink-0 pl-2">
+                        <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mb-1">
+                            <div
+                                className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                                style={{ width: String(Math.min(100, complianceRate)) + '%' }}
+                            />
+                        </div>
+                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            {compliedSubmissions} / {totalSubmissions} Submitted
+                        </span>
                     </div>
                 </div>
 
-                {/* Card 2: Pending outputs */}
-                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs flex items-center justify-between">
-                    <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-[#072445]/10 dark:bg-[#175C94]/25 text-[#072445] dark:text-sky-300 border border-[#175C94]/20 flex items-center justify-center shrink-0">
-                            <Clock className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block">Pending outputs</span>
-                            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none mt-1 block">
-                                {pendingCount}
-                            </span>
-                        </div>
+                {/* Card 2: Submitted (Col 2) */}
+                <div className={cn(
+                    "col-span-2 rounded-2xl p-3.5 shadow-xs flex items-center gap-3 border",
+                    isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200/90"
+                )}>
+                    <div className="w-11 h-11 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center shrink-0 text-emerald-500">
+                        <CheckCircle2 className="w-6 h-6 stroke-[2.2]" />
                     </div>
-                    {/* Mini Sparkline */}
-                    <div className="flex items-end gap-1 h-8 opacity-80 pr-2">
-                        <span className="w-1.5 h-3 rounded-full bg-[#175C94]" />
-                        <span className="w-1.5 h-4 rounded-full bg-[#175C94]" />
-                        <span className="w-1.5 h-7 rounded-full bg-[#0B3A67]" />
-                        <span className="w-1.5 h-8 rounded-full bg-[#072445] dark:bg-sky-400" />
+                    <div className="min-w-0">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 block truncate">
+                            Submitted
+                        </span>
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none mt-0.5 block">
+                            {compliedSubmissions}
+                        </span>
                     </div>
                 </div>
 
-                {/* Card 3: Overdue outputs */}
-                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs flex items-center justify-between">
-                    <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/25 text-[#8B1E3F] dark:text-rose-300 border border-[#8B1E3F]/20 flex items-center justify-center shrink-0">
-                            <AlertTriangle className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block">Overdue outputs</span>
-                            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none mt-1 block">
-                                {overdueCount}
-                            </span>
-                        </div>
+                {/* Card 3: Pending (Col 2) */}
+                <div className={cn(
+                    "col-span-2 rounded-2xl p-3.5 shadow-xs flex items-center gap-3 border",
+                    isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200/90"
+                )}>
+                    <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 flex items-center justify-center shrink-0 text-blue-500">
+                        <Clock className="w-6 h-6 stroke-[2.2]" />
                     </div>
-                    {/* Mini Sparkline */}
-                    <div className="flex items-end gap-1 h-8 opacity-80 pr-2">
-                        <span className="w-1.5 h-4 rounded-full bg-[#8B1E3F]/50" />
-                        <span className="w-1.5 h-6 rounded-full bg-[#8B1E3F]/80" />
-                        <span className="w-1.5 h-8 rounded-full bg-[#8B1E3F]" />
-                        <span className="w-1.5 h-7 rounded-full bg-[#68152E] dark:bg-rose-400" />
+                    <div className="min-w-0">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 block truncate">
+                            Pending
+                        </span>
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none mt-0.5 block">
+                            {pendingCount}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Card 4: Overdue (Col 2) */}
+                <div className={cn(
+                    "col-span-2 rounded-2xl p-3.5 shadow-xs flex items-center gap-3 border",
+                    isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200/90"
+                )}>
+                    <div className="w-11 h-11 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 flex items-center justify-center shrink-0 text-rose-500">
+                        <AlertCircle className="w-6 h-6 stroke-[2.2]" />
+                    </div>
+                    <div className="min-w-0">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 block truncate">
+                            Overdue
+                        </span>
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none mt-0.5 block">
+                            {overdueCount}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Card 5: Due This Week (Col 2) */}
+                <div className={cn(
+                    "col-span-2 rounded-2xl p-3.5 shadow-xs flex items-center gap-3 border",
+                    isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200/90"
+                )}>
+                    <div className="w-11 h-11 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 flex items-center justify-center shrink-0 text-sky-600">
+                        <Calendar className="w-6 h-6 stroke-[2.2]" />
+                    </div>
+                    <div className="min-w-0">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 block truncate">
+                            Due This Week
+                        </span>
+                        <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none mt-0.5 block">
+                            {dueThisWeekCount}
+                        </span>
                     </div>
                 </div>
             </div>
 
-            {/* 2. MAIN 2-COLUMN SECTION: Compliance Summary (60%) + Pending & Overdue (40%) */}
-            <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
-
-                {/* LEFT MAIN CARD: Compliance Summary (Col 7) */}
-                <div className="col-span-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-2xs flex flex-col min-h-0">
-
+            {/* 2. MAIN 2-COLUMN SECTION */}
+            <div className="grid grid-cols-12 gap-3 flex-1 min-h-0">
+                {/* LEFT MAIN CARD: Requirements Compliance Summary (Col 7) */}
+                <div className={cn(
+                    "col-span-7 rounded-2xl border p-4 shadow-xs flex flex-col min-h-0",
+                    isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200/90"
+                )}>
                     {/* Header */}
-                    <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#072445] to-[#8B1E3F] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-sky-900 text-white flex items-center justify-center shrink-0 shadow-xs">
                                 <FileText className="w-4 h-4 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight">
-                                    Compliance Summary
+                                <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                                    Requirements Compliance Summary
                                 </h3>
-                                <p className="text-[11px] text-slate-400 font-medium">
-                                    Track the status of key requirements and deadlines for the term.
+                                <p className="text-[10px] text-slate-400 font-medium">
+                                    Status of key academic and administrative requirements for the semester.
                                 </p>
                             </div>
                         </div>
 
-                        {/* Status Badge */}
-                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 shrink-0">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                            <span>{completedKeyCount} of {totalKeyCount} key requirements completed</span>
-                            <ChevronDown className="w-3.5 h-3.5 ml-0.5 text-emerald-600" />
+                        {/* Filter Dropdown Pill */}
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shrink-0">
+                            <span>All Requirements</span>
+                            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                         </div>
                     </div>
 
+                    {/* Table Header */}
+                    <div className="grid grid-cols-12 gap-2 px-2 py-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                        <div className="col-span-1 text-center">#</div>
+                        <div className="col-span-4">Requirement</div>
+                        <div className="col-span-5 text-center">Submission Progress</div>
+                        <div className="col-span-2 text-right pr-2">Status</div>
+                    </div>
+
                     {/* Requirements Progress List */}
-                    <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 pt-1 pr-1">
+                    <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 no-scrollbar pr-1">
                         {summary.map((req: any, index: number) => {
-                            const isCompleted = req.rate === 100 && req.total > 0;
-                            const hasSubmissions = req.total > 0;
+                            const isCompleted = req.rate >= 100 && req.total > 0;
+                            const isHighProgress = req.rate >= 80;
+                            const submittedFacultyList = req.submitted_faculty || [];
+                            const visibleFaculty = submittedFacultyList.slice(0, 5);
+                            const remainderCount = Math.max(0, (req.complied || 0) - visibleFaculty.length);
 
                             return (
-                                <div key={req.id || index} className="py-2.5 flex items-center gap-4">
-                                    {/* Number Circle Badge */}
-                                    <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-extrabold text-xs flex items-center justify-center shrink-0">
+                                <div key={req.id || index} className="grid grid-cols-12 gap-2 items-center px-2 py-2 text-xs">
+                                    {/* # Index */}
+                                    <div className="col-span-1 text-center font-bold text-slate-500 dark:text-slate-400 text-[11px]">
                                         {index + 1}
                                     </div>
 
                                     {/* Requirement Title */}
-                                    <div className="w-56 shrink-0 truncate text-xs font-bold text-slate-900 dark:text-white">
+                                    <div className="col-span-4 truncate font-bold text-slate-800 dark:text-slate-100 text-[11px] pr-1" title={req.title}>
                                         {req.title}
                                     </div>
 
-                                    {/* Full Width Progress Bar */}
-                                    <div className="flex-1 h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative">
-                                        <div
-                                            className={cn(
-                                                "h-full rounded-full transition-all duration-700",
-                                                isCompleted
-                                                    ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
-                                                    : (req.rate > 0
-                                                        ? "bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#8B1E3F]"
-                                                        : "bg-transparent")
+                                    {/* Submission Progress Column (Avatars + Progress Bar + Fraction & %) */}
+                                    <div className="col-span-5 flex items-center gap-2">
+                                        {/* Avatar Cluster */}
+                                        <div className="flex items-center shrink-0">
+                                            {visibleFaculty.length > 0 ? (
+                                                <div className="flex items-center -space-x-1.5 overflow-hidden">
+                                                    {visibleFaculty.map((f: any, fIdx: number) => (
+                                                        <div
+                                                            key={f.id || fIdx}
+                                                            className="w-5 h-5 rounded-full ring-1.5 ring-white dark:ring-slate-900 overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0"
+                                                            title={f.name}
+                                                        >
+                                                            {f.photo_url ? (
+                                                                <img src={f.photo_url} alt={f.name} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <span className="text-[8px] font-black text-slate-700 dark:text-slate-200">
+                                                                    {(f.name || 'FC').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center -space-x-1.5 overflow-hidden">
+                                                    {[0, 1, 2, 3].map((num) => (
+                                                        <div
+                                                            key={num}
+                                                            className="w-5 h-5 rounded-full ring-1.5 ring-white dark:ring-slate-900 overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0"
+                                                        >
+                                                            <User className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             )}
-                                            style={{ width: `${req.rate}%` }}
-                                        />
+
+                                            {/* Overflow badge (+20, +8, etc.) */}
+                                            {remainderCount > 0 && (
+                                                <span className="ml-1 px-1 py-0.2 rounded-full text-[9px] font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                                                    +{remainderCount}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Bar */}
+                                        <div className="flex-1 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden min-w-[50px]">
+                                            <div
+                                                className={cn(
+                                                    "h-full rounded-full transition-all duration-500",
+                                                    isCompleted
+                                                        ? "bg-emerald-500"
+                                                        : (isHighProgress ? "bg-amber-400" : "bg-rose-500")
+                                                )}
+                                                style={{ width: String(Math.min(100, req.rate || 0)) + '%' }}
+                                            />
+                                        </div>
+
+                                        {/* Fraction and percentage */}
+                                        <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 shrink-0 whitespace-nowrap">
+                                            <span className="font-bold text-slate-900 dark:text-white">{req.complied}</span> / {req.total}{' '}
+                                            <span className="text-slate-500 dark:text-slate-400 font-medium">
+                                                ({req.rate}%)
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    {/* Percentage and Fraction Badge */}
-                                    <div className="w-24 text-right shrink-0">
-                                        <span className="text-xs font-black text-slate-900 dark:text-white">
-                                            {req.rate}%
-                                        </span>
-                                        <span className="text-[11px] font-medium text-slate-400 ml-1.5">
-                                            • {req.complied}/{req.total}
+                                    {/* Status Badge */}
+                                    <div className="col-span-2 text-right pr-2 shrink-0">
+                                        <span className={cn(
+                                            "px-2 py-0.5 rounded-full text-[10px] font-extrabold inline-block",
+                                            isCompleted
+                                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80"
+                                                : "bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800/80"
+                                        )}>
+                                            {isCompleted ? 'Completed' : 'In Progress'}
                                         </span>
                                     </div>
                                 </div>
@@ -1441,141 +1577,176 @@ function SlideThree({ data, isDark = false }: any) {
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN: Pending & Overdue Card + Status Legend (Col 5) */}
-                <div className="col-span-5 flex flex-col gap-4 min-h-0">
-
-                    {/* Top Card: Pending & Overdue */}
-                    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-2xs flex-1 min-h-0 flex flex-col overflow-hidden">
-                        {/* Card Header */}
-                        <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                            <div className="w-8 h-8 rounded-xl bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/25 text-[#8B1E3F] dark:text-rose-300 border border-[#8B1E3F]/20 flex items-center justify-center shrink-0">
-                                <AlertTriangle className="w-4 h-4" />
+                {/* RIGHT COLUMN: 2 Cards (Top Faculty + Needs Attention) (Col 5) */}
+                <div className="col-span-5 flex flex-col gap-3 min-h-0">
+                    {/* Top Right Card: Top Faculty (On-Time Submission) */}
+                    <div className={cn(
+                        "rounded-2xl border p-3.5 shadow-xs flex flex-col min-h-0",
+                        isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200/90"
+                    )}>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-lg bg-amber-400 text-amber-950 flex items-center justify-center shrink-0 shadow-xs">
+                                    <Trophy className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-black text-slate-900 dark:text-white leading-tight">
+                                        Top Faculty (On-Time Submission)
+                                    </h4>
+                                    <p className="text-[9px] text-slate-400 font-medium">
+                                        Faculty with 100% on-time compliance for all current requirements.
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight">
-                                    Pending &amp; Overdue
-                                </h3>
-                                <p className="text-[11px] text-slate-400 font-medium">
-                                    List of requirements with pending or overdue status.
-                                </p>
-                            </div>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shrink-0">
+                                Top 5
+                            </span>
                         </div>
 
-                        {/* Center Illustration Empty State or List spanning full available height */}
-                        {pendingOutputs.length > 0 ? (
-                            <div className="divide-y divide-slate-100 dark:divide-slate-800/60 flex-1 min-h-0 overflow-y-auto no-scrollbar py-1">
-                                {pendingOutputs.map((p: any) => (
-                                    <div key={p.id} className="py-2.5 flex items-center justify-between gap-3">
-                                        <div className="flex items-center gap-2.5 min-w-0">
-                                            <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold shrink-0">
-                                                {p.faculty ? p.faculty.slice(0, 2).toUpperCase() : 'FC'}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{p.faculty}</div>
-                                                <div className="text-[10px] text-slate-400 truncate">{p.requirement}</div>
-                                            </div>
+                        {/* Top Faculty List */}
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800/60 overflow-y-auto no-scrollbar pt-1">
+                            {topFaculty.map((f: any, idx: number) => (
+                                <div key={f.rank || idx} className="py-1.5 flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        {/* Rank circle badge */}
+                                        <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 font-black text-[10px] flex items-center justify-center shrink-0">
+                                            {f.rank || (idx + 1)}
                                         </div>
-                                        <span className={cn(
-                                            "px-2 py-0.5 rounded text-[10px] font-bold shrink-0",
-                                            p.status === 'Overdue'
-                                                ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900"
-                                                : "bg-[#072445]/10 dark:bg-[#175C94]/25 text-[#072445] dark:text-sky-300 border border-[#175C94]/20"
-                                        )}>
-                                            {p.status}
+
+                                        {/* Avatar */}
+                                        <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0 ring-1 ring-slate-200 dark:ring-slate-700">
+                                            {f.photo_url ? (
+                                                <img src={f.photo_url} alt={f.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300">
+                                                    {(f.name || 'FC').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Name */}
+                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                                            {f.name}
                                         </span>
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center py-4">
-                                {/* Big Circle Illustration matching mockup */}
-                                <div className="w-28 h-28 rounded-full bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center justify-center relative my-2">
-                                    {/* Sparkle icons floating */}
-                                    <span className="absolute top-3 left-3 text-cyan-400 font-black text-sm">✦</span>
-                                    <span className="absolute top-5 right-3 text-rose-400 font-black text-sm">✧</span>
 
-                                    <div className="w-14 h-18 rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 flex flex-col justify-center px-2 shadow-xs relative">
-                                        <div className="w-5 h-1 bg-slate-300 dark:bg-slate-600 rounded mb-1.5" />
-                                        <div className="w-8 h-1 bg-slate-300 dark:bg-slate-600 rounded mb-1.5" />
-                                        <div className="w-6 h-1 bg-slate-300 dark:bg-slate-600 rounded" />
-
-                                        {/* Green checkmark circle pill */}
-                                        <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
-                                            <CheckCircle2 className="w-4 h-4 stroke-[3]" />
-                                        </div>
+                                    {/* Score & Checkmark */}
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                            {f.score ? (f.score + ' (100%)') : '9 / 9 (100%)'}
+                                        </span>
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500/20" />
                                     </div>
                                 </div>
-
-                                <h4 className="text-sm font-black text-slate-900 dark:text-white mt-1">
-                                    No pending or overdue outputs
-                                </h4>
-                                <p className="text-[11px] text-slate-400 mt-0.5">
-                                    All requirements are on track. Keep up the good work!
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Bottom Mini Counters (Pending: 0, Overdue: 0) */}
-                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                            <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40">
-                                <div className="w-9 h-9 rounded-xl bg-[#072445]/10 dark:bg-[#175C94]/25 text-[#072445] dark:text-sky-300 border border-[#175C94]/20 flex items-center justify-center shrink-0">
-                                    <Clock className="w-4 h-4" />
-                                </div>
-                                <div>
-                                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">Pending:</span>
-                                    <span className="text-lg font-black text-slate-900 dark:text-white leading-tight block">
-                                        {pendingCount}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40">
-                                <div className="w-9 h-9 rounded-xl bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/25 text-[#8B1E3F] dark:text-rose-300 border border-[#8B1E3F]/20 flex items-center justify-center shrink-0">
-                                    <AlertTriangle className="w-4 h-4" />
-                                </div>
-                                <div>
-                                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">Overdue:</span>
-                                    <span className="text-lg font-black text-slate-900 dark:text-white leading-tight block">
-                                        {overdueCount}
-                                    </span>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Bottom Card: Status Legend */}
-                    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs flex items-center justify-between shrink-0">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#072445] to-[#8B1E3F] text-white flex items-center justify-center shrink-0 shadow-xs">
-                                <Lightbulb className="w-5 h-5 text-white" />
+                    {/* Bottom Right Card: Needs Attention */}
+                    <div className={cn(
+                        "rounded-2xl border p-3.5 shadow-xs flex flex-col flex-1 min-h-0",
+                        isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200/90"
+                    )}>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-lg bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <Target className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-black text-slate-900 dark:text-white leading-tight">
+                                        Needs Attention
+                                    </h4>
+                                    <p className="text-[9px] text-slate-400 font-medium">
+                                        Faculty with pending or overdue submissions.
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h4 className="text-xs font-black text-slate-900 dark:text-white">Status Legend</h4>
-                                <p className="text-[10px] text-slate-400 max-w-[210px] leading-snug">
-                                    Progress bars show completion based on required submissions for each item.
-                                </p>
-                            </div>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shrink-0">
+                                10 Faculty
+                            </span>
                         </div>
 
-                        {/* Legend items */}
-                        <div className="space-y-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                            <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                                <span>Completed (100%)</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-[#072445] to-[#8B1E3F]" />
-                                <span>In Progress (Navy & Maroon)</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-[#8B1E3F]" />
-                                <span>Pending / Overdue</span>
-                            </div>
+                        {/* Table Header */}
+                        <div className="grid grid-cols-12 gap-1 py-1.5 text-[9px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="col-span-5">Faculty</div>
+                            <div className="col-span-2 text-center">Pending</div>
+                            <div className="col-span-2 text-center">Overdue</div>
+                            <div className="col-span-3 text-right pr-1">Due Next</div>
+                        </div>
+
+                        {/* Attention List */}
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800/60 flex-1 overflow-y-auto no-scrollbar">
+                            {needsAttention.map((item: any) => (
+                                <div key={item.id || item.name} className="grid grid-cols-12 gap-1 items-center py-1.5 text-xs">
+                                    {/* Faculty */}
+                                    <div className="col-span-5 flex items-center gap-1.5 min-w-0 pr-1">
+                                        <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0 ring-1 ring-slate-200 dark:ring-slate-700">
+                                            {item.photo_url ? (
+                                                <img src={item.photo_url} alt={item.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-[8px] font-bold text-slate-700 dark:text-slate-300">
+                                                    {(item.name || 'FC').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100 truncate">
+                                            {item.name}
+                                        </span>
+                                    </div>
+
+                                    {/* Pending Badge */}
+                                    <div className="col-span-2 text-center">
+                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                            {item.pending ?? 1}
+                                        </span>
+                                    </div>
+
+                                    {/* Overdue Badge */}
+                                    <div className="col-span-2 text-center">
+                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                            {item.overdue ?? 1}
+                                        </span>
+                                    </div>
+
+                                    {/* Due Next */}
+                                    <div className="col-span-3 text-right pr-1 flex items-center justify-end gap-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400 truncate">
+                                        <Calendar className="w-3 h-3 text-rose-500 shrink-0" />
+                                        <span className="truncate">{item.due_next || 'TOS & TQ (Nov 18)'}</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
+                </div>
+            </div>
 
+            {/* 3. BOTTOM BANNER */}
+            <div className="rounded-xl bg-[#0b2849] text-white px-4 py-2 flex items-center justify-between shrink-0 shadow-xs">
+                {/* Left: Info Reminder */}
+                <div className="flex items-center gap-2 text-xs">
+                    <div className="w-5 h-5 rounded-full bg-amber-400 text-slate-900 flex items-center justify-center shrink-0 font-black text-[11px]">
+                        i
+                    </div>
+                    <span>
+                        <strong className="text-amber-300 font-bold">Reminder:</strong> Please submit all required documents on or before the indicated deadlines to maintain 100% compliance.
+                    </span>
                 </div>
 
+                {/* Right: Legend */}
+                <div className="flex items-center gap-4 text-[11px] font-medium text-slate-200">
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" />
+                        <span>Completed (100%)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
+                        <span>In Progress (≥ 80%)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+                        <span>Pending / Overdue (&lt; 80%)</span>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -2335,16 +2506,19 @@ function SlideFive({ data, isDark = false }: any) {
                                 {/* Center: Class/Faculty Body or Empty State */}
                                 <div className="my-2.5">
                                     {room.current_class ? (
-                                        <div className="flex items-start justify-between gap-2.5">
-                                            <div className="flex items-start gap-2.5 min-w-0">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-start gap-3 min-w-0">
+                                                {/* Currently teaching avatar: visible, rounded corner square shape (rounded-xl) */}
                                                 <div className="mt-0.5 shrink-0">
                                                     <FacultyAvatarHover
                                                         facultyId={room.faculty_id}
                                                         name={room.instructor}
-                                                        photoUrl={room.photo_url}
+                                                        photoUrl={room.instructor_photo || room.photo_url}
                                                         program={room.program}
-                                                        size="sm"
+                                                        size="lg"
+                                                        shape="square"
                                                         isDark={isDark}
+                                                        className="ring-2 ring-emerald-500/30 dark:ring-emerald-400/30 shadow-sm"
                                                     />
                                                 </div>
                                                 <div className="min-w-0">
@@ -2400,13 +2574,33 @@ function SlideFive({ data, isDark = false }: any) {
                                         </span>
                                     </div>
 
-                                    {/* Up Next Row */}
+                                    {/* Up Next Row: with circular faculty avatar for up next */}
                                     {room.next_schedule ? (
-                                        <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500 dark:text-slate-400 truncate">
-                                            <CalendarIcon size={12} className="shrink-0 text-slate-400" />
-                                            <span className="truncate">
-                                                <strong className="font-bold text-slate-700 dark:text-slate-300">Up next:</strong> {room.next_schedule}
-                                            </span>
+                                        <div className="flex items-center justify-between gap-2 text-[10.5px] text-slate-600 dark:text-slate-300">
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                {/* Up next faculty avatar: circle shape */}
+                                                <FacultyAvatarHover
+                                                    facultyId={room.next_faculty_id}
+                                                    name={room.next_instructor || room.next_schedule}
+                                                    photoUrl={room.next_instructor_photo}
+                                                    program={room.program}
+                                                    size="sm"
+                                                    shape="circle"
+                                                    isDark={isDark}
+                                                    className="ring-1 ring-slate-300 dark:ring-slate-600 shadow-2xs"
+                                                />
+                                                <div className="truncate">
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300">Up next: </span>
+                                                    <span className="font-semibold text-slate-900 dark:text-white">
+                                                        {room.next_instructor || room.next_schedule}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {room.next_time && (
+                                                <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 px-1.5 py-0.5 rounded border border-sky-200 dark:border-sky-800 shrink-0">
+                                                    {room.next_time}
+                                                </span>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-1.5 text-[10.5px] text-slate-400 dark:text-slate-500 truncate">

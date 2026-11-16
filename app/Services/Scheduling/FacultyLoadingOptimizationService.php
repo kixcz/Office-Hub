@@ -292,7 +292,8 @@ class FacultyLoadingOptimizationService
             $units = floatval($c['units'] ?? 3.0);
 
             // Check if offering is pinned by manual assignment or special course rule
-            $pinnedFacultyId = $c['locked_faculty_id'] ?? ($c['is_locked'] ? ($c['current_faculty_id'] ?? $c['faculty_id'] ?? null) : null);
+            $isLocked = ! empty($c['is_locked']);
+            $pinnedFacultyId = $c['locked_faculty_id'] ?? ($isLocked ? ($c['current_faculty_id'] ?? $c['faculty_id'] ?? null) : null);
             if (! $pinnedFacultyId && ! empty($c['exclusive_faculty_id'])) {
                 $pinnedFacultyId = $c['exclusive_faculty_id'];
             }
