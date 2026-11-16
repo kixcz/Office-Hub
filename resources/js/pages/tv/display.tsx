@@ -543,7 +543,9 @@ export interface FacultyProfile {
     office_room?: string;
     email?: string;
     employment_type?: string;
+    appointment_status?: string;
     status?: string;
+    bio?: string | null;
 }
 
 const FacultyContext = createContext<Record<string | number, FacultyProfile>>({});
@@ -591,6 +593,9 @@ function FacultyAvatarHover({
         }
 
         const effName = p?.name || name || 'Faculty Member';
+        const effStatus = p?.appointment_status || p?.status || customProfile?.appointment_status || customProfile?.status || 'Active';
+        const effBio = p?.bio || customProfile?.bio || null;
+
         return {
             id: p?.id || facultyId || undefined,
             name: effName,
@@ -602,8 +607,10 @@ function FacultyAvatarHover({
             specialization: p?.specialization || customProfile?.specialization || 'Information Technology',
             office_room: p?.office_room || customProfile?.office_room || 'CIDS Faculty Room',
             email: p?.email || customProfile?.email || undefined,
-            status: p?.status || customProfile?.status || 'Active',
+            status: effStatus,
             employment_type: p?.employment_type || customProfile?.employment_type || 'Full-time',
+            appointment_status: p?.appointment_status || customProfile?.appointment_status || 'Permanent',
+            bio: effBio,
             ...customProfile,
         };
     }, [facultyId, name, photoUrl, program, profiles, customProfile]);
@@ -759,60 +766,41 @@ function FacultyAvatarHover({
 
                         {/* Basic Info Header */}
                         <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-black truncate leading-tight text-slate-900 dark:text-white">
-                                    {resolvedProfile.name}
-                                </span>
-                            </div>
-                            <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 truncate mt-0.5">
+                            {/* Faculty Name (High Contrast in both Light and Dark mode) */}
+                            <h4 className="text-xs font-black truncate leading-tight text-slate-900 dark:text-white">
+                                {resolvedProfile.name}
+                            </h4>
+                            {/* Academic Position */}
+                            <p className="text-[10.5px] font-bold text-amber-600 dark:text-amber-400 truncate mt-0.5">
                                 {resolvedProfile.academic_rank}
                             </p>
-                            <div className="flex items-center gap-1 mt-1">
-                                <span className="px-1.5 py-0.5 rounded-md text-[8.5px] font-black uppercase bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                            {/* Program & Status Badges */}
+                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20">
                                     {resolvedProfile.program}
                                 </span>
-                                <span className="px-1.5 py-0.5 rounded-md text-[8.5px] font-bold uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                <span className={cn(
+                                    "px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase border",
+                                    resolvedProfile.status?.toLowerCase().includes('leave')
+                                        ? "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20"
+                                        : (resolvedProfile.status?.toLowerCase().includes('part') || resolvedProfile.status?.toLowerCase().includes('temp')
+                                            ? "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20"
+                                            : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20")
+                                )}>
                                     {resolvedProfile.status}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Detailed Attributes List */}
-                    <div className="mt-2.5 pt-2 border-t border-black/[0.06] dark:border-white/[0.08] space-y-1 relative z-10 text-[9.5px]">
-                        {resolvedProfile.highest_qualification && (
-                            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                                <span className="font-semibold">Qualification:</span>
-                                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[130px] text-right">
-                                    {resolvedProfile.highest_qualification}
-                                </span>
-                            </div>
-                        )}
-                        {resolvedProfile.specialization && (
-                            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                                <span className="font-semibold">Specialization:</span>
-                                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[130px] text-right">
-                                    {resolvedProfile.specialization}
-                                </span>
-                            </div>
-                        )}
-                        {resolvedProfile.office_room && (
-                            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                                <span className="font-semibold">Office:</span>
-                                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[130px] text-right">
-                                    {resolvedProfile.office_room}
-                                </span>
-                            </div>
-                        )}
-                        {resolvedProfile.email && (
-                            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                                <span className="font-semibold">Email:</span>
-                                <span className="font-bold text-amber-600 dark:text-amber-400 truncate max-w-[130px] text-right">
-                                    {resolvedProfile.email}
-                                </span>
-                            </div>
-                        )}
-                    </div>
+                    {/* Faculty Bio Section */}
+                    {resolvedProfile.bio && (
+                        <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-white/10 relative z-10">
+                            <p className="text-[10px] leading-relaxed text-slate-600 dark:text-slate-300 line-clamp-3 italic">
+                                "{resolvedProfile.bio}"
+                            </p>
+                        </div>
+                    )}
                 </div>,
                 document.body
             )}

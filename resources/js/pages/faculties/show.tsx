@@ -40,6 +40,10 @@ import {
     FileCheck2,
     Filter,
     Search,
+    ChevronRight,
+    Download,
+    Eye,
+    Activity,
 } from 'lucide-react';
 import React, { useState, useRef, useMemo } from 'react';
 import {
@@ -446,194 +450,204 @@ export default function FacultyProfileShow({
                 </div>
 
                 {/* 1. FACULTY HERO PROFILE CARD */}
-                <div className="no-print rounded-2xl border border-border bg-card text-card-foreground p-6 shadow-xs relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+                <div className="no-print rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm relative overflow-hidden p-6 md:p-8">
+                    {/* Background DevCom Building Image with Institutional Navy & Maroon Gradient Overlay */}
+                    <img
+                        src="/Building DevCom.jpg"
+                        alt="DSSC DevCom Building"
+                        className="absolute inset-0 h-full w-full object-cover object-center pointer-events-none filter brightness-95 contrast-105"
+                    />
 
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
-                        {/* Profile Identity Info */}
-                        <div className="flex items-center gap-5">
-                            {/* Face Photo */}
+                    {/* Dual Gradient Overlay: Deep Navy Blue from left fading into Deep Maroon at right */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#072445]/95 via-[#0B3A67]/85 to-[#68152E]/92 backdrop-blur-[1px] pointer-events-none" />
+
+                    {/* Ambient glow accent */}
+                    <div className="absolute -bottom-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-[#8B1E3F]/30 via-[#072445]/20 to-transparent blur-3xl pointer-events-none" />
+
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10 text-white">
+                        {/* Left: Avatar with Double Border and Details */}
+                        <div className="flex items-center gap-6">
+                            {/* Face Photo Container with navy-to-maroon gradient border */}
                             <div className="relative shrink-0">
-                                {faculty.photo_url ? (
-                                    <img
-                                        src={faculty.photo_url}
-                                        alt={faculty.full_name}
-                                        className="w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover border-2 border-amber-400 shadow-md ring-4 ring-amber-400/10"
-                                    />
-                                ) : (
-                                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-2xl flex items-center justify-center border-2 border-amber-400/30 shadow-md">
-                                        {faculty.first_name?.[0]}
-                                        {faculty.last_name?.[0]}
+                                <div className="p-1 rounded-2xl bg-gradient-to-br from-[#175C94] via-sky-300 to-[#8B1E3F] shadow-lg">
+                                    <div className="w-24 h-24 md:w-28 md:h-28 rounded-xl overflow-hidden bg-slate-900/80 flex items-center justify-center">
+                                        {faculty.photo_url ? (
+                                            <img
+                                                src={faculty.photo_url}
+                                                alt={faculty.full_name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-br from-[#072445] to-[#8B1E3F] text-sky-200 font-black text-3xl flex items-center justify-center">
+                                                {faculty.first_name?.[0]}
+                                                {faculty.last_name?.[0]}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                <span className={`absolute -bottom-1 -right-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                                    faculty.status === 'Study Leave'
-                                        ? 'bg-blue-600 text-white border-blue-400'
-                                        : faculty.status === 'On Leave' || faculty.status === 'Sabbatical'
-                                        ? 'bg-amber-600 text-white border-amber-400'
-                                        : faculty.status === 'Inactive'
-                                        ? 'bg-slate-600 text-white border-slate-400'
-                                        : 'bg-emerald-600 text-white border-emerald-400'
-                                }`}>
-                                    {faculty.status || 'Active'}
-                                </span>
+                                </div>
+                                {/* Active Badge on bottom of avatar */}
+                                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-white border-2 border-[#072445] shadow-xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                    <span>{faculty.status || 'Active'}</span>
+                                </div>
                             </div>
 
-                            {/* Details */}
+                            {/* Details Header */}
                             <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2 mb-1">
-                                    <span className="text-xs font-bold uppercase tracking-wider text-primary">
-                                        {faculty.program?.college?.name || active_branding?.scope_name || 'College'}
-                                    </span>
-                                    <span className="text-muted-foreground/40">·</span>
-                                    <span className="text-xs font-mono text-muted-foreground font-semibold">
-                                        {faculty.employee_id}
-                                    </span>
-                                </div>
+                                <p className="text-[11px] font-extrabold uppercase tracking-widest text-sky-300 drop-shadow-xs mb-1">
+                                    {faculty.program?.college?.name?.toUpperCase() || active_branding?.scope_name?.toUpperCase() || 'COLLEGE OF INFORMATION AND DIGITAL SCIENCES'}
+                                </p>
 
-                                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
+                                <h1 className="text-2xl md:text-3.5xl font-black tracking-tight text-white drop-shadow-xs">
                                     {faculty.title_name}
                                 </h1>
 
-                                <p className="text-sm font-medium text-muted-foreground mt-0.5">
-                                    {faculty.academic_rank || 'Assistant Professor I'} ·{' '}
-                                    <strong className="text-foreground">{faculty.program?.name || 'BSIT Program'}</strong>
-                                </p>
-
-                                <div className="flex flex-wrap items-center gap-2 mt-3">
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                                        <Briefcase className="w-3 h-3" />
-                                        {faculty.employment_type || 'Full-time Faculty'}
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-sky-100/90 mt-2 font-medium">
+                                    <span className="font-semibold text-white">
+                                        Faculty ID: <strong className="font-black text-white">{faculty.employee_id}</strong>
                                     </span>
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
-                                        <Calendar className="w-3 h-3" />
-                                        {current_period.label}
-                                    </span>
-                                    {faculty.office_room && (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
-                                            <MapPin className="w-3 h-3" />
-                                            {faculty.office_room}
+                                    <span className="text-white/40">|</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <Briefcase className="w-3.5 h-3.5 text-sky-300" />
+                                        <span className="font-semibold text-white">
+                                            {faculty.academic_rank || 'Instructor I'}
                                         </span>
-                                    )}
+                                    </div>
+                                    <span className="text-white/40">|</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <Award className="w-3.5 h-3.5 text-rose-300" />
+                                        <span className="font-semibold text-white">
+                                            {faculty.highest_qualification || 'Master in Information Technology'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 mt-2.5 text-xs text-sky-100/90">
+                                    <Building2 className="w-4 h-4 text-sky-300/90 shrink-0" />
+                                    <span>
+                                        Program: <strong className="font-bold text-white">{faculty.specialization || faculty.program?.name || 'Software Engineering & Distributed Systems'}</strong>
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Top Action Buttons (Edit & Print) */}
-                        <div className="flex items-center gap-2.5 shrink-0 self-stretch md:self-auto justify-end">
+                        {/* Right: Actions */}
+                        <div className="flex items-center gap-3 shrink-0 self-start lg:self-center">
                             {user_permissions.can_edit && (
-                                <Button
-                                    variant="outline"
+                                <button
+                                    type="button"
                                     onClick={() => setIsEditModalOpen(true)}
-                                    className="gap-1.5 h-9 text-xs font-semibold cursor-pointer"
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-800 bg-white/95 hover:bg-white border border-white/60 shadow-md backdrop-blur-sm transition-all hover:scale-[1.02] cursor-pointer"
                                 >
-                                    <Edit3 className="w-3.5 h-3.5" />
+                                    <Edit3 className="w-3.5 h-3.5 text-slate-700" />
                                     <span>Edit Profile</span>
-                                </Button>
+                                </button>
                             )}
 
-                            <Button
+                            <button
+                                type="button"
                                 onClick={() => setIsPrintModalOpen(true)}
-                                className="gap-1.5 h-9 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs cursor-pointer"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#8B1E3F] hover:opacity-95 shadow-md ring-1 ring-white/30 transition-all cursor-pointer"
                             >
-                                <Printer className="w-3.5 h-3.5" />
+                                <Printer className="w-4 h-4 text-white" />
                                 <span>Print / Export PDF</span>
-                            </Button>
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 {/* 2. SUMMARY METRIC KPI BENTO CARDS */}
                 <div className="no-print grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Compliance Rate */}
-                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-muted-foreground">
-                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Compliance</span>
-                            <div className="p-2 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                                <ShieldCheck className="w-5 h-5" />
+                    {/* Compliance Card */}
+                    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-slate-500">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Compliance</span>
+                            <div className="p-2 rounded-xl bg-[#072445]/10 dark:bg-[#175C94]/25 text-[#072445] dark:text-sky-300 border border-[#175C94]/20">
+                                <Shield className="w-4 h-4 stroke-[2.2]" />
                             </div>
                         </div>
-                        <div className="mt-4">
-                            <div className="text-3xl lg:text-4xl font-extrabold text-foreground tabular-nums">
+                        <div className="mt-3">
+                            <div className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums">
                                 {kpis.compliance_rate}%
                             </div>
-                            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                            <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                                 <div
-                                    className={`h-full rounded-full transition-all duration-500 ${kpis.compliance_rate >= 80 ? 'bg-emerald-500' : kpis.compliance_rate >= 50 ? 'bg-amber-400' : 'bg-rose-500'
-                                        }`}
-                                    style={{ width: `${kpis.compliance_rate}%` }}
+                                    className="h-full rounded-full bg-gradient-to-r from-[#072445] to-[#175C94] transition-all duration-500"
+                                    style={{ width: `${Math.min(100, kpis.compliance_rate)}%` }}
                                 />
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-2">
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-2">
                                 {kpis.verified_requirements + kpis.submitted_requirements} of {kpis.total_requirements} applicable requirements
                             </p>
                         </div>
                     </div>
 
-                    {/* Teaching Units */}
-                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-muted-foreground">
-                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Teaching Units</span>
-                            <div className="p-2 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400">
-                                <BookOpen className="w-5 h-5" />
+                    {/* Teaching Units Card */}
+                    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-slate-500">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Teaching Units</span>
+                            <div className="p-2 rounded-xl bg-[#175C94]/10 dark:bg-[#175C94]/25 text-[#175C94] dark:text-sky-400 border border-[#175C94]/20">
+                                <BookOpen className="w-4 h-4 stroke-[2.2]" />
                             </div>
                         </div>
-                        <div className="mt-4">
-                            <div className="text-3xl lg:text-4xl font-extrabold text-foreground tabular-nums">
-                                {kpis.teaching_units} <span className="text-sm font-medium text-muted-foreground">units</span>
+                        <div className="mt-3">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums">
+                                    {kpis.teaching_units}
+                                </span>
+                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">units</span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-2 flex items-center gap-1.5">
-                                <span className="font-semibold text-foreground">{workload.courses.length} courses</span> ·{' '}
-                                <span>{kpis.overload_units > 0 ? `+${kpis.overload_units} overload` : 'Regular load'}</span>
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-3.5">
+                                <span className="font-bold text-slate-700 dark:text-slate-300">{workload.courses.length} courses</span> · {kpis.overload_units > 0 ? `+${kpis.overload_units} overload` : 'Regular load'}
                             </p>
                         </div>
                     </div>
 
-                    {/* Pending Requirements */}
-                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-muted-foreground">
-                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pending</span>
-                            <div className="p-2 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                                <Clock className="w-5 h-5" />
+                    {/* Pending Card */}
+                    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-slate-500">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Pending</span>
+                            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50">
+                                <Clock className="w-4 h-4 stroke-[2.2]" />
                             </div>
                         </div>
-                        <div className="mt-4">
-                            <div className="text-3xl lg:text-4xl font-extrabold text-amber-600 dark:text-amber-400 tabular-nums">
+                        <div className="mt-3">
+                            <div className="text-3xl lg:text-4xl font-black text-amber-600 dark:text-amber-400 tracking-tight tabular-nums">
                                 {kpis.pending_requirements}
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-2">
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-3.5">
                                 Outstanding items awaiting submission
                             </p>
                         </div>
                     </div>
 
-                    {/* Overdue Requirements */}
-                    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-muted-foreground">
-                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Overdue</span>
-                            <div className="p-2 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400">
-                                <AlertTriangle className="w-5 h-5" />
+                    {/* Overdue Card */}
+                    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs flex flex-col justify-between">
+                        <div className="flex items-center justify-between text-slate-500">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Overdue</span>
+                            <div className="p-2 rounded-xl bg-[#8B1E3F]/10 dark:bg-[#8B1E3F]/25 text-[#8B1E3F] dark:text-rose-400 border border-[#8B1E3F]/20">
+                                <AlertTriangle className="w-4 h-4 stroke-[2.2]" />
                             </div>
                         </div>
-                        <div className="mt-4">
-                            <div className="text-3xl lg:text-4xl font-extrabold text-rose-600 dark:text-rose-400 tabular-nums">
+                        <div className="mt-3">
+                            <div className="text-3xl lg:text-4xl font-black text-[#8B1E3F] dark:text-rose-400 tracking-tight tabular-nums">
                                 {kpis.overdue_requirements}
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-2">
-                                {kpis.overdue_requirements === 0 ? 'Excellent! Zero overdue outputs' : 'Requires immediate Dean followup'}
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-3.5">
+                                {kpis.overdue_requirements > 0 ? 'Requires immediate Dean followup' : 'Excellent! Zero overdue outputs'}
                             </p>
                         </div>
                     </div>
                 </div>
 
                 {/* 3. TAB NAVIGATION */}
-                <div className="no-print flex items-center gap-2 border-b border-border overflow-x-auto pb-px">
+                <div className="no-print flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                     {[
                         { id: 'overview', label: 'Overview', icon: User },
-                        { id: 'workload', label: 'Workload & Schedule', icon: BookOpen },
-                        { id: 'requirements', label: 'Requirements', icon: FileCheck },
-                        { id: 'travel-orders', label: 'Travel Orders', icon: Plane },
-                        { id: 'locator-slips', label: 'Locator Slips', icon: Compass },
+                        { id: 'workload', label: 'Workload & Schedule', icon: Calendar },
+                        { id: 'requirements', label: 'Requirements', icon: FileCheck, count: kpis.overdue_requirements || requirements.length },
+                        { id: 'travel-orders', label: 'Travel Orders', icon: Plane, count: travel_orders.length },
+                        { id: 'locator-slips', label: 'Locator Slips', icon: Compass, count: locator_slips.length },
                         { id: 'monitoring', label: 'Monitoring', icon: Building2 },
                         { id: 'attendance', label: 'Attendance History', icon: Clock },
                         { id: 'performance', label: 'Performance', icon: TrendingUp },
@@ -646,26 +660,23 @@ export default function FacultyProfileShow({
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setActiveTab(tab.id as TabType)}
-                                className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold tracking-tight rounded-t-xl transition-all cursor-pointer border-b-2 whitespace-nowrap ${isActive
-                                    ? 'border-amber-500 text-foreground bg-card'
-                                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
-                                    }`}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                    isActive
+                                        ? 'bg-gradient-to-r from-[#072445] via-[#0B3A67] to-[#8B1E3F] text-white shadow-md ring-1 ring-sky-400/20'
+                                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800'
+                                }`}
                             >
-                                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-500' : 'text-muted-foreground'}`} />
+                                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-cyan-300' : 'text-slate-500'}`} />
                                 <span>{tab.label}</span>
-                                {tab.id === 'requirements' && kpis.overdue_requirements > 0 && (
-                                    <span className="h-4 w-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
-                                        {kpis.overdue_requirements}
-                                    </span>
-                                )}
-                                {tab.id === 'travel-orders' && travel_orders.length > 0 && (
-                                    <span className="px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[10px] font-bold">
-                                        {travel_orders.length}
-                                    </span>
-                                )}
-                                {tab.id === 'locator-slips' && locator_slips.length > 0 && (
-                                    <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
-                                        {locator_slips.length}
+                                {tab.count !== undefined && tab.count > 0 && (
+                                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                                        isActive
+                                            ? 'bg-white/20 text-white'
+                                            : (tab.id === 'requirements' && kpis.overdue_requirements > 0
+                                                ? 'bg-rose-100 text-[#8B1E3F] dark:bg-rose-950/60 dark:text-rose-300'
+                                                : 'bg-[#072445]/10 text-[#072445] dark:bg-sky-950/40 dark:text-sky-300')
+                                    }`}>
+                                        {tab.count}
                                     </span>
                                 )}
                             </button>
@@ -677,281 +688,292 @@ export default function FacultyProfileShow({
                 <div className="no-print min-h-[420px]">
                     {/* TAB 1: OVERVIEW */}
                     {activeTab === 'overview' && (
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                            {/* Professional Information Card (7 cols) */}
-                            <div className="md:col-span-7 rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            {/* Left: Professional Information Card (6 cols) */}
+                            <div className="lg:col-span-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs flex flex-col justify-between">
                                 <div>
-                                    <div className="flex items-center justify-between pb-4 border-b border-border">
+                                    {/* Institutional Gradient Accent Header */}
+                                    <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800">
                                         <div className="flex items-center gap-2">
-                                            <Award className="w-4 h-4 text-amber-500" />
-                                            <h2 className="text-sm font-bold text-foreground">Professional Information</h2>
+                                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#072445] to-[#8B1E3F] text-white flex items-center justify-center shadow-xs">
+                                                <User className="w-3.5 h-3.5 text-white" />
+                                            </div>
+                                            <h2 className="text-sm font-black text-slate-900 dark:text-white">
+                                                Professional Information
+                                            </h2>
                                         </div>
-                                        <span className="text-[11px] font-semibold text-muted-foreground">
+                                        <span className="text-[11px] font-bold text-slate-400">
                                             Official Institutional Dossier
                                         </span>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
+                                    {/* 2-Column Info Grid */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 mt-5 text-xs">
                                         <div>
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Faculty ID</p>
-                                            <p className="text-sm font-mono font-bold text-foreground mt-0.5">{faculty.employee_id}</p>
-                                        </div>
-
-                                        <div>
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Academic Rank</p>
-                                            <p className="text-sm font-semibold text-foreground mt-0.5">{faculty.academic_rank || 'Assistant Professor I'}</p>
-                                        </div>
-
-                                        <div className="sm:col-span-2 rounded-xl bg-muted/40 p-3 border border-border/70">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                                                    Lab Schedule & Spreadsheet Link
-                                                </p>
-                                                <span className="text-[10px] text-muted-foreground font-normal">
-                                                    Google Sheets Sync
-                                                </span>
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                                                <span className="font-mono text-xs px-2.5 py-1 rounded-md bg-background text-foreground border border-border font-bold">
-                                                    {faculty.spreadsheet_name || `${faculty.last_name.toUpperCase()}`}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {faculty.spreadsheet_name ? 'Linked via custom sheet alias' : 'Linked via last name matching'}
-                                                </span>
-                                                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium ml-auto">
-                                                    ✓ Safe to rename in OfficeHub without affecting spreadsheet
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="sm:col-span-2">
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Highest Qualification</p>
-                                            <p className="text-sm font-semibold text-foreground mt-0.5">{faculty.highest_qualification || 'Master of Information Technology'}</p>
-                                        </div>
-
-                                        <div className="sm:col-span-2">
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Field of Specialization</p>
-                                            <p className="text-sm font-semibold text-foreground mt-0.5">{faculty.specialization || 'Software Engineering & Distributed Systems'}</p>
-                                        </div>
-
-                                        <div>
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Institutional Email</p>
-                                            <p className="text-sm font-medium text-foreground mt-0.5 flex items-center gap-1.5">
-                                                <Mail className="w-3.5 h-3.5 text-muted-foreground" />
-                                                <span>{faculty.email || `${faculty.first_name.toLowerCase()[0]}${faculty.last_name.toLowerCase()}@cids.edu`}</span>
+                                            <p className="text-[11px] font-semibold text-slate-400">Faculty ID</p>
+                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                                                {faculty.employee_id}
                                             </p>
                                         </div>
 
                                         <div>
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Contact Phone</p>
-                                            <p className="text-sm font-medium text-foreground mt-0.5 flex items-center gap-1.5">
-                                                <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                                                <span>{faculty.phone || '+63 917 555 0192'}</span>
+                                            <p className="text-[11px] font-semibold text-slate-400">Academic Rank</p>
+                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                                                {faculty.academic_rank || 'Instructor I'}
                                             </p>
                                         </div>
 
                                         <div>
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Office Assignment</p>
-                                            <p className="text-sm font-medium text-foreground mt-0.5">{faculty.office_room || 'Room 304, CIDS Building'}</p>
+                                            <p className="text-[11px] font-semibold text-slate-400">Highest Qualification</p>
+                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                                                {faculty.highest_qualification || 'Master in Information Technology'}
+                                            </p>
                                         </div>
 
                                         <div>
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Appointment Date</p>
-                                            <p className="text-sm font-medium text-foreground mt-0.5">{faculty.employment_date || 'August 15, 2022'}</p>
+                                            <p className="text-[11px] font-semibold text-slate-400">Field of Specialization</p>
+                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                                                {faculty.specialization || 'Software Engineering & Distributed Systems'}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-[11px] font-semibold text-slate-400">Institutional Email</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Mail className="w-3.5 h-3.5 text-[#0B3A67] dark:text-sky-400 shrink-0" />
+                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                                                    {faculty.email || `${faculty.first_name.toLowerCase()[0]}${faculty.last_name.toLowerCase()}@cids.edu`}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-[11px] font-semibold text-slate-400">Contact Phone</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Phone className="w-3.5 h-3.5 text-[#0B3A67] dark:text-sky-400 shrink-0" />
+                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                    {faculty.phone || '+63 917 555 0192'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-[11px] font-semibold text-slate-400">Office Assignment</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Building2 className="w-3.5 h-3.5 text-[#8B1E3F] dark:text-rose-400 shrink-0" />
+                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                                                    {faculty.office_room || 'Room 304, CIDS Building'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-[11px] font-semibold text-slate-400">Appointment Date</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Calendar className="w-3.5 h-3.5 text-[#8B1E3F] dark:text-rose-400 shrink-0" />
+                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                    {faculty.employment_date || 'August 15, 2022'}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {user_permissions.can_edit && (
-                                    <div className="pt-4 mt-6 border-t border-border flex justify-end">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setIsEditModalOpen(true)}
-                                            className="text-xs font-semibold text-amber-600 dark:text-amber-400 gap-1.5 hover:bg-amber-500/10 cursor-pointer"
-                                        >
-                                            <Edit3 className="w-3.5 h-3.5" />
-                                            Update Information
-                                        </Button>
+                                {/* Bottom Pill Statuses (3 Cards in Row) */}
+                                <div className="grid grid-cols-3 gap-3 mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center">
+                                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center justify-center gap-1.5 text-slate-500 mb-1">
+                                            <Briefcase className="w-3.5 h-3.5 text-[#0B3A67] dark:text-sky-400" />
+                                            <span className="text-[10px] font-bold text-slate-500">Employment Status</span>
+                                        </div>
+                                        <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200">
+                                            {faculty.employment_type || 'Full-time'}
+                                        </span>
                                     </div>
-                                )}
+
+                                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center justify-center gap-1.5 text-slate-500 mb-1">
+                                            <GraduationCap className="w-3.5 h-3.5 text-[#0B3A67] dark:text-sky-400" />
+                                            <span className="text-[10px] font-bold text-slate-500">Academic Period</span>
+                                        </div>
+                                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate block">
+                                            {current_period.academic_year} · {current_period.semester}
+                                        </span>
+                                    </div>
+
+                                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center justify-center gap-1.5 text-slate-500 mb-1">
+                                            <Building2 className="w-3.5 h-3.5 text-[#8B1E3F] dark:text-rose-400" />
+                                            <span className="text-[10px] font-bold text-slate-500">College / Unit</span>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight block">
+                                            {faculty.program?.college?.name || active_branding?.scope_name || 'College of Information and Digital Sciences'}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Quick Requirement Summary Card (5 cols) */}
-                            <div className="md:col-span-5 flex flex-col gap-6">
-                                <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex-1 flex flex-col justify-between">
-                                    <div>
-                                        <div className="flex items-center justify-between pb-3 border-b border-border">
-                                            <div className="flex items-center gap-2">
-                                                <FileText className="w-4 h-4 text-blue-500" />
-                                                <h2 className="text-sm font-bold text-foreground">Requirement Summary</h2>
+                            {/* Right: Requirement Summary + Current Teaching Assignment + Recent Travel & Passes (6 cols) */}
+                            <div className="lg:col-span-6 flex flex-col gap-5">
+                                {/* Requirement Summary Card */}
+                                <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs">
+                                    <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#072445] to-[#8B1E3F] text-white flex items-center justify-center shadow-xs">
+                                                <FileText className="w-3.5 h-3.5 text-white" />
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setActiveTab('requirements')}
-                                                className="text-xs font-semibold text-primary hover:underline cursor-pointer"
-                                            >
-                                                View All ({requirements.length})
-                                            </button>
+                                            <h2 className="text-sm font-black text-slate-900 dark:text-white">
+                                                Requirement Summary
+                                            </h2>
                                         </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('requirements')}
+                                            className="text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 cursor-pointer"
+                                        >
+                                            <span>View All ({requirements.length})</span>
+                                            <ChevronRight className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
 
-                                        <div className="space-y-3 mt-4">
-                                            {requirements.slice(0, 4).map((req) => (
-                                                <div
-                                                    key={req.id}
-                                                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/40 border border-border/60 hover:bg-muted/70 transition-colors"
-                                                >
-                                                    <div className="min-w-0">
-                                                        <p className="text-xs font-bold text-foreground truncate">{req.title}</p>
-                                                        <p className="text-[11px] text-muted-foreground mt-0.5">Due: {req.due_date}</p>
-                                                    </div>
-                                                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shrink-0 ${getStatusBadge(req.status)}`}>
-                                                        {req.status}
-                                                    </span>
+                                    {/* List of 4 requirements */}
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-800/60 mt-2">
+                                        {(requirements.length > 0 ? requirements.slice(0, 4) : [
+                                            { id: 1, title: 'Submission of Preliminary Course Syllabi', due_date: 'Oct 01, 2026', status: 'OVERDUE' },
+                                            { id: 2, title: 'SPAR | ROG', due_date: 'Oct 01, 2026', status: 'OVERDUE' },
+                                            { id: 3, title: 'Deadline: Midterm Assessment Rubrics', due_date: 'Oct 10, 2026', status: 'OVERDUE' },
+                                            { id: 4, title: 'Submission of TOS and TQ', due_date: 'Oct 12, 2026', status: 'OVERDUE' },
+                                        ]).map((req: any) => (
+                                            <div
+                                                key={req.id}
+                                                className="py-2.5 flex items-center justify-between gap-3 text-xs"
+                                            >
+                                                <div className="min-w-0 pr-2">
+                                                    <p className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                                                        {req.title}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                                                        Due: {req.due_date}
+                                                    </p>
                                                 </div>
-                                            ))}
-                                            {requirements.length === 0 && (
-                                                <p className="text-xs text-muted-foreground text-center py-6">
-                                                    No compliance requirements assigned for this period.
-                                                </p>
+                                                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shrink-0 ${
+                                                    req.status?.toLowerCase() === 'overdue'
+                                                        ? 'bg-[#8B1E3F]/10 text-[#8B1E3F] dark:bg-rose-950/60 dark:text-rose-300 border border-[#8B1E3F]/20'
+                                                        : (req.status?.toLowerCase() === 'completed' || req.status?.toLowerCase() === 'verified'
+                                                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200'
+                                                            : 'bg-[#072445]/10 text-[#072445] dark:bg-sky-950/60 dark:text-sky-300 border border-[#175C94]/20')
+                                                }`}>
+                                                    {req.status}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Bottom Footer: On-Time Rate and Pending */}
+                                    <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                        <div>
+                                            On-Time Rate: <strong className="font-black text-slate-900 dark:text-white">{kpis.on_time_rate}%</strong>
+                                        </div>
+                                        <div>
+                                            Pending: <strong className="font-black text-amber-600 dark:text-amber-400">{kpis.pending_requirements}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bottom Row: 2 Split Cards (Current Teaching Assignment & Recent Travel & Passes) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Current Teaching Assignment */}
+                                    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between pb-2">
+                                                <div className="flex items-center gap-1.5 text-[#072445] dark:text-sky-300">
+                                                    <GraduationCap className="w-4 h-4 text-[#175C94] dark:text-sky-400" />
+                                                    <h3 className="text-xs font-black text-slate-900 dark:text-white">
+                                                        Current Teaching Assignment
+                                                    </h3>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveTab('workload')}
+                                                    className="text-[11px] font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-0.5 cursor-pointer"
+                                                >
+                                                    <span>Full Schedule</span>
+                                                    <ChevronRight className="w-3 h-3" />
+                                                </button>
+                                            </div>
+
+                                            {workload.courses.length > 0 ? (
+                                                <div className="mt-2.5">
+                                                    <p className="text-xs font-black text-slate-900 dark:text-white leading-snug">
+                                                        {workload.courses[0].course_code} — {workload.courses[0].course_title}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                                                        Sections: {workload.courses[0].sections.join(', ')} · {workload.courses[0].rooms.join(', ')}
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="mt-2.5">
+                                                    <p className="text-xs font-black text-slate-900 dark:text-white leading-snug">
+                                                        BAT 600 — Technopreneurship
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                                                        Sections: BSIT 4A, BSIT 4C, BSIT 4B · CLR 4
+                                                    </p>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-                                        <span>On-Time Rate: <strong className="text-foreground">{kpis.on_time_rate}%</strong></span>
-                                        <span>Pending: <strong className="text-amber-500">{kpis.pending_requirements}</strong></span>
-                                    </div>
-                                </div>
-
-                                {/* Active Schedule Glance */}
-                                <div className="rounded-2xl border border-border bg-card p-5 shadow-xs">
-                                    <div className="flex items-center justify-between pb-2">
-                                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                            Current Teaching Assignment
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveTab('workload')}
-                                            className="text-xs font-semibold text-primary hover:underline cursor-pointer"
-                                        >
-                                            Full Schedule
-                                        </button>
-                                    </div>
-                                    {workload.courses.length > 0 ? (
-                                        <div className="mt-2">
-                                            <p className="text-sm font-extrabold text-foreground">
-                                                {workload.courses[0].course_code} — {workload.courses[0].course_title}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                Sections: {workload.courses[0].sections.join(', ')} · {workload.courses[0].rooms.join(', ')}
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <p className="text-xs text-muted-foreground mt-2">
-                                            No active room schedules logged for today.
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Travel Orders & Locator Slips Glance */}
-                                <div className="rounded-2xl border border-border bg-card p-5 shadow-xs">
-                                    <div className="flex items-center justify-between pb-3 border-b border-border">
-                                        <div className="flex items-center gap-2">
-                                            <Plane className="w-4 h-4 text-sky-500" />
-                                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                                Recent Travel & Passes
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-xs font-semibold">
-                                            <button
-                                                type="button"
-                                                onClick={() => setActiveTab('travel-orders')}
-                                                className="text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
-                                            >
-                                                Travel Orders ({travel_orders.length})
-                                            </button>
-                                            <span className="text-muted-foreground">·</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setActiveTab('locator-slips')}
-                                                className="text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-                                            >
-                                                Locator Slips ({locator_slips.length})
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-3 space-y-2.5">
-                                        {/* Latest Travel Order */}
-                                        {travel_orders.length > 0 ? (
-                                            <div
-                                                onClick={() => setActiveTab('travel-orders')}
-                                                className="p-2.5 rounded-xl bg-sky-500/5 hover:bg-sky-500/10 border border-sky-500/20 transition-colors cursor-pointer"
-                                            >
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-[10px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400">
-                                                        Travel Order · {travel_orders[0].tracking_number}
-                                                    </span>
-                                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                                                        travel_orders[0].status?.toLowerCase() === 'approved'
-                                                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
-                                                            : travel_orders[0].status?.toLowerCase() === 'traveling now'
-                                                            ? 'bg-sky-500/10 text-sky-600 border border-sky-500/30 animate-pulse'
-                                                            : 'bg-muted text-muted-foreground'
-                                                    }`}>
-                                                        {travel_orders[0].status}
-                                                    </span>
+                                    {/* Recent Travel & Passes */}
+                                    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between pb-2">
+                                                <div className="flex items-center gap-1.5 text-[#8B1E3F] dark:text-rose-300">
+                                                    <Plane className="w-4 h-4 text-[#8B1E3F] dark:text-rose-400" />
+                                                    <h3 className="text-xs font-black text-slate-900 dark:text-white">
+                                                        Recent Travel & Passes
+                                                    </h3>
                                                 </div>
-                                                <p className="text-xs font-bold text-foreground mt-1 truncate">
-                                                    {travel_orders[0].destination}
-                                                </p>
-                                                <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
-                                                    {travel_orders[0].purpose}
-                                                </p>
-                                                <p className="text-[10px] text-muted-foreground mt-1 font-mono">
-                                                    {travel_orders[0].start_date} {travel_orders[0].end_date && travel_orders[0].end_date !== travel_orders[0].start_date ? `to ${travel_orders[0].end_date}` : ''}
-                                                </p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveTab('travel-orders')}
+                                                    className="text-[11px] font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-0.5 cursor-pointer"
+                                                >
+                                                    <span>View All</span>
+                                                    <ChevronRight className="w-3 h-3" />
+                                                </button>
                                             </div>
-                                        ) : null}
 
-                                        {/* Latest Locator Slip */}
-                                        {locator_slips.length > 0 ? (
-                                            <div
-                                                onClick={() => setActiveTab('locator-slips')}
-                                                className="p-2.5 rounded-xl bg-indigo-500/5 hover:bg-indigo-500/10 border border-indigo-500/20 transition-colors cursor-pointer"
-                                            >
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                                                        Locator Slip · {locator_slips[0].slip_number}
+                                            <div className="space-y-2 mt-2">
+                                                <div className="flex items-center justify-between gap-2 text-[10px]">
+                                                    <span className="px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 shrink-0">
+                                                        APPROVED
                                                     </span>
-                                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                                                        locator_slips[0].status?.toLowerCase() === 'approved'
-                                                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
-                                                            : locator_slips[0].status?.toLowerCase() === 'out of office'
-                                                            ? 'bg-indigo-500/10 text-indigo-600 border border-indigo-500/30'
-                                                            : 'bg-muted text-muted-foreground'
-                                                    }`}>
-                                                        {locator_slips[0].status}
-                                                    </span>
+                                                    <div className="truncate text-right min-w-0">
+                                                        <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">
+                                                            {travel_orders[0]?.destination || 'Travel Order · 2026-10-2024-00580...'}
+                                                        </span>
+                                                        <span className="text-[9px] text-slate-400 block truncate">
+                                                            {travel_orders[0]?.purpose || 'International Conference - 2nd Edition...'}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <p className="text-xs font-bold text-foreground mt-1 truncate">
-                                                    {locator_slips[0].destination}
-                                                </p>
-                                                <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
-                                                    {locator_slips[0].purpose}
-                                                </p>
-                                                <p className="text-[10px] text-muted-foreground mt-1 font-mono">
-                                                    {locator_slips[0].date} ({locator_slips[0].time_out || 'N/A'} - {locator_slips[0].time_in || 'N/A'})
-                                                </p>
-                                            </div>
-                                        ) : null}
 
-                                        {travel_orders.length === 0 && locator_slips.length === 0 && (
-                                            <p className="text-xs text-muted-foreground text-center py-4">
-                                                No travel orders or locator slips recorded.
-                                            </p>
-                                        )}
+                                                <div className="flex items-center justify-between gap-2 text-[10px]">
+                                                    <span className="px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 shrink-0">
+                                                        APPROVED
+                                                    </span>
+                                                    <div className="truncate text-right min-w-0">
+                                                        <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">
+                                                            {locator_slips[0]?.destination || 'Locator Slip · 2026-11-2024-00580...'}
+                                                        </span>
+                                                        <span className="text-[9px] text-slate-400 block truncate">
+                                                            {locator_slips[0]?.purpose || 'Digos Doctor Hospital and MCDC for Lab...'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

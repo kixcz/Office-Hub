@@ -1906,7 +1906,9 @@ class TvDisplayController extends Controller
                         'office_room' => $f->office_room ?: "{$targetCollegeCode} Faculty Office",
                         'email' => $f->email,
                         'employment_type' => $f->employment_type ?: 'Full-time',
+                        'appointment_status' => $f->appointment_status,
                         'status' => $f->status ?: 'Active',
+                        'bio' => $f->bio,
                     ],
                 ]),
             'channels' => (function () {
