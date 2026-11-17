@@ -479,15 +479,45 @@ class TvDisplayController extends Controller
         }
 
         $upcomingDeadlines = Requirement::where('due_date', '>=', $now)
+            ->where(function ($q) use ($collegeId) {
+                if ($collegeId) {
+                    $q->whereNull('program_id')
+                        ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+                }
+            })
             ->orderBy('due_date')->take(5)->get();
 
-        // Data for Slide 3 (Compliance)
-        $requirements = Requirement::with([
-            'submissions' => fn ($q) => $q->whereNotNull('submitted_at')->with('faculty'),
-        ])->withCount([
-            'submissions',
-            'submissions as complied_submissions_count' => fn ($q) => $q->whereNotNull('submitted_at'),
-        ])->get();
+        // Data for Slide 3 (Compliance) - Scoped to College
+        $requirements = Requirement::where(function ($q) use ($collegeId) {
+            if ($collegeId) {
+                $q->whereNull('program_id')
+                    ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+            }
+        })
+            ->with([
+                'submissions' => function ($q) use ($collegeId) {
+                    $q->whereNotNull('submitted_at')
+                        ->when($collegeId, function ($sq) use ($collegeId) {
+                            $sq->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
+                        })
+                        ->with('faculty');
+                },
+            ])
+            ->withCount([
+                'submissions' => function ($q) use ($collegeId) {
+                    $q->when($collegeId, function ($sq) use ($collegeId) {
+                        $sq->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
+                    });
+                },
+                'submissions as complied_submissions_count' => function ($q) use ($collegeId) {
+                    $q->whereNotNull('submitted_at')
+                        ->when($collegeId, function ($sq) use ($collegeId) {
+                            $sq->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
+                        });
+                },
+            ])
+            ->get();
+
         $totalSubmissions = (int) $requirements->sum('submissions_count');
         $compliedSubmissions = (int) $requirements->sum('complied_submissions_count');
         $overallCompliance = $totalSubmissions > 0 ? round(($compliedSubmissions / $totalSubmissions) * 100, 1) : 0;
@@ -519,7 +549,11 @@ class TvDisplayController extends Controller
             ];
         });
 
-        $submissions = Submission::with('requirement', 'faculty.program')->get();
+        $submissions = Submission::with('requirement', 'faculty.program')
+            ->when($collegeId, function ($q) use ($collegeId) {
+                $q->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
+            })
+            ->get();
         $pendingOutputs = $submissions->filter(fn ($s) => ! $s->submitted_at)->sortBy(fn ($s) => Carbon::parse($s->requirement->due_date)->timestamp)->take(6)->map(function ($s) use ($now) {
             $dueDate = Carbon::parse($s->requirement->due_date);
 
@@ -623,8 +657,15 @@ class TvDisplayController extends Controller
             ];
         }
 
-        // Slide 3 specific additions: Top 5 on-time faculty and Needs Attention list
-        $allFacultiesList = Faculty::with('program')->get();
+        // Slide 3 specific additions: Top 5 on-time faculty and Needs Attention list (Scoped to College)
+        $allFacultiesList = Faculty::with('program')
+            ->when($collegeId, function ($q) use ($collegeId) {
+                $q->whereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+            })
+            ->get();
+        if ($allFacultiesList->isEmpty()) {
+            $allFacultiesList = Faculty::with('program')->get();
+        }
         $samplePhotos = $allFacultiesList->pluck('photo_url')->filter()->values()->all();
 
         // Ensure each requirement has submitted faculty avatars (if empty, distribute from active faculty)
@@ -1151,7 +1192,12 @@ class TvDisplayController extends Controller
         if ($allTrackerPrograms->isEmpty()) {
             $allTrackerPrograms = Program::orderBy('code')->get();
         }
-        $allTrackerRequirements = Requirement::orderBy('title')->get();
+        $allTrackerRequirements = Requirement::where(function ($q) use ($collegeId) {
+            if ($collegeId) {
+                $q->whereNull('program_id')
+                    ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+            }
+        })->orderBy('title')->get();
         $allTrackerSubmissions = Submission::with(['faculty.program', 'requirement'])
             ->when($collegeId, function ($q) use ($collegeId) {
                 $q->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
