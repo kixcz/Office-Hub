@@ -41,6 +41,11 @@ class RequirementController extends Controller
             $scopeCollegeId = $user?->resolveActiveCollege()?->id;
         }
 
+        // Additional safeguard: If user is a College Admin, strictly enforce their assigned college
+        if (! $isInstitutionSuperAdmin && ! $scopeCollegeId) {
+            $scopeCollegeId = $user?->resolveActiveCollege()?->id;
+        }
+
         $selectedPeriod = $request->input('period', 'AY 2026–2027 • 1st Semester');
         $selectedProgram = $request->input('program', 'all');
         $selectedFaculty = $request->input('faculty', 'all');
@@ -52,9 +57,29 @@ class RequirementController extends Controller
         }
         if (! $isInstitutionSuperAdmin) {
             if ($activeScopeType === 'program' && $activeScopeId) {
-                $requirementsQuery->where(fn ($q) => $q->whereNull('program_id')->orWhere('program_id', $activeScopeId));
+                $requirementsQuery->where(function ($q) use ($activeScopeId, $scopeCollegeId) {
+                    $q->where('program_id', $activeScopeId)
+                        ->orWhere(function ($sub) use ($activeScopeId) {
+                            $sub->whereJsonContains('applicable_programs', (int) $activeScopeId)
+                                ->orWhereJsonContains('applicable_programs', (string) $activeScopeId);
+                        })
+                        ->orWhere(function ($sub) use ($scopeCollegeId) {
+                            if ($scopeCollegeId) {
+                                $sub->where('college_id', $scopeCollegeId)
+                                    ->whereNull('program_id')
+                                    ->where(function ($nested) {
+                                        $nested->whereNull('applicable_programs')
+                                            ->orWhere('applicable_programs', '[]')
+                                            ->orWhere('applicable_programs', '');
+                                    });
+                            }
+                        });
+                });
             } elseif ($scopeCollegeId) {
-                $requirementsQuery->where(fn ($q) => $q->whereNull('program_id')->orWhereHas('program', fn ($pq) => $pq->where('college_id', $scopeCollegeId)));
+                $requirementsQuery->where(function ($q) use ($scopeCollegeId) {
+                    $q->where('college_id', $scopeCollegeId)
+                        ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $scopeCollegeId));
+                });
             }
         }
         $requirements = $requirementsQuery->get();
@@ -81,21 +106,25 @@ class RequirementController extends Controller
         }
         $faculties = $facultyQuery->orderBy('last_name')->get();
 
-        $allSubmissions = Submission::with(['faculty.program', 'requirement'])->get();
+        $allSubmissions = Submission::with(['faculty.program', 'requirement'])
+            ->when($scopeCollegeId && ! $isInstitutionSuperAdmin, function ($q) use ($scopeCollegeId) {
+                $q->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $scopeCollegeId));
+            })
+            ->get();
         $now = Carbon::now();
 
-        // Compute 8 KPI cards matching screenshot:
-        // 1. Active Requirement Folders: 6 (↑ 2 vs. last period)
-        // 2. Faculty Expected to Submit: 38 (0% vs. last period)
-        // 3. Submitted On Time: 24 (↑ 12% vs. last period)
-        // 4. Submitted Late: 6 (↑ 2% vs. last period)
-        // 5. Pending: 5 (↓ 3% vs. last period)
-        // 6. Overdue: 3 (↓ 5% vs. last period)
-        // 7. Overall Compliance Rate: 76% (↑ 6% vs. last period)
-        // 8. Average Days Late: 2.3 days (↓ 1.7 vs. last period)
+        // Compute 8 KPI cards:
+        // 1. Active Requirement Folders
+        // 2. Faculty Expected to Submit
+        // 3. Submitted On Time
+        // 4. Submitted Late
+        // 5. Pending
+        // 6. Overdue
+        // 7. Overall Compliance Rate
+        // 8. Average Days Late
 
         $activeRequirementsCount = $requirements->where('status', '!=', 'Archived')->count();
-        $expectedFacultyCount = Faculty::count();
+        $expectedFacultyCount = $faculties->count();
 
         $onTimeCount = $allSubmissions->where('submission_state', 'submitted_on_time')->count();
         $lateCount = $allSubmissions->where('submission_state', 'submitted_late')->count();
@@ -103,12 +132,12 @@ class RequirementController extends Controller
         $overdueCount = $allSubmissions->where('submission_state', 'overdue')->count();
         $excusedCount = $allSubmissions->where('submission_state', 'excused')->count();
 
-        // If submissions exist, calculate dynamic stats; fallback to realistic defaults if empty
+        // Calculate dynamic stats
         $totalEvaluated = $onTimeCount + $lateCount + $pendingCount + $overdueCount;
-        $complianceRate = $totalEvaluated > 0 ? round((($onTimeCount + $lateCount) / $totalEvaluated) * 100) : 76;
+        $complianceRate = $totalEvaluated > 0 ? round((($onTimeCount + $lateCount) / $totalEvaluated) * 100) : 0;
 
         $lateSubmissions = $allSubmissions->where('days_late', '>', 0);
-        $avgDaysLate = $lateSubmissions->count() > 0 ? round($lateSubmissions->avg('days_late'), 1) : 2.3;
+        $avgDaysLate = $lateSubmissions->count() > 0 ? round($lateSubmissions->avg('days_late'), 1) : 0;
 
         // Build Matrix Data:
         // Rows = Faculty, Columns = Requirement Folders
@@ -189,12 +218,12 @@ class RequirementController extends Controller
         })->values()->toArray();
 
         // Right side widgets:
-        // 1. Compliance Rate by Requirement: TOS/TQ (92%), Workload (78%), Syllabi (71%), Grades (68%), IPCR (63%), Research (81%)
+        // 1. Compliance Rate by Requirement
         $chartRequirementRates = $requirements->map(function ($r) use ($allSubmissions) {
             $reqSubs = $allSubmissions->where('requirement_id', $r->id);
             $total = $reqSubs->count();
             $complied = $reqSubs->whereIn('submission_state', ['submitted_on_time', 'submitted_late'])->count();
-            $pct = $total > 0 ? round(($complied / $total) * 100) : 75;
+            $pct = $total > 0 ? round(($complied / $total) * 100) : 0;
 
             return [
                 'id' => $r->id,
@@ -207,26 +236,26 @@ class RequirementController extends Controller
         // 2. Submission Status Distribution
         $distributionTotal = $onTimeCount + $lateCount + $pendingCount + $overdueCount + $excusedCount;
         $statusDistribution = [
-            'total' => $distributionTotal ?: 38,
+            'total' => $distributionTotal,
             'on_time' => [
-                'count' => $onTimeCount ?: 24,
-                'percentage' => $distributionTotal ? round(($onTimeCount / $distributionTotal) * 100) : 64,
+                'count' => $onTimeCount,
+                'percentage' => $distributionTotal > 0 ? round(($onTimeCount / $distributionTotal) * 100) : 0,
             ],
             'late' => [
-                'count' => $lateCount ?: 6,
-                'percentage' => $distributionTotal ? round(($lateCount / $distributionTotal) * 100) : 16,
+                'count' => $lateCount,
+                'percentage' => $distributionTotal > 0 ? round(($lateCount / $distributionTotal) * 100) : 0,
             ],
             'pending' => [
-                'count' => $pendingCount ?: 5,
-                'percentage' => $distributionTotal ? round(($pendingCount / $distributionTotal) * 100) : 13,
+                'count' => $pendingCount,
+                'percentage' => $distributionTotal > 0 ? round(($pendingCount / $distributionTotal) * 100) : 0,
             ],
             'overdue' => [
-                'count' => $overdueCount ?: 3,
-                'percentage' => $distributionTotal ? round(($overdueCount / $distributionTotal) * 100) : 8,
+                'count' => $overdueCount,
+                'percentage' => $distributionTotal > 0 ? round(($overdueCount / $distributionTotal) * 100) : 0,
             ],
             'not_required' => [
-                'count' => $excusedCount ?: 2,
-                'percentage' => $distributionTotal ? round(($excusedCount / $distributionTotal) * 100) : 5,
+                'count' => $excusedCount,
+                'percentage' => $distributionTotal > 0 ? round(($excusedCount / $distributionTotal) * 100) : 0,
             ],
         ];
 
@@ -313,12 +342,21 @@ class RequirementController extends Controller
                 'due_date_raw' => $req->due_date,
                 'status' => $req->status ?: 'Open',
                 'health_indicator' => $health,
-                'assigned_count' => $assigned ?: 24,
-                'on_time_count' => $onTime ?: 18,
-                'late_count' => $late ?: 2,
-                'pending_count' => $pending ?: 0,
-                'overdue_count' => $overdue ?: 4,
-                'compliance_rate' => $rate ?: 76,
+                'academic_year' => $req->academic_year,
+                'semester' => $req->semester,
+                'program_id' => $req->program_id,
+                'applicable_programs' => $req->applicable_programs ?: [],
+                'college_id' => $req->college_id,
+                'grace_period_days' => $req->grace_period_days ?: 0,
+                'required_file_types' => $req->required_file_types ?: 'pdf,docx',
+                'naming_convention' => $req->naming_convention,
+                'open_date' => $req->open_date ? Carbon::parse($req->open_date)->format('Y-m-d\TH:i') : '',
+                'assigned_count' => $assigned,
+                'on_time_count' => $onTime,
+                'late_count' => $late,
+                'pending_count' => $pending,
+                'overdue_count' => $overdue,
+                'compliance_rate' => $rate,
             ];
         })->values()->toArray();
 
@@ -334,21 +372,21 @@ class RequirementController extends Controller
                 'category' => $selectedCategory,
             ],
             'kpiCards' => [
-                'active_folders' => $activeRequirementsCount ?: 6,
+                'active_folders' => $activeRequirementsCount,
                 'active_folders_trend' => '↑ 2 vs. last period',
-                'expected_faculty' => $expectedFacultyCount ?: 38,
+                'expected_faculty' => $expectedFacultyCount,
                 'expected_faculty_trend' => '0% vs. last period',
-                'submitted_on_time' => $onTimeCount ?: 24,
+                'submitted_on_time' => $onTimeCount,
                 'submitted_on_time_trend' => '↑ 12% vs. last period',
-                'submitted_late' => $lateCount ?: 6,
+                'submitted_late' => $lateCount,
                 'submitted_late_trend' => '↑ 2% vs. last period',
-                'pending' => $pendingCount ?: 5,
+                'pending' => $pendingCount,
                 'pending_trend' => '↓ 3% vs. last period',
-                'overdue' => $overdueCount ?: 3,
+                'overdue' => $overdueCount,
                 'overdue_trend' => '↓ 5% vs. last period',
-                'overall_rate' => $complianceRate ?: 76,
+                'overall_rate' => $complianceRate,
                 'overall_rate_trend' => '↑ 6% vs. last period',
-                'avg_days_late' => $avgDaysLate ?: 2.3,
+                'avg_days_late' => $avgDaysLate,
                 'avg_days_late_trend' => '↓ 1.7 vs. last period',
             ],
             'matrix' => [
@@ -370,6 +408,28 @@ class RequirementController extends Controller
         ComplianceService::syncPendingSubmissions();
 
         $requirement->load(['program', 'reviewer']);
+
+        $user = $request->user();
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        $scopeCollegeId = null;
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            $scopeCollegeId = $activeScopeId;
+        } elseif ($activeScopeType === 'program' && $activeScopeId) {
+            $scopeCollegeId = Program::find($activeScopeId)?->college_id;
+        } elseif (! $isInstitutionSuperAdmin) {
+            $scopeCollegeId = $user?->resolveActiveCollege()?->id;
+        }
+
+        $programsQuery = Program::orderBy('code');
+        if (! $isInstitutionSuperAdmin && $scopeCollegeId) {
+            $programsQuery->where('college_id', $scopeCollegeId);
+        }
+        $programs = $programsQuery->get();
 
         $now = Carbon::now();
         $dueDate = $requirement->due_date ? Carbon::parse($requirement->due_date) : null;
@@ -684,6 +744,10 @@ class RequirementController extends Controller
                 'allow_multiple_files' => (bool) $requirement->allow_multiple_files,
                 'naming_convention' => $requirement->naming_convention,
                 'grace_period_days' => $requirement->grace_period_days ?: 0,
+                'open_date' => $requirement->open_date ? Carbon::parse($requirement->open_date)->format('Y-m-d\TH:i') : '',
+                'program_id' => $requirement->program_id,
+                'applicable_programs' => $requirement->applicable_programs ?: [],
+                'college_id' => $requirement->college_id,
             ],
             'submissions' => $processedSubmissions,
             'pagination' => [
@@ -708,7 +772,7 @@ class RequirementController extends Controller
                 'overdue' => $overdueCount,
                 'compliance_rate' => $complianceRate,
             ],
-            'programs' => Program::orderBy('code')->get(),
+            'programs' => $programs,
             'activityLogs' => $allActivityLogs,
             'reviewers' => User::whereHas('roles', fn ($q) => $q->whereIn('name', ['College Admin', 'Program Head', 'Program Chair', 'Dean', 'System Administrator']))->get(['id', 'name', 'email']),
         ]);
@@ -732,10 +796,59 @@ class RequirementController extends Controller
             'late_policy' => 'nullable|string|max:255',
             'status' => 'nullable|string|max:255',
             'program_id' => 'nullable',
+            'applicable_programs' => 'nullable|array',
+            'applicable_programs.*' => 'integer',
         ]);
 
-        $programId = $validated['program_id'] === 'all' || empty($validated['program_id']) ? null : $validated['program_id'];
+        $user = $request->user();
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        $targetCollegeId = null;
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            $targetCollegeId = $activeScopeId;
+        } elseif ($activeScopeType === 'program' && $activeScopeId) {
+            $targetCollegeId = Program::find($activeScopeId)?->college_id;
+        } elseif (! $isInstitutionSuperAdmin) {
+            $targetCollegeId = $user?->resolveActiveCollege()?->id;
+        }
+
+        // If college admin has an assigned college, strictly enforce it
+        if (! $isInstitutionSuperAdmin && ! $targetCollegeId) {
+            $targetCollegeId = $user?->resolveActiveCollege()?->id;
+        }
+
+        // Handle applicable programs: if array of program IDs passed
+        $applicablePrograms = [];
+        if (! empty($validated['applicable_programs'])) {
+            $applicablePrograms = array_values(array_filter(array_map('intval', $validated['applicable_programs'])));
+        }
+
+        // If applicable_programs is provided and non-empty:
+        // Set program_id to the first one or null
+        $programId = null;
+        if (! empty($applicablePrograms)) {
+            $programId = count($applicablePrograms) === 1 ? $applicablePrograms[0] : null;
+        } elseif (! empty($validated['program_id']) && $validated['program_id'] !== 'all') {
+            $programId = (int) $validated['program_id'];
+            $applicablePrograms = [$programId];
+        }
+
+        // Security check: If targetCollegeId is present, verify programs belong to this college
+        if ($targetCollegeId && ! empty($applicablePrograms)) {
+            $validProgramIds = Program::where('college_id', $targetCollegeId)->pluck('id')->toArray();
+            $applicablePrograms = array_values(array_intersect($applicablePrograms, $validProgramIds));
+            if (empty($applicablePrograms) && $programId && ! in_array($programId, $validProgramIds)) {
+                $programId = null;
+            }
+        }
+
         $validated['program_id'] = $programId;
+        $validated['applicable_programs'] = ! empty($applicablePrograms) ? $applicablePrograms : null;
+        $validated['college_id'] = $targetCollegeId;
         $validated['reviewer_id'] = Auth::id() ?: 1;
         $validated['status'] = $validated['status'] ?? 'Open';
         $validated['category'] = $validated['category'] ?? 'Teaching and Learning Requirements';
@@ -743,7 +856,8 @@ class RequirementController extends Controller
 
         Requirement::create($validated);
 
-        ComplianceService::syncPendingSubmissions();
+        ComplianceService::flushSyncCache();
+        ComplianceService::syncPendingSubmissions(true);
 
         return redirect()->back()->with('success', 'Requirement Folder created and distributed to assigned faculty successfully.');
     }
@@ -758,14 +872,63 @@ class RequirementController extends Controller
             'academic_year' => 'required|string|max:255',
             'semester' => 'required|string|max:255',
             'due_date' => 'required|date',
+            'open_date' => 'nullable|date',
             'grace_period_days' => 'nullable|integer|min:0',
+            'required_file_types' => 'nullable|string|max:255',
+            'naming_convention' => 'nullable|string|max:255',
             'status' => 'nullable|string|max:255',
             'program_id' => 'nullable',
+            'applicable_programs' => 'nullable|array',
+            'applicable_programs.*' => 'integer',
         ]);
+
+        $user = $request->user();
+        $isInstitutionSuperAdmin = $user?->isInstitutionSuperAdmin() ?? false;
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $user ? $portalService->getActiveAssignment($user, $request) : null;
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        $targetCollegeId = $requirement->college_id;
+        if (! $targetCollegeId) {
+            if ($activeScopeType === 'college' && $activeScopeId) {
+                $targetCollegeId = $activeScopeId;
+            } elseif (! $isInstitutionSuperAdmin) {
+                $targetCollegeId = $user?->resolveActiveCollege()?->id;
+            }
+        }
+
+        $applicablePrograms = [];
+        if (! empty($validated['applicable_programs'])) {
+            $applicablePrograms = array_values(array_filter(array_map('intval', $validated['applicable_programs'])));
+        }
+
+        $programId = null;
+        if (! empty($applicablePrograms)) {
+            $programId = count($applicablePrograms) === 1 ? $applicablePrograms[0] : null;
+        } elseif (isset($validated['program_id']) && $validated['program_id'] !== 'all' && ! empty($validated['program_id'])) {
+            $programId = (int) $validated['program_id'];
+            $applicablePrograms = [$programId];
+        }
+
+        if ($targetCollegeId && ! empty($applicablePrograms)) {
+            $validProgramIds = Program::where('college_id', $targetCollegeId)->pluck('id')->toArray();
+            $applicablePrograms = array_values(array_intersect($applicablePrograms, $validProgramIds));
+            if (empty($applicablePrograms) && $programId && ! in_array($programId, $validProgramIds)) {
+                $programId = null;
+            }
+        }
+
+        $validated['program_id'] = $programId;
+        $validated['applicable_programs'] = ! empty($applicablePrograms) ? $applicablePrograms : null;
+        if ($targetCollegeId && ! $requirement->college_id) {
+            $validated['college_id'] = $targetCollegeId;
+        }
 
         $requirement->update($validated);
 
-        ComplianceService::syncPendingSubmissions();
+        ComplianceService::flushSyncCache();
+        ComplianceService::syncPendingSubmissions(true);
 
         return redirect()->back()->with('success', 'Requirement Folder updated successfully.');
     }
@@ -992,6 +1155,47 @@ class RequirementController extends Controller
         ]);
 
         return redirect()->back()->with('success', "Requirement marked as Not Required for {$submission->faculty?->first_name} {$submission->faculty?->last_name}.");
+    }
+
+    public function removeSubmission(Request $request, Requirement $requirement, Submission $submission): RedirectResponse
+    {
+        $user = Auth::user();
+        $facultyName = trim(($submission->faculty?->first_name ?? '').' '.($submission->faculty?->last_name ?? ''));
+
+        // Reset the submission fields back to pending
+        $submission->update([
+            'submitted_at' => null,
+            'status' => 'pending',
+            'submission_state' => 'pending',
+            'file_path' => null,
+            'files_count' => 0,
+            'reviewer_status' => null,
+            'reviewer_id' => null,
+            'reviewer_comments' => null,
+            'remarks' => null,
+            'faculty_remarks' => null,
+            'excuse_reason' => null,
+            'days_late' => 0,
+            'days_overdue' => 0,
+            'days_early' => 0,
+        ]);
+
+        // Clean up attached uploaded files records if present
+        $submission->files()->delete();
+
+        // Record in audit log
+        SubmissionAuditLog::create([
+            'submission_id' => $submission->id,
+            'requirement_id' => $requirement->id,
+            'user_id' => Auth::id(),
+            'actor_name' => $user ? $user->name : 'College Admin',
+            'actor_role' => 'College Admin',
+            'action' => 'submission_removed',
+            'title' => 'Submission Removed',
+            'description' => "Uploaded document/submission for {$facultyName} was removed by College Admin and reverted to Pending.",
+        ]);
+
+        return redirect()->back()->with('success', "Submission for {$facultyName} has been removed and reverted to Pending.");
     }
 
     public function destroy(Requirement $requirement): RedirectResponse

@@ -5,6 +5,7 @@ import { Head, Link, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog';
 import {
     Dialog,
     DialogContent,
@@ -43,6 +44,9 @@ import {
     Download,
     Eye,
     MoreHorizontal,
+    MoreVertical,
+    Edit,
+    Trash2,
     X,
     Filter,
     ShieldAlert,
@@ -110,6 +114,7 @@ interface FolderCard {
     category: string;
     document_type: string;
     due_date: string;
+    due_date_raw?: string;
     status: string;
     health_indicator: 'On Track' | 'Needs Attention' | 'Critical';
     assigned_count: number;
@@ -118,6 +123,15 @@ interface FolderCard {
     pending_count: number;
     overdue_count: number;
     compliance_rate: number;
+    academic_year?: string;
+    semester?: string;
+    program_id?: number | null;
+    applicable_programs?: number[];
+    college_id?: number | null;
+    grace_period_days?: number;
+    required_file_types?: string;
+    naming_convention?: string;
+    open_date?: string;
 }
 
 interface AttentionAlert {
@@ -210,7 +224,24 @@ export default function ComplianceManagementIndex({
 
     // Create Folder Modal State
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const { data, setData, post, processing, reset, errors } = useForm({
+    const { data, setData, post, processing, reset, errors } = useForm<{
+        title: string;
+        description: string;
+        category: string;
+        document_type: string;
+        academic_year: string;
+        semester: string;
+        due_date: string;
+        open_date: string;
+        grace_period_days: number;
+        required_file_types: string;
+        allow_multiple_files: boolean;
+        naming_convention: string;
+        late_policy: string;
+        status: string;
+        program_id: string;
+        applicable_programs: number[];
+    }>({
         title: '',
         description: '',
         category: 'Teaching and Learning Requirements',
@@ -226,7 +257,103 @@ export default function ComplianceManagementIndex({
         late_policy: 'allowed_with_flag',
         status: 'Open',
         program_id: 'all',
+        applicable_programs: [],
     });
+
+    // Edit Folder Modal State
+    const [editingFolder, setEditingFolder] = useState<FolderCard | null>(null);
+    const [deletingFolder, setDeletingFolder] = useState<FolderCard | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const {
+        data: editData,
+        setData: setEditData,
+        put: putEdit,
+        processing: editProcessing,
+        reset: resetEdit,
+        errors: editErrors,
+    } = useForm<{
+        title: string;
+        description: string;
+        category: string;
+        document_type: string;
+        academic_year: string;
+        semester: string;
+        due_date: string;
+        open_date: string;
+        grace_period_days: number;
+        required_file_types: string;
+        naming_convention: string;
+        status: string;
+        program_id: string;
+        applicable_programs: number[];
+    }>({
+        title: '',
+        description: '',
+        category: 'Teaching and Learning Requirements',
+        document_type: '',
+        academic_year: 'AY 2026–2027',
+        semester: '1st Semester',
+        due_date: '',
+        open_date: '',
+        grace_period_days: 0,
+        required_file_types: 'pdf,docx',
+        naming_convention: '',
+        status: 'Open',
+        program_id: 'all',
+        applicable_programs: [],
+    });
+
+    const openEditModal = (folder: FolderCard, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        setEditingFolder(folder);
+        const initialPrograms = folder.applicable_programs && folder.applicable_programs.length > 0
+            ? folder.applicable_programs
+            : (folder.program_id ? [folder.program_id] : []);
+
+        setEditData({
+            title: folder.title,
+            description: folder.description || '',
+            category: folder.category || 'Teaching and Learning Requirements',
+            document_type: folder.document_type || '',
+            academic_year: folder.academic_year || 'AY 2026–2027',
+            semester: folder.semester || '1st Semester',
+            due_date: folder.due_date_raw ? folder.due_date_raw.substring(0, 16) : '',
+            open_date: folder.open_date ? folder.open_date.substring(0, 16) : '',
+            grace_period_days: folder.grace_period_days || 0,
+            required_file_types: folder.required_file_types || 'pdf,docx',
+            naming_convention: folder.naming_convention || '',
+            status: folder.status || 'Open',
+            program_id: folder.program_id ? String(folder.program_id) : 'all',
+            applicable_programs: initialPrograms,
+        });
+    };
+
+    const handleEditSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingFolder) return;
+        putEdit(`/compliance/requirements/${editingFolder.id}`, {
+            onSuccess: () => {
+                setEditingFolder(null);
+                resetEdit();
+            },
+        });
+    };
+
+    const handleDeleteRequirement = (folder: FolderCard, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        setDeletingFolder(folder);
+    };
+
+    const confirmDeleteRequirement = () => {
+        if (!deletingFolder) return;
+        setIsDeleting(true);
+        router.delete(`/compliance/requirements/${deletingFolder.id}`, {
+            onFinish: () => {
+                setIsDeleting(false);
+                setDeletingFolder(null);
+            },
+        });
+    };
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -1116,8 +1243,49 @@ export default function ComplianceManagementIndex({
                             </div>
                         </div>
 
+                        {/* Requirements Empty State */}
+                        {filteredFolders.length === 0 && (
+                            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-dashed border-zinc-300 dark:border-zinc-800 p-12 text-center flex flex-col items-center justify-center gap-4 shadow-xs">
+                                <div className="w-16 h-16 rounded-3xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-200/60 dark:border-amber-900/40 shadow-xs">
+                                    <Folder className="w-8 h-8 fill-amber-500/20 text-amber-600 dark:text-amber-400" />
+                                </div>
+                                <div className="max-w-md space-y-1">
+                                    <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-50">
+                                        No Requirement Folders Found
+                                    </h3>
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                        {folderSearch || folderCategory !== 'all' || folderStatus !== 'all'
+                                            ? 'No requirement folders matched your filter criteria. Try adjusting your search keywords, category, or status filter.'
+                                            : 'No requirement folders have been created for your college yet. Create folders such as TOS/TQ, Syllabi, or Workload confirmation to start tracking faculty compliance.'}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3 mt-2">
+                                    {(folderSearch || folderCategory !== 'all' || folderStatus !== 'all') ? (
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                                setFolderSearch('');
+                                                setFolderCategory('all');
+                                                setFolderStatus('all');
+                                            }}
+                                            className="rounded-xl text-xs font-bold"
+                                        >
+                                            Reset Filters
+                                        </Button>
+                                    ) : null}
+                                    <Button
+                                        onClick={() => setIsCreateOpen(true)}
+                                        className="bg-gradient-to-r from-[#0B3A67] to-[#7B1113] hover:opacity-95 text-white font-bold rounded-xl text-xs px-4 py-2 flex items-center gap-1.5 shadow-xs"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Create Requirement Folder
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* GRID VIEW: Requirement Folder Cards matching screenshot */}
-                        {folderView === 'grid' && (
+                        {filteredFolders.length > 0 && folderView === 'grid' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                                 {filteredFolders.map((folder) => {
                                     // Health badge styling
@@ -1153,14 +1321,45 @@ export default function ComplianceManagementIndex({
                                                         </div>
                                                     </div>
 
-                                                    <span
-                                                        className={cn(
-                                                            'px-2.5 py-1 rounded-full text-[10px] font-bold border',
-                                                            healthBadge
-                                                        )}
-                                                    >
-                                                        {folder.health_indicator}
-                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span
+                                                            className={cn(
+                                                                'px-2.5 py-1 rounded-full text-[10px] font-bold border',
+                                                                healthBadge
+                                                            )}
+                                                        >
+                                                            {folder.health_indicator}
+                                                        </span>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger
+                                                                asChild
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <button className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                                                                    <MoreVertical className="w-4 h-4" />
+                                                                </button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent
+                                                                align="end"
+                                                                className="w-40 bg-white dark:bg-zinc-900 rounded-xl p-1 shadow-lg border border-zinc-200 dark:border-zinc-800 text-xs"
+                                                            >
+                                                                <DropdownMenuItem
+                                                                    onClick={(e) => openEditModal(folder, e)}
+                                                                    className="flex items-center gap-2 py-1.5 px-2 font-semibold cursor-pointer rounded-lg text-zinc-700 dark:text-zinc-300"
+                                                                >
+                                                                    <Edit className="w-3.5 h-3.5 text-zinc-500" />
+                                                                    Edit Folder
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={(e) => handleDeleteRequirement(folder, e)}
+                                                                    className="flex items-center gap-2 py-1.5 px-2 font-semibold cursor-pointer rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                                                    Delete Folder
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
                                                 </div>
 
                                                 {/* Assigned, On Time, Late, Overdue counters */}
@@ -1223,7 +1422,7 @@ export default function ComplianceManagementIndex({
                         )}
 
                         {/* LIST VIEW: Table with comprehensive columns */}
-                        {folderView === 'list' && (
+                        {filteredFolders.length > 0 && folderView === 'list' && (
                             <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-xs border-collapse">
@@ -1289,16 +1488,44 @@ export default function ComplianceManagementIndex({
                                                         </span>
                                                     </td>
                                                     <td className="py-3.5 px-4 text-right">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                router.visit(`/compliance/requirements/${folder.id}`)
-                                                            }
-                                                            className="h-7 text-xs font-bold text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                                                        >
-                                                            Open
-                                                        </Button>
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    router.visit(`/compliance/requirements/${folder.id}`)
+                                                                }
+                                                                className="h-7 text-xs font-bold text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                                            >
+                                                                Open
+                                                            </Button>
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <button className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                                                                        <MoreVertical className="w-4 h-4" />
+                                                                    </button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent
+                                                                    align="end"
+                                                                    className="w-40 bg-white dark:bg-zinc-900 rounded-xl p-1 shadow-lg border border-zinc-200 dark:border-zinc-800 text-xs"
+                                                                >
+                                                                    <DropdownMenuItem
+                                                                        onClick={(e) => openEditModal(folder, e)}
+                                                                        className="flex items-center gap-2 py-1.5 px-2 font-semibold cursor-pointer rounded-lg text-zinc-700 dark:text-zinc-300"
+                                                                    >
+                                                                        <Edit className="w-3.5 h-3.5 text-zinc-500" />
+                                                                        Edit Folder
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        onClick={(e) => handleDeleteRequirement(folder, e)}
+                                                                        className="flex items-center gap-2 py-1.5 px-2 font-semibold cursor-pointer rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                                                        Delete Folder
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -1386,20 +1613,62 @@ export default function ComplianceManagementIndex({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="flex flex-col gap-1.5">
                                     <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                                        Applicable Program(s)
+                                        Applicable Programs (Multiple Select)
                                     </Label>
-                                    <select
-                                        value={data.program_id}
-                                        onChange={(e) => setData('program_id', e.target.value)}
-                                        className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
-                                    >
-                                        <option value="all">All College Programs</option>
-                                        {programs.map((p) => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.code} - {p.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/70 dark:bg-zinc-800/60 flex flex-col gap-2 max-h-36 overflow-y-auto">
+                                        <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-200/80 dark:border-zinc-700">
+                                            <input
+                                                type="checkbox"
+                                                id="create_prog_all"
+                                                checked={data.applicable_programs.length === 0}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setData((prev) => ({ ...prev, applicable_programs: [], program_id: 'all' }));
+                                                    }
+                                                }}
+                                                className="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 h-3.5 w-3.5"
+                                            />
+                                            <label
+                                                htmlFor="create_prog_all"
+                                                className="text-xs font-bold text-zinc-800 dark:text-zinc-200 cursor-pointer select-none"
+                                            >
+                                                All College Programs
+                                            </label>
+                                        </div>
+                                        {programs.map((p) => {
+                                            const isChecked = data.applicable_programs.includes(p.id);
+                                            return (
+                                                <div key={p.id} className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`create_prog_${p.id}`}
+                                                        checked={isChecked}
+                                                        onChange={(e) => {
+                                                            let next = isChecked
+                                                                ? data.applicable_programs.filter((id) => id !== p.id)
+                                                                : [...data.applicable_programs, p.id];
+                                                            setData((prev) => ({
+                                                                ...prev,
+                                                                applicable_programs: next,
+                                                                program_id: next.length === 1 ? String(next[0]) : 'all',
+                                                            }));
+                                                        }}
+                                                        className="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 h-3.5 w-3.5"
+                                                    />
+                                                    <label
+                                                        htmlFor={`create_prog_${p.id}`}
+                                                        className="text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer select-none flex items-center justify-between w-full"
+                                                    >
+                                                        <span className="font-bold">{p.code}</span>
+                                                        <span className="text-[10px] text-zinc-400 truncate max-w-[150px]">{p.name}</span>
+                                                    </label>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <p className="text-[10px] text-zinc-400">
+                                        Select one or more programs within your college to restrict requirement assignment.
+                                    </p>
                                 </div>
 
                                 <div className="flex flex-col gap-1.5">
@@ -1500,6 +1769,262 @@ export default function ComplianceManagementIndex({
                         </form>
                     </DialogContent>
                 </Dialog>
+
+                {/* Edit Requirement Folder Modal */}
+                <Dialog open={!!editingFolder} onOpenChange={(open) => !open && setEditingFolder(null)}>
+                    <DialogContent className="max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl p-6">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                                <Edit className="w-5 h-5 text-amber-500" />
+                                Edit Requirement Folder
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-zinc-500">
+                                Update folder information, deadline, scope, and compliance rules.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <form onSubmit={handleEditSubmit} className="flex flex-col gap-4 mt-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Folder Name *
+                                    </Label>
+                                    <Input
+                                        placeholder="e.g. TOS/TQ, Syllabi, IPCR"
+                                        value={editData.title}
+                                        onChange={(e) => setEditData('title', e.target.value)}
+                                        required
+                                        className="rounded-xl text-xs"
+                                    />
+                                    {editErrors.title && (
+                                        <p className="text-[11px] text-rose-500 font-semibold">{editErrors.title}</p>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Document / Short Code *
+                                    </Label>
+                                    <Input
+                                        placeholder="e.g. TOS, SYLLABUS, IPCR"
+                                        value={editData.document_type}
+                                        onChange={(e) => setEditData('document_type', e.target.value)}
+                                        required
+                                        className="rounded-xl text-xs"
+                                    />
+                                    {editErrors.document_type && (
+                                        <p className="text-[11px] text-rose-500 font-semibold">{editErrors.document_type}</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                    Category *
+                                </Label>
+                                <select
+                                    value={editData.category}
+                                    onChange={(e) => setEditData('category', e.target.value)}
+                                    className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                                >
+                                    <option value="Teaching and Learning Requirements">Teaching and Learning Requirements</option>
+                                    <option value="Workload and Assignments">Workload and Assignments</option>
+                                    <option value="Course Documents">Course Documents</option>
+                                    <option value="Grading and Assessment">Grading and Assessment</option>
+                                    <option value="Performance Evaluation">Performance Evaluation</option>
+                                    <option value="Research and Extension">Research and Extension</option>
+                                </select>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                    Description
+                                </Label>
+                                <textarea
+                                    rows={2}
+                                    placeholder="Provide detailed submission instructions and guidelines..."
+                                    value={editData.description}
+                                    onChange={(e) => setEditData('description', e.target.value)}
+                                    className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Applicable Programs (Multiple Select)
+                                    </Label>
+                                    <div className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/70 dark:bg-zinc-800/60 flex flex-col gap-2 max-h-36 overflow-y-auto">
+                                        <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-200/80 dark:border-zinc-700">
+                                            <input
+                                                type="checkbox"
+                                                id="edit_prog_all"
+                                                checked={editData.applicable_programs.length === 0}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setEditData((prev) => ({ ...prev, applicable_programs: [], program_id: 'all' }));
+                                                    }
+                                                }}
+                                                className="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 h-3.5 w-3.5"
+                                            />
+                                            <label
+                                                htmlFor="edit_prog_all"
+                                                className="text-xs font-bold text-zinc-800 dark:text-zinc-200 cursor-pointer select-none"
+                                            >
+                                                All College Programs
+                                            </label>
+                                        </div>
+                                        {programs.map((p) => {
+                                            const isChecked = editData.applicable_programs.includes(p.id);
+                                            return (
+                                                <div key={p.id} className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`edit_prog_${p.id}`}
+                                                        checked={isChecked}
+                                                        onChange={(e) => {
+                                                            let next = isChecked
+                                                                ? editData.applicable_programs.filter((id) => id !== p.id)
+                                                                : [...editData.applicable_programs, p.id];
+                                                            setEditData((prev) => ({
+                                                                ...prev,
+                                                                applicable_programs: next,
+                                                                program_id: next.length === 1 ? String(next[0]) : 'all',
+                                                            }));
+                                                        }}
+                                                        className="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 h-3.5 w-3.5"
+                                                    />
+                                                    <label
+                                                        htmlFor={`edit_prog_${p.id}`}
+                                                        className="text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer select-none flex items-center justify-between w-full"
+                                                    >
+                                                        <span className="font-bold">{p.code}</span>
+                                                        <span className="text-[10px] text-zinc-400 truncate max-w-[150px]">{p.name}</span>
+                                                    </label>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <p className="text-[10px] text-zinc-400">
+                                        Select one or more programs within your college to restrict requirement assignment.
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Status
+                                    </Label>
+                                    <select
+                                        value={editData.status}
+                                        onChange={(e) => setEditData('status', e.target.value)}
+                                        className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                                    >
+                                        <option value="Open">Open</option>
+                                        <option value="Draft">Draft</option>
+                                        <option value="Closed">Closed</option>
+                                        <option value="Archived">Archived</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Open Date
+                                    </Label>
+                                    <Input
+                                        type="datetime-local"
+                                        value={editData.open_date}
+                                        onChange={(e) => setEditData('open_date', e.target.value)}
+                                        className="rounded-xl text-xs"
+                                    />
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Due Date *
+                                    </Label>
+                                    <Input
+                                        type="datetime-local"
+                                        value={editData.due_date}
+                                        onChange={(e) => setEditData('due_date', e.target.value)}
+                                        required
+                                        className="rounded-xl text-xs"
+                                    />
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Grace Period (Days)
+                                    </Label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        value={editData.grace_period_days}
+                                        onChange={(e) => setEditData('grace_period_days', parseInt(e.target.value, 10))}
+                                        className="rounded-xl text-xs"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Required File Types
+                                    </Label>
+                                    <Input
+                                        placeholder="pdf,docx,xlsx"
+                                        value={editData.required_file_types}
+                                        onChange={(e) => setEditData('required_file_types', e.target.value)}
+                                        className="rounded-xl text-xs"
+                                    />
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Naming Convention Template
+                                    </Label>
+                                    <Input
+                                        placeholder="e.g. TOS_[Course]_[LastName]"
+                                        value={editData.naming_convention}
+                                        onChange={(e) => setEditData('naming_convention', e.target.value)}
+                                        className="rounded-xl text-xs"
+                                    />
+                                </div>
+                            </div>
+
+                            <DialogFooter className="mt-4 gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setEditingFolder(null)}
+                                    className="rounded-xl text-xs font-bold"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={editProcessing}
+                                    className="bg-gradient-to-r from-[#0B3A67] to-[#7B1113] hover:opacity-95 text-white font-bold rounded-xl text-xs px-5 shadow-xs"
+                                >
+                                    {editProcessing ? 'Saving Changes...' : 'Save Changes'}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Delete Requirement Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={!!deletingFolder}
+                    onOpenChange={(open) => !open && setDeletingFolder(null)}
+                    title="Delete Requirement Folder"
+                    description="Are you sure you want to delete this requirement folder? All associated faculty submissions and uploaded files will be permanently deleted."
+                    itemName={deletingFolder?.title}
+                    confirmLabel="Delete Requirement"
+                    onConfirm={confirmDeleteRequirement}
+                    isDeleting={isDeleting}
+                />
             </div>
         </AppLayout>
     );

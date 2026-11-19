@@ -171,6 +171,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('requirements/{requirement}/submissions/{submission}/extend', [RequirementController::class, 'extendSubmissionDeadline'])->name('requirements.submissions.extend');
         Route::post('requirements/{requirement}/submissions/{submission}/remind', [RequirementController::class, 'sendSubmissionReminder'])->name('requirements.submissions.remind');
         Route::post('requirements/{requirement}/submissions/{submission}/mark-not-required', [RequirementController::class, 'markSubmissionNotRequired'])->name('requirements.submissions.mark-not-required');
+        Route::delete('requirements/{requirement}/submissions/{submission}/remove', [RequirementController::class, 'removeSubmission'])->name('requirements.submissions.remove');
         Route::resource('requirements', RequirementController::class);
         Route::post('submissions/bulk-record', [SubmissionController::class, 'bulkRecord'])->name('submissions.bulk-record');
         Route::resource('submissions', SubmissionController::class);
@@ -702,6 +703,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tv-academic-highlights', [VpaaAcademicController::class, 'tvAcademicHighlights'])->name('tv-academic-highlights');
         Route::get('/tv-communications', [VpaaAcademicController::class, 'tvExecutive'])->name('tv-communications');
         Route::post('/tv-communications/promote-slide', [VpaaAcademicController::class, 'promoteSlide'])->name('tv-communications.promote');
+        Route::delete('/tv-communications/slides/{slide}', [VpaaAcademicController::class, 'removePublishedSlide'])->name('tv-communications.remove-slide');
     });
 
     // VPAF / Executive Workspace (Vice President for Administration and Finance)

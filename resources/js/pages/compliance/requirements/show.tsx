@@ -44,7 +44,12 @@ import {
     ExternalLink,
     Paperclip,
     AlertTriangle,
+    Trash2,
 } from 'lucide-react';
+import { useForm } from '@inertiajs/react';
+import { Input } from '@/components/ui/input';
+import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -137,6 +142,10 @@ interface RequirementDetail {
     allow_multiple_files: boolean;
     naming_convention: string | null;
     grace_period_days: number;
+    open_date?: string;
+    program_id?: number | null;
+    applicable_programs?: number[];
+    college_id?: number | null;
 }
 
 interface ProgramItem {
@@ -215,6 +224,99 @@ export default function RequirementFolderShow({
 
     // Reminder Broadcast Modal
     const [isReminderBroadcastOpen, setIsReminderBroadcastOpen] = useState(false);
+
+    // Edit Requirement Folder Modal
+    const [isEditFolderOpen, setIsEditFolderOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const initialApplicablePrograms = requirement.applicable_programs && requirement.applicable_programs.length > 0
+        ? requirement.applicable_programs
+        : (requirement.program_id ? [requirement.program_id] : []);
+
+    const {
+        data: editData,
+        setData: setEditData,
+        put: putEdit,
+        processing: editProcessing,
+        errors: editErrors,
+    } = useForm<{
+        title: string;
+        description: string;
+        category: string;
+        document_type: string;
+        academic_year: string;
+        semester: string;
+        due_date: string;
+        open_date: string;
+        grace_period_days: number;
+        required_file_types: string;
+        naming_convention: string;
+        status: string;
+        program_id: string;
+        applicable_programs: number[];
+    }>({
+        title: requirement.title || '',
+        description: requirement.description || '',
+        category: requirement.category || 'Teaching and Learning Requirements',
+        document_type: requirement.document_type || '',
+        academic_year: requirement.academic_year || 'AY 2026–2027',
+        semester: requirement.semester || '1st Semester',
+        due_date: requirement.due_date_raw ? requirement.due_date_raw.substring(0, 16) : '',
+        open_date: requirement.open_date ? requirement.open_date.substring(0, 16) : '',
+        grace_period_days: requirement.grace_period_days || 0,
+        required_file_types: requirement.required_file_types || 'pdf,docx',
+        naming_convention: requirement.naming_convention || '',
+        status: requirement.status || 'Open',
+        program_id: requirement.program_id ? String(requirement.program_id) : 'all',
+        applicable_programs: initialApplicablePrograms,
+    });
+
+    const handleEditFolderSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        putEdit(`/compliance/requirements/${requirement.id}`, {
+            onSuccess: () => {
+                setIsEditFolderOpen(false);
+            },
+        });
+    };
+
+    const handleDeleteRequirement = () => {
+        setIsDeleteDialogOpen(true);
+    };
+
+    const confirmDeleteRequirement = () => {
+        setIsDeleting(true);
+        router.delete(`/compliance/requirements/${requirement.id}`, {
+            onFinish: () => {
+                setIsDeleting(false);
+                setIsDeleteDialogOpen(false);
+            },
+            onSuccess: () => {
+                router.visit('/compliance/requirements');
+            },
+        });
+    };
+
+    const handleRemoveSubmission = (sub: SubmissionItem) => {
+        if (
+            confirm(
+                `Remove submission for ${sub.faculty_name}? Any uploaded files will be removed and their status will revert to Pending.`
+            )
+        ) {
+            router.delete(
+                `/compliance/requirements/${requirement.id}/submissions/${sub.id}/remove`,
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        if (activeSubmission?.id === sub.id) {
+                            setActiveSubmission(null);
+                        }
+                    },
+                }
+            );
+        }
+    };
 
     // =========================================================================
     // SUBMISSION REVIEW DRAWER STATE & MODALS
@@ -470,6 +572,14 @@ export default function RequirementFolderShow({
                         <div className="flex flex-wrap items-center gap-2">
                             <Button
                                 variant="outline"
+                                className="border-amber-200 bg-amber-50/50 hover:bg-amber-100/60 dark:bg-amber-950/20 text-xs font-bold px-3 py-2 rounded-xl text-amber-800 dark:text-amber-300"
+                                onClick={() => setIsEditFolderOpen(true)}
+                            >
+                                <Edit className="w-3.5 h-3.5 mr-1.5 text-amber-600" />
+                                Edit Folder
+                            </Button>
+                            <Button
+                                variant="outline"
                                 className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300"
                                 onClick={() => alert('Faculty assignments can be updated in Settings tab.')}
                             >
@@ -499,6 +609,14 @@ export default function RequirementFolderShow({
                             >
                                 <FileText className="w-3.5 h-3.5 mr-1.5 text-zinc-500" />
                                 Generate Report
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold px-3 py-2 rounded-xl"
+                                onClick={handleDeleteRequirement}
+                            >
+                                <Trash2 className="w-3.5 h-3.5 mr-1.5 text-rose-500" />
+                                Delete Folder
                             </Button>
                             <Button
                                 variant="outline"
@@ -1032,11 +1150,21 @@ export default function RequirementFolderShow({
 
                                                                     <DropdownMenuItem
                                                                         onClick={() => handleMarkNotRequired(sub)}
-                                                                        className="flex items-center gap-2 py-2 px-2.5 font-bold cursor-pointer rounded-xl text-rose-600 hover:bg-rose-50"
+                                                                        className="flex items-center gap-2 py-2 px-2.5 font-bold cursor-pointer rounded-xl text-zinc-600 hover:bg-zinc-50"
                                                                     >
-                                                                        <Ban className="w-4 h-4 text-rose-500" />
+                                                                        <Ban className="w-4 h-4 text-zinc-500" />
                                                                         Mark as Not Required
                                                                     </DropdownMenuItem>
+
+                                                                    {(sub.submitted_at !== '—' || sub.files_count > 0 || sub.submission_state === 'submitted' || sub.status === 'submitted') && (
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => handleRemoveSubmission(sub)}
+                                                                            className="flex items-center gap-2 py-2 px-2.5 font-bold cursor-pointer rounded-xl text-rose-600 hover:bg-rose-50"
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4 text-rose-500" />
+                                                                            Remove Submission
+                                                                        </DropdownMenuItem>
+                                                                    )}
 
                                                                     <DropdownMenuSeparator className="my-1 bg-zinc-100 dark:bg-zinc-800" />
 
@@ -1325,13 +1453,32 @@ export default function RequirementFolderShow({
                 {/* ========================================================================= */}
                 {subTab === 'settings' && (
                     <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs p-6 flex flex-col gap-6">
-                        <div>
-                            <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-50">
-                                Requirement Folder Configuration
-                            </h2>
-                            <p className="text-xs text-zinc-500 font-medium">
-                                Configure metadata, faculty eligibility, submission rules, reviewers, and reminders.
-                            </p>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-50">
+                                    Requirement Folder Configuration
+                                </h2>
+                                <p className="text-xs text-zinc-500 font-medium">
+                                    Configure metadata, faculty eligibility, submission rules, reviewers, and reminders.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    onClick={() => setIsEditFolderOpen(true)}
+                                    className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5"
+                                >
+                                    <Edit className="w-3.5 h-3.5" />
+                                    Edit Configuration
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleDeleteRequirement}
+                                    className="border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    Delete Folder
+                                </Button>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1870,15 +2017,29 @@ export default function RequirementFolderShow({
 
                                 {/* Drawer Footer Actions for Reviewer matching reference image */}
                                 <div className="px-7 py-4 border-t border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => openIndividualExtendModal(activeSubmission)}
-                                        className="h-9 px-4 text-xs font-bold rounded-xl border-zinc-200 text-zinc-700 hover:bg-zinc-100"
-                                    >
-                                        <Calendar className="w-3.5 h-3.5 mr-1.5 text-zinc-500" />
-                                        Extend Deadline
-                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => openIndividualExtendModal(activeSubmission)}
+                                            className="h-9 px-4 text-xs font-bold rounded-xl border-zinc-200 text-zinc-700 hover:bg-zinc-100"
+                                        >
+                                            <Calendar className="w-3.5 h-3.5 mr-1.5 text-zinc-500" />
+                                            Extend Deadline
+                                        </Button>
+
+                                        {(activeSubmission.submitted_at !== '—' || activeSubmission.files_count > 0 || activeSubmission.submission_state === 'submitted' || activeSubmission.status === 'submitted') && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleRemoveSubmission(activeSubmission)}
+                                                className="h-9 px-4 text-xs font-bold rounded-xl border-rose-200 text-rose-600 hover:bg-rose-50"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5 mr-1.5 text-rose-500" />
+                                                Remove Submission
+                                            </Button>
+                                        )}
+                                    </div>
 
                                     <div className="flex items-center gap-3">
                                         <Button
@@ -2186,6 +2347,284 @@ export default function RequirementFolderShow({
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Edit Requirement Folder Modal */}
+                <Dialog open={isEditFolderOpen} onOpenChange={setIsEditFolderOpen}>
+                    <DialogContent className="max-w-xl bg-white dark:bg-zinc-900 rounded-3xl p-6">
+                        <DialogHeader>
+                            <DialogTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                                <Edit className="w-5 h-5 text-amber-500" />
+                                Edit Requirement Folder
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-zinc-500">
+                                Update the folder metadata, submission deadlines, instructions, and target audience.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <form onSubmit={handleEditFolderSubmit} className="flex flex-col gap-4 mt-2">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                    Requirement Title *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editData.title}
+                                    onChange={(e) => setEditData('title', e.target.value)}
+                                    required
+                                    placeholder="e.g., Table of Specifications & Test Questions (Midterm)"
+                                    className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                />
+                                {editErrors.title && (
+                                    <span className="text-[11px] text-rose-500 font-bold">{editErrors.title}</span>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Document Type / Code *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editData.document_type}
+                                        onChange={(e) => setEditData('document_type', e.target.value)}
+                                        required
+                                        placeholder="e.g. TOS_TQ, SYLLABUS"
+                                        className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                                    />
+                                    {editErrors.document_type && (
+                                        <span className="text-[11px] text-rose-500 font-bold">{editErrors.document_type}</span>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Category *
+                                    </label>
+                                    <select
+                                        value={editData.category}
+                                        onChange={(e) => setEditData('category', e.target.value)}
+                                        className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                                    >
+                                        <option value="Instructional / Academic">Instructional / Academic</option>
+                                        <option value="Research & Development">Research & Development</option>
+                                        <option value="Extension & Community">Extension & Community</option>
+                                        <option value="Administrative Compliance">Administrative Compliance</option>
+                                        <option value="Accreditation / Quality Assurance">Accreditation / Quality Assurance</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                    Description & Instructions
+                                </label>
+                                <textarea
+                                    value={editData.description}
+                                    onChange={(e) => setEditData('description', e.target.value)}
+                                    rows={2}
+                                    placeholder="Submission instructions and guidelines for faculty submitters..."
+                                    className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none resize-none"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Open Date & Time
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        value={editData.open_date}
+                                        onChange={(e) => setEditData('open_date', e.target.value)}
+                                        className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                                    />
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Due Date & Time *
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        value={editData.due_date}
+                                        onChange={(e) => setEditData('due_date', e.target.value)}
+                                        required
+                                        className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                                    />
+                                    {editErrors.due_date && (
+                                        <span className="text-[11px] text-rose-500 font-bold">{editErrors.due_date}</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Allowed File Types
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editData.required_file_types}
+                                        onChange={(e) => setEditData('required_file_types', e.target.value)}
+                                        placeholder="pdf,docx,xlsx"
+                                        className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                                    />
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Grace Period (Days)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="30"
+                                        value={editData.grace_period_days}
+                                        onChange={(e) => setEditData('grace_period_days', parseInt(e.target.value) || 0)}
+                                        className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                                    />
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        Folder Status
+                                    </label>
+                                    <select
+                                        value={editData.status}
+                                        onChange={(e) => setEditData('status', e.target.value)}
+                                        className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                                    >
+                                        <option value="draft">Draft</option>
+                                        <option value="open">Open</option>
+                                        <option value="closed">Closed</option>
+                                        <option value="archived">Archived</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                    Applicable Programs (Multiple Select)
+                                </label>
+                                <div className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/70 dark:bg-zinc-800/60 flex flex-col gap-2 max-h-36 overflow-y-auto">
+                                    <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-200/80 dark:border-zinc-700">
+                                        <input
+                                            type="checkbox"
+                                            id="edit_show_prog_all"
+                                            checked={editData.applicable_programs.length === 0}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setEditData((prev) => ({ ...prev, applicable_programs: [], program_id: 'all' }));
+                                                }
+                                            }}
+                                            className="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 h-3.5 w-3.5"
+                                        />
+                                        <label
+                                            htmlFor="edit_show_prog_all"
+                                            className="text-xs font-bold text-zinc-800 dark:text-zinc-200 cursor-pointer select-none"
+                                        >
+                                            All College Programs
+                                        </label>
+                                    </div>
+                                    {programs.map((p) => {
+                                        const isChecked = editData.applicable_programs.includes(p.id);
+                                        return (
+                                            <div key={p.id} className="flex items-center gap-2">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`edit_show_prog_${p.id}`}
+                                                    checked={isChecked}
+                                                    onChange={(e) => {
+                                                        let next = isChecked
+                                                            ? editData.applicable_programs.filter((id) => id !== p.id)
+                                                            : [...editData.applicable_programs, p.id];
+                                                        setEditData((prev) => ({
+                                                            ...prev,
+                                                            applicable_programs: next,
+                                                            program_id: next.length === 1 ? String(next[0]) : 'all',
+                                                        }));
+                                                    }}
+                                                    className="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 h-3.5 w-3.5"
+                                                />
+                                                <label
+                                                    htmlFor={`edit_show_prog_${p.id}`}
+                                                    className="text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer select-none flex items-center justify-between w-full"
+                                                >
+                                                    <span className="font-bold">{p.code}</span>
+                                                    <span className="text-[10px] text-zinc-400 truncate max-w-[200px]">{p.name}</span>
+                                                </label>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-[10px] text-zinc-400">
+                                    Select specific programs within your college to restrict requirement assignment.
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                    File Naming Convention
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editData.naming_convention}
+                                    onChange={(e) => setEditData('naming_convention', e.target.value)}
+                                    placeholder="e.g. TOS_TQ_[LastName]_[Course]"
+                                    className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none"
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1">
+                                <input
+                                    type="checkbox"
+                                    id="edit_allow_multiple_files_show"
+                                    checked={editData.allow_multiple_files}
+                                    onChange={(e) => setEditData('allow_multiple_files', e.target.checked)}
+                                    className="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 h-4 w-4"
+                                />
+                                <label
+                                    htmlFor="edit_allow_multiple_files_show"
+                                    className="text-xs font-medium text-zinc-700 dark:text-zinc-300 select-none cursor-pointer"
+                                >
+                                    Allow multiple file uploads for this requirement
+                                </label>
+                            </div>
+
+                            <DialogFooter className="mt-4 gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setIsEditFolderOpen(false)}
+                                    className="rounded-xl text-xs font-bold"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={editProcessing}
+                                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs px-5 flex items-center gap-1.5"
+                                >
+                                    {editProcessing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                    Save Changes
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Delete Requirement Confirmation Modal */}
+                <DeleteConfirmDialog
+                    open={isDeleteDialogOpen}
+                    onOpenChange={setIsDeleteDialogOpen}
+                    title="Delete Requirement Folder"
+                    description="Are you sure you want to permanently delete this requirement folder? All associated faculty submissions, audit trails, and uploaded evidence files will be permanently deleted. This action cannot be undone."
+                    itemName={requirement.title}
+                    confirmLabel="Delete Requirement"
+                    onConfirm={confirmDeleteRequirement}
+                    isDeleting={isDeleting}
+                />
             </div>
         </AppLayout>
     );

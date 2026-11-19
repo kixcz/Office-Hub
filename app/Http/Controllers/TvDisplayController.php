@@ -490,13 +490,16 @@ class TvDisplayController extends Controller
         // Data for Slide 3 (Compliance) - Scoped to College
         $requirements = Requirement::where(function ($q) use ($collegeId) {
             if ($collegeId) {
-                $q->whereNull('program_id')
+                $q->where('college_id', $collegeId)
                     ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
             }
         })
             ->with([
                 'submissions' => function ($q) use ($collegeId) {
-                    $q->whereNotNull('submitted_at')
+                    $q->where(function ($sq) {
+                        $sq->whereNotNull('submitted_at')
+                            ->orWhereIn('submission_state', ['submitted_on_time', 'submitted_late']);
+                    })
                         ->when($collegeId, function ($sq) use ($collegeId) {
                             $sq->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
                         })
@@ -510,7 +513,10 @@ class TvDisplayController extends Controller
                     });
                 },
                 'submissions as complied_submissions_count' => function ($q) use ($collegeId) {
-                    $q->whereNotNull('submitted_at')
+                    $q->where(function ($sq) {
+                        $sq->whereNotNull('submitted_at')
+                            ->orWhereIn('submission_state', ['submitted_on_time', 'submitted_late']);
+                    })
                         ->when($collegeId, function ($sq) use ($collegeId) {
                             $sq->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
                         });
@@ -542,6 +548,8 @@ class TvDisplayController extends Controller
             return [
                 'id' => $r->id,
                 'title' => $r->title,
+                'category' => $r->category ?: 'Academic Deliverable',
+                'due_date' => $r->due_date ? Carbon::parse($r->due_date)->format('M d, Y') : 'No deadline',
                 'total' => $total,
                 'complied' => $complied,
                 'rate' => $rate,
@@ -550,11 +558,18 @@ class TvDisplayController extends Controller
         });
 
         $submissions = Submission::with('requirement', 'faculty.program')
+            ->whereHas('requirement', function ($rq) use ($collegeId) {
+                if ($collegeId) {
+                    $rq->where('college_id', $collegeId)
+                        ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+                }
+            })
             ->when($collegeId, function ($q) use ($collegeId) {
                 $q->whereHas('faculty.program', fn ($pq) => $pq->where('college_id', $collegeId));
             })
             ->get();
-        $pendingOutputs = $submissions->filter(fn ($s) => ! $s->submitted_at)->sortBy(fn ($s) => Carbon::parse($s->requirement->due_date)->timestamp)->take(6)->map(function ($s) use ($now) {
+
+        $pendingOutputs = $submissions->filter(fn ($s) => ! $s->submitted_at && $s->submission_state !== 'submitted_on_time' && $s->submission_state !== 'submitted_late' && $s->submission_state !== 'excused')->sortBy(fn ($s) => Carbon::parse($s->requirement->due_date)->timestamp)->take(6)->map(function ($s) use ($now) {
             $dueDate = Carbon::parse($s->requirement->due_date);
 
             return [
@@ -564,13 +579,13 @@ class TvDisplayController extends Controller
                 'program' => $s->faculty && $s->faculty->program ? $s->faculty->program->code : 'N/A',
                 'requirement' => $s->requirement->title,
                 'due_date' => $s->requirement->due_date,
-                'status' => $now->greaterThan($dueDate) ? 'Overdue' : ($now->diffInDays($dueDate) <= 2 ? 'Due Soon' : 'Pending'),
+                'status' => $s->submission_state === 'overdue' ? 'Overdue' : ($now->greaterThan($dueDate) ? 'Overdue' : ($now->diffInDays($dueDate) <= 2 ? 'Due Soon' : 'Pending')),
             ];
         })->values();
 
-        $overdueCount = $submissions->filter(fn ($s) => ! $s->submitted_at && Carbon::parse($s->requirement->due_date)->isPast())->count();
-        $pendingCount = $submissions->filter(fn ($s) => ! $s->submitted_at && ! Carbon::parse($s->requirement->due_date)->isPast())->count();
-        $dueThisWeekCount = $submissions->filter(fn ($s) => ! $s->submitted_at && Carbon::parse($s->requirement->due_date)->isCurrentWeek())->count();
+        $overdueCount = $submissions->filter(fn ($s) => ! $s->submitted_at && $s->submission_state === 'overdue')->count();
+        $pendingCount = $submissions->filter(fn ($s) => ! $s->submitted_at && in_array($s->submission_state, ['pending', null]))->count();
+        $dueThisWeekCount = $submissions->filter(fn ($s) => ! $s->submitted_at && in_array($s->submission_state, ['pending', null]) && Carbon::parse($s->requirement->due_date)->isCurrentWeek())->count();
 
         // Data for Slide 4 (Performance & Recognition) - Filtered to Current College
         $programs = Program::with('faculties.submissions.requirement')
@@ -595,14 +610,14 @@ class TvDisplayController extends Controller
                     $pTotal++;
                     $fTotal++;
                     $dueDate = $s->requirement ? Carbon::parse($s->requirement->due_date) : $now;
-                    if ($s->submitted_at) {
+                    if ($s->submitted_at || in_array($s->submission_state, ['submitted_on_time', 'submitted_late'])) {
                         $pComplied++;
                         $fComplied++;
-                        if (! Carbon::parse($s->submitted_at)->greaterThan($dueDate)) {
+                        if ($s->submission_state === 'submitted_on_time' || ($s->submitted_at && ! Carbon::parse($s->submitted_at)->greaterThan($dueDate))) {
                             $pOnTime++;
                             $fOnTime++;
                         }
-                    } elseif ($dueDate->lessThan($now)) {
+                    } elseif ($s->submission_state === 'overdue') {
                         $fOverdue++;
                     }
                 }
@@ -685,7 +700,7 @@ class TvDisplayController extends Controller
             return $item;
         });
 
-        // Top 5 faculty for Slide 3
+        // Top 5 faculty for Slide 3 (only faculty with actual submitted items)
         $slide3TopFaculty = collect($facultyData)
             ->filter(fn ($f) => $f['complied'] > 0)
             ->sortByDesc('on_time_rate')
@@ -703,30 +718,9 @@ class TvDisplayController extends Controller
             })
             ->all();
 
-        // If top faculty has fewer than 5, populate with high-performing sample faculty
-        if (count($slide3TopFaculty) < 5) {
-            $sampleNames = [
-                'Dr. Ma. Elena S. Torres',
-                'Prof. Ryan C. Dela Cruz',
-                'Prof. Camille A. Ramos',
-                'Prof. John Mark T. Abella',
-                'Prof. Kristine P. Molina',
-            ];
-            for ($i = count($slide3TopFaculty); $i < 5; $i++) {
-                $slide3TopFaculty[] = [
-                    'rank' => $i + 1,
-                    'name' => $sampleNames[$i] ?? ('Faculty Member '.($i + 1)),
-                    'photo_url' => $samplePhotos[$i % max(1, count($samplePhotos))] ?? null,
-                    'program' => 'CIDS',
-                    'score' => '9 / 9',
-                    'rate' => 100,
-                ];
-            }
-        }
-
-        // Needs Attention list (Faculty with pending or overdue outputs)
+        // Needs Attention list (Faculty with overdue or pending outputs)
         $needsAttentionList = collect($facultyData)
-            ->filter(fn ($f) => $f['overdue_count'] > 0 || ($f['total'] - $f['complied']) > 0)
+            ->filter(fn ($f) => $f['overdue_count'] > 0)
             ->sortByDesc(fn ($f) => ($f['overdue_count'] * 10) + ($f['total'] - $f['complied']))
             ->take(10)
             ->values()
@@ -756,27 +750,6 @@ class TvDisplayController extends Controller
                 ];
             })
             ->all();
-
-        if (empty($needsAttentionList)) {
-            $fallbackAttention = [
-                ['name' => 'Prof. Domingo Origines', 'pending' => 1, 'overdue' => 1, 'due_next' => 'TOS & TQ (Nov 18)'],
-                ['name' => 'Prof. Jean Nikolai Roxas', 'pending' => 1, 'overdue' => 1, 'due_next' => 'TOS & TQ (Nov 18)'],
-                ['name' => 'Prof. Rhea Mae Perito', 'pending' => 1, 'overdue' => 1, 'due_next' => 'Midterm Grades (Nov 21)'],
-                ['name' => 'Prof. Jiessel Tangub', 'pending' => 1, 'overdue' => 1, 'due_next' => 'Course Syllabus (Nov 25)'],
-                ['name' => 'Prof. Ivan Millan', 'pending' => 1, 'overdue' => 1, 'due_next' => 'Course Syllabus (Nov 25)'],
-            ];
-            foreach ($fallbackAttention as $idx => $fa) {
-                $needsAttentionList[] = [
-                    'id' => $idx + 100,
-                    'name' => $fa['name'],
-                    'photo_url' => $samplePhotos[$idx % max(1, count($samplePhotos))] ?? null,
-                    'program' => 'CIDS',
-                    'pending' => $fa['pending'],
-                    'overdue' => $fa['overdue'],
-                    'due_next' => $fa['due_next'],
-                ];
-            }
-        }
 
         $topPrograms = collect($programsData)->sortByDesc('on_time_rate')->take(3)->values();
         $topFaculty = collect($facultyData)->sortByDesc('on_time_rate')->take(5)->values();

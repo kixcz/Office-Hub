@@ -16,6 +16,7 @@ use App\Models\Submission;
 use App\Models\TvDevice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -646,7 +647,7 @@ class VpaaAcademicController extends Controller
         ];
 
         // Active published custom content slides
-        $activeSlides = CustomContentSlide::latest()->take(10)->get();
+        $activeSlides = CustomContentSlide::whereIn('status', ['published', 'Published'])->latest()->take(20)->get();
 
         return Inertia::render('vpaa/tv-academic-highlights', [
             'recommended_highlights' => $recommendedHighlights,
@@ -687,11 +688,37 @@ class VpaaAcademicController extends Controller
             'college_code' => $isBroadcastAll ? null : ($audiences[0] ?? null),
             'priority' => 10,
             'duration_seconds' => 15,
-            'status' => 'Published',
+            'status' => 'published',
             'published_at' => now(),
             'created_by' => $request->user()->id,
         ]);
 
         return back()->with('success', 'Slide successfully promoted to the selected TV channels.');
+    }
+
+    /**
+     * Remove / unpublish or delete a published TV slide from VPAA broadcast
+     */
+    public function removePublishedSlide(Request $request, CustomContentSlide $slide): RedirectResponse
+    {
+        $this->authorizeVpaa($request);
+
+        $action = $request->input('action', 'delete'); // 'unpublish' or 'delete'
+
+        if ($action === 'unpublish') {
+            $slide->update([
+                'status' => 'draft',
+            ]);
+            $msg = "Slide \"{$slide->title}\" has been unpublished and moved to drafts.";
+        } else {
+            $title = $slide->title;
+            if ($slide->primary_image_path && Storage::disk('public')->exists($slide->primary_image_path)) {
+                Storage::disk('public')->delete($slide->primary_image_path);
+            }
+            $slide->delete();
+            $msg = "Slide \"{$title}\" has been permanently removed from all TV displays.";
+        }
+
+        return back()->with('success', $msg);
     }
 }

@@ -26,6 +26,7 @@ class Requirement extends Model
         'health_indicator',
         'applicable_programs',
         'reviewer_id',
+        'college_id',
         'program_id',
     ];
 
@@ -35,6 +36,11 @@ class Requirement extends Model
         'allow_multiple_files' => 'boolean',
         'applicable_programs' => 'array',
     ];
+
+    public function college()
+    {
+        return $this->belongsTo(College::class);
+    }
 
     public function program()
     {

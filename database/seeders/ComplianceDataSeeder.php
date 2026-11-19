@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\College;
 use App\Models\Faculty;
 use App\Models\Program;
 use App\Models\Requirement;
@@ -196,8 +197,10 @@ class ComplianceDataSeeder extends Seeder
         ];
 
         $reqModels = [];
+        $cidsCollegeId = College::where('code', 'CIDS')->value('id') ?? 4;
         foreach ($reqDefs as $rd) {
             $rd['reviewer_id'] = $adminId;
+            $rd['college_id'] = $cidsCollegeId;
             $req = Requirement::updateOrCreate(['title' => $rd['title']], $rd);
             $reqModels[$rd['title']] = $req;
         }

@@ -14,6 +14,7 @@ import {
     CheckCircle2,
     ChevronLeft,
     MessageSquare,
+    Folder,
     Layers,
     ChevronRight,
     Building2,
@@ -1246,71 +1247,26 @@ function SlideThree({ data, isDark = false }: any) {
     const topFacultyData = data.top_faculty || [];
     const needsAttentionData = data.needs_attention || [];
 
-    const complianceRate = kpis.compliance_rate ?? 92.3;
-    const totalSubmissions = kpis.total_submissions ?? 129;
-    const compliedSubmissions = kpis.complied_submissions ?? 119;
-    const pendingCount = kpis.pending_outputs ?? 6;
-    const overdueCount = kpis.overdue_outputs ?? 4;
-    const dueThisWeekCount = kpis.due_this_week ?? 3;
+    const complianceRate = kpis.compliance_rate ?? 0;
+    const totalSubmissions = kpis.total_submissions ?? 0;
+    const compliedSubmissions = kpis.complied_submissions ?? 0;
+    const pendingCount = kpis.pending_outputs ?? 0;
+    const overdueCount = kpis.overdue_outputs ?? 0;
+    const dueThisWeekCount = kpis.due_this_week ?? 0;
 
-    // Use full list of compliance requirements matching mockup if empty/partial
+    // Use actual requirements from database without injecting phantom fallback requirements
     const summary = useMemo(() => {
-        if (rawSummary.length >= 7) {
-            return rawSummary;
-        }
-
-        const fallbackItems = [
-            { id: 1, title: 'TOS & TQ', rate: 85.7, complied: 24, total: 28, status: 'In Progress' },
-            { id: 2, title: 'SPAR / ROG', rate: 64.7, complied: 11, total: 17, status: 'In Progress' },
-            { id: 3, title: 'Course Syllabus', rate: 100, complied: 28, total: 28, status: 'Completed' },
-            { id: 4, title: 'Preliminary Course Syllabi', rate: 100, complied: 55, total: 55, status: 'Completed' },
-            { id: 5, title: 'Faculty Workload Verification', rate: 98.2, complied: 54, total: 55, status: 'In Progress' },
-            { id: 6, title: 'Midterm Assessment Rubrics', rate: 94.5, complied: 52, total: 55, status: 'In Progress' },
-            { id: 7, title: 'Final Encoding (Midterm)', rate: 90.9, complied: 50, total: 55, status: 'In Progress' },
-            { id: 8, title: 'Midterm TOS & TQ', rate: 90.9, complied: 50, total: 55, status: 'In Progress' },
-            { id: 9, title: 'Other Requirements', rate: 87.3, complied: 48, total: 55, status: 'In Progress' },
-        ];
-
-        if (rawSummary.length > 0) {
-            return [
-                ...rawSummary,
-                ...fallbackItems.slice(rawSummary.length)
-            ];
-        }
-
-        return fallbackItems;
+        return rawSummary;
     }, [rawSummary]);
 
     // Top 5 faculty for on-time submission
     const topFaculty = useMemo(() => {
-        if (topFacultyData.length >= 5) {
-            return topFacultyData.slice(0, 5);
-        }
-        const fallback = [
-            { rank: 1, name: 'Dr. Ma. Elena S. Torres', score: '9 / 9', rate: 100 },
-            { rank: 2, name: 'Prof. Ryan C. Dela Cruz', score: '9 / 9', rate: 100 },
-            { rank: 3, name: 'Prof. Camille A. Ramos', score: '9 / 9', rate: 100 },
-            { rank: 4, name: 'Prof. John Mark T. Abella', score: '9 / 9', rate: 100 },
-            { rank: 5, name: 'Prof. Kristine P. Molina', score: '9 / 9', rate: 100 },
-        ];
-        return [
-            ...topFacultyData,
-            ...fallback.slice(topFacultyData.length)
-        ];
+        return topFacultyData.slice(0, 5);
     }, [topFacultyData]);
 
     // Needs Attention list
     const needsAttention = useMemo(() => {
-        if (needsAttentionData.length > 0) {
-            return needsAttentionData.slice(0, 5);
-        }
-        return [
-            { id: 1, name: 'Prof. Domingo Origines', pending: 1, overdue: 1, due_next: 'TOS & TQ (Nov 18)' },
-            { id: 2, name: 'Prof. Jean Nikolai Roxas', pending: 1, overdue: 1, due_next: 'TOS & TQ (Nov 18)' },
-            { id: 3, name: 'Prof. Rhea Mae Perito', pending: 1, overdue: 1, due_next: 'Midterm Grades (Nov 21)' },
-            { id: 4, name: 'Prof. Jiessel Tangub', pending: 1, overdue: 1, due_next: 'Course Syllabus (Nov 25)' },
-            { id: 5, name: 'Prof. Ivan Millan', pending: 1, overdue: 1, due_next: 'Course Syllabus (Nov 25)' },
-        ];
+        return needsAttentionData.slice(0, 5);
     }, [needsAttentionData]);
 
     return (
@@ -1454,114 +1410,129 @@ function SlideThree({ data, isDark = false }: any) {
                         </div>
                     </div>
 
-                    {/* Table Header */}
-                    <div className="grid grid-cols-12 gap-2 px-2 py-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                        <div className="col-span-1 text-center">#</div>
-                        <div className="col-span-4">Requirement</div>
-                        <div className="col-span-5 text-center">Submission Progress</div>
-                        <div className="col-span-2 text-right pr-2">Status</div>
-                    </div>
+                    {/* Requirements Grid */}
+                    <div className="flex-1 overflow-y-auto no-scrollbar pt-3 pr-1">
+                        {summary.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                {summary.map((req: any, index: number) => {
+                                    const isCompleted = req.rate >= 100 && req.total > 0;
+                                    const isHighProgress = req.rate >= 80;
+                                    const submittedFacultyList = req.submitted_faculty || [];
+                                    const visibleFaculty = submittedFacultyList.slice(0, 5);
+                                    const remainderCount = Math.max(0, (req.complied || 0) - visibleFaculty.length);
 
-                    {/* Requirements Progress List */}
-                    <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 no-scrollbar pr-1">
-                        {summary.map((req: any, index: number) => {
-                            const isCompleted = req.rate >= 100 && req.total > 0;
-                            const isHighProgress = req.rate >= 80;
-                            const submittedFacultyList = req.submitted_faculty || [];
-                            const visibleFaculty = submittedFacultyList.slice(0, 5);
-                            const remainderCount = Math.max(0, (req.complied || 0) - visibleFaculty.length);
-
-                            return (
-                                <div key={req.id || index} className="grid grid-cols-12 gap-2 items-center px-2 py-2 text-xs">
-                                    {/* # Index */}
-                                    <div className="col-span-1 text-center font-bold text-slate-500 dark:text-slate-400 text-[11px]">
-                                        {index + 1}
-                                    </div>
-
-                                    {/* Requirement Title */}
-                                    <div className="col-span-4 truncate font-bold text-slate-800 dark:text-slate-100 text-[11px] pr-1" title={req.title}>
-                                        {req.title}
-                                    </div>
-
-                                    {/* Submission Progress Column (Avatars + Progress Bar + Fraction & %) */}
-                                    <div className="col-span-5 flex items-center gap-2">
-                                        {/* Avatar Cluster */}
-                                        <div className="flex items-center shrink-0">
-                                            {visibleFaculty.length > 0 ? (
-                                                <div className="flex items-center -space-x-1.5 overflow-hidden">
-                                                    {visibleFaculty.map((f: any, fIdx: number) => (
-                                                        <div
-                                                            key={f.id || fIdx}
-                                                            className="w-5 h-5 rounded-full ring-1.5 ring-white dark:ring-slate-900 overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0"
-                                                            title={f.name}
-                                                        >
-                                                            {f.photo_url ? (
-                                                                <img src={f.photo_url} alt={f.name} className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <span className="text-[8px] font-black text-slate-700 dark:text-slate-200">
-                                                                    {(f.name || 'FC').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center -space-x-1.5 overflow-hidden">
-                                                    {[0, 1, 2, 3].map((num) => (
-                                                        <div
-                                                            key={num}
-                                                            className="w-5 h-5 rounded-full ring-1.5 ring-white dark:ring-slate-900 overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0"
-                                                        >
-                                                            <User className="w-3 h-3 text-slate-500 dark:text-slate-400" />
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                    return (
+                                        <div
+                                            key={req.id || index}
+                                            className={cn(
+                                                "rounded-2xl p-4 border flex flex-col justify-between transition-all duration-300 shadow-xs",
+                                                isDark
+                                                    ? "bg-slate-950/70 border-slate-800 hover:border-slate-700"
+                                                    : "bg-slate-50/70 border-slate-200/90 hover:border-slate-300"
                                             )}
+                                        >
+                                            <div>
+                                                {/* Card Header: Icon, Category & Status Badge */}
+                                                <div className="flex items-start justify-between gap-2 mb-2.5">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                                                            <Folder className="w-4 h-4 fill-amber-500/30 text-amber-600 dark:text-amber-400" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <h4 className="text-xs font-black text-slate-900 dark:text-white truncate leading-tight" title={req.title}>
+                                                                {req.title}
+                                                            </h4>
+                                                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 truncate">
+                                                                {req.category || 'Academic Deliverable'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
 
-                                            {/* Overflow badge (+20, +8, etc.) */}
-                                            {remainderCount > 0 && (
-                                                <span className="ml-1 px-1 py-0.2 rounded-full text-[9px] font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
-                                                    +{remainderCount}
-                                                </span>
-                                            )}
+                                                    <span className={cn(
+                                                        "px-2 py-0.5 rounded-full text-[9px] font-extrabold shrink-0 border",
+                                                        isCompleted
+                                                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/80"
+                                                            : "bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200/80 dark:border-sky-800/80"
+                                                    )}>
+                                                        {isCompleted ? 'Completed' : 'In Progress'}
+                                                    </span>
+                                                </div>
+
+                                                {/* Meta Info: Faculty Avatars / Submitted state */}
+                                                <div className="flex items-center justify-between text-[11px] py-1.5 my-1 border-t border-b border-slate-100 dark:border-slate-800/80">
+                                                    <div className="flex items-center gap-1.5">
+                                                        {visibleFaculty.length > 0 ? (
+                                                            <div className="flex items-center -space-x-1.5 overflow-hidden">
+                                                                {visibleFaculty.map((f: any, fIdx: number) => (
+                                                                    <div
+                                                                        key={f.id || fIdx}
+                                                                        className="w-5 h-5 rounded-full ring-1.5 ring-white dark:ring-slate-900 overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0"
+                                                                        title={f.name}
+                                                                    >
+                                                                        {f.photo_url ? (
+                                                                            <img src={f.photo_url} alt={f.name} className="w-full h-full object-cover" />
+                                                                        ) : (
+                                                                            <span className="text-[8px] font-black text-slate-700 dark:text-slate-200">
+                                                                                {(f.name || 'FC').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                                {remainderCount > 0 && (
+                                                                    <span className="ml-1 px-1 py-0.2 rounded-full text-[8px] font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                                                                        +{remainderCount}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] text-slate-400 font-medium italic">
+                                                                No submissions yet
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="text-right">
+                                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                                            {req.due_date ? `Due ${req.due_date}` : 'Ongoing'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Progress Bar & Submissions Fraction */}
+                                            <div className="pt-2">
+                                                <div className="flex items-center justify-between text-xs font-semibold mb-1">
+                                                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                                                        <strong className="text-slate-900 dark:text-white font-extrabold">{req.complied}</strong> of {req.total} submitted
+                                                    </span>
+                                                    <span className="text-xs font-black text-slate-900 dark:text-white">
+                                                        {req.rate}%
+                                                    </span>
+                                                </div>
+
+                                                <div className="w-full h-2 rounded-full bg-slate-200/70 dark:bg-slate-800 overflow-hidden">
+                                                    <div
+                                                        className={cn(
+                                                            "h-full rounded-full transition-all duration-500",
+                                                            isCompleted
+                                                                ? "bg-emerald-500"
+                                                                : (isHighProgress ? "bg-amber-400" : (req.rate > 0 ? "bg-sky-500" : "bg-slate-300 dark:bg-slate-700"))
+                                                        )}
+                                                        style={{ width: `${Math.max(2, Math.min(100, req.rate || 0))}%` }}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-
-                                        {/* Bar */}
-                                        <div className="flex-1 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden min-w-[50px]">
-                                            <div
-                                                className={cn(
-                                                    "h-full rounded-full transition-all duration-500",
-                                                    isCompleted
-                                                        ? "bg-emerald-500"
-                                                        : (isHighProgress ? "bg-amber-400" : "bg-rose-500")
-                                                )}
-                                                style={{ width: String(Math.min(100, req.rate || 0)) + '%' }}
-                                            />
-                                        </div>
-
-                                        {/* Fraction and percentage */}
-                                        <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 shrink-0 whitespace-nowrap">
-                                            <span className="font-bold text-slate-900 dark:text-white">{req.complied}</span> / {req.total}{' '}
-                                            <span className="text-slate-500 dark:text-slate-400 font-medium">
-                                                ({req.rate}%)
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Status Badge */}
-                                    <div className="col-span-2 text-right pr-2 shrink-0">
-                                        <span className={cn(
-                                            "px-2 py-0.5 rounded-full text-[10px] font-extrabold inline-block",
-                                            isCompleted
-                                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80"
-                                                : "bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800/80"
-                                        )}>
-                                            {isCompleted ? 'Completed' : 'In Progress'}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="h-full py-12 flex flex-col items-center justify-center text-center text-slate-400 dark:text-slate-500">
+                                <FileText className="w-8 h-8 mb-2 opacity-30" />
+                                <p className="text-xs font-bold text-slate-600 dark:text-slate-400">No active requirements</p>
+                                <p className="text-[10px]">Requirements created by the college admin will appear here.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -1592,41 +1563,49 @@ function SlideThree({ data, isDark = false }: any) {
                         </div>
 
                         {/* Top Faculty List */}
-                        <div className="divide-y divide-slate-100 dark:divide-slate-800/60 overflow-y-auto no-scrollbar pt-1">
-                            {topFaculty.map((f: any, idx: number) => (
-                                <div key={f.rank || idx} className="py-1.5 flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        {/* Rank circle badge */}
-                                        <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 font-black text-[10px] flex items-center justify-center shrink-0">
-                                            {f.rank || (idx + 1)}
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800/60 overflow-y-auto no-scrollbar pt-1 flex-1 min-h-0">
+                            {topFaculty.length > 0 ? (
+                                topFaculty.map((f: any, idx: number) => (
+                                    <div key={f.rank || idx} className="py-1.5 flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            {/* Rank circle badge */}
+                                            <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 font-black text-[10px] flex items-center justify-center shrink-0">
+                                                {f.rank || (idx + 1)}
+                                            </div>
+
+                                            {/* Avatar */}
+                                            <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0 ring-1 ring-slate-200 dark:ring-slate-700">
+                                                {f.photo_url ? (
+                                                    <img src={f.photo_url} alt={f.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300">
+                                                        {(f.name || 'FC').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Name */}
+                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                                                {f.name}
+                                            </span>
                                         </div>
 
-                                        {/* Avatar */}
-                                        <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0 ring-1 ring-slate-200 dark:ring-slate-700">
-                                            {f.photo_url ? (
-                                                <img src={f.photo_url} alt={f.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300">
-                                                    {(f.name || 'FC').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
-                                                </span>
-                                            )}
+                                        {/* Score & Checkmark */}
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                                {f.score ? (f.score + ` (${f.rate ?? 100}%)`) : `${f.rate ?? 100}%`}
+                                            </span>
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500/20" />
                                         </div>
-
-                                        {/* Name */}
-                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
-                                            {f.name}
-                                        </span>
                                     </div>
-
-                                    {/* Score & Checkmark */}
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                                            {f.score ? (f.score + ' (100%)') : '9 / 9 (100%)'}
-                                        </span>
-                                        <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500/20" />
-                                    </div>
+                                ))
+                            ) : (
+                                <div className="h-full py-8 flex flex-col items-center justify-center text-center text-slate-400 dark:text-slate-500">
+                                    <Trophy className="w-6 h-6 mb-1 opacity-40 text-amber-500" />
+                                    <p className="text-xs font-bold text-slate-600 dark:text-slate-400">No submissions recorded yet</p>
+                                    <p className="text-[10px]">Top compliant faculty will appear once submissions are received.</p>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
 
@@ -1650,59 +1629,69 @@ function SlideThree({ data, isDark = false }: any) {
                                 </div>
                             </div>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shrink-0">
-                                10 Faculty
+                                {needsAttention.length} Faculty
                             </span>
                         </div>
 
                         {/* Table Header */}
-                        <div className="grid grid-cols-12 gap-1 py-1.5 text-[9px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                            <div className="col-span-5">Faculty</div>
-                            <div className="col-span-2 text-center">Pending</div>
-                            <div className="col-span-2 text-center">Overdue</div>
-                            <div className="col-span-3 text-right pr-1">Due Next</div>
-                        </div>
+                        {needsAttention.length > 0 && (
+                            <div className="grid grid-cols-12 gap-1 py-1.5 text-[9px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                                <div className="col-span-5">Faculty</div>
+                                <div className="col-span-2 text-center">Pending</div>
+                                <div className="col-span-2 text-center">Overdue</div>
+                                <div className="col-span-3 text-right pr-1">Due Next</div>
+                            </div>
+                        )}
 
                         {/* Attention List */}
                         <div className="divide-y divide-slate-100 dark:divide-slate-800/60 flex-1 overflow-y-auto no-scrollbar">
-                            {needsAttention.map((item: any) => (
-                                <div key={item.id || item.name} className="grid grid-cols-12 gap-1 items-center py-1.5 text-xs">
-                                    {/* Faculty */}
-                                    <div className="col-span-5 flex items-center gap-1.5 min-w-0 pr-1">
-                                        <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0 ring-1 ring-slate-200 dark:ring-slate-700">
-                                            {item.photo_url ? (
-                                                <img src={item.photo_url} alt={item.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="text-[8px] font-bold text-slate-700 dark:text-slate-300">
-                                                    {(item.name || 'FC').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
-                                                </span>
-                                            )}
+                            {needsAttention.length > 0 ? (
+                                needsAttention.map((item: any) => (
+                                    <div key={item.id || item.name} className="grid grid-cols-12 gap-1 items-center py-1.5 text-xs">
+                                        {/* Faculty */}
+                                        <div className="col-span-5 flex items-center gap-1.5 min-w-0 pr-1">
+                                            <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0 ring-1 ring-slate-200 dark:ring-slate-700">
+                                                {item.photo_url ? (
+                                                    <img src={item.photo_url} alt={item.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-[8px] font-bold text-slate-700 dark:text-slate-300">
+                                                        {(item.name || 'FC').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100 truncate">
+                                                {item.name}
+                                            </span>
                                         </div>
-                                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100 truncate">
-                                            {item.name}
-                                        </span>
-                                    </div>
 
-                                    {/* Pending Badge */}
-                                    <div className="col-span-2 text-center">
-                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                            {item.pending ?? 1}
-                                        </span>
-                                    </div>
+                                        {/* Pending Badge */}
+                                        <div className="col-span-2 text-center">
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                                {item.pending ?? 0}
+                                            </span>
+                                        </div>
 
-                                    {/* Overdue Badge */}
-                                    <div className="col-span-2 text-center">
-                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                                            {item.overdue ?? 1}
-                                        </span>
-                                    </div>
+                                        {/* Overdue Badge */}
+                                        <div className="col-span-2 text-center">
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                                {item.overdue ?? 0}
+                                            </span>
+                                        </div>
 
-                                    {/* Due Next */}
-                                    <div className="col-span-3 text-right pr-1 flex items-center justify-end gap-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400 truncate">
-                                        <Calendar className="w-3 h-3 text-rose-500 shrink-0" />
-                                        <span className="truncate">{item.due_next || 'TOS & TQ (Nov 18)'}</span>
+                                        {/* Due Next */}
+                                        <div className="col-span-3 text-right pr-1 flex items-center justify-end gap-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400 truncate">
+                                            <Calendar className="w-3 h-3 text-rose-500 shrink-0" />
+                                            <span className="truncate">{item.due_next || 'General Requirement'}</span>
+                                        </div>
                                     </div>
+                                ))
+                            ) : (
+                                <div className="h-full py-8 flex flex-col items-center justify-center text-center text-slate-400 dark:text-slate-500">
+                                    <CheckCircle2 className="w-6 h-6 mb-1 opacity-40 text-emerald-500" />
+                                    <p className="text-xs font-bold text-slate-600 dark:text-slate-400">All caught up</p>
+                                    <p className="text-[10px]">No faculty members currently require urgent attention.</p>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
                 </div>

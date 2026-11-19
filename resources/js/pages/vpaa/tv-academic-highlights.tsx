@@ -7,6 +7,7 @@ import {
     Calendar,
     CheckCircle2,
     Clock,
+    EyeOff,
     FileCheck,
     FolderKanban,
     GraduationCap,
@@ -14,6 +15,7 @@ import {
     Send,
     Sparkles,
     Star,
+    Trash2,
     Trophy,
 } from 'lucide-react';
 import React, { useState } from 'react';
@@ -51,6 +53,20 @@ export default function VpaaTvAcademicHighlights({ recommended_highlights, activ
         presentation_type: 'College Spotlight',
         target_audiences: ['INSTITUTION'],
     });
+
+    const handleRemoveSlide = (slideId: number, slideTitle: string, action: 'delete' | 'unpublish' = 'delete') => {
+        const confirmMsg =
+            action === 'unpublish'
+                ? `Unpublish "${slideTitle}" and move it to drafts? It will immediately stop showing on displays.`
+                : `Permanently delete published slide "${slideTitle}" from all TV channels?`;
+
+        if (confirm(confirmMsg)) {
+            router.delete(`/vpaa/tv-communications/slides/${slideId}`, {
+                data: { action },
+                preserveScroll: true,
+            });
+        }
+    };
 
     const handleOpenCreate = (item?: HighlightItem) => {
         if (item) {
@@ -242,18 +258,60 @@ export default function VpaaTvAcademicHighlights({ recommended_highlights, activ
                 {/* Active Broadcasts Grid */}
                 {subtab === 'active' && (
                     <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-card p-6 shadow-xs space-y-4">
-                        <h3 className="text-base font-bold text-foreground">Active Public Slides Across Displays</h3>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-base font-bold text-foreground">Active Public Slides Across Displays</h3>
+                                <p className="text-xs text-muted-foreground">
+                                    Slides currently in rotation across university TV displays. You can unpublish or permanently remove them at any time.
+                                </p>
+                            </div>
+                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                                {active_highlights.length} Publicly Broadcasted
+                            </span>
+                        </div>
                         {active_highlights.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {active_highlights.map((slide) => (
-                                    <div key={slide.id} className="p-4 rounded-2xl border border-border bg-background/50 space-y-2">
-                                        <span className="text-[10px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-md">
-                                            {slide.badge || 'Academic Highlight'}
-                                        </span>
-                                        <div className="text-sm font-bold text-foreground">{slide.title}</div>
-                                        <p className="text-xs text-muted-foreground line-clamp-2">{slide.subtitle}</p>
-                                        <div className="pt-2 text-[10px] text-muted-foreground border-t border-border/50">
-                                            Audience: {slide.college_code ? `${slide.college_code} TV` : 'All Institutional Displays'}
+                                    <div key={slide.id} className="p-4 rounded-2xl border border-border bg-background/50 flex flex-col justify-between space-y-3 shadow-xs">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                                                    {slide.badge || 'Academic Highlight'}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                                                    Live
+                                                </span>
+                                            </div>
+                                            <div className="text-sm font-bold text-foreground leading-snug">{slide.title}</div>
+                                            <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                                                {slide.subtitle || (Array.isArray(slide.content_blocks) ? slide.content_blocks[0]?.content : '')}
+                                            </p>
+                                        </div>
+
+                                        <div className="pt-3 border-t border-border/60 flex items-center justify-between text-[11px]">
+                                            <div className="text-[10px] text-muted-foreground truncate max-w-[130px]">
+                                                {slide.college_code ? `${slide.college_code} TV` : 'All Displays'}
+                                            </div>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveSlide(slide.id, slide.title, 'unpublish')}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-amber-200 dark:border-amber-800 transition-colors cursor-pointer"
+                                                    title="Unpublish and move to drafts"
+                                                >
+                                                    <EyeOff className="w-3.5 h-3.5" />
+                                                    Unpublish
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveSlide(slide.id, slide.title, 'delete')}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer"
+                                                    title="Permanently remove slide"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    Remove
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

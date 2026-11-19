@@ -31,8 +31,8 @@ class ComplianceService
             return;
         }
 
-        $requirements = Requirement::select(['id', 'program_id'])->get();
-        $faculties = Faculty::select(['id', 'program_id'])->get();
+        $requirements = Requirement::select(['id', 'program_id', 'college_id', 'applicable_programs'])->get();
+        $faculties = Faculty::with('program')->select(['id', 'program_id'])->get();
 
         if ($requirements->isEmpty() || $faculties->isEmpty()) {
             Cache::put(self::SYNC_CACHE_KEY, $signature, 900);
@@ -45,16 +45,34 @@ class ComplianceService
             ->get()
             ->mapWithKeys(fn ($sub) => [$sub->requirement_id.'_'.$sub->faculty_id => true]);
 
-        // Group faculties by program_id
+        // Group faculties by program_id and college_id
         $facultiesByProgram = $faculties->groupBy('program_id');
+        $facultiesByCollege = $faculties->groupBy(fn ($f) => $f->program?->college_id);
 
         $toInsert = [];
         $now = now();
 
         foreach ($requirements as $requirement) {
-            $targetFaculties = $requirement->program_id
-                ? $facultiesByProgram->get($requirement->program_id, collect())
-                : $faculties;
+            $applicablePrograms = is_array($requirement->applicable_programs)
+                ? array_filter($requirement->applicable_programs)
+                : [];
+
+            if (! empty($applicablePrograms)) {
+                // If specific applicable programs are specified
+                $targetFaculties = $faculties->filter(function ($faculty) use ($applicablePrograms) {
+                    return in_array($faculty->program_id, $applicablePrograms)
+                        || in_array((string) $faculty->program_id, $applicablePrograms);
+                });
+            } elseif ($requirement->program_id) {
+                // Specific single program
+                $targetFaculties = $facultiesByProgram->get($requirement->program_id, collect());
+            } elseif ($requirement->college_id) {
+                // All programs within the college
+                $targetFaculties = $facultiesByCollege->get($requirement->college_id, collect());
+            } else {
+                // General requirement across all faculties
+                $targetFaculties = $faculties;
+            }
 
             foreach ($targetFaculties as $faculty) {
                 $key = $requirement->id.'_'.$faculty->id;
