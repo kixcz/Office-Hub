@@ -405,38 +405,76 @@ class TvDisplayController extends Controller
 
         $slides = $interleavedSlides;
 
-        // Data for Slide 1 (Daily Overview) - Filtered by College or Campus-Wide
-        $activeAnnouncements = Announcement::with('author')
+        // Data for Slide 1 (Daily Overview) - Filtered strictly by College or Campus-Wide (unspecified college)
+        $activeAnnouncements = Announcement::with(['author.faculty'])
             ->where('status', 'active')
             ->where(function ($q) use ($targetCollegeCode, $collegeId) {
-                $q->where('college_code', $targetCollegeCode)
-                    ->orWhere('college_id', $collegeId)
-                    ->orWhereNull('college_code')
-                    ->orWhere('college_code', '')
-                    ->orWhere('destination', 'public');
+                if ($targetCollegeCode || $collegeId) {
+                    $q->where(function ($cq) use ($targetCollegeCode, $collegeId) {
+                        if ($targetCollegeCode) {
+                            $cq->where('college_code', $targetCollegeCode);
+                        }
+                        if ($collegeId) {
+                            $cq->orWhere('college_id', $collegeId);
+                        }
+                    })
+                        ->orWhere(function ($allQ) {
+                            // Truly campus-wide announcements have no specific college assigned
+                            $allQ->whereNull('college_code')
+                                ->whereNull('college_id')
+                                ->orWhere('college_code', '')
+                                ->orWhere('college_code', 'ALL')
+                                ->orWhere('college_code', 'INSTITUTION');
+                        });
+                } else {
+                    $q->whereNull('college_code')
+                        ->orWhere('college_code', '')
+                        ->orWhere('college_code', 'ALL')
+                        ->orWhere('college_code', 'INSTITUTION');
+                }
             })
             ->latest()
             ->get();
 
-        $meetingsToday = Meeting::where('date', $today)->orderBy('start_time')->get()->map(fn ($m) => [
-            'id' => $m->id,
-            'title' => $m->title,
-            'time' => $m->start_time.' - '.$m->end_time,
-            'venue' => $m->venue,
-            'type' => 'Meeting',
-        ]);
+        $meetingsToday = Meeting::where('date', $today)
+            ->where(function ($q) use ($collegeId) {
+                if ($collegeId) {
+                    $q->whereNull('program_id')
+                        ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+                }
+            })
+            ->orderBy('start_time')->get()->map(fn ($m) => [
+                'id' => $m->id,
+                'title' => $m->title,
+                'time' => $m->start_time.' - '.$m->end_time,
+                'venue' => $m->venue,
+                'type' => 'Meeting',
+            ]);
 
-        $activitiesToday = Activity::where('date', $today)->get()->map(fn ($a) => [
-            'id' => $a->id,
-            'title' => $a->title,
-            'time' => $a->start_time && $a->end_time ? $a->start_time.' - '.$a->end_time : 'All Day',
-            'venue' => $a->venue,
-            'type' => 'Activity',
-        ]);
+        $activitiesToday = Activity::where('date', $today)
+            ->where(function ($q) use ($collegeId) {
+                if ($collegeId) {
+                    $q->whereNull('program_id')
+                        ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+                }
+            })
+            ->get()->map(fn ($a) => [
+                'id' => $a->id,
+                'title' => $a->title,
+                'time' => $a->start_time && $a->end_time ? $a->start_time.' - '.$a->end_time : 'All Day',
+                'venue' => $a->venue,
+                'type' => 'Activity',
+            ]);
 
         $todaysSchedule = $meetingsToday->concat($activitiesToday)->sortBy('time')->values();
 
         $upcomingMeetings = Meeting::where('date', '>=', $today)
+            ->where(function ($q) use ($collegeId) {
+                if ($collegeId) {
+                    $q->whereNull('program_id')
+                        ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+                }
+            })
             ->orderBy('date')->orderBy('start_time')
             ->take(5)->get()->map(fn ($m) => [
                 'id' => $m->id,
@@ -450,8 +488,22 @@ class TvDisplayController extends Controller
         $weekStart = $now->copy()->startOfWeek();
         $weekEnd = $now->copy()->endOfWeek();
 
-        $weeklyMeetings = Meeting::whereBetween('date', [$weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')])->get();
-        $weeklyActivities = Activity::whereBetween('date', [$weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')])->get();
+        $weeklyMeetings = Meeting::whereBetween('date', [$weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')])
+            ->where(function ($q) use ($collegeId) {
+                if ($collegeId) {
+                    $q->whereNull('program_id')
+                        ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+                }
+            })
+            ->get();
+        $weeklyActivities = Activity::whereBetween('date', [$weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')])
+            ->where(function ($q) use ($collegeId) {
+                if ($collegeId) {
+                    $q->whereNull('program_id')
+                        ->orWhereHas('program', fn ($pq) => $pq->where('college_id', $collegeId));
+                }
+            })
+            ->get();
 
         $weeklySchedule = [];
         for ($i = 0; $i < 5; $i++) {
@@ -1524,7 +1576,7 @@ class TvDisplayController extends Controller
                 'slide6' => $monitoringSummary,
                 'slide7' => $facultyScheduleData,
                 'slide8' => [
-                    'calendar' => CalendarController::getCalendarData(),
+                    'calendar' => CalendarController::getCalendarData($collegeId),
                 ],
                 'slide9' => $complianceTrackerData,
                 'slide10' => $tasksAndProjectsData,

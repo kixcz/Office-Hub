@@ -237,10 +237,10 @@ export default function ConsolidatedCalendarIndex({
         return events.filter((ev) => ev.date.startsWith(currentMonthPrefix));
     }, [events, currentMonthPrefix]);
 
-    const kpiDeadlines = monthlyEvents.filter((ev) => ev.type === 'deadline').length || 5;
-    const kpiMeetings = monthlyEvents.filter((ev) => ev.type === 'meeting').length || 4;
-    const kpiActivities = monthlyEvents.filter((ev) => ev.type === 'activity').length || 3;
-    const kpiExaminations = monthlyEvents.filter((ev) => ev.type === 'examination').length || 2;
+    const kpiDeadlines = monthlyEvents.filter((ev) => ev.type === 'deadline').length;
+    const kpiMeetings = monthlyEvents.filter((ev) => ev.type === 'meeting').length;
+    const kpiActivities = monthlyEvents.filter((ev) => ev.type === 'activity').length;
+    const kpiExaminations = monthlyEvents.filter((ev) => ev.type === 'examination').length;
 
     // Selected Date Pretty Label
     const selectedDateFormatted = useMemo(() => {

@@ -1006,6 +1006,16 @@ function SlideOne({ data, isDark = false }: any) {
                             {announcements.map((a: any, idx: number) => {
                                 const tone: Tone = idx % 3 === 0 ? 'purple' : idx % 3 === 1 ? 'rose' : 'blue';
                                 const tag = idx === 0 ? 'IMPORTANT' : idx === 1 ? 'URGENT' : 'REMINDER';
+                                const authorName = a.author?.name || 'System Admin';
+                                const authorPhoto = a.author?.avatar_url || a.author?.faculty?.photo_url || null;
+                                const authorInitials = authorName
+                                    .split(' ')
+                                    .filter(Boolean)
+                                    .map((part: string) => part[0])
+                                    .slice(0, 2)
+                                    .join('')
+                                    .toUpperCase() || 'SA';
+
                                 return (
                                     <article
                                         key={a.id}
@@ -1037,7 +1047,34 @@ function SlideOne({ data, isDark = false }: any) {
                                                 {tag}
                                             </span>
                                         </div>
-                                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">{a.author ? a.author.name : 'System Admin'}</p>
+                                        <div className="mt-2 flex items-center gap-2">
+                                            <div className="relative w-6 h-6 rounded-full overflow-hidden shrink-0 shadow-2xs">
+                                                {authorPhoto ? (
+                                                    <img
+                                                        src={authorPhoto}
+                                                        alt={authorName}
+                                                        className="w-full h-full object-cover border border-slate-200 dark:border-slate-700"
+                                                        onError={(e) => {
+                                                            (e.currentTarget as HTMLElement).style.display = 'none';
+                                                            const fallback = e.currentTarget.parentElement?.querySelector('.announcement-author-fallback') as HTMLElement;
+                                                            if (fallback) {
+                                                                fallback.classList.remove('hidden');
+                                                                fallback.classList.add('flex');
+                                                            }
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                <div className={cn(
+                                                    "announcement-author-fallback w-full h-full bg-gradient-to-br from-[#072445]/15 to-[#8B1E3F]/25 dark:bg-slate-800 text-[#072445] dark:text-sky-200 text-[10px] font-black items-center justify-center border border-slate-300 dark:border-slate-600",
+                                                    authorPhoto ? "hidden" : "flex"
+                                                )}>
+                                                    {authorInitials}
+                                                </div>
+                                            </div>
+                                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                                {authorName}
+                                            </span>
+                                        </div>
                                         <p className="mt-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">{a.message}</p>
                                     </article>
                                 );

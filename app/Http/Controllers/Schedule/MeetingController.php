@@ -12,15 +12,45 @@ class MeetingController extends Controller
 {
     public function index()
     {
-        $meetings = Meeting::with(['organizer', 'program'])
+        $scopeCollegeId = CalendarController::resolveCollegeId();
+
+        $meetingsQuery = Meeting::with(['organizer', 'program'])
             ->orderBy('date', 'desc')
-            ->orderBy('start_time', 'desc')
-            ->get()
+            ->orderBy('start_time', 'desc');
+
+        $programsQuery = Program::query();
+
+        if ($scopeCollegeId) {
+            $collegeProgramIds = Program::where('college_id', $scopeCollegeId)->pluck('id')->toArray();
+            $programsQuery->where('college_id', $scopeCollegeId);
+
+            $meetingsQuery->where(function ($q) use ($collegeProgramIds, $scopeCollegeId) {
+                if (! empty($collegeProgramIds)) {
+                    $q->whereIn('program_id', $collegeProgramIds);
+                    foreach ($collegeProgramIds as $pid) {
+                        $q->orWhereJsonContains('program_ids', (int) $pid)
+                            ->orWhereJsonContains('program_ids', (string) $pid);
+                    }
+                }
+                $q->orWhere(function ($sub) use ($scopeCollegeId) {
+                    $sub->whereNull('program_id')
+                        ->where(function ($orgQ) use ($scopeCollegeId) {
+                            $orgQ->whereHas('organizer', function ($uq) use ($scopeCollegeId) {
+                                $uq->where('college_id', $scopeCollegeId)
+                                    ->orWhereNull('college_id');
+                            })
+                                ->orWhereDoesntHave('organizer');
+                        });
+                });
+            });
+        }
+
+        $meetings = $meetingsQuery->get()
             ->each(function ($meeting) {
                 $meeting->append('programs');
             });
 
-        $programs = Program::all();
+        $programs = $programsQuery->get();
 
         return Inertia::render('schedule/meetings/index', [
             'meetings' => $meetings,
@@ -61,12 +91,16 @@ class MeetingController extends Controller
 
         Meeting::create($validated);
 
+        CalendarController::clearCalendarCache();
+
         return redirect()->back()->with('success', 'Meeting created successfully.');
     }
 
     public function destroy(Meeting $meeting)
     {
         $meeting->delete();
+
+        CalendarController::clearCalendarCache();
 
         return redirect()->back()->with('success', 'Meeting deleted successfully.');
     }
@@ -79,6 +113,8 @@ class MeetingController extends Controller
         ]);
 
         $count = Meeting::whereIn('id', $validated['ids'])->delete();
+
+        CalendarController::clearCalendarCache();
 
         return redirect()->back()->with('success', "{$count} meeting(s) deleted successfully.");
     }

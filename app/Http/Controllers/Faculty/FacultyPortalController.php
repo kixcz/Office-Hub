@@ -19,6 +19,8 @@ use App\Models\FacultyCorrection;
 use App\Models\MakeUpClassRequest;
 use App\Models\Meeting;
 use App\Models\Program;
+use App\Models\QmsDocumentInstance;
+use App\Models\QmsDocumentType;
 use App\Models\Requirement;
 use App\Models\ResearchEngagement;
 use App\Models\RoomSchedule;
@@ -27,6 +29,7 @@ use App\Models\Task;
 use App\Services\AI\AccomplishmentExtractorService;
 use App\Services\ComplianceService;
 use App\Services\GoogleDrive\GoogleDriveEvidenceService;
+use App\Services\Qms\DocumentControlService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -444,7 +447,8 @@ class FacultyPortalController extends Controller
     public function calendar(Request $request): Response
     {
         $faculty = $this->resolveFaculty($request);
-        $calendarData = CalendarController::getCalendarData();
+        $scopeCollegeId = $faculty?->program?->college_id ?? $request->user()?->resolveActiveCollege()?->id;
+        $calendarData = CalendarController::getCalendarData($scopeCollegeId);
 
         // Include personal events created by this faculty
         $personalEvents = Activity::where('faculty_id', $faculty?->id)
@@ -2089,20 +2093,58 @@ class FacultyPortalController extends Controller
     }
 
     /**
-     * 14. My Documents
+     * 14. My Documents (ISO QMS Controlled Self-Service Portal)
      */
     public function documents(Request $request): Response
     {
         $faculty = $this->resolveFaculty($request);
-        $submissions = $faculty ? Submission::with('requirement')
+        $user = $request->user();
+
+        // 1. Fetch user's QMS Document Instances (records prepared / submitted by this user)
+        $instancesQuery = QmsDocumentInstance::with(['document.documentType', 'document.college', 'revision', 'academicPeriod'])
+            ->where(function ($q) use ($user, $faculty) {
+                if ($user) {
+                    $q->where('creator_id', $user->id);
+                }
+                if ($faculty) {
+                    $q->orWhere('faculty_id', $faculty->id);
+                }
+            })
+            ->latest();
+
+        $instances = $instancesQuery->get();
+
+        // Compute metrics as specified: Submissions, In Review, Completed
+        $metrics = [
+            'submissions' => $instances->count(),
+            'in_review' => $instances->whereIn('status', ['submitted', 'in_review', 'endorsed'])->count(),
+            'completed' => $instances->whereIn('status', ['completed', 'approved', 'archived'])->count(),
+        ];
+
+        // 2. Fetch approved controlled templates available to faculty (college scope + institution scope)
+        $collegeId = $faculty?->program?->college_id ?? $user?->college_id;
+        $qmsService = app(DocumentControlService::class);
+        $templates = $qmsService->getApprovedTemplates($collegeId ? (int) $collegeId : null);
+
+        // 3. Fallback/compatibility with legacy compliance submissions
+        $legacySubmissions = $faculty ? Submission::with('requirement')
             ->where('faculty_id', $faculty->id)
             ->whereNotNull('file_path')
             ->latest()
             ->get() : collect();
 
+        // 4. Fetch available document types and colleges for "Request Code" modal
+        $documentTypes = QmsDocumentType::where('is_active', true)->orderBy('code')->get();
+        $colleges = College::where('is_active', true)->orderBy('name')->get();
+
         return Inertia::render('faculty/documents', [
             'faculty' => $faculty,
-            'documents' => $submissions,
+            'metrics' => $metrics,
+            'templates' => $templates,
+            'instances' => $instances,
+            'documents' => $legacySubmissions,
+            'documentTypes' => $documentTypes,
+            'colleges' => $colleges,
         ]);
     }
 

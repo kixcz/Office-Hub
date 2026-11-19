@@ -12,12 +12,31 @@ class ActivityController extends Controller
 {
     public function index()
     {
-        $activities = Activity::with('program')
-            ->orderBy('date', 'desc')
-            ->orderBy('start_time', 'desc')
-            ->get();
+        $scopeCollegeId = CalendarController::resolveCollegeId();
 
-        $programs = Program::all();
+        $activitiesQuery = Activity::with('program')
+            ->orderBy('date', 'desc')
+            ->orderBy('start_time', 'desc');
+
+        $programsQuery = Program::query();
+
+        if ($scopeCollegeId) {
+            $collegeProgramIds = Program::where('college_id', $scopeCollegeId)->pluck('id')->toArray();
+            $programsQuery->where('college_id', $scopeCollegeId);
+
+            $activitiesQuery->where(function ($q) use ($collegeProgramIds, $scopeCollegeId) {
+                if (! empty($collegeProgramIds)) {
+                    $q->whereIn('program_id', $collegeProgramIds)
+                        ->orWhereHas('faculty.program', fn ($pq) => $pq->where('college_id', $scopeCollegeId));
+                }
+                $q->orWhere(function ($sub) {
+                    $sub->whereNull('program_id')->whereNull('faculty_id');
+                });
+            });
+        }
+
+        $activities = $activitiesQuery->get();
+        $programs = $programsQuery->get();
 
         return Inertia::render('schedule/activities/index', [
             'activities' => $activities,
@@ -42,6 +61,8 @@ class ActivityController extends Controller
 
         Activity::create($validated);
 
+        CalendarController::clearCalendarCache();
+
         return redirect()->back()->with('success', 'Activity created successfully.');
     }
 
@@ -62,12 +83,16 @@ class ActivityController extends Controller
 
         $activity->update($validated);
 
+        CalendarController::clearCalendarCache();
+
         return redirect()->back()->with('success', 'Activity updated successfully.');
     }
 
     public function destroy(Activity $activity)
     {
         $activity->delete();
+
+        CalendarController::clearCalendarCache();
 
         return redirect()->back()->with('success', 'Activity deleted successfully.');
     }
@@ -80,6 +105,8 @@ class ActivityController extends Controller
         ]);
 
         $count = Activity::whereIn('id', $validated['ids'])->delete();
+
+        CalendarController::clearCalendarCache();
 
         return redirect()->back()->with('success', "{$count} activity/activities deleted successfully.");
     }

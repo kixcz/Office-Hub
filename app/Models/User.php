@@ -71,6 +71,26 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the resolved avatar URL for the user, falling back to linked faculty profile picture if available.
+     */
+    public function getAvatarUrlAttribute(?string $value): ?string
+    {
+        if ($value) {
+            if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+                return $value;
+            }
+
+            return '/storage/'.ltrim($value, '/');
+        }
+
+        if ($this->relationLoaded('faculty') && $this->faculty?->photo_url) {
+            return $this->faculty->photo_url;
+        }
+
+        return null;
+    }
+
+    /**
      * Scoped role assignments for this canonical user identity.
      */
     public function scopedRoleAssignments()

@@ -226,6 +226,7 @@ const institutionSuperAdminNavGroups: NavGroup[] = [
     {
         title: 'REPORTS & QUALITY',
         items: [
+            { title: 'ISO Document Control', url: '/qms', icon: ShieldCheck, description: 'Master Document Register and QMS coding.' },
             { title: 'Institution Reports', url: '/institution/reports?tab=reports', icon: FileText, description: 'Executive summaries and institutional analytics.' },
             { title: 'Report Templates', url: '/institution/reports?tab=templates', icon: FileCheck2, description: 'Document schemas and official header templates.' },
             { title: 'Data Quality', url: '/institution/data-quality?tab=data-quality', icon: ShieldAlert, description: 'Identify data anomalies and orphaned records.' },
@@ -493,6 +494,7 @@ const deanNavGroups: NavGroup[] = [
     {
         title: 'COLLEGE OVERSIGHT',
         items: [
+            { title: 'ISO Document Control', url: '/qms', icon: ShieldCheck },
             { title: 'College Requirements', url: '/compliance/requirements', icon: LibraryBig },
             { title: 'Locator Slips', url: '/operations/locator-slips', icon: MapPin },
             { title: 'Travel Orders', url: '/operations/travel-orders', icon: Plane },

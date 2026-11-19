@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Schedule;
 
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
+use App\Models\College;
 use App\Models\Meeting;
 use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\User;
+use App\Services\PortalContextService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,25 +26,113 @@ class CalendarController extends Controller
 
     public function index(Request $request): Response
     {
-        $data = self::getCalendarData();
+        $scopeCollegeId = self::resolveCollegeId($request);
+        $data = self::getCalendarData($scopeCollegeId);
 
         return Inertia::render('schedule/calendar/index', $data);
     }
 
     public function eventsJson(Request $request)
     {
-        return response()->json(self::getCalendarData());
+        $scopeCollegeId = self::resolveCollegeId($request);
+
+        return response()->json(self::getCalendarData($scopeCollegeId));
+    }
+
+    /**
+     * Resolve the active College ID for the current authenticated user / context.
+     */
+    public static function resolveCollegeId(?Request $request = null): ?int
+    {
+        $request = $request ?: request();
+        $user = $request?->user();
+        if (! $user) {
+            return null;
+        }
+
+        if ($user->isInstitutionSuperAdmin()) {
+            return null;
+        }
+
+        $portalService = app(PortalContextService::class);
+        $activeAssignment = $portalService->getActiveAssignment($user, $request);
+        $activeScopeType = strtolower($activeAssignment['scope_type'] ?? '');
+        $activeScopeId = $activeAssignment['scope_id'] ?? null;
+
+        $scopeCollegeId = null;
+        if ($activeScopeType === 'college' && $activeScopeId) {
+            $scopeCollegeId = (int) $activeScopeId;
+        } elseif ($activeScopeType === 'program' && $activeScopeId) {
+            $scopeCollegeId = Program::find($activeScopeId)?->college_id;
+        } else {
+            $scopeCollegeId = $user->resolveActiveCollege()?->id;
+        }
+
+        if (! $scopeCollegeId) {
+            $scopeCollegeId = $user->resolveActiveCollege()?->id;
+        }
+
+        return $scopeCollegeId;
+    }
+
+    /**
+     * Clear all cached calendar data variants.
+     */
+    public static function clearCalendarCache(): void
+    {
+        Cache::forget(self::CALENDAR_DATA_CACHE_KEY);
+        Cache::forget(self::CALENDAR_DATA_CACHE_KEY.'_all');
+
+        try {
+            $colleges = College::pluck('id');
+            foreach ($colleges as $cId) {
+                Cache::forget(self::CALENDAR_DATA_CACHE_KEY.'_'.$cId);
+            }
+        } catch (\Throwable) {
+            // Silently ignore if colleges table is unavailable
+        }
     }
 
     /**
      * @return array{events: Collection, programs: \Illuminate\Database\Eloquent\Collection, venues: array, defaultDate: string}
      */
-    public static function getCalendarData(): array
+    public static function getCalendarData(?int $scopeCollegeId = null): array
     {
         self::ensureBaselineEvents();
 
-        return Cache::remember(self::CALENDAR_DATA_CACHE_KEY, 180, function (): array {
-            $meetings = Meeting::with('program')->get()->map(function ($m) {
+        $cacheKey = self::CALENDAR_DATA_CACHE_KEY.'_'.($scopeCollegeId ?: 'all');
+
+        return Cache::remember($cacheKey, 180, function () use ($scopeCollegeId): array {
+            $collegeProgramIds = [];
+            if ($scopeCollegeId) {
+                $collegeProgramIds = Program::where('college_id', $scopeCollegeId)->pluck('id')->toArray();
+            }
+
+            // 1. Meetings
+            $meetingsQuery = Meeting::with(['program', 'organizer']);
+            if ($scopeCollegeId) {
+                $meetingsQuery->where(function ($q) use ($collegeProgramIds, $scopeCollegeId) {
+                    if (! empty($collegeProgramIds)) {
+                        $q->whereIn('program_id', $collegeProgramIds);
+                        foreach ($collegeProgramIds as $pid) {
+                            $q->orWhereJsonContains('program_ids', (int) $pid)
+                                ->orWhereJsonContains('program_ids', (string) $pid);
+                        }
+                    }
+                    $q->orWhere(function ($sub) use ($scopeCollegeId) {
+                        $sub->whereNull('program_id')
+                            ->where(function ($orgQ) use ($scopeCollegeId) {
+                                $orgQ->whereHas('organizer', function ($uq) use ($scopeCollegeId) {
+                                    $uq->where('college_id', $scopeCollegeId)
+                                        ->orWhereNull('college_id');
+                                })
+                                    ->orWhereDoesntHave('organizer');
+                            });
+                    });
+                });
+            }
+
+            $meetings = $meetingsQuery->get()->map(function ($m) {
                 $programs = $m->programs;
                 $programCode = 'All';
                 if ($programs->isNotEmpty()) {
@@ -68,7 +158,21 @@ class CalendarController extends Controller
                 ];
             });
 
-            $activities = Activity::with('program')->get()->map(function ($a) {
+            // 2. Activities
+            $activitiesQuery = Activity::with(['program', 'faculty.program']);
+            if ($scopeCollegeId) {
+                $activitiesQuery->where(function ($q) use ($collegeProgramIds, $scopeCollegeId) {
+                    if (! empty($collegeProgramIds)) {
+                        $q->whereIn('program_id', $collegeProgramIds)
+                            ->orWhereHas('faculty.program', fn ($pq) => $pq->where('college_id', $scopeCollegeId));
+                    }
+                    $q->orWhere(function ($sub) {
+                        $sub->whereNull('program_id')->whereNull('faculty_id');
+                    });
+                });
+            }
+
+            $activities = $activitiesQuery->get()->map(function ($a) {
                 $cat = strtolower($a->category ?: '');
                 $type = 'activity';
                 if (str_contains($cat, 'exam') || str_contains(strtolower($a->title), 'exam')) {
@@ -93,7 +197,25 @@ class CalendarController extends Controller
                 ];
             });
 
-            $requirements = Requirement::with('program')->get()->map(function ($r) {
+            // 3. Requirements (Deadlines)
+            $requirementsQuery = Requirement::with('program');
+            if ($scopeCollegeId) {
+                $requirementsQuery->where(function ($q) use ($collegeProgramIds, $scopeCollegeId) {
+                    $q->where('college_id', $scopeCollegeId);
+                    if (! empty($collegeProgramIds)) {
+                        $q->orWhereIn('program_id', $collegeProgramIds);
+                        foreach ($collegeProgramIds as $pid) {
+                            $q->orWhereJsonContains('applicable_programs', (int) $pid)
+                                ->orWhereJsonContains('applicable_programs', (string) $pid);
+                        }
+                    }
+                    $q->orWhere(function ($sub) {
+                        $sub->whereNull('college_id')->whereNull('program_id')->whereNull('applicable_programs');
+                    });
+                });
+            }
+
+            $requirements = $requirementsQuery->get()->map(function ($r) {
                 $due = Carbon::parse($r->due_date);
 
                 return [
@@ -121,7 +243,12 @@ class CalendarController extends Controller
                 })
                 ->values();
 
-            $programs = Program::select('id', 'code', 'name')->orderBy('code')->get();
+            // 4. Programs list scoped to college
+            $programsQuery = Program::select('id', 'code', 'name')->orderBy('code');
+            if ($scopeCollegeId) {
+                $programsQuery->where('college_id', $scopeCollegeId);
+            }
+            $programs = $programsQuery->get();
 
             $venues = $events->pluck('venue')
                 ->filter(fn ($v) => $v && $v !== 'N/A')
@@ -146,6 +273,8 @@ class CalendarController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $scopeCollegeId = self::resolveCollegeId($request);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'type' => 'required|string|in:meeting,activity,deadline,examination,others',
@@ -157,6 +286,15 @@ class CalendarController extends Controller
             'description' => 'nullable|string',
             'status' => 'nullable|string',
         ]);
+
+        if ($scopeCollegeId && ! empty($validated['program_id'])) {
+            $validProgram = Program::where('id', $validated['program_id'])
+                ->where('college_id', $scopeCollegeId)
+                ->exists();
+            if (! $validProgram) {
+                return redirect()->back()->withErrors(['program_id' => 'The selected program does not belong to your assigned college.']);
+            }
+        }
 
         $startTime = $validated['start_time'] ? Carbon::parse($validated['start_time'])->format('H:i:s') : '08:00:00';
         $endTime = $validated['end_time'] ? Carbon::parse($validated['end_time'])->format('H:i:s') : '10:00:00';
@@ -181,6 +319,7 @@ class CalendarController extends Controller
                 'academic_year' => '2026-2027',
                 'semester' => '1st Semester',
                 'program_id' => $validated['program_id'],
+                'college_id' => $scopeCollegeId,
             ]);
         } else {
             Activity::create([
@@ -197,7 +336,7 @@ class CalendarController extends Controller
             ]);
         }
 
-        Cache::forget(self::CALENDAR_DATA_CACHE_KEY);
+        self::clearCalendarCache();
 
         return redirect()->back()->with('success', 'Event successfully scheduled in Consolidated Calendar.');
     }
@@ -218,7 +357,7 @@ class CalendarController extends Controller
             Requirement::where('id', $numId)->delete();
         }
 
-        Cache::forget(self::CALENDAR_DATA_CACHE_KEY);
+        self::clearCalendarCache();
 
         return redirect()->back()->with('success', 'Event deleted from calendar.');
     }

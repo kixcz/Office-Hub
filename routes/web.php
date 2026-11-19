@@ -33,6 +33,7 @@ use App\Http\Controllers\Performance\FacultyPerformanceController;
 use App\Http\Controllers\Performance\ProgramPerformanceController;
 use App\Http\Controllers\Performance\RecognitionRuleController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\Qms\DocumentControlController;
 use App\Http\Controllers\RoomComplaintReportController;
 use App\Http\Controllers\RoomInventoryController;
 use App\Http\Controllers\Schedule\AcademicCalendarImportController;
@@ -412,6 +413,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/documents', [DocumentRouteController::class, 'index'])->name('documents.index');
     Route::post('/documents', [DocumentRouteController::class, 'store'])->name('documents.store');
     Route::patch('/documents/{document}', [DocumentRouteController::class, 'update'])->name('documents.update');
+
+    // ISO / QMS Document Control System
+    Route::prefix('qms')->name('qms.')->group(function () {
+        Route::get('/', [DocumentControlController::class, 'index'])->name('index');
+        Route::post('/request-code', [DocumentControlController::class, 'requestCode'])->name('request-code');
+        Route::post('/documents/{document}/transition', [DocumentControlController::class, 'transition'])->name('transition');
+        Route::get('/templates-json', [DocumentControlController::class, 'templatesJson'])->name('templates.json');
+        Route::post('/instances', [DocumentControlController::class, 'recordInstance'])->name('instances.store');
+    });
 
     // Academic Structure: Programs & Curriculum
     Route::resource('programs', ProgramController::class);
